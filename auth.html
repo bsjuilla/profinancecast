@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sign in — ProFinanceCast</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:    #080C12;
+    --bg2:   #0D1320;
+    --bg3:   #111827;
+    --card:  #0F1923;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.13);
+    --teal:  #00C896;
+    --teal-dim: rgba(0,200,150,0.1);
+    --text:  #F0F4F8;
+    --text2: #8A9BB0;
+    --text3: #4A5A6E;
+    --red:   #E05252;
+    --green: #22C55E;
+    --r:     12px;
+    --r-sm:  8px;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  /* ── LEFT PANEL ── */
+  .left {
+    background: var(--bg2);
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    padding: 48px;
+    position: relative; overflow: hidden;
+  }
+  .left-grid {
+    position: absolute; inset: 0; opacity: .18;
+    background-image:
+      linear-gradient(rgba(0,200,150,0.2) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,200,150,0.2) 1px, transparent 1px);
+    background-size: 48px 48px;
+    mask-image: radial-gradient(ellipse 80% 80% at 40% 50%, black 30%, transparent 100%);
+  }
+  .left-glow {
+    position: absolute; top: 30%; left: 20%;
+    width: 400px; height: 400px;
+    background: radial-gradient(ellipse, rgba(0,200,150,0.1) 0%, transparent 65%);
+    pointer-events: none;
+  }
+  .left-logo {
+    display: flex; align-items: center; gap: 10px;
+    font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700;
+    color: var(--text); text-decoration: none; position: relative; z-index: 1;
+  }
+  .logo-mark {
+    width: 30px; height: 30px; background: var(--teal);
+    border-radius: 7px; display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 800; color: #080C12;
+  }
+  .left-content {
+    flex: 1; display: flex; flex-direction: column;
+    justify-content: center; position: relative; z-index: 1;
+  }
+  .left-eyebrow {
+    font-size: 12px; font-weight: 600; color: var(--teal);
+    letter-spacing: .1em; text-transform: uppercase; margin-bottom: 14px;
+  }
+  .left-heading {
+    font-family: 'Syne', sans-serif; font-size: 36px; font-weight: 800;
+    line-height: 1.2; margin-bottom: 16px; letter-spacing: -0.3px;
+  }
+  .left-sub {
+    font-size: 15px; color: var(--text2); line-height: 1.7;
+    font-weight: 300; margin-bottom: 36px; max-width: 380px;
+  }
+  .feature-list { display: flex; flex-direction: column; gap: 14px; }
+  .feature-item {
+    display: flex; align-items: center; gap: 12px;
+    font-size: 14px; color: var(--text2);
+  }
+  .feature-icon {
+    width: 32px; height: 32px; border-radius: 8px;
+    background: var(--teal-dim); border: 1px solid rgba(0,200,150,0.2);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .left-footer {
+    position: relative; z-index: 1;
+    font-size: 12px; color: var(--text3);
+  }
+  .left-footer a { color: var(--text3); text-decoration: underline; }
+
+  /* ── RIGHT PANEL ── */
+  .right {
+    display: flex; align-items: center; justify-content: center;
+    padding: 48px 40px;
+  }
+  .auth-box {
+    width: 100%; max-width: 400px;
+  }
+
+  /* ── VIEW SWITCHING ── */
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* ── FORM ELEMENTS ── */
+  .auth-heading {
+    font-family: 'Syne', sans-serif; font-size: 26px; font-weight: 800;
+    margin-bottom: 6px; letter-spacing: -0.2px;
+  }
+  .auth-sub {
+    font-size: 14px; color: var(--text2); margin-bottom: 28px; line-height: 1.5;
+  }
+  .auth-sub a { color: var(--teal); text-decoration: none; cursor: pointer; }
+  .auth-sub a:hover { text-decoration: underline; }
+
+  .field { margin-bottom: 16px; }
+  .field label {
+    display: block; font-size: 12.5px; color: var(--text2);
+    margin-bottom: 6px; font-weight: 500;
+  }
+  .field-row { position: relative; }
+  .field input {
+    width: 100%; background: var(--bg3); border: 1px solid var(--border2);
+    border-radius: var(--r-sm); padding: 11px 14px;
+    font-size: 14px; color: var(--text); font-family: 'DM Sans', sans-serif;
+    outline: none; transition: border-color .15s;
+  }
+  .field input:focus { border-color: rgba(0,200,150,0.5); }
+  .field input::placeholder { color: var(--text3); }
+  .field input.error { border-color: rgba(224,82,82,0.6); }
+  .field input.success { border-color: rgba(34,197,94,0.5); }
+  .field-icon {
+    position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+    cursor: pointer; color: var(--text3); transition: color .15s;
+  }
+  .field-icon:hover { color: var(--text2); }
+  .field-hint {
+    font-size: 11.5px; margin-top: 5px;
+    display: none;
+  }
+  .field-hint.show { display: block; }
+  .hint-error { color: var(--red); }
+  .hint-ok { color: var(--green); }
+
+  .field-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  /* Password strength */
+  .pw-strength { margin-top: 6px; display: none; }
+  .pw-strength.show { display: block; }
+  .pw-bars { display: flex; gap: 4px; margin-bottom: 4px; }
+  .pw-bar { height: 3px; flex: 1; border-radius: 2px; background: var(--bg3); transition: background .2s; }
+  .pw-label { font-size: 11px; color: var(--text3); }
+
+  /* Checkbox */
+  .check-row {
+    display: flex; align-items: flex-start; gap: 10px;
+    margin-bottom: 20px;
+  }
+  .check-row input[type="checkbox"] {
+    width: 16px; height: 16px; accent-color: var(--teal);
+    flex-shrink: 0; margin-top: 2px; cursor: pointer;
+  }
+  .check-label { font-size: 13px; color: var(--text2); line-height: 1.5; cursor: pointer; }
+  .check-label a { color: var(--teal); text-decoration: none; }
+  .check-label a:hover { text-decoration: underline; }
+
+  /* Forgot link */
+  .forgot-row {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  .forgot-link {
+    font-size: 12.5px; color: var(--text3); text-decoration: none;
+    cursor: pointer; transition: color .15s;
+  }
+  .forgot-link:hover { color: var(--teal); }
+
+  /* Buttons */
+  .btn-full {
+    width: 100%; padding: 12px; border-radius: var(--r-sm);
+    font-size: 15px; font-weight: 600; font-family: 'DM Sans', sans-serif;
+    cursor: pointer; border: none; transition: opacity .15s, transform .1s;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .btn-full:hover { opacity: .9; }
+  .btn-full:active { transform: scale(.99); }
+  .btn-primary-full { background: var(--teal); color: #080C12; }
+  .btn-outline-full {
+    background: transparent; color: var(--text2);
+    border: 1px solid var(--border2) !important;
+    font-weight: 400;
+  }
+  .btn-outline-full:hover { border-color: rgba(255,255,255,.25) !important; color: var(--text); }
+
+  /* Divider */
+  .divider {
+    display: flex; align-items: center; gap: 12px;
+    margin: 18px 0; font-size: 12px; color: var(--text3);
+  }
+  .divider::before, .divider::after {
+    content: ''; flex: 1; height: 1px; background: var(--border);
+  }
+
+  /* Social buttons */
+  .social-btn {
+    width: 100%; padding: 10px; border-radius: var(--r-sm);
+    background: var(--bg3); border: 1px solid var(--border2);
+    font-size: 14px; color: var(--text2); font-family: 'DM Sans', sans-serif;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    gap: 10px; transition: border-color .15s, color .15s; margin-bottom: 10px;
+  }
+  .social-btn:hover { border-color: rgba(255,255,255,.2); color: var(--text); }
+
+  /* Loading spinner */
+  .spinner {
+    width: 16px; height: 16px; border: 2px solid rgba(8,12,18,0.3);
+    border-top-color: #080C12; border-radius: 50%;
+    animation: spin .6s linear infinite; display: none;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Alert banner */
+  .alert {
+    border-radius: var(--r-sm); padding: 11px 14px;
+    font-size: 13px; line-height: 1.5; margin-bottom: 18px; display: none;
+  }
+  .alert.show { display: block; }
+  .alert-error { background: rgba(224,82,82,0.1); border: 1px solid rgba(224,82,82,0.25); color: #F08080; }
+  .alert-success { background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.25); color: #86EFAC; }
+
+  /* Back link */
+  .back-link {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 13px; color: var(--text3); cursor: pointer;
+    margin-bottom: 24px; width: fit-content;
+    transition: color .15s;
+  }
+  .back-link:hover { color: var(--teal); }
+
+  /* Success state */
+  .success-icon {
+    width: 56px; height: 56px; border-radius: 50%;
+    background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.3);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 20px;
+  }
+
+  @media (max-width: 768px) {
+    body { grid-template-columns: 1fr; }
+    .left { display: none; }
+    .right { padding: 32px 24px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- LEFT PANEL -->
+<div class="left">
+  <div class="left-grid"></div>
+  <div class="left-glow"></div>
+
+  <a href="index.html" class="left-logo">
+    <div class="logo-mark">PF</div>
+    ProFinanceCast
+  </a>
+
+  <div class="left-content">
+    <div class="left-eyebrow">Free forever plan</div>
+    <h1 class="left-heading">Your financial future starts here</h1>
+    <p class="left-sub">Join thousands of people who stopped guessing and started knowing exactly where their money is going — and where it's heading.</p>
+    <div class="feature-list">
+      <div class="feature-item">
+        <div class="feature-icon">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 10L5.5 6l3 2L12 3" stroke="#00C896" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        12-month AI-powered net worth forecast
+      </div>
+      <div class="feature-item">
+        <div class="feature-icon">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5" stroke="#00C896" stroke-width="1.4"/><path d="M7 4.5v3l1.5 1" stroke="#00C896" stroke-width="1.4" stroke-linecap="round"/></svg>
+        </div>
+        Debt payoff timeline with strategy comparison
+      </div>
+      <div class="feature-item">
+        <div class="feature-icon">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7l2.5 2.5L11 4" stroke="#00C896" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        Sage AI — your personal financial advisor
+      </div>
+      <div class="feature-item">
+        <div class="feature-icon">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="2" y="4" width="10" height="7" rx="1.5" stroke="#00C896" stroke-width="1.4"/><path d="M5 4V3a2 2 0 014 0v1" stroke="#00C896" stroke-width="1.4" stroke-linecap="round"/></svg>
+        </div>
+        AES-256 encrypted · never sold · always yours
+      </div>
+    </div>
+  </div>
+
+  <div class="left-footer">
+    By signing up you agree to our <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>.
+    Your data is encrypted and never shared.
+  </div>
+</div>
+
+<!-- RIGHT PANEL -->
+<div class="right">
+  <div class="auth-box">
+
+    <!-- ── LOGIN VIEW ── -->
+    <div class="view active" id="view-login">
+      <div class="auth-heading">Welcome back</div>
+      <div class="auth-sub">No account yet? <a onclick="showView('signup')">Create one free →</a></div>
+
+      <div class="alert alert-error" id="login-error">Invalid email or password. Please try again.</div>
+
+      <!-- Google -->
+      <button class="social-btn" onclick="handleGoogle()">
+        <svg width="17" height="17" viewBox="0 0 18 18" fill="none">
+          <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 01-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.616z" fill="#4285F4"/>
+          <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 009 18z" fill="#34A853"/>
+          <path d="M3.964 10.71A5.41 5.41 0 013.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 000 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
+          <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
+        </svg>
+        Continue with Google
+      </button>
+
+      <div class="divider">or sign in with email</div>
+
+      <div class="field">
+        <label for="login-email">Email address</label>
+        <input type="email" id="login-email" placeholder="you@example.com" autocomplete="email">
+      </div>
+
+      <div class="field">
+        <label for="login-pw">Password</label>
+        <div class="field-row">
+          <input type="password" id="login-pw" placeholder="Your password" autocomplete="current-password">
+          <div class="field-icon" onclick="togglePw('login-pw', this)">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="2.5" stroke="currentColor" stroke-width="1.4"/><path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z" stroke="currentColor" stroke-width="1.4"/></svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="forgot-row">
+        <div></div>
+        <span class="forgot-link" onclick="showView('forgot')">Forgot password?</span>
+      </div>
+
+      <button class="btn-full btn-primary-full" id="login-btn" onclick="handleLogin()">
+        <span>Sign in</span>
+        <div class="spinner" id="login-spinner"></div>
+      </button>
+    </div>
+
+    <!-- ── SIGNUP VIEW ── -->
+    <div class="view" id="view-signup">
+      <div class="auth-heading">Create your account</div>
+      <div class="auth-sub">Already have one? <a onclick="showView('login')">Sign in →</a></div>
+
+      <div class="alert alert-error" id="signup-error"></div>
+
+      <button class="social-btn" onclick="handleGoogle()">
+        <svg width="17" height="17" viewBox="0 0 18 18" fill="none">
+          <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 01-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.616z" fill="#4285F4"/>
+          <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 009 18z" fill="#34A853"/>
+          <path d="M3.964 10.71A5.41 5.41 0 013.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 000 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
+          <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
+        </svg>
+        Continue with Google
+      </button>
+
+      <div class="divider">or sign up with email</div>
+
+      <div class="field-row-2">
+        <div class="field">
+          <label>First name</label>
+          <input type="text" id="signup-fname" placeholder="Alex" autocomplete="given-name">
+        </div>
+        <div class="field">
+          <label>Last name</label>
+          <input type="text" id="signup-lname" placeholder="Smith" autocomplete="family-name">
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Email address</label>
+        <div class="field-row">
+          <input type="email" id="signup-email" placeholder="you@example.com" autocomplete="email" oninput="validateEmail(this)">
+          <div class="field-icon" id="email-icon" style="pointer-events:none;"></div>
+        </div>
+        <div class="field-hint" id="email-hint"></div>
+      </div>
+
+      <div class="field">
+        <label>Password</label>
+        <div class="field-row">
+          <input type="password" id="signup-pw" placeholder="At least 8 characters" oninput="checkPwStrength(this.value)" autocomplete="new-password">
+          <div class="field-icon" onclick="togglePw('signup-pw', this)">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="2.5" stroke="currentColor" stroke-width="1.4"/><path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z" stroke="currentColor" stroke-width="1.4"/></svg>
+          </div>
+        </div>
+        <div class="pw-strength" id="pw-strength">
+          <div class="pw-bars">
+            <div class="pw-bar" id="pb1"></div>
+            <div class="pw-bar" id="pb2"></div>
+            <div class="pw-bar" id="pb3"></div>
+            <div class="pw-bar" id="pb4"></div>
+          </div>
+          <div class="pw-label" id="pw-label">Weak</div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Confirm password</label>
+        <input type="password" id="signup-pw2" placeholder="Repeat password" autocomplete="new-password">
+      </div>
+
+      <div class="check-row">
+        <input type="checkbox" id="agree-terms">
+        <label class="check-label" for="agree-terms">
+          I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>. My data is encrypted and never shared.
+        </label>
+      </div>
+
+      <button class="btn-full btn-primary-full" id="signup-btn" onclick="handleSignup()">
+        <span>Create free account</span>
+        <div class="spinner" id="signup-spinner"></div>
+      </button>
+
+      <p style="font-size:12px;color:var(--text3);text-align:center;margin-top:14px;">
+        No credit card required · Free forever plan · Cancel anytime
+      </p>
+    </div>
+
+    <!-- ── FORGOT VIEW ── -->
+    <div class="view" id="view-forgot">
+      <div class="back-link" onclick="showView('login')">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 2L4 7l5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Back to sign in
+      </div>
+      <div class="auth-heading">Reset password</div>
+      <div class="auth-sub">Enter your email and we'll send you a reset link.</div>
+
+      <div class="alert alert-success" id="forgot-success">
+        Reset link sent! Check your inbox — it may take a minute. Check your spam folder if you don't see it.
+      </div>
+      <div class="alert alert-error" id="forgot-error">No account found with that email address.</div>
+
+      <div class="field">
+        <label>Email address</label>
+        <input type="email" id="forgot-email" placeholder="you@example.com">
+      </div>
+
+      <button class="btn-full btn-primary-full" id="forgot-btn" onclick="handleForgot()">
+        <span>Send reset link</span>
+        <div class="spinner" id="forgot-spinner"></div>
+      </button>
+    </div>
+
+    <!-- ── VERIFY VIEW ── -->
+    <div class="view" id="view-verify">
+      <div class="success-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M5 12l4.5 4.5L19 7" stroke="#22C55E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="auth-heading">Check your inbox</div>
+      <div class="auth-sub" style="margin-bottom:24px;">
+        We sent a confirmation link to <strong id="verify-email-display" style="color:var(--text);">your email</strong>.
+        Click the link to activate your account and start your free forecast.
+      </div>
+      <div style="background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);padding:16px 18px;margin-bottom:24px;">
+        <div style="font-size:13px;color:var(--text2);line-height:1.6;">
+          Didn't receive it?
+          <ul style="margin-top:8px;padding-left:16px;display:flex;flex-direction:column;gap:4px;">
+            <li>Check your spam / junk folder</li>
+            <li>Make sure you entered the right email</li>
+            <li>Allow 2–3 minutes for delivery</li>
+          </ul>
+        </div>
+      </div>
+      <button class="btn-full btn-outline-full" onclick="showView('signup')" style="border:1px solid var(--border2)!important;">← Try a different email</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     SUPABASE + AUTH LOGIC
+     ═══════════════════════════════════════ -->
+<!--
+  SETUP INSTRUCTIONS (do this once):
+  1. Go to supabase.com → create free project → Settings → API
+  2. Copy your "Project URL" and "anon public" key
+  3. Replace the two values below (SUPABASE_URL and SUPABASE_ANON_KEY)
+  4. In Supabase → Authentication → Providers → enable Google (optional)
+  5. In Supabase → Authentication → URL Configuration → add https://profinancecast.com
+-->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+// ── CONFIG (replace with your Supabase values) ──
+const SUPABASE_URL      = 'https://YOUR_PROJECT_ID.supabase.co';   // ← replace
+const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';                // ← replace
+
+let supabase = null;
+try {
+  supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+} catch(e) {
+  console.warn('Supabase not configured yet — running in demo mode');
+}
+
+// ── VIEW SWITCHING ──
+function showView(name) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-' + name).classList.add('active');
+  hideAllAlerts();
+}
+
+function hideAllAlerts() {
+  document.querySelectorAll('.alert').forEach(a => a.classList.remove('show'));
+}
+
+function showAlert(id) {
+  hideAllAlerts();
+  document.getElementById(id).classList.add('show');
+}
+
+// ── PASSWORD TOGGLE ──
+function togglePw(inputId, icon) {
+  const input = document.getElementById(inputId);
+  const isText = input.type === 'text';
+  input.type = isText ? 'password' : 'text';
+  icon.innerHTML = isText
+    ? '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="2.5" stroke="currentColor" stroke-width="1.4"/><path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z" stroke="currentColor" stroke-width="1.4"/></svg>'
+    : '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 2l12 12M6.5 6.6A2.5 2.5 0 0110 10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M4 4.5C2.3 5.7 1 8 1 8s2.5 5 7 5c1.5 0 2.8-.5 3.9-1.2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M12.5 11.5C14 10.3 15 8 15 8s-2.5-5-7-5c-.8 0-1.6.15-2.3.4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>';
+}
+
+// ── EMAIL VALIDATION ──
+function validateEmail(input) {
+  const valid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input.value);
+  const icon  = document.getElementById('email-icon');
+  const hint  = document.getElementById('email-hint');
+  if (input.value.length < 4) { icon.innerHTML = ''; hint.classList.remove('show'); return; }
+  if (valid) {
+    input.classList.remove('error'); input.classList.add('success');
+    icon.innerHTML = '<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7l3.5 3.5L12 3" stroke="#22C55E" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    hint.textContent = ''; hint.classList.remove('show');
+  } else {
+    input.classList.remove('success'); input.classList.add('error');
+    icon.innerHTML = '<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 2l10 10M12 2L2 12" stroke="#E05252" stroke-width="1.6" stroke-linecap="round"/></svg>';
+    hint.textContent = 'Please enter a valid email address';
+    hint.className = 'field-hint hint-error show';
+  }
+}
+
+// ── PASSWORD STRENGTH ──
+function checkPwStrength(pw) {
+  const el = document.getElementById('pw-strength');
+  el.classList.add('show');
+  let score = 0;
+  if (pw.length >= 8)   score++;
+  if (/[A-Z]/.test(pw)) score++;
+  if (/[0-9]/.test(pw)) score++;
+  if (/[^A-Za-z0-9]/.test(pw)) score++;
+  const colors = ['#E05252','#F5A623','#3B82F6','#00C896'];
+  const labels = ['Weak','Fair','Good','Strong'];
+  for (let i = 1; i <= 4; i++) {
+    document.getElementById('pb' + i).style.background = i <= score ? colors[score-1] : 'rgba(255,255,255,0.07)';
+  }
+  document.getElementById('pw-label').textContent = score > 0 ? labels[score-1] : '';
+  document.getElementById('pw-label').style.color = score > 0 ? colors[score-1] : 'var(--text3)';
+}
+
+// ── LOADING STATE ──
+function setLoading(btnId, spinnerId, loading) {
+  const btn = document.getElementById(btnId);
+  const sp  = document.getElementById(spinnerId);
+  btn.disabled = loading;
+  btn.querySelector('span').style.opacity = loading ? '0' : '1';
+  sp.style.display = loading ? 'block' : 'none';
+}
+
+// ── LOGIN ──
+async function handleLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const pw    = document.getElementById('login-pw').value;
+
+  if (!email || !pw) { showAlert('login-error'); document.getElementById('login-error').textContent = 'Please fill in all fields.'; return; }
+
+  setLoading('login-btn', 'login-spinner', true);
+  hideAllAlerts();
+
+  if (!supabase) {
+    // Demo mode — skip Supabase, go straight to dashboard
+    setTimeout(() => { window.location.href = 'dashboard.html'; }, 1000);
+    return;
+  }
+
+  const { error } = await supabase.auth.signInWithPassword({ email, password: pw });
+  setLoading('login-btn', 'login-spinner', false);
+
+  if (error) {
+    showAlert('login-error');
+    document.getElementById('login-error').textContent = error.message;
+  } else {
+    window.location.href = 'dashboard.html';
+  }
+}
+
+// ── SIGNUP ──
+async function handleSignup() {
+  const fname = document.getElementById('signup-fname').value.trim();
+  const lname = document.getElementById('signup-lname').value.trim();
+  const email = document.getElementById('signup-email').value.trim();
+  const pw    = document.getElementById('signup-pw').value;
+  const pw2   = document.getElementById('signup-pw2').value;
+  const terms = document.getElementById('agree-terms').checked;
+
+  const errEl = document.getElementById('signup-error');
+
+  if (!fname || !lname || !email || !pw) {
+    errEl.textContent = 'Please fill in all fields.'; showAlert('signup-error'); return;
+  }
+  if (pw !== pw2) {
+    errEl.textContent = 'Passwords do not match.'; showAlert('signup-error'); return;
+  }
+  if (pw.length < 8) {
+    errEl.textContent = 'Password must be at least 8 characters.'; showAlert('signup-error'); return;
+  }
+  if (!terms) {
+    errEl.textContent = 'Please accept the Terms of Service to continue.'; showAlert('signup-error'); return;
+  }
+
+  setLoading('signup-btn', 'signup-spinner', true);
+  hideAllAlerts();
+
+  if (!supabase) {
+    // Demo mode
+    setTimeout(() => {
+      document.getElementById('verify-email-display').textContent = email;
+      showView('verify');
+      setLoading('signup-btn', 'signup-spinner', false);
+    }, 1200);
+    return;
+  }
+
+  const { error } = await supabase.auth.signUp({
+    email, password: pw,
+    options: { data: { full_name: fname + ' ' + lname } }
+  });
+
+  setLoading('signup-btn', 'signup-spinner', false);
+
+  if (error) {
+    errEl.textContent = error.message; showAlert('signup-error');
+  } else {
+    document.getElementById('verify-email-display').textContent = email;
+    showView('verify');
+  }
+}
+
+// ── FORGOT PASSWORD ──
+async function handleForgot() {
+  const email = document.getElementById('forgot-email').value.trim();
+  if (!email) return;
+
+  setLoading('forgot-btn', 'forgot-spinner', true);
+  hideAllAlerts();
+
+  if (!supabase) {
+    setTimeout(() => { showAlert('forgot-success'); setLoading('forgot-btn', 'forgot-spinner', false); }, 1000);
+    return;
+  }
+
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: 'https://profinancecast.com/reset-password'
+  });
+
+  setLoading('forgot-btn', 'forgot-spinner', false);
+
+  if (error) {
+    showAlert('forgot-error');
+  } else {
+    showAlert('forgot-success');
+    document.getElementById('forgot-btn').style.display = 'none';
+  }
+}
+
+// ── GOOGLE OAUTH ──
+async function handleGoogle() {
+  if (!supabase) { alert('Connect Supabase first — see code comments for instructions.'); return; }
+  await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: 'https://profinancecast.com/dashboard.html' }
+  });
+}
+
+// ── CHECK SESSION (if already logged in, redirect) ──
+async function checkSession() {
+  if (!supabase) return;
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session) window.location.href = 'dashboard.html';
+}
+checkSession();
+</script>
+</body>
+</html>
