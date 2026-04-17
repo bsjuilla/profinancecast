@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <rect width="32" height="32" rx="7" fill="#00C896"/>
+  <text
+    x="16"
+    y="22"
+    text-anchor="middle"
+    font-family="Arial Black, sans-serif"
+    font-size="14"
+    font-weight="900"
+    fill="#080C12"
+    letter-spacing="-0.5"
+  >PF</text>
+</svg>
