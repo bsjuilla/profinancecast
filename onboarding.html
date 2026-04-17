@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Get started — ProFinanceCast</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#080C12;--bg2:#0D1320;--bg3:#111827;--card:#0F1923;
+    --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);
+    --teal:#00C896;--teal-dim:rgba(0,200,150,0.1);--teal-glow:rgba(0,200,150,0.2);
+    --text:#F0F4F8;--text2:#8A9BB0;--text3:#4A5A6E;
+    --amber:#F5A623;--red:#E05252;--blue:#3B82F6;--green:#22C55E;
+    --r:12px;--r-sm:8px;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;overflow:hidden;}
+  body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);display:flex;flex-direction:column;}
+
+  /* ── BG GRID ── */
+  .bg-grid{position:fixed;inset:0;pointer-events:none;opacity:.15;background-image:linear-gradient(rgba(0,200,150,.15) 1px,transparent 1px),linear-gradient(90deg,rgba(0,200,150,.15) 1px,transparent 1px);background-size:56px 56px;mask-image:radial-gradient(ellipse 80% 60% at 50% 30%,black 20%,transparent 80%);}
+  .bg-glow{position:fixed;top:-100px;left:50%;transform:translateX(-50%);width:700px;height:500px;background:radial-gradient(ellipse,rgba(0,200,150,0.07) 0%,transparent 65%);pointer-events:none;}
+
+  /* ── TOP NAV ── */
+  .topnav{height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 40px;flex-shrink:0;border-bottom:1px solid var(--border);position:relative;z-index:10;}
+  .nav-logo{display:flex;align-items:center;gap:9px;font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:var(--text);text-decoration:none;}
+  .logo-mark{width:28px;height:28px;background:var(--teal);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#080C12;}
+  .nav-step-label{font-size:13px;color:var(--text3);}
+  .nav-skip{font-size:13px;color:var(--text3);cursor:pointer;background:none;border:none;font-family:'DM Sans',sans-serif;padding:6px 12px;border-radius:var(--r-sm);transition:color .15s;}
+  .nav-skip:hover{color:var(--text2);}
+
+  /* ── PROGRESS BAR ── */
+  .progress-wrap{height:3px;background:var(--bg3);flex-shrink:0;}
+  .progress-bar{height:100%;background:var(--teal);transition:width .5s cubic-bezier(.4,0,.2,1);}
+
+  /* ── STEP DOTS ── */
+  .step-dots{display:flex;align-items:center;justify-content:center;gap:8px;padding:18px 0 0;flex-shrink:0;position:relative;z-index:1;}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--bg3);border:1px solid var(--border2);transition:all .3s ease;cursor:default;}
+  .dot.done{background:var(--teal);border-color:var(--teal);}
+  .dot.active{background:var(--teal);border-color:var(--teal);box-shadow:0 0 0 3px rgba(0,200,150,0.25);transform:scale(1.3);}
+
+  /* ── MAIN AREA ── */
+  .wizard-body{flex:1;overflow-y:auto;display:flex;align-items:flex-start;justify-content:center;padding:32px 20px 40px;position:relative;z-index:1;}
+  .wizard-inner{width:100%;max-width:560px;}
+
+  /* ── STEP ── */
+  .step-panel{display:none;animation:fadeInUp .35s ease both;}
+  .step-panel.active{display:block;}
+  @keyframes fadeInUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+  .step-eyebrow{font-size:12px;font-weight:600;color:var(--teal);letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px;}
+  .step-heading{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;line-height:1.2;letter-spacing:-0.2px;margin-bottom:8px;}
+  .step-sub{font-size:15px;color:var(--text2);font-weight:300;line-height:1.65;margin-bottom:28px;}
+
+  /* ── INPUT FIELDS ── */
+  .field{margin-bottom:16px;}
+  .field-label{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
+  .field-label label{font-size:13px;color:var(--text2);font-weight:500;}
+  .field-label .hint{font-size:11.5px;color:var(--text3);}
+  .field-wrap{position:relative;}
+  .field-prefix{position:absolute;left:13px;top:50%;transform:translateY(-50%);font-size:15px;color:var(--text3);pointer-events:none;font-weight:500;}
+  .field-suffix{position:absolute;right:13px;top:50%;transform:translateY(-50%);font-size:12px;color:var(--text3);pointer-events:none;}
+  input[type=text],input[type=number],input[type=email],select{
+    width:100%;background:var(--bg3);border:1px solid var(--border2);
+    border-radius:var(--r-sm);padding:12px 14px;font-size:15px;
+    color:var(--text);font-family:'DM Sans',sans-serif;outline:none;
+    transition:border-color .15s,box-shadow .15s;
+    -moz-appearance:textfield;appearance:textfield;
+  }
+  input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;}
+  input[type=text]:focus,input[type=number]:focus,input[type=email]:focus,select:focus{
+    border-color:rgba(0,200,150,.5);box-shadow:0 0 0 3px rgba(0,200,150,0.08);
+  }
+  input::placeholder{color:var(--text3);}
+  select{cursor:pointer;}
+  select option{background:var(--bg3);}
+  .has-prefix input{padding-left:28px;}
+  .has-suffix input{padding-right:44px;}
+  .field-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .field-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+  .field-row-note{font-size:12px;color:var(--text3);margin-top:6px;line-height:1.5;}
+
+  /* ── LIVE PREVIEW ── */
+  .live-preview{background:var(--card);border:1px solid var(--border2);border-radius:var(--r);padding:16px 20px;margin-top:6px;margin-bottom:20px;}
+  .lp-label{font-size:11px;color:var(--text3);font-weight:600;letter-spacing:.07em;text-transform:uppercase;margin-bottom:10px;}
+  .lp-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);}
+  .lp-row:last-child{border-bottom:none;}
+  .lp-key{font-size:13px;color:var(--text2);}
+  .lp-val{font-size:13px;font-weight:500;color:var(--text);}
+  .lp-val.good{color:var(--teal);}
+  .lp-val.warn{color:var(--amber);}
+  .lp-val.bad{color:var(--red);}
+
+  /* ── GOAL CARDS ── */
+  .goal-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;}
+  .goal-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px 16px;cursor:pointer;transition:all .18s;display:flex;align-items:flex-start;gap:10px;}
+  .goal-card:hover{border-color:rgba(0,200,150,0.3);}
+  .goal-card.selected{border-color:var(--teal);background:var(--teal-dim);}
+  .goal-card-icon{width:34px;height:34px;border-radius:8px;background:var(--bg2);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .18s;}
+  .goal-card.selected .goal-card-icon{background:rgba(0,200,150,0.15);}
+  .goal-card-title{font-size:13.5px;font-weight:600;margin-bottom:2px;font-family:'Syne',sans-serif;}
+  .goal-card-desc{font-size:12px;color:var(--text2);line-height:1.4;}
+  .goal-check{width:16px;height:16px;border-radius:50%;border:1.5px solid var(--border2);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-left:auto;transition:all .18s;}
+  .goal-card.selected .goal-check{background:var(--teal);border-color:var(--teal);}
+
+  /* ── STRESS SLIDER ── */
+  .stress-area{margin-bottom:20px;}
+  .stress-labels{display:flex;justify-content:space-between;font-size:12px;color:var(--text3);margin-bottom:6px;}
+  input[type=range]{width:100%;appearance:none;height:6px;border-radius:3px;background:var(--bg3);outline:none;cursor:pointer;}
+  input[type=range]::-webkit-slider-thumb{appearance:none;width:20px;height:20px;border-radius:50%;background:var(--teal);border:3px solid var(--bg2);cursor:pointer;box-shadow:0 0 0 3px rgba(0,200,150,0.2);transition:transform .15s;}
+  input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.15);}
+  .stress-output{text-align:center;margin-top:10px;font-size:22px;}
+
+  /* ── PRIVACY TOGGLE ROW ── */
+  .privacy-row{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r-sm);margin-bottom:10px;}
+  .privacy-row-left{display:flex;align-items:center;gap:12px;}
+  .privacy-icon{width:32px;height:32px;border-radius:8px;background:var(--teal-dim);border:1px solid rgba(0,200,150,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .privacy-label{font-size:13.5px;font-weight:500;}
+  .privacy-desc{font-size:12px;color:var(--text3);margin-top:1px;}
+  .toggle{width:40px;height:22px;border-radius:11px;background:var(--teal);border:none;cursor:pointer;position:relative;transition:background .2s;flex-shrink:0;}
+  .toggle-thumb{width:16px;height:16px;background:#fff;border-radius:50%;position:absolute;top:3px;left:21px;transition:left .2s;}
+  .toggle.off{background:var(--bg2);border:1px solid var(--border2);}
+  .toggle.off .toggle-thumb{left:3px;}
+
+  /* ── FORECAST PREVIEW ── */
+  .forecast-preview{background:var(--card);border:1px solid var(--border2);border-radius:var(--r);overflow:hidden;margin-top:8px;}
+  .fp-bar{background:var(--bg3);padding:10px 14px;display:flex;align-items:center;gap:7px;border-bottom:1px solid var(--border);}
+  .fp-dot{width:9px;height:9px;border-radius:50%;}
+  .fp-url{font-size:11px;color:var(--text3);flex:1;text-align:center;}
+  .fp-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border-bottom:1px solid var(--border);}
+  .fp-metric{padding:14px 16px;border-right:1px solid var(--border);text-align:center;}
+  .fp-metric:last-child{border-right:none;}
+  .fp-metric-val{font-family:'Syne',sans-serif;font-size:18px;font-weight:700;margin-bottom:2px;}
+  .fp-metric-label{font-size:10px;color:var(--text3);}
+  .fp-chart-area{padding:16px;height:80px;position:relative;overflow:hidden;}
+
+  /* ── BOTTOM NAV ── */
+  .wizard-footer{height:76px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 40px;flex-shrink:0;position:relative;z-index:1;}
+  .btn-back{padding:10px 20px;background:transparent;border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text2);font-family:'DM Sans',sans-serif;cursor:pointer;display:flex;align-items:center;gap:7px;transition:all .15s;}
+  .btn-back:hover{border-color:rgba(255,255,255,.2);color:var(--text);}
+  .btn-back:disabled{opacity:.3;cursor:default;}
+  .btn-next{padding:11px 28px;background:var(--teal);border:none;border-radius:var(--r-sm);font-size:15px;font-weight:600;color:#080C12;font-family:'DM Sans',sans-serif;cursor:pointer;display:flex;align-items:center;gap:8px;transition:opacity .15s,transform .1s;}
+  .btn-next:hover{opacity:.88;}
+  .btn-next:active{transform:scale(.98);}
+  .btn-next:disabled{opacity:.35;cursor:default;}
+  .footer-hint{font-size:12px;color:var(--text3);}
+
+  /* ── COMPLETION SCREEN ── */
+  .complete-wrap{text-align:center;padding:20px 0;}
+  .complete-icon{width:72px;height:72px;border-radius:50%;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);display:flex;align-items:center;justify-content:center;margin:0 auto 20px;}
+  .complete-heading{font-family:'Syne',sans-serif;font-size:30px;font-weight:800;margin-bottom:10px;letter-spacing:-0.3px;}
+  .complete-sub{font-size:15px;color:var(--text2);line-height:1.65;margin-bottom:32px;max-width:440px;margin-left:auto;margin-right:auto;}
+  .complete-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:32px;}
+  .cm-card{background:var(--card);border:1px solid var(--border2);border-radius:var(--r);padding:16px;}
+  .cm-val{font-family:'Syne',sans-serif;font-size:22px;font-weight:700;margin-bottom:4px;}
+  .cm-label{font-size:12px;color:var(--text3);}
+  .btn-go{display:inline-flex;align-items:center;gap:9px;padding:14px 36px;background:var(--teal);color:#080C12;border:none;border-radius:var(--r-sm);font-size:16px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;transition:opacity .15s,transform .1s;text-decoration:none;}
+  .btn-go:hover{opacity:.88;}
+  .btn-go:active{transform:scale(.98);}
+  .confetti-wrap{position:fixed;inset:0;pointer-events:none;z-index:50;}
+
+  @media(max-width:600px){
+    .topnav{padding:0 20px;}
+    .wizard-footer{padding:0 20px;}
+    .goal-grid{grid-template-columns:1fr;}
+    .field-2,.field-3{grid-template-columns:1fr;}
+    .fp-metrics{grid-template-columns:1fr 1fr;}
+    .complete-metrics{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+
+<div class="bg-grid"></div>
+<div class="bg-glow"></div>
+
+<!-- TOP NAV -->
+<nav class="topnav">
+  <a href="index.html" class="nav-logo"><div class="logo-mark">PF</div>ProFinanceCast</a>
+  <span class="nav-step-label" id="step-label">Step 1 of 6</span>
+  <button class="nav-skip" onclick="skipOnboarding()">Skip setup →</button>
+</nav>
+
+<!-- PROGRESS -->
+<div class="progress-wrap">
+  <div class="progress-bar" id="progress-bar" style="width:16.6%"></div>
+</div>
+
+<!-- STEP DOTS -->
+<div class="step-dots" id="step-dots">
+  <div class="dot active" data-step="0"></div>
+  <div class="dot" data-step="1"></div>
+  <div class="dot" data-step="2"></div>
+  <div class="dot" data-step="3"></div>
+  <div class="dot" data-step="4"></div>
+  <div class="dot" data-step="5"></div>
+</div>
+
+<!-- WIZARD BODY -->
+<div class="wizard-body">
+<div class="wizard-inner">
+
+  <!-- ═══════════ STEP 0 — WELCOME ═══════════ -->
+  <div class="step-panel active" id="step-0">
+    <div class="step-eyebrow">Welcome to ProFinanceCast</div>
+    <h1 class="step-heading">Let's build your<br>financial forecast</h1>
+    <p class="step-sub">This takes about 3 minutes. We'll ask you a few simple questions and generate your personalised 12-month financial forecast. Your data is encrypted and never shared.</p>
+
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:24px;">
+      <div style="display:flex;align-items:center;gap:12px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px 14px;">
+        <div style="width:32px;height:32px;border-radius:8px;background:var(--teal-dim);border:1px solid rgba(0,200,150,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M2 11L5.5 6.5l3 2.5L12 3.5" stroke="#00C896" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div><div style="font-size:13.5px;font-weight:500;">12-month net worth forecast</div><div style="font-size:12px;color:var(--text3);">See exactly where you're heading financially</div></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px 14px;">
+        <div style="width:32px;height:32px;border-radius:8px;background:var(--teal-dim);border:1px solid rgba(0,200,150,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M7.5 1l1.8 4H14l-3.5 3 1.5 4.5L7.5 10l-4.5 2.5L4.5 8 1 5h4.7z" stroke="#00C896" stroke-width="1.3" stroke-linejoin="round"/></svg>
+        </div>
+        <div><div style="font-size:13.5px;font-weight:500;">Financial health score</div><div style="font-size:12px;color:var(--text3);">A single score that tracks your progress daily</div></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px 14px;">
+        <div style="width:32px;height:32px;border-radius:8px;background:var(--teal-dim);border:1px solid rgba(0,200,150,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M3 4h9M3 7.5h6M3 11h4" stroke="#00C896" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </div>
+        <div><div style="font-size:13.5px;font-weight:500;">Ask Sage anything</div><div style="font-size:12px;color:var(--text3);">AI advisor that knows your exact numbers</div></div>
+      </div>
+    </div>
+
+    <div style="background:rgba(0,200,150,0.06);border:1px solid rgba(0,200,150,0.15);border-radius:var(--r-sm);padding:12px 14px;display:flex;align-items:center;gap:10px;">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2l3 2v4c0 2.5-3 5-3 5S5 10.5 5 8V4z" stroke="#00C896" stroke-width="1.3"/></svg>
+      <span style="font-size:13px;color:var(--text2);">All your data is <strong style="color:var(--text);">AES-256 encrypted</strong> and <strong style="color:var(--text);">never sold or shared</strong> — ever.</span>
+    </div>
+  </div>
+
+  <!-- ═══════════ STEP 1 — PERSONAL ═══════════ -->
+  <div class="step-panel" id="step-1">
+    <div class="step-eyebrow">About you</div>
+    <h2 class="step-heading">First, tell us<br>about yourself</h2>
+    <p class="step-sub">This helps Sage give you advice that's relevant to your life situation.</p>
+
+    <div class="field-2">
+      <div class="field">
+        <div class="field-label"><label>First name</label></div>
+        <input type="text" id="f-fname" placeholder="Alex" oninput="syncName()">
+      </div>
+      <div class="field">
+        <div class="field-label"><label>Last name</label></div>
+        <input type="text" id="f-lname" placeholder="Smith">
+      </div>
+    </div>
+
+    <div class="field">
+      <div class="field-label"><label>Age range</label></div>
+      <select id="f-age">
+        <option value="">Select your age range</option>
+        <option value="18-24">18 – 24</option>
+        <option value="25-34">25 – 34</option>
+        <option value="35-44">35 – 44</option>
+        <option value="45-54">45 – 54</option>
+        <option value="55+">55 or older</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <div class="field-label"><label>Employment status</label></div>
+      <select id="f-employment">
+        <option value="">Select your employment status</option>
+        <option value="employed">Employed full-time</option>
+        <option value="part-time">Employed part-time</option>
+        <option value="self-employed">Self-employed / freelance</option>
+        <option value="student">Student</option>
+        <option value="unemployed">Currently looking for work</option>
+        <option value="retired">Retired</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <div class="field-label"><label>Currency</label></div>
+      <select id="f-currency" onchange="updateCurrency()">
+        <option value="USD" data-sym="$">US Dollar (USD)</option>
+        <option value="EUR" data-sym="€">Euro (EUR)</option>
+        <option value="GBP" data-sym="£">British Pound (GBP)</option>
+        <option value="MUR" data-sym="₨">Mauritian Rupee (MUR)</option>
+        <option value="AUD" data-sym="A$">Australian Dollar (AUD)</option>
+        <option value="CAD" data-sym="C$">Canadian Dollar (CAD)</option>
+        <option value="INR" data-sym="₹">Indian Rupee (INR)</option>
+        <option value="ZAR" data-sym="R">South African Rand (ZAR)</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- ═══════════ STEP 2 — INCOME & EXPENSES ═══════════ -->
+  <div class="step-panel" id="step-2">
+    <div class="step-eyebrow">Income & expenses</div>
+    <h2 class="step-heading">What comes in<br>and goes out?</h2>
+    <p class="step-sub">Use your monthly averages. Round numbers are fine — you can update these any time from your dashboard.</p>
+
+    <div class="field-2">
+      <div class="field">
+        <div class="field-label"><label>Monthly income (take-home)</label><span class="hint">After tax</span></div>
+        <div class="field-wrap has-prefix">
+          <span class="field-prefix" id="sym-income">$</span>
+          <input type="number" id="f-income" placeholder="3000" min="0" oninput="calcLive()">
+        </div>
+      </div>
+      <div class="field">
+        <div class="field-label"><label>Other income (optional)</label><span class="hint">Side income, rent, etc.</span></div>
+        <div class="field-wrap has-prefix">
+          <span class="field-prefix" id="sym-other">$</span>
+          <input type="number" id="f-other-income" placeholder="0" min="0" oninput="calcLive()">
+        </div>
+      </div>
+    </div>
+
+    <div class="field-2">
+      <div class="field">
+        <div class="field-label"><label>Housing (rent / mortgage)</label></div>
+        <div class="field-wrap has-prefix">
+          <span class="field-prefix" id="sym-housing">$</span>
+          <input type="number" id="f-housing" placeholder="1000" min="0" oninput="calcLive()">
+        </div>
+      </div>
+      <div class="field">
+        <div class="field-label"><label>Food & groceries</label></div>
+        <div class="field-wrap has-prefix">
+          <span class="field-prefix" id="sym-food">$</span>
+          <input type="number" id="f-food" placeholder="400" min="0" oninput="calcLive()">
+        </div>
+      </div>
+    </div>
+
+    <div class="field-2">
+      <div class="field">
+        <div class="field-label"><label>Transport</label></div>
+        <div class="field-wrap has-prefix">
+          <span class="field-prefix" id="sym-transport">$</span>
+          <input type="number" id="f-transport" placeholder="200" min="0" oninput="calcLive()">
+        </div>
+      </div>
+      <div class="field">
+        <div class="field-label"><label>Other monthly expenses</label></div>
+        <div class="field-wrap has-prefix">
+          <span class="field-prefix" id="sym-other-exp">$</span>
+          <input type="number" id="f-other-exp" placeholder="300" min="0" oninput="calcLive()">
+        </div>
+      </div>
+    </div>
+
+    <div class="live-preview" id="income-preview">
+      <div class="lp-label">Live calculation</div>
+      <div class="lp-row"><div class="lp-key">Total monthly income</div><div class="lp-val" id="lp-income">$0</div></div>
+      <div class="lp-row"><div class="lp-key">Total monthly expenses</div><div class="lp-val" id="lp-expenses">$0</div></div>
+      <div class="lp-row"><div class="lp-key">Monthly surplus</div><div class="lp-val good" id="lp-surplus">$0</div></div>
+      <div class="lp-row"><div class="lp-key">Savings rate</div><div class="lp-val" id="lp-rate">0%</div></div>
+    </div>
+  </div>
+
+  <!-- ═══════════ STEP 3 — SAVINGS & DEBT ═══════════ -->
+  <div class="step-panel" id="step-3">
+    <div class="step-eyebrow">Savings & debt</div>
+    <h2 class="step-heading">Your current<br>financial position</h2>
+    <p class="step-sub">This tells us where you're starting from today — the baseline for your forecast.</p>
+
+    <div class="field-2">
+      <div class="field">
+        <div class="field-label"><label>Current savings / cash</label></div>
+        <div class="field-wrap has-prefix">
+          <span class="field-prefix" id="sym-savings">$</span>
+          <input type="number" id="f-savings" placeholder="5000" min="0" oninput="calcDebt()">
+        </div>
+        <div class="field-row-note">Include all bank accounts and accessible cash</div>
+      </div>
+      <div class="field">
+        <div class="field-label"><label>Investments (optional)</label></div>
+        <div class="field-wrap has-prefix">
+          <span class="field-prefix" id="sym-invest">$</span>
+          <input type="number" id="f-investments" placeholder="0" min="0" oninput="calcDebt()">
+        </div>
+        <div class="field-row-note">Stocks, funds, crypto etc.</div>
+      </div>
+    </div>
+
+    <div class="field-2">
+      <div class="field">
+        <div class="field-label"><label>Total debt</label></div>
+        <div class="field-wrap has-prefix">
+          <span class="field-prefix" id="sym-debt">$</span>
+          <input type="number" id="f-debt" placeholder="0" min="0" oninput="calcDebt()">
+        </div>
+        <div class="field-row-note">Loans, credit cards, buy-now-pay-later</div>
+      </div>
+      <div class="field">
+        <div class="field-label"><label>Monthly debt payment</label></div>
+        <div class="field-wrap has-prefix">
+          <span class="field-prefix" id="sym-debtpay">$</span>
+          <input type="number" id="f-debtpay" placeholder="0" min="0" oninput="calcDebt()">
+        </div>
+        <div class="field-row-note">Combined minimum payments</div>
+      </div>
+    </div>
+
+    <div class="live-preview">
+      <div class="lp-label">Your net worth today</div>
+      <div class="lp-row"><div class="lp-key">Assets (savings + investments)</div><div class="lp-val" id="lp-assets">$0</div></div>
+      <div class="lp-row"><div class="lp-key">Total debt</div><div class="lp-val bad" id="lp-debt-val">$0</div></div>
+      <div class="lp-row"><div class="lp-key">Net worth</div><div class="lp-val" id="lp-networth">$0</div></div>
+      <div class="lp-row"><div class="lp-key">Months to debt-free</div><div class="lp-val" id="lp-debtfree">—</div></div>
+    </div>
+  </div>
+
+  <!-- ═══════════ STEP 4 — GOALS ═══════════ -->
+  <div class="step-panel" id="step-4">
+    <div class="step-eyebrow">Your goals</div>
+    <h2 class="step-heading">What are you<br>working towards?</h2>
+    <p class="step-sub">Select all that apply — Sage will prioritise its advice around your goals.</p>
+
+    <div class="goal-grid">
+      <div class="goal-card" onclick="toggleGoal(this,'emergency')">
+        <div class="goal-card-icon">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1l3.5 2v5c0 3-3.5 6-3.5 6S4.5 11 4.5 8V3z" stroke="#00C896" stroke-width="1.3"/></svg>
+        </div>
+        <div style="flex:1;"><div class="goal-card-title">Emergency fund</div><div class="goal-card-desc">3–6 months of expenses saved</div></div>
+        <div class="goal-check"><svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M1 4l2 2 4-4" stroke="#080C12" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      </div>
+      <div class="goal-card" onclick="toggleGoal(this,'debt')">
+        <div class="goal-card-icon">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l2.5 2.5L13 3" stroke="#00C896" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div style="flex:1;"><div class="goal-card-title">Pay off debt</div><div class="goal-card-desc">Become completely debt-free</div></div>
+        <div class="goal-check"><svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M1 4l2 2 4-4" stroke="#080C12" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      </div>
+      <div class="goal-card" onclick="toggleGoal(this,'home')">
+        <div class="goal-card-icon">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 7.5L8 2l6 5.5V14H10v-3.5H6V14H2V7.5z" stroke="#00C896" stroke-width="1.3" stroke-linejoin="round"/></svg>
+        </div>
+        <div style="flex:1;"><div class="goal-card-title">Buy a home</div><div class="goal-card-desc">Save for a deposit</div></div>
+        <div class="goal-check"><svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M1 4l2 2 4-4" stroke="#080C12" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      </div>
+      <div class="goal-card" onclick="toggleGoal(this,'invest')">
+        <div class="goal-card-icon">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 11.5L5.5 7 9 9.5 13.5 4" stroke="#00C896" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div style="flex:1;"><div class="goal-card-title">Start investing</div><div class="goal-card-desc">Grow wealth through markets</div></div>
+        <div class="goal-check"><svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M1 4l2 2 4-4" stroke="#080C12" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      </div>
+      <div class="goal-card" onclick="toggleGoal(this,'retire')">
+        <div class="goal-card-icon">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="#00C896" stroke-width="1.3"/><path d="M8 5v3.5l2 1" stroke="#00C896" stroke-width="1.3" stroke-linecap="round"/></svg>
+        </div>
+        <div style="flex:1;"><div class="goal-card-title">Retire early</div><div class="goal-card-desc">Build long-term financial freedom</div></div>
+        <div class="goal-check"><svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M1 4l2 2 4-4" stroke="#080C12" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      </div>
+      <div class="goal-card" onclick="toggleGoal(this,'travel')">
+        <div class="goal-card-icon">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 8h12M8 2c-2 2-3 4-3 6s1 4 3 6M8 2c2 2 3 4 3 6s-1 4-3 6" stroke="#00C896" stroke-width="1.3"/></svg>
+        </div>
+        <div style="flex:1;"><div class="goal-card-title">Travel / holiday</div><div class="goal-card-desc">Save for trips and experiences</div></div>
+        <div class="goal-check"><svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M1 4l2 2 4-4" stroke="#080C12" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      </div>
+    </div>
+
+    <div class="field">
+      <div class="field-label"><label>Top financial concern right now</label></div>
+      <select id="f-concern">
+        <option value="">Select what worries you most</option>
+        <option value="not-enough">Not saving enough each month</option>
+        <option value="debt-weight">Feeling weighed down by debt</option>
+        <option value="no-emergency">No emergency fund</option>
+        <option value="paycheck">Living paycheck to paycheck</option>
+        <option value="future">Not knowing what the future looks like</option>
+        <option value="inflation">Inflation eating my savings</option>
+        <option value="fine">I'm doing fine, just want clarity</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- ═══════════ STEP 5 — PRIVACY ═══════════ -->
+  <div class="step-panel" id="step-5">
+    <div class="step-eyebrow">Your privacy</div>
+    <h2 class="step-heading">You're in complete<br>control of your data</h2>
+    <p class="step-sub">These settings are on by default and protect you. You can change any of them at any time in your account settings.</p>
+
+    <div class="privacy-row">
+      <div class="privacy-row-left">
+        <div class="privacy-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="3" y="7" width="10" height="7" rx="1.5" stroke="#00C896" stroke-width="1.3"/><path d="M5 7V5a3 3 0 016 0v2" stroke="#00C896" stroke-width="1.3" stroke-linecap="round"/></svg></div>
+        <div><div class="privacy-label">AES-256 encryption</div><div class="privacy-desc">All data encrypted at rest and in transit</div></div>
+      </div>
+      <button class="toggle" id="tog-encrypt" onclick="togglePrivacy(this)" data-locked="true">
+        <div class="toggle-thumb"></div>
+      </button>
+    </div>
+    <div class="privacy-row">
+      <div class="privacy-row-left">
+        <div class="privacy-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="#00C896" stroke-width="1.3"/><path d="M5 8l2 2 4-4" stroke="#00C896" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div><div class="privacy-label">Never sold or shared</div><div class="privacy-desc">Your financial data stays private always</div></div>
+      </div>
+      <button class="toggle" id="tog-share" onclick="togglePrivacy(this)" data-locked="true">
+        <div class="toggle-thumb"></div>
+      </button>
+    </div>
+    <div class="privacy-row">
+      <div class="privacy-row-left">
+        <div class="privacy-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2l3 1.5v4c0 2.5-3 5-3 5S5 9.5 5 7.5v-4z" stroke="#00C896" stroke-width="1.3"/></svg></div>
+        <div><div class="privacy-label">No AI training on your data</div><div class="privacy-desc">Your numbers never train any AI model</div></div>
+      </div>
+      <button class="toggle" id="tog-ai" onclick="togglePrivacy(this)" data-locked="true">
+        <div class="toggle-thumb"></div>
+      </button>
+    </div>
+    <div class="privacy-row">
+      <div class="privacy-row-left">
+        <div class="privacy-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="9" rx="1.5" stroke="#00C896" stroke-width="1.3"/><path d="M5 13h6M8 12v1" stroke="#00C896" stroke-width="1.3" stroke-linecap="round"/></svg></div>
+        <div><div class="privacy-label">Weekly email digest</div><div class="privacy-desc">"Your wealth grew $X this week" every Monday</div></div>
+      </div>
+      <button class="toggle" id="tog-email" onclick="togglePrivacy(this)">
+        <div class="toggle-thumb"></div>
+      </button>
+    </div>
+    <div class="privacy-row">
+      <div class="privacy-row-left">
+        <div class="privacy-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2v8M4 7l4 3 4-3" stroke="#00C896" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 13h10" stroke="#00C896" stroke-width="1.3" stroke-linecap="round"/></svg></div>
+        <div><div class="privacy-label">Data export available</div><div class="privacy-desc">Download or delete all your data anytime</div></div>
+      </div>
+      <button class="toggle" id="tog-export" onclick="togglePrivacy(this)" data-locked="true">
+        <div class="toggle-thumb"></div>
+      </button>
+    </div>
+
+    <div style="background:rgba(0,200,150,0.06);border:1px solid rgba(0,200,150,0.15);border-radius:var(--r-sm);padding:12px 14px;margin-top:6px;">
+      <p style="font-size:13px;color:var(--text2);line-height:1.6;">The three locked settings can never be turned off — they are core to how ProFinanceCast protects you. You can delete your entire account and all data at any time from Settings.</p>
+    </div>
+  </div>
+
+  <!-- ═══════════ COMPLETE ═══════════ -->
+  <div class="step-panel" id="step-complete">
+    <div class="complete-wrap">
+      <div class="complete-icon">
+        <svg width="30" height="30" viewBox="0 0 30 30" fill="none"><path d="M5 15l7 7L25 7" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <h2 class="complete-heading" id="complete-name">You're all set!</h2>
+      <p class="complete-sub">Your 12-month forecast is ready. Here's a snapshot of what Sage has calculated based on your numbers.</p>
+
+      <div class="complete-metrics">
+        <div class="cm-card">
+          <div class="cm-val" style="color:var(--teal);" id="cm-networth">$0</div>
+          <div class="cm-label">Projected net worth in 12 months</div>
+        </div>
+        <div class="cm-card">
+          <div class="cm-val" id="cm-savings">$0</div>
+          <div class="cm-label">Monthly surplus to save</div>
+        </div>
+        <div class="cm-card">
+          <div class="cm-val" id="cm-score" style="color:var(--amber);">—</div>
+          <div class="cm-label">Financial health score</div>
+        </div>
+      </div>
+
+      <a href="dashboard.html" class="btn-go">
+        Go to my dashboard
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- WIZARD FOOTER -->
+<div class="wizard-footer" id="wizard-footer">
+  <button class="btn-back" id="btn-back" onclick="prevStep()" disabled>
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 2L4 7l5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    Back
+  </button>
+  <span class="footer-hint" id="footer-hint">Your data is encrypted and never shared</span>
+  <button class="btn-next" id="btn-next" onclick="nextStep()">
+    <span id="btn-next-text">Let's go</span>
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M5 2l5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </button>
+</div>
+
+<div class="confetti-wrap" id="confetti"></div>
+
+<script>
+let currentStep = 0;
+const TOTAL_STEPS = 6;
+let currencySymbol = '$';
+let selectedGoals = new Set();
+
+// ── USER DATA ──
+const userData = {
+  fname:'',lname:'',age:'',employment:'',currency:'USD',
+  income:0,otherIncome:0,housing:0,food:0,transport:0,otherExp:0,
+  savings:0,investments:0,debt:0,debtPay:0,
+  goals:[], concern:''
+};
+
+function getSymbol() {
+  const sel = document.getElementById('f-currency');
+  const opt = sel.options[sel.selectedIndex];
+  return opt?.dataset?.sym || '$';
+}
+
+function updateCurrency() {
+  const sym = getSymbol();
+  currencySymbol = sym;
+  ['income','other','housing','food','transport','other-exp','savings','invest','debt','debtpay'].forEach(id => {
+    const el = document.getElementById('sym-' + id);
+    if (el) el.textContent = sym;
+  });
+  calcLive(); calcDebt();
+}
+
+function syncName() {
+  const name = document.getElementById('f-fname').value.trim();
+  if (name) {
+    document.getElementById('complete-name').textContent = `You're all set, ${name}!`;
+  }
+}
+
+// ── LIVE CALCS ──
+function n(id) { return parseFloat(document.getElementById(id)?.value) || 0; }
+function fmt(v) { return currencySymbol + Math.round(Math.abs(v)).toLocaleString(); }
+
+function calcLive() {
+  const income   = n('f-income') + n('f-other-income');
+  const expenses = n('f-housing') + n('f-food') + n('f-transport') + n('f-other-exp');
+  const surplus  = income - expenses;
+  const rate     = income > 0 ? Math.round((surplus / income) * 100) : 0;
+
+  document.getElementById('lp-income').textContent   = fmt(income);
+  document.getElementById('lp-expenses').textContent = fmt(expenses);
+  const surpEl = document.getElementById('lp-surplus');
+  surpEl.textContent = (surplus >= 0 ? '' : '-') + fmt(surplus);
+  surpEl.className   = 'lp-val ' + (surplus >= 0 ? 'good' : 'bad');
+  const rateEl = document.getElementById('lp-rate');
+  rateEl.textContent = rate + '%';
+  rateEl.className   = 'lp-val ' + (rate >= 20 ? 'good' : rate >= 10 ? 'warn' : 'bad');
+}
+
+function calcDebt() {
+  const assets   = n('f-savings') + n('f-investments');
+  const debt     = n('f-debt');
+  const debtPay  = n('f-debtpay');
+  const nw       = assets - debt;
+  const months   = debtPay > 0 && debt > 0 ? Math.ceil(debt / debtPay) : 0;
+
+  document.getElementById('lp-assets').textContent = fmt(assets);
+  document.getElementById('lp-debt-val').textContent = fmt(debt);
+  const nwEl = document.getElementById('lp-networth');
+  nwEl.textContent = (nw >= 0 ? '' : '-') + fmt(nw);
+  nwEl.className   = 'lp-val ' + (nw >= 0 ? 'good' : 'bad');
+  document.getElementById('lp-debtfree').textContent = months > 0 ? months + ' months' : debt === 0 ? 'Debt free!' : '—';
+}
+
+// ── GOALS ──
+function toggleGoal(el, key) {
+  el.classList.toggle('selected');
+  if (selectedGoals.has(key)) selectedGoals.delete(key);
+  else selectedGoals.add(key);
+}
+
+// ── PRIVACY TOGGLES ──
+function togglePrivacy(btn) {
+  if (btn.dataset.locked === 'true') {
+    btn.style.transform = 'translateX(3px)';
+    setTimeout(() => btn.style.transform = '', 200);
+    return;
+  }
+  btn.classList.toggle('off');
+}
+
+// ── STEP NAVIGATION ──
+const stepHints = [
+  'Your data is encrypted and never shared',
+  'Use monthly averages — exact figures not needed',
+  'Round numbers are fine — update anytime',
+  'We need your current financial baseline',
+  'Select all goals that apply to you',
+  'These settings protect you by default',
+  ''
+];
+const nextLabels = ["Let's go", 'Continue', 'Continue', 'Continue', 'Continue', 'Build my forecast'];
+
+function goToStep(step) {
+  document.getElementById('step-' + currentStep)?.classList.remove('active');
+  currentStep = step;
+  const isComplete = step >= TOTAL_STEPS;
+  if (isComplete) {
+    document.getElementById('step-complete').classList.add('active');
+    document.getElementById('wizard-footer').style.display = 'none';
+    document.getElementById('step-dots').style.display = 'none';
+    buildComplete();
+    launchConfetti();
+    return;
+  }
+  document.getElementById('step-' + step).classList.add('active');
+  document.getElementById('progress-bar').style.width = ((step + 1) / TOTAL_STEPS * 100) + '%';
+  document.getElementById('step-label').textContent = `Step ${step + 1} of ${TOTAL_STEPS}`;
+  document.getElementById('footer-hint').textContent = stepHints[step] || '';
+  document.getElementById('btn-next-text').textContent = nextLabels[step] || 'Continue';
+  document.getElementById('btn-back').disabled = step === 0;
+  document.querySelectorAll('.dot').forEach((d, i) => {
+    d.classList.remove('active','done');
+    if (i < step) d.classList.add('done');
+    if (i === step) d.classList.add('active');
+  });
+}
+
+function nextStep() {
+  if (!validateStep(currentStep)) return;
+  goToStep(currentStep + 1);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function prevStep() {
+  if (currentStep > 0) {
+    goToStep(currentStep - 1);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+}
+
+function validateStep(step) {
+  if (step === 1) {
+    const fname = document.getElementById('f-fname').value.trim();
+    if (!fname) {
+      shake('f-fname');
+      showToast('Please enter your first name');
+      return false;
+    }
+  }
+  if (step === 2) {
+    const income = n('f-income');
+    if (!income) {
+      shake('f-income');
+      showToast('Please enter your monthly income');
+      return false;
+    }
+  }
+  return true;
+}
+
+function shake(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.style.borderColor = 'rgba(224,82,82,0.6)';
+  el.animate([{transform:'translateX(0)'},{transform:'translateX(-6px)'},{transform:'translateX(6px)'},{transform:'translateX(0)'}],{duration:250,iterations:2});
+  setTimeout(() => el.style.borderColor = '', 1500);
+}
+
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.style.cssText = 'position:fixed;bottom:96px;left:50%;transform:translateX(-50%);background:#0F1923;border:1px solid rgba(255,255,255,0.15);color:#F0F4F8;padding:10px 20px;border-radius:8px;font-size:13.5px;z-index:200;animation:fadeInUp .25s ease';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2500);
+}
+
+function skipOnboarding() { window.location.href = 'dashboard.html'; }
+
+// ── BUILD COMPLETE ──
+function buildComplete() {
+  const income   = n('f-income') + n('f-other-income');
+  const expenses = n('f-housing') + n('f-food') + n('f-transport') + n('f-other-exp') + n('f-debtpay');
+  const surplus  = Math.max(0, income - expenses);
+  const savings  = n('f-savings');
+  const debt     = n('f-debt');
+  const nw12     = (savings - debt) + (surplus * 12 * 0.9);
+  const score    = calcScore(surplus, income, debt, savings);
+
+  document.getElementById('cm-networth').textContent = currencySymbol + Math.round(nw12).toLocaleString();
+  document.getElementById('cm-savings').textContent  = currencySymbol + Math.round(surplus).toLocaleString() + '/mo';
+  const scEl = document.getElementById('cm-score');
+  scEl.textContent = score + ' / 100';
+  scEl.style.color = score >= 70 ? 'var(--teal)' : score >= 40 ? 'var(--amber)' : 'var(--red)';
+
+  // Save to sessionStorage for dashboard to pick up
+  const profile = {
+    name: document.getElementById('f-fname').value.trim(),
+    currency: currencySymbol,
+    income, expenses,
+    surplus, savings,
+    investments: n('f-investments'),
+    debt, debtPay: n('f-debtpay'),
+    goals: [...selectedGoals],
+    score, nw12
+  };
+  sessionStorage.setItem('pfc_profile', JSON.stringify(profile));
+}
+
+function calcScore(surplus, income, debt, savings) {
+  let s = 0;
+  const savePct = income > 0 ? surplus / income : 0;
+  if (savePct >= 0.2) s += 30;
+  else if (savePct >= 0.1) s += 20;
+  else if (savePct > 0) s += 10;
+  if (surplus > 0) s += 20;
+  if (debt === 0) s += 25;
+  else if (debt < savings * 2) s += 12;
+  if (savings >= surplus * 3) s += 15;
+  else if (savings > 0) s += 8;
+  return Math.min(99, Math.max(5, s));
+}
+
+// ── CONFETTI ──
+function launchConfetti() {
+  const wrap = document.getElementById('confetti');
+  const colors = ['#00C896','#3B82F6','#F5A623','#A78BFA','#22C55E'];
+  for (let i = 0; i < 80; i++) {
+    const p = document.createElement('div');
+    const size = Math.random() * 8 + 4;
+    p.style.cssText = `position:absolute;width:${size}px;height:${size}px;background:${colors[Math.floor(Math.random()*colors.length)]};
+      left:${Math.random()*100}%;top:-10px;border-radius:${Math.random()>.5?'50%':'2px'};
+      animation:fall ${1.5+Math.random()*2}s ${Math.random()*1}s ease-in forwards;opacity:.85;`;
+    wrap.appendChild(p);
+  }
+  const style = document.createElement('style');
+  style.textContent = `@keyframes fall{to{transform:translateY(105vh) rotate(${Math.random()*720}deg);opacity:0;}}`;
+  document.head.appendChild(style);
+  setTimeout(() => wrap.innerHTML = '', 4000);
+}
+
+// ── INIT ──
+calcLive();
+calcDebt();
+</script>
+</body>
+</html>
