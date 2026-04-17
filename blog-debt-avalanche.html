@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Debt Avalanche vs Debt Snowball: Which Saves More Money? (2026 Guide)</title>
+<meta name="description" content="The complete comparison of debt avalanche vs debt snowball methods. See which strategy saves more money, a side-by-side calculator, and how to choose the right one for your debts.">
+<meta name="keywords" content="debt avalanche vs snowball, debt payoff strategy, pay off debt faster, avalanche method, snowball method">
+<link rel="canonical" href="https://profinancecast.com/blog/debt-avalanche-vs-snowball">
+<meta property="og:title" content="Debt Avalanche vs Debt Snowball — Full Comparison + Calculator">
+<meta property="og:description" content="Which debt payoff method saves more money? Side-by-side comparison with a real calculator.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#080C12;--bg2:#0D1320;--bg3:#111827;--card:#0F1923;--border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);--teal:#00C896;--teal-dim:rgba(0,200,150,0.1);--text:#F0F4F8;--text2:#8A9BB0;--text3:#4A5A6E;--amber:#F5A623;--red:#E05252;--blue:#3B82F6;--r:12px;--r-sm:8px;}
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);line-height:1.7;}
+  nav{position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:0 6%;height:60px;background:rgba(8,12,18,0.92);border-bottom:1px solid var(--border);backdrop-filter:blur(16px);}
+  .nav-logo{display:flex;align-items:center;gap:9px;font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:var(--text);text-decoration:none;}
+  .logo-mark{width:26px;height:26px;background:var(--teal);border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#080C12;}
+  .nav-right{display:flex;align-items:center;gap:16px;}
+  .nav-right a{font-size:13px;color:var(--text2);text-decoration:none;}
+  .nav-cta-btn{padding:7px 16px;background:var(--teal);color:#080C12;border:none;border-radius:var(--r-sm);font-size:13px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;text-decoration:none;}
+
+  .article-wrap{max-width:740px;margin:0 auto;padding:48px 24px 80px;}
+
+  /* BREADCRUMB */
+  .breadcrumb{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text3);margin-bottom:24px;}
+  .breadcrumb a{color:var(--text3);text-decoration:none;transition:color .15s;}
+  .breadcrumb a:hover{color:var(--teal);}
+  .breadcrumb-sep{opacity:.4;}
+
+  /* ARTICLE HEADER */
+  .art-tag{display:inline-block;font-size:11px;font-weight:700;padding:3px 10px;border-radius:6px;margin-bottom:14px;background:rgba(224,82,82,0.1);color:#F08080;letter-spacing:.04em;text-transform:uppercase;}
+  h1{font-family:'Syne',sans-serif;font-size:clamp(26px,4vw,40px);font-weight:800;line-height:1.2;letter-spacing:-0.3px;margin-bottom:16px;}
+  .article-meta{display:flex;align-items:center;gap:14px;font-size:13px;color:var(--text3);margin-bottom:28px;flex-wrap:wrap;}
+  .meta-dot{width:3px;height:3px;border-radius:50%;background:var(--text3);}
+
+  /* TL;DR BOX */
+  .tldr{background:var(--teal-dim);border:1px solid rgba(0,200,150,0.25);border-radius:var(--r-sm);padding:18px 20px;margin-bottom:36px;}
+  .tldr strong{display:block;font-size:13px;font-weight:700;color:var(--teal);margin-bottom:8px;letter-spacing:.04em;text-transform:uppercase;}
+  .tldr ul{padding-left:18px;display:flex;flex-direction:column;gap:6px;}
+  .tldr li{font-size:14px;color:var(--text2);line-height:1.5;}
+
+  /* ARTICLE BODY */
+  .article-body h2{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;margin:36px 0 12px;letter-spacing:-0.2px;}
+  .article-body h3{font-family:'Syne',sans-serif;font-size:17px;font-weight:700;margin:24px 0 10px;}
+  .article-body p{font-size:15.5px;color:var(--text2);margin-bottom:16px;line-height:1.75;}
+  .article-body strong{color:var(--text);font-weight:600;}
+  .article-body ul,.article-body ol{padding-left:22px;margin-bottom:16px;display:flex;flex-direction:column;gap:8px;}
+  .article-body li{font-size:15px;color:var(--text2);line-height:1.6;}
+
+  /* CALLOUT */
+  .callout{border-radius:var(--r-sm);padding:16px 18px;margin:24px 0;}
+  .callout-tip{background:rgba(0,200,150,0.07);border-left:3px solid var(--teal);}
+  .callout-warn{background:rgba(245,166,35,0.07);border-left:3px solid var(--amber);}
+  .callout-label{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px;}
+  .callout-tip .callout-label{color:var(--teal);}
+  .callout-warn .callout-label{color:var(--amber);}
+  .callout p{font-size:14px;color:var(--text2);margin:0;line-height:1.6;}
+
+  /* COMPARISON TABLE */
+  .compare-table{width:100%;border-collapse:collapse;margin:24px 0;font-size:14px;}
+  .compare-table th{background:var(--bg3);padding:12px 16px;text-align:left;font-size:12px;font-weight:700;color:var(--text3);letter-spacing:.04em;text-transform:uppercase;border-bottom:1px solid var(--border);}
+  .compare-table td{padding:12px 16px;border-bottom:1px solid var(--border);color:var(--text2);vertical-align:top;}
+  .compare-table tr:last-child td{border-bottom:none;}
+  .compare-table td:first-child{color:var(--text);font-weight:500;}
+  .winner{color:var(--teal);font-weight:600;}
+
+  /* INTERACTIVE CALCULATOR */
+  .calc-box{background:var(--card);border:1px solid var(--border2);border-radius:var(--r);padding:24px;margin:32px 0;}
+  .calc-box h3{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;margin-bottom:16px;}
+  .calc-debts{display:flex;flex-direction:column;gap:10px;margin-bottom:16px;}
+  .calc-debt-row{display:grid;grid-template-columns:1fr 90px 80px;gap:8px;align-items:center;}
+  .calc-debt-row input{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;transition:border-color .15s;}
+  .calc-debt-row input:focus{border-color:rgba(0,200,150,.4);}
+  .calc-debt-row input::placeholder{color:var(--text3);}
+  .calc-debt-label{font-size:11px;color:var(--text3);text-align:center;}
+  .calc-field{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+  .calc-field label{font-size:13px;color:var(--text2);min-width:180px;}
+  .calc-field input{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);padding:8px 12px;font-size:13px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;width:100px;}
+  .calc-btn{padding:10px 22px;background:var(--teal);border:none;border-radius:var(--r-sm);font-size:14px;font-weight:600;color:#080C12;font-family:'DM Sans',sans-serif;cursor:pointer;margin-bottom:16px;}
+  .calc-results{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .calc-result-card{border-radius:var(--r-sm);padding:14px 16px;border:1px solid var(--border);}
+  .calc-result-card.av{background:rgba(0,200,150,0.06);border-color:rgba(0,200,150,0.2);}
+  .calc-result-card.sw{background:rgba(59,130,246,0.06);border-color:rgba(59,130,246,0.2);}
+  .calc-result-title{font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;margin-bottom:10px;}
+  .calc-result-card.av .calc-result-title{color:var(--teal);}
+  .calc-result-card.sw .calc-result-title{color:var(--blue);}
+  .calc-stat{display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;}
+  .calc-stat-label{color:var(--text2);}
+  .calc-stat-val{font-weight:600;color:var(--text);}
+  .calc-winner-msg{background:rgba(0,200,150,0.08);border:1px solid rgba(0,200,150,0.2);border-radius:var(--r-sm);padding:12px 14px;font-size:13.5px;color:var(--text2);line-height:1.55;margin-top:12px;}
+  .calc-winner-msg strong{color:var(--teal);}
+
+  /* CTA BLOCK */
+  .article-cta{background:linear-gradient(135deg,rgba(0,200,150,0.08),rgba(59,130,246,0.05));border:1px solid rgba(0,200,150,0.2);border-radius:var(--r);padding:28px;margin:36px 0;text-align:center;}
+  .article-cta h3{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;margin-bottom:8px;}
+  .article-cta p{font-size:14px;color:var(--text2);margin-bottom:20px;}
+  .article-cta a{display:inline-block;padding:12px 28px;background:var(--teal);color:#080C12;border:none;border-radius:var(--r-sm);font-size:14px;font-weight:700;font-family:'DM Sans',sans-serif;text-decoration:none;}
+
+  /* RELATED ARTICLES */
+  .related{margin-top:48px;}
+  .related h3{font-family:'Syne',sans-serif;font-size:18px;font-weight:700;margin-bottom:16px;}
+  .related-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+  .related-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px 16px;text-decoration:none;color:inherit;transition:border-color .2s;}
+  .related-card:hover{border-color:var(--border2);}
+  .related-card-tag{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;}
+  .related-card-title{font-size:13px;font-weight:600;line-height:1.4;color:var(--text);}
+  .related-read{font-size:11px;color:var(--text3);margin-top:6px;}
+
+  @media(max-width:600px){.calc-debt-row{grid-template-columns:1fr 80px;}.calc-debt-row input:last-child{display:none;}.calc-results{grid-template-columns:1fr;}.related-grid{grid-template-columns:1fr;}}
+</style>
+<script type="application/ld+json">
+{
+  "@context":"https://schema.org","@type":"Article",
+  "headline":"Debt Avalanche vs Debt Snowball: Which Saves More Money?",
+  "description":"Complete comparison of debt payoff strategies with interactive calculator",
+  "author":{"@type":"Organization","name":"ProFinanceCast"},
+  "publisher":{"@type":"Organization","name":"ProFinanceCast","url":"https://profinancecast.com"},
+  "datePublished":"2026-04-12","dateModified":"2026-04-12",
+  "url":"https://profinancecast.com/blog/debt-avalanche-vs-snowball"
+}
+</script>
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="nav-logo"><div class="logo-mark">PF</div>ProFinanceCast</a>
+  <div class="nav-right">
+    <a href="blog.html">← Blog</a>
+    <a href="auth.html" class="nav-cta-btn">Try free →</a>
+  </div>
+</nav>
+
+<div class="article-wrap">
+
+  <div class="breadcrumb">
+    <a href="index.html">Home</a><span class="breadcrumb-sep">/</span>
+    <a href="blog.html">Blog</a><span class="breadcrumb-sep">/</span>
+    <span>Debt avalanche vs snowball</span>
+  </div>
+
+  <span class="art-tag">Debt payoff</span>
+  <h1>Debt Avalanche vs Debt Snowball: Which Strategy Saves You the Most Money?</h1>
+
+  <div class="article-meta">
+    <span>By ProFinanceCast</span>
+    <div class="meta-dot"></div>
+    <span>April 12, 2026</span>
+    <div class="meta-dot"></div>
+    <span>8 min read</span>
+    <div class="meta-dot"></div>
+    <span>Updated for 2026</span>
+  </div>
+
+  <div class="tldr">
+    <strong>TL;DR — Key takeaways</strong>
+    <ul>
+      <li>The <strong>avalanche method</strong> (highest interest first) saves more money — typically $200–$1,500+ in interest</li>
+      <li>The <strong>snowball method</strong> (smallest balance first) builds momentum and is better for motivation</li>
+      <li>Use the calculator below to see the exact difference for your specific debts</li>
+      <li>Either method works — the best one is the one you'll actually stick to</li>
+    </ul>
+  </div>
+
+  <div class="article-body">
+
+    <p>You have multiple debts. You want to pay them off. But which one should you attack first — the one with the highest interest rate, or the smallest balance? This is the core question behind two of the most popular debt payoff strategies, and the answer affects how much you pay in total interest and how long it takes.</p>
+
+    <p>This guide breaks down both methods clearly, shows you exactly when to use each one, and gives you an interactive calculator to see the real numbers for your situation.</p>
+
+    <h2>What is the debt avalanche method?</h2>
+
+    <p>The avalanche method is straightforward: <strong>list your debts from highest to lowest interest rate, and pay the minimum on all of them except the highest-rate one, which you attack with every spare dollar you have.</strong></p>
+
+    <p>Once the highest-rate debt is cleared, you roll that payment into the next highest-rate debt, creating a growing "avalanche" of extra payment that eliminates each debt faster.</p>
+
+    <div class="callout callout-tip">
+      <div class="callout-label">Example</div>
+      <p>Credit card at 22% → paid first. Then car loan at 8% → paid second. Then student loan at 4% → paid last. This order minimises total interest paid.</p>
+    </div>
+
+    <p><strong>Why it works mathematically:</strong> High interest rates compound against you. A 22% credit card balance doubles roughly every 3.3 years if you only pay the minimum. Eliminating it first stops the compounding bleed as fast as possible.</p>
+
+    <h2>What is the debt snowball method?</h2>
+
+    <p>The snowball method reverses the priority: <strong>list your debts from smallest to largest balance, regardless of interest rate, and pay off the smallest first.</strong></p>
+
+    <p>Once the smallest debt is cleared, you roll that payment into the next smallest. Each cleared debt builds psychological momentum — like a snowball rolling downhill, growing as it goes.</p>
+
+    <div class="callout callout-tip">
+      <div class="callout-label">Example</div>
+      <p>Store card ($400) → paid first. Then personal loan ($1,200) → second. Then car loan ($4,800) → third. Then mortgage → last. Each win keeps you motivated.</p>
+    </div>
+
+    <p>This method was popularised by Dave Ramsey, who argues that personal finance is "20% head knowledge and 80% behaviour." Quick wins create emotional momentum that keeps people committed.</p>
+
+    <h2>Side-by-side comparison</h2>
+
+    <table class="compare-table">
+      <thead><tr><th>Factor</th><th>Avalanche</th><th>Snowball</th></tr></thead>
+      <tbody>
+        <tr><td>Priority order</td><td>Highest interest rate first</td><td>Smallest balance first</td></tr>
+        <tr><td>Total interest paid</td><td class="winner">Less (usually significantly)</td><td>More</td></tr>
+        <tr><td>Time to debt-free</td><td class="winner">Faster (mathematically)</td><td>Slightly slower</td></tr>
+        <tr><td>Early motivation</td><td>Slower — first win may take months</td><td class="winner">Faster — quick early wins</td></tr>
+        <tr><td>Best for</td><td>High-rate debts, disciplined people</td><td>People who need motivation boosts</td></tr>
+        <tr><td>Research backing</td><td class="winner">Mathematically optimal</td><td>Psychologically effective</td></tr>
+      </tbody>
+    </table>
+
+    <h2>The real difference in numbers</h2>
+
+    <p>Let's take a realistic example: three debts totalling $15,000, with a combined minimum payment of $400/month and $200 extra available to attack debt.</p>
+
+    <p>With avalanche: total interest paid ≈ <strong>$2,840</strong>, debt-free in <strong>31 months</strong>.<br>
+    With snowball: total interest paid ≈ <strong>$3,210</strong>, debt-free in <strong>33 months</strong>.</p>
+
+    <p>In this example, avalanche saves <strong>$370 and 2 months</strong>. The gap grows larger when interest rate differences are more extreme — especially if you have high-rate credit card debt alongside lower-rate loans.</p>
+
+    <div class="callout callout-warn">
+      <div class="callout-label">Important caveat</div>
+      <p>These calculations assume you stick to the plan consistently for 2–3 years. If the snowball method keeps you on track while the avalanche method feels discouraging and you abandon it, the snowball wins every time. Consistency beats optimisation.</p>
+    </div>
+
+    <h2>Try the calculator for your debts</h2>
+
+    <div class="calc-box">
+      <h3>Avalanche vs Snowball Calculator</h3>
+      <div style="display:grid;grid-template-columns:1fr 90px 80px;gap:8px;margin-bottom:6px;">
+        <div class="calc-debt-label">Debt name</div>
+        <div class="calc-debt-label">Balance ($)</div>
+        <div class="calc-debt-label">Rate (%)</div>
+      </div>
+      <div class="calc-debts" id="calc-debts">
+        <div class="calc-debt-row"><input placeholder="Credit card" oninput="calcDebts()"><input type="number" placeholder="2100" oninput="calcDebts()"><input type="number" placeholder="19.9" oninput="calcDebts()"></div>
+        <div class="calc-debt-row"><input placeholder="Car loan" oninput="calcDebts()"><input type="number" placeholder="4950" oninput="calcDebts()"><input type="number" placeholder="6.5" oninput="calcDebts()"></div>
+        <div class="calc-debt-row"><input placeholder="Personal loan" oninput="calcDebts()"><input type="number" placeholder="950" oninput="calcDebts()"><input type="number" placeholder="8.2" oninput="calcDebts()"></div>
+      </div>
+      <div class="calc-field">
+        <label>Extra monthly payment ($)</label>
+        <input type="number" id="extra-payment" value="200" oninput="calcDebts()">
+      </div>
+      <div class="calc-field">
+        <label>Monthly minimum (total, $)</label>
+        <input type="number" id="min-payment" value="250" oninput="calcDebts()">
+      </div>
+      <div class="calc-results" id="calc-results">
+        <div class="calc-result-card av">
+          <div class="calc-result-title">Avalanche (high rate first)</div>
+          <div class="calc-stat"><span class="calc-stat-label">Months to debt-free</span><span class="calc-stat-val" id="av-months">—</span></div>
+          <div class="calc-stat"><span class="calc-stat-label">Total interest paid</span><span class="calc-stat-val" id="av-interest">—</span></div>
+        </div>
+        <div class="calc-result-card sw">
+          <div class="calc-result-title">Snowball (small balance first)</div>
+          <div class="calc-stat"><span class="calc-stat-label">Months to debt-free</span><span class="calc-stat-val" id="sw-months">—</span></div>
+          <div class="calc-stat"><span class="calc-stat-label">Total interest paid</span><span class="calc-stat-val" id="sw-interest">—</span></div>
+        </div>
+      </div>
+      <div class="calc-winner-msg" id="calc-msg">Enter your debts above to see the comparison.</div>
+    </div>
+
+    <h2>Which should you choose?</h2>
+
+    <p><strong>Choose the avalanche if:</strong> you have high-rate credit card debt (above 15%), you're disciplined and don't need small wins to stay motivated, and your highest-rate debt isn't your largest balance (so the first win comes relatively quickly).</p>
+
+    <p><strong>Choose the snowball if:</strong> you've tried debt payoff before and given up, you have several small debts that you could clear in the next 3–6 months, or you feel overwhelmed and need quick psychological wins to stay committed.</p>
+
+    <p><strong>The hybrid approach:</strong> Some people do a modified version — pay off any genuinely tiny debts (under $300) first for quick wins, then switch to avalanche for the remaining larger debts. This combines the psychological benefits of snowball with the mathematical efficiency of avalanche.</p>
+
+    <h2>The one rule both methods share</h2>
+
+    <p>Whichever method you choose, the most important rule is the same: <strong>stop adding new debt while you pay off old debt.</strong> A credit card you keep using while paying it down is a treadmill, not a path to freedom. The method doesn't matter if the hole keeps getting deeper.</p>
+
+  </div>
+
+  <div class="article-cta">
+    <h3>Track your debt payoff on your dashboard</h3>
+    <p>ProFinanceCast shows you your exact debt-free date, compares both strategies, and updates your 12-month net worth forecast as you pay it down. Free to start.</p>
+    <a href="auth.html">Get my free debt forecast →</a>
+  </div>
+
+  <div class="related">
+    <h3>Related articles</h3>
+    <div class="related-grid">
+      <a href="blog-emergency-fund.html" class="related-card">
+        <div class="related-card-tag" style="color:var(--teal);">Savings</div>
+        <div class="related-card-title">How to Build a 3-Month Emergency Fund from Scratch</div>
+        <div class="related-read">6 min read</div>
+      </a>
+      <a href="blog-50-30-20.html" class="related-card">
+        <div class="related-card-tag" style="color:#C4B5FD;">Budgeting</div>
+        <div class="related-card-title">The 50/30/20 Rule: The Only Budget You'll Ever Need</div>
+        <div class="related-read">5 min read</div>
+      </a>
+      <a href="blog-net-worth.html" class="related-card">
+        <div class="related-card-tag" style="color:var(--teal);">Net worth</div>
+        <div class="related-card-title">How to Calculate Your Real Net Worth</div>
+        <div class="related-read">5 min read</div>
+      </a>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function getDebts() {
+  const rows = document.querySelectorAll('.calc-debt-row');
+  const debts = [];
+  rows.forEach(row => {
+    const inputs = row.querySelectorAll('input');
+    const bal  = parseFloat(inputs[1].value) || 0;
+    const rate = parseFloat(inputs[2].value) || 0;
+    if (bal > 0 && rate >= 0) debts.push({ bal, rate: rate / 100 / 12 });
+  });
+  return debts;
+}
+
+function simulate(debtsInput, sortFn, extra, minPay) {
+  let debts = debtsInput.map(d => ({ ...d, paid: 0 }));
+  debts.sort(sortFn);
+  let months = 0, totalInterest = 0;
+  const maxMonths = 600;
+
+  while (debts.some(d => d.bal > 0) && months < maxMonths) {
+    months++;
+    let available = extra + minPay;
+    // Apply interest and minimums
+    debts.forEach(d => {
+      if (d.bal <= 0) return;
+      const interest = d.bal * d.rate;
+      totalInterest += interest;
+      d.bal += interest;
+    });
+    // Sort and pay
+    const active = debts.filter(d => d.bal > 0);
+    active.sort(sortFn);
+    active.forEach((d, i) => {
+      if (i === 0) {
+        const pay = Math.min(d.bal, available);
+        d.bal -= pay; available -= pay;
+      } else {
+        const minP = Math.min(d.bal, minPay / active.length);
+        d.bal -= minP;
+      }
+      if (d.bal < 0.01) d.bal = 0;
+    });
+  }
+  return { months, totalInterest };
+}
+
+function calcDebts() {
+  const debts = getDebts();
+  const extra = parseFloat(document.getElementById('extra-payment').value) || 0;
+  const minPay = parseFloat(document.getElementById('min-payment').value) || 100;
+  if (debts.length === 0) return;
+
+  const av = simulate(debts, (a,b) => b.rate - a.rate, extra, minPay);
+  const sw = simulate(debts, (a,b) => a.bal - b.bal, extra, minPay);
+
+  document.getElementById('av-months').textContent    = av.months + ' mo';
+  document.getElementById('av-interest').textContent  = '$' + Math.round(av.totalInterest).toLocaleString();
+  document.getElementById('sw-months').textContent    = sw.months + ' mo';
+  document.getElementById('sw-interest').textContent  = '$' + Math.round(sw.totalInterest).toLocaleString();
+
+  const saved = Math.round(sw.totalInterest - av.totalInterest);
+  const faster = sw.months - av.months;
+  const msgEl = document.getElementById('calc-msg');
+  if (saved > 0) {
+    msgEl.innerHTML = `<strong>Avalanche saves you $${saved.toLocaleString()} in interest</strong> and gets you debt-free ${faster > 0 ? faster + ' months' : 'at the same time'} compared to snowball.`;
+  } else if (saved < 0) {
+    msgEl.innerHTML = `<strong>Snowball saves you $${Math.abs(saved).toLocaleString()} in interest</strong> in this scenario — this happens when your smallest balances also happen to have the highest rates.`;
+  } else {
+    msgEl.innerHTML = `Both methods result in the same cost in this scenario — your debts have similar rates relative to their sizes.`;
+  }
+}
+
+calcDebts();
+</script>
+</body>
+</html>
