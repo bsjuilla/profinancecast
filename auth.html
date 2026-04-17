@@ -507,8 +507,8 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG (replace with your Supabase values) ──
-const SUPABASE_URL      = 'https://hmopwxjkxqvubkifplnk.supabase.co';   // ← replace
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhtb3B3eGpreHF2dWJraWZwbG5rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzMzAyOTMsImV4cCI6MjA5MTkwNjI5M30.wCiB9DTSa1Yxy8-3PqLS9P05rrULzcVg_kLbxVuVCUk';                // ← replace
+const SUPABASE_URL      = 'https://YOUR_PROJECT_ID.supabase.co';   // ← replace
+const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';                // ← replace
 
 let supabase = null;
 try {
@@ -654,7 +654,7 @@ async function handleSignup() {
 
   const { error } = await supabase.auth.signUp({
     email, password: pw,
-    options: { data: { full_name: fname + ' ' + lname } }
+    options: { data: { full_name: fname + ' ' + lname }, emailRedirectTo: 'https://profinancecast.com/onboarding.html' }
   });
 
   setLoading('signup-btn', 'signup-spinner', false);
@@ -699,7 +699,7 @@ async function handleGoogle() {
   if (!supabase) { alert('Connect Supabase first — see code comments for instructions.'); return; }
   await supabase.auth.signInWithOAuth({
     provider: 'google',
-    options: { redirectTo: 'https://profinancecast.com/dashboard.html' }
+    options: { redirectTo: 'https://profinancecast.com/onboarding.html' }
   });
 }
 
