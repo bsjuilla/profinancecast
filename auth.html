@@ -511,12 +511,12 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG (replace with your Supabase values) ──
-const SUPABASE_URL      = 'https://hmopwxjkxqvubkifplnk.supabase.co';   // ← replace
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhtb3B3eGpreHF2dWJraWZwbG5rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzMzAyOTMsImV4cCI6MjA5MTkwNjI5M30.wCiB9DTSa1Yxy8-3PqLS9P05rrULzcVg_kLbxVuVCUk';                // ← replace
+const SUPABASE_URL      = 'https://YOUR_PROJECT_ID.supabase.co';   // ← replace
+const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';                // ← replace
 
-let supabase = null;
+let supabaseClient = null;
 try {
-  supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 } catch(e) {
   console.warn('Supabase not configured yet — running in demo mode');
 }
@@ -602,13 +602,13 @@ async function handleLogin() {
   setLoading('login-btn', 'login-spinner', true);
   hideAllAlerts();
 
-  if (!supabase) {
+  if (!supabaseClient) {
     // Demo mode — skip Supabase, go straight to dashboard
     setTimeout(() => { window.location.href = 'dashboard.html'; }, 1000);
     return;
   }
 
-  const { error } = await supabase.auth.signInWithPassword({ email, password: pw });
+  const { error } = await supabaseClient.auth.signInWithPassword({ email, password: pw });
   setLoading('login-btn', 'login-spinner', false);
 
   if (error) {
@@ -646,7 +646,7 @@ async function handleSignup() {
   setLoading('signup-btn', 'signup-spinner', true);
   hideAllAlerts();
 
-  if (!supabase) {
+  if (!supabaseClient) {
     // Demo mode
     setTimeout(() => {
       document.getElementById('verify-email-display').textContent = email;
@@ -656,7 +656,7 @@ async function handleSignup() {
     return;
   }
 
-  const { error } = await supabase.auth.signUp({
+  const { error } = await supabaseClient.auth.signUp({
     email, password: pw,
     options: { data: { full_name: fname + ' ' + lname }, emailRedirectTo: 'https://profinancecast.com/onboarding.html' }
   });
@@ -679,12 +679,12 @@ async function handleForgot() {
   setLoading('forgot-btn', 'forgot-spinner', true);
   hideAllAlerts();
 
-  if (!supabase) {
+  if (!supabaseClient) {
     setTimeout(() => { showAlert('forgot-success'); setLoading('forgot-btn', 'forgot-spinner', false); }, 1000);
     return;
   }
 
-  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+  const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
     redirectTo: 'https://profinancecast.com/reset-password'
   });
 
@@ -703,7 +703,7 @@ async function handleGoogle() {
   const errEl = document.getElementById('google-error');
   errEl.style.display = 'none';
 
-  if (!supabase) {
+  if (!supabaseClient) {
     errEl.textContent = 'Connection not configured yet. Please use email sign up below — Google login will be available soon.';
     errEl.style.display = 'block';
     return;
@@ -713,7 +713,7 @@ async function handleGoogle() {
   btn.disabled = true;
   btn.textContent = 'Redirecting to Google…';
 
-  const { error } = await supabase.auth.signInWithOAuth({
+  const { error } = await supabaseClient.auth.signInWithOAuth({
     provider: 'google',
     options: {
       redirectTo: 'https://profinancecast.com/onboarding.html',
@@ -731,8 +731,8 @@ async function handleGoogle() {
 
 // ── CHECK SESSION (if already logged in, redirect) ──
 async function checkSession() {
-  if (!supabase) return;
-  const { data: { session } } = await supabase.auth.getSession();
+  if (!supabaseClient) return;
+  const { data: { session } } = await supabaseClient.auth.getSession();
   if (session) window.location.href = 'dashboard.html';
 }
 checkSession();
