@@ -1,80 +1,85 @@
-// api/paypal/capture-order.js
-// Called after the user approves payment in the PayPal popup.
-// Captures the funds (moves money to your PayPal account)
-// and upgrades the user's plan in Supabase.
+// api/paypal/create-order.js
+// Creates a PayPal order and returns the orderID to the frontend.
+// The frontend then shows the PayPal popup for the user to approve.
+//
+// SETUP — add these to Vercel Environment Variables:
+//   PAYPAL_CLIENT_ID     → your PayPal app Live Client ID
+//   PAYPAL_CLIENT_SECRET → your PayPal app Live Secret
+//   Both are found at: developer.paypal.com → Your App → Live credentials
 
-const PAYPAL_BASE = 'https://api-m.paypal.com';
+const PAYPAL_BASE = 'https://api-m.paypal.com'; // live endpoint
+// For testing use: 'https://api-m.sandbox.paypal.com'
 
 async function getAccessToken() {
   const creds = Buffer.from(
     `${process.env.PAYPAL_CLIENT_ID}:${process.env.PAYPAL_CLIENT_SECRET}`
   ).toString('base64');
+
   const res = await fetch(`${PAYPAL_BASE}/v1/oauth2/token`, {
     method: 'POST',
-    headers: { 'Authorization': `Basic ${creds}`, 'Content-Type': 'application/x-www-form-urlencoded' },
+    headers: {
+      'Authorization': `Basic ${creds}`,
+      'Content-Type': 'application/x-www-form-urlencoded'
+    },
     body: 'grant_type=client_credentials'
   });
-  if (!res.ok) throw new Error('PayPal auth failed');
-  return (await res.json()).access_token;
+
+  if (!res.ok) throw new Error('Could not authenticate with PayPal');
+  const data = await res.json();
+  return data.access_token;
 }
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { orderID, plan } = req.body;
-  if (!orderID || !plan) return res.status(400).json({ error: 'Missing orderID or plan' });
+  const { plan, amount } = req.body;
+
+  // Validate amount matches what we expect — prevents tampering
+  const validPlans = { pro: 9.99, premium: 19.99 };
+  if (!validPlans[plan] || validPlans[plan] !== amount) {
+    return res.status(400).json({ error: 'Invalid plan or amount' });
+  }
 
   try {
     const token = await getAccessToken();
 
-    // Capture the payment — this moves money to your PayPal account
-    const capture = await fetch(`${PAYPAL_BASE}/v2/checkout/orders/${orderID}/capture`, {
+    const order = await fetch(`${PAYPAL_BASE}/v2/checkout/orders`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      }
+        'Content-Type': 'application/json',
+        'PayPal-Request-Id': `pfc-${plan}-${Date.now()}` // idempotency key
+      },
+      body: JSON.stringify({
+        intent: 'CAPTURE',
+        purchase_units: [{
+          amount: {
+            currency_code: 'USD',
+            value: amount.toFixed(2)
+          },
+          description: `ProFinanceCast ${plan.charAt(0).toUpperCase() + plan.slice(1)} Plan — Monthly`,
+          soft_descriptor: 'PROFINANCECAST'
+        }],
+        application_context: {
+          brand_name: 'ProFinanceCast',
+          user_action: 'PAY_NOW',
+          return_url: 'https://profinancecast.com/billing.html',
+          cancel_url: 'https://profinancecast.com/billing.html'
+        }
+      })
     });
 
-    if (!capture.ok) {
-      const err = await capture.text();
-      console.error('Capture error:', err);
-      return res.status(502).json({ error: 'Payment capture failed' });
+    if (!order.ok) {
+      const err = await order.text();
+      console.error('PayPal create order error:', err);
+      return res.status(502).json({ error: 'Could not create PayPal order' });
     }
 
-    const captureData = await capture.json();
-
-    if (captureData.status !== 'COMPLETED') {
-      return res.status(402).json({ error: 'Payment not completed', status: captureData.status });
-    }
-
-    // ── UPGRADE USER IN SUPABASE ──
-    // Uncomment and configure once Supabase is set up:
-    //
-    // import { createClient } from '@supabase/supabase-js'
-    // const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY)
-    //
-    // const userId = req.headers['x-user-id'] // pass from frontend after auth
-    // await supabase.from('profiles').update({
-    //   plan: plan,
-    //   plan_started_at: new Date().toISOString(),
-    //   paypal_order_id: orderID,
-    //   ai_queries_used: 0,
-    //   ai_queries_reset_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
-    // }).eq('id', userId)
-
-    // Log the payment (important for your records)
-    console.log(`PAYMENT CAPTURED: Plan=${plan}, OrderID=${orderID}, Amount=${captureData.purchase_units?.[0]?.payments?.captures?.[0]?.amount?.value}`);
-
-    return res.status(200).json({
-      status: 'COMPLETED',
-      plan,
-      orderID,
-      captureID: captureData.purchase_units?.[0]?.payments?.captures?.[0]?.id
-    });
+    const orderData = await order.json();
+    return res.status(200).json({ orderID: orderData.id });
 
   } catch (err) {
-    console.error('capture-order error:', err);
+    console.error('create-order error:', err);
     return res.status(500).json({ error: 'Internal server error' });
   }
 }
