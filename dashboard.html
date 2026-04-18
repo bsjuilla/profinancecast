@@ -360,6 +360,10 @@
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: var(--bg3); border-radius: 2px; }
 
+  /* ── TAB PANELS ── */
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
   /* ── NOTIFICATION ITEMS ── */
   .notif-item{display:flex;gap:12px;padding:13px 18px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;}
   .notif-item:hover{background:rgba(255,255,255,0.03);}
@@ -565,6 +569,9 @@
       <button class="tab" onclick="setTab(this,'goals')">Goals</button>
     </div>
 
+    <!-- ═══ OVERVIEW PANEL ═══ -->
+    <div class="tab-panel active" id="panel-overview">
+
     <!-- METRICS -->
     <div class="metrics">
       <div class="metric">
@@ -754,6 +761,11 @@
       </div>
     </div>
 
+    </div><!-- /panel-overview -->
+
+    <!-- ═══ FORECAST PANEL ═══ -->
+    <div class="tab-panel" id="panel-forecast">
+
     <!-- DEBT BREAKDOWN + GOALS -->
     <div class="grid-2-equal">
       <!-- DEBTS -->
@@ -863,6 +875,11 @@
       </div>
     </div>
 
+    </div><!-- /panel-forecast -->
+
+    <!-- ═══ DEBTS PANEL ═══ -->
+    <div class="tab-panel" id="panel-debts">
+
     <!-- SAGE MINI + INFLATION METER -->
     <div class="grid-2-equal">
       <!-- SAGE MINI CHAT -->
@@ -946,6 +963,12 @@
         </div>
       </div>
     </div>
+    </div><!-- /panel-debts -->
+
+    <!-- ═══ GOALS PANEL ═══ -->
+    <div class="tab-panel" id="panel-goals">
+    <div style="padding:40px;text-align:center;color:var(--text2);"><p style="font-size:15px;margin-bottom:8px;">Your goals are shown in the Overview tab under Goal tracker.</p><p style="font-size:13px;color:var(--text3);">We're building a dedicated Goals page — it's coming soon!</p></div>
+    </div><!-- /panel-goals -->
 
   </div><!-- /content -->
 </main><!-- /main -->
@@ -1087,8 +1110,27 @@ function applyEvent(btn, type) {
 
 // ── TABS ──
 function setTab(btn, tab) {
+  // Update tab buttons
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   btn.classList.add('active');
+  // Show correct panel
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  const panel = document.getElementById('panel-' + tab);
+  if (panel) panel.classList.add('active');
+  // Sync sidebar active state
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const sidebarMap = { overview:'overview', forecast:'forecast', debts:'debts', goals:'goals' };
+  document.querySelectorAll('.nav-item').forEach(n => {
+    const txt = n.textContent.trim().toLowerCase();
+    if ((tab === 'overview' && txt === 'dashboard') ||
+        (tab === 'forecast' && txt === 'forecast') ||
+        (tab === 'debts' && txt === 'debt planner') ||
+        (tab === 'goals' && txt === 'goals')) {
+      n.classList.add('active');
+    }
+  });
+  // Scroll to top of content
+  document.querySelector('.main').scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 // ── SAGE MINI ──
@@ -1254,7 +1296,9 @@ function navClick(e, el, key) {
   if (label) {
     // Find and click the matching tab button
     document.querySelectorAll('.tab').forEach(t => {
-      if (t.textContent.trim() === label) t.click();
+      if (t.textContent.trim() === label) {
+        setTab(t, key === 'overview' ? 'overview' : key);
+      }
     });
     // Scroll content to top
     document.querySelector('.main').scrollTo({ top: 0, behavior: 'smooth' });
