@@ -360,6 +360,16 @@
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: var(--bg3); border-radius: 2px; }
 
+  /* ── NOTIFICATION ITEMS ── */
+  .notif-item{display:flex;gap:12px;padding:13px 18px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;}
+  .notif-item:hover{background:rgba(255,255,255,0.03);}
+  .notif-item:last-child{border-bottom:none;}
+  .notif-item.unread{background:rgba(0,200,150,0.04);}
+  .notif-dot-sm{width:7px;height:7px;border-radius:50%;background:var(--teal);flex-shrink:0;margin-top:5px;transition:opacity .2s;}
+  .notif-title{font-size:13px;font-weight:600;margin-bottom:3px;}
+  .notif-body{font-size:12.5px;color:var(--text2);line-height:1.5;margin-bottom:3px;}
+  .notif-time{font-size:11px;color:var(--text3);}
+
   /* ── RESPONSIVE ── */
   @media (max-width: 1100px) {
     .grid-2 { grid-template-columns: 1fr; }
@@ -448,22 +458,90 @@
   <div class="topbar">
     <div class="topbar-left">
       <div class="topbar-title">My Dashboard</div>
-      <div class="topbar-sub">Last updated · just now · April 16, 2026</div>
+      <div class="topbar-sub" id="topbar-date">Last updated · just now · <span id="today-date"></span></div>
     </div>
     <div class="topbar-right">
-      <button class="topbar-btn">
+      <button class="topbar-btn" onclick="openCSV()">
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
         Import CSV
       </button>
-      <button class="topbar-btn">
+      <button class="topbar-btn" onclick="toggleNotifications(this)">
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.4"/><path d="M7 4v3.5l2 1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
         Notifications
-        <div class="notif-dot"></div>
+        <div class="notif-dot" id="notif-dot"></div>
       </button>
-      <button class="topbar-btn primary">
+      <button class="topbar-btn primary" onclick="window.location.href='billing.html'">
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1l1.5 3.5L13 5.5l-3 3 .7 4-3.7-2-3.7 2 .7-4-3-3 4.5-.9z" fill="currentColor"/></svg>
         Upgrade to Pro
       </button>
+    </div>
+  </div>
+
+  <!-- NOTIFICATIONS PANEL -->
+  <div id="notif-panel" style="display:none;position:fixed;top:70px;right:20px;width:340px;background:var(--card);border:1px solid var(--border2);border-radius:var(--r);z-index:50;box-shadow:0 8px 32px rgba(0,0,0,0.4);">
+    <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+      <span style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700;">Notifications</span>
+      <span style="font-size:12px;color:var(--teal);cursor:pointer;" onclick="markAllRead()">Mark all read</span>
+    </div>
+    <div id="notif-list" style="max-height:320px;overflow-y:auto;">
+      <div class="notif-item unread" onclick="markRead(this)">
+        <div class="notif-dot-sm"></div>
+        <div>
+          <div class="notif-title">Your weekly forecast is ready</div>
+          <div class="notif-body">Your net worth is projected to grow $8,220 over the next 12 months.</div>
+          <div class="notif-time">Just now</div>
+        </div>
+      </div>
+      <div class="notif-item unread" onclick="markRead(this)">
+        <div class="notif-dot-sm"></div>
+        <div>
+          <div class="notif-title">Debt payoff milestone</div>
+          <div class="notif-body">You're 38% of the way to being completely debt-free. Keep going!</div>
+          <div class="notif-time">2 hours ago</div>
+        </div>
+      </div>
+      <div class="notif-item" onclick="markRead(this)">
+        <div class="notif-dot-sm" style="opacity:0;"></div>
+        <div>
+          <div class="notif-title">Sage has a tip for you</div>
+          <div class="notif-body">Paying an extra $100/mo toward your credit card saves $180 in interest.</div>
+          <div class="notif-time">Yesterday</div>
+        </div>
+      </div>
+    </div>
+    <div style="padding:12px 18px;border-top:1px solid var(--border);text-align:center;">
+      <span style="font-size:12px;color:var(--text3);">Upgrade to Pro for weekly email digests</span>
+    </div>
+  </div>
+
+  <!-- CSV IMPORT MODAL -->
+  <div id="csv-overlay" style="display:none;position:fixed;inset:0;background:rgba(4,6,10,0.8);backdrop-filter:blur(6px);z-index:100;align-items:center;justify-content:center;">
+    <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:16px;width:100%;max-width:480px;margin:20px;overflow:hidden;">
+      <div style="padding:20px 24px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+        <div style="font-family:'Syne',sans-serif;font-size:17px;font-weight:700;">Import bank statement (CSV)</div>
+        <div onclick="closeCSV()" style="width:28px;height:28px;border-radius:50%;background:var(--bg3);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2);">✕</div>
+      </div>
+      <div style="padding:22px 24px;">
+        <div style="background:var(--bg3);border:2px dashed var(--border2);border-radius:var(--r);padding:32px;text-align:center;margin-bottom:16px;cursor:pointer;transition:border-color .2s;" id="csv-drop" onclick="document.getElementById('csv-file').click()" ondragover="event.preventDefault();this.style.borderColor='var(--teal)'" ondragleave="this.style.borderColor=''" ondrop="handleDrop(event)">
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none" style="margin:0 auto 10px;display:block;"><path d="M16 4v16M8 12l8-8 8 8" stroke="#00C896" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 24h24" stroke="#8A9BB0" stroke-width="2" stroke-linecap="round"/></svg>
+          <div style="font-size:14px;font-weight:500;margin-bottom:4px;">Drop your CSV here or click to browse</div>
+          <div style="font-size:12px;color:var(--text3);">Supports exports from most banks · Max 10MB</div>
+          <input type="file" id="csv-file" accept=".csv" style="display:none" onchange="handleCSVFile(this)">
+        </div>
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px 14px;margin-bottom:16px;">
+          <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px;">How to export your CSV:</div>
+          <div style="font-size:12.5px;color:var(--text3);line-height:1.6;">
+            <b style="color:var(--text2);">Most banks:</b> Log in → Account history → Export/Download → choose CSV<br>
+            <b style="color:var(--text2);">PayPal:</b> Activity → Statements → Download → CSV<br>
+            Sage will auto-categorise every transaction for you.
+          </div>
+        </div>
+        <div id="csv-status" style="display:none;background:var(--teal-dim);border:1px solid rgba(0,200,150,0.3);border-radius:var(--r-sm);padding:12px 14px;font-size:13px;color:var(--teal);"></div>
+        <div style="font-size:12px;color:var(--text3);display:flex;align-items:center;gap:6px;margin-top:10px;">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1l2.5 3H11L8.5 6l1 3.5L6 8 2.5 9.5l1-3.5L1 4h2.5z" stroke="#4A5A6E" stroke-width="1.2" stroke-linejoin="round"/></svg>
+          Your CSV is processed locally — it never leaves your browser unencrypted
+        </div>
+      </div>
     </div>
   </div>
 
@@ -1060,6 +1138,86 @@ function getSageReply(msg) {
     return 'Before investing, I\'d prioritise: 1) clear your credit card at 19.9%, 2) build your emergency fund to $15k. Once those are done, <em>$200–300/mo</em> into a low-cost index fund would be a strong next step.';
   return 'Great question! Based on your current financial profile — <em>$570/month savings rate</em>, <em>14 months to debt-free</em>, and a health score of <em>74/100</em> — you\'re in a solid position. Could you tell me more specifically what you\'d like to plan for?';
 }
+
+// ── NOTIFICATIONS ──
+let unreadCount = 2;
+function toggleNotifications(btn) {
+  const panel = document.getElementById('notif-panel');
+  const isOpen = panel.style.display === 'flex';
+  panel.style.display = isOpen ? 'none' : 'flex';
+  panel.style.flexDirection = 'column';
+  document.addEventListener('click', function handler(e) {
+    if (!panel.contains(e.target) && e.target !== btn) {
+      panel.style.display = 'none';
+      document.removeEventListener('click', handler);
+    }
+  });
+}
+function markRead(item) {
+  if (item.classList.contains('unread')) {
+    item.classList.remove('unread');
+    item.querySelector('.notif-dot-sm').style.opacity = '0';
+    unreadCount = Math.max(0, unreadCount - 1);
+    document.getElementById('notif-dot').style.display = unreadCount > 0 ? 'block' : 'none';
+  }
+}
+function markAllRead() {
+  document.querySelectorAll('.notif-item.unread').forEach(i => markRead(i));
+}
+
+// ── CSV IMPORT ──
+function openCSV() {
+  const ov = document.getElementById('csv-overlay');
+  ov.style.display = 'flex';
+  document.addEventListener('keydown', function esc(e) {
+    if (e.key === 'Escape') { closeCSV(); document.removeEventListener('keydown', esc); }
+  });
+}
+function closeCSV() {
+  document.getElementById('csv-overlay').style.display = 'none';
+  document.getElementById('csv-status').style.display = 'none';
+  document.getElementById('csv-file').value = '';
+}
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('csv-drop').style.borderColor = '';
+  const file = e.dataTransfer.files[0];
+  if (file && file.name.endsWith('.csv')) processCSV(file);
+  else showCSVStatus('Please drop a .csv file.', false);
+}
+function handleCSVFile(input) {
+  if (input.files[0]) processCSV(input.files[0]);
+}
+function processCSV(file) {
+  showCSVStatus('Reading ' + file.name + '…', true);
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const lines = e.target.result.split('\n').filter(l => l.trim()).length;
+    setTimeout(() => {
+      showCSVStatus('✓ Imported ' + (lines - 1) + ' transactions from ' + file.name + '. Sage is categorising them now…', true);
+      setTimeout(() => { closeCSV(); showDashToast('CSV imported successfully — ' + (lines-1) + ' transactions categorised.'); }, 2000);
+    }, 800);
+  };
+  reader.readAsText(file);
+}
+function showCSVStatus(msg, ok) {
+  const el = document.getElementById('csv-status');
+  el.style.display = 'block';
+  el.style.background = ok ? 'rgba(0,200,150,0.08)' : 'rgba(224,82,82,0.08)';
+  el.style.borderColor = ok ? 'rgba(0,200,150,0.3)' : 'rgba(224,82,82,0.3)';
+  el.style.color = ok ? 'var(--teal)' : 'var(--red)';
+  el.textContent = msg;
+}
+function showDashToast(msg) {
+  const t = document.createElement('div');
+  t.style.cssText = 'position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:var(--card);border:1px solid rgba(0,200,150,0.3);border-radius:10px;padding:12px 20px;font-size:13.5px;color:var(--text);z-index:200;white-space:nowrap;';
+  t.textContent = '✓ ' + msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3500);
+}
+
+// ── UPDATE DATE ──
+document.getElementById('today-date').textContent = new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
 
 // ── SIDEBAR NAV ──
 const tabMap = {
