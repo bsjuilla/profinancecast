@@ -875,7 +875,7 @@
             <div style="font-size:11px;color:var(--text3);margin-top:4px;">~2 months to reach goal</div>
           </div>
         </div>
-        <button style="width:100%;margin-top:16px;padding:8px;background:transparent;border:1px dashed rgba(255,255,255,0.1);border-radius:var(--r-sm);font-size:13px;color:var(--text3);cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;" onmouseover="this.style.borderColor='rgba(0,200,150,0.3)';this.style.color='var(--teal)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.1)';this.style.color='var(--text3)'">+ Add new goal</button>
+        <button id="add-goal-btn" onclick="openAddGoal()" style="width:100%;margin-top:16px;padding:8px;background:transparent;border:1px dashed rgba(255,255,255,0.1);border-radius:var(--r-sm);font-size:13px;color:var(--text3);cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;" onmouseover="this.style.borderColor='rgba(0,200,150,0.3)';this.style.color='var(--teal)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.1)';this.style.color='var(--text3)'">+ Add new goal</button>
       </div>
     </div>
 
@@ -975,9 +975,58 @@
     </div><!-- /panel-goals -->
 
   </div><!-- /content -->
-<!-- ═══════════════════════════════
-     EDIT FINANCES MODAL
-════════════════════════════════ -->
+<!-- ═══════════ ADD GOAL MODAL ═══════════ -->
+<div id="goal-overlay" style="display:none;position:fixed;inset:0;background:rgba(4,6,10,0.85);backdrop-filter:blur(6px);z-index:100;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:16px;width:100%;max-width:420px;overflow:hidden;">
+    <div style="padding:18px 22px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+      <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;" id="goal-modal-title">Add new goal</div>
+      <div onclick="closeGoalModal()" style="width:28px;height:28px;border-radius:50%;background:var(--bg3);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2);font-size:15px;">✕</div>
+    </div>
+    <div style="padding:20px 22px;">
+      <div style="margin-bottom:14px;">
+        <label style="font-size:12px;color:var(--text2);display:block;margin-bottom:5px;">Goal name</label>
+        <input type="text" id="goal-name" placeholder="e.g. New car, Wedding, Emergency fund" style="width:100%;padding:10px 13px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+        <div>
+          <label style="font-size:12px;color:var(--text2);display:block;margin-bottom:5px;">Current amount</label>
+          <input type="number" id="goal-current" placeholder="0" min="0" style="width:100%;padding:10px 13px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;" oninput="goalCalcPreview()">
+        </div>
+        <div>
+          <label style="font-size:12px;color:var(--text2);display:block;margin-bottom:5px;">Target amount</label>
+          <input type="number" id="goal-target" placeholder="10000" min="1" style="width:100%;padding:10px 13px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;" oninput="goalCalcPreview()">
+        </div>
+      </div>
+      <div style="margin-bottom:18px;">
+        <label style="font-size:12px;color:var(--text2);display:block;margin-bottom:5px;">Colour</label>
+        <div style="display:flex;gap:8px;" id="goal-colors">
+          <div class="goal-color-opt selected" data-color="var(--teal)" style="width:24px;height:24px;border-radius:50%;background:#00C896;cursor:pointer;border:2px solid white;"></div>
+          <div class="goal-color-opt" data-color="var(--blue)" style="width:24px;height:24px;border-radius:50%;background:#3B82F6;cursor:pointer;border:2px solid transparent;"></div>
+          <div class="goal-color-opt" data-color="var(--amber)" style="width:24px;height:24px;border-radius:50%;background:#F5A623;cursor:pointer;border:2px solid transparent;"></div>
+          <div class="goal-color-opt" data-color="var(--purple)" style="width:24px;height:24px;border-radius:50%;background:#A78BFA;cursor:pointer;border:2px solid transparent;"></div>
+          <div class="goal-color-opt" data-color="var(--red)" style="width:24px;height:24px;border-radius:50%;background:#E05252;cursor:pointer;border:2px solid transparent;"></div>
+        </div>
+      </div>
+      <!-- Preview -->
+      <div id="goal-preview" style="display:none;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px 14px;margin-bottom:16px;">
+        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;">
+          <span id="gp-name" style="font-weight:500;"></span>
+          <span id="gp-pct" style="font-weight:600;color:var(--teal);"></span>
+        </div>
+        <div style="height:6px;background:var(--bg2);border-radius:3px;overflow:hidden;margin-bottom:5px;">
+          <div id="gp-bar" style="height:100%;border-radius:3px;background:var(--teal);transition:width .3s;"></div>
+        </div>
+        <div id="gp-months" style="font-size:11px;color:var(--text3);"></div>
+      </div>
+      <div style="display:flex;gap:10px;">
+        <button onclick="saveGoal()" style="flex:1;padding:11px;background:var(--teal);border:none;border-radius:var(--r-sm);font-size:14px;font-weight:700;color:#080C12;font-family:'DM Sans',sans-serif;cursor:pointer;">Save goal</button>
+        <button onclick="closeGoalModal()" style="padding:11px 18px;background:transparent;border:1px solid var(--border2);border-radius:var(--r-sm);font-size:13px;color:var(--text2);font-family:'DM Sans',sans-serif;cursor:pointer;">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════ -->
 <div id="ef-overlay" style="display:none;position:fixed;inset:0;background:rgba(4,6,10,0.85);backdrop-filter:blur(6px);z-index:100;align-items:flex-start;justify-content:center;overflow-y:auto;padding:20px;">
   <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:16px;width:100%;max-width:600px;margin:auto;overflow:hidden;">
 
@@ -1167,17 +1216,118 @@ function buildData() {
 
 function recalcForecast() {
   const d = buildData();
+  const sym = USER.currency;
+
   if (chart) {
     chart.data.datasets[0].data = d.base;
     chart.data.datasets[1].data = d.opt;
     chart.data.datasets[2].data = d.cons;
     chart.update('none');
   }
+
+  // Apply scenario slider adjustments on top of USER base data
+  const incChg  = parseFloat(document.getElementById('sl-income').value) / 100;
+  const extra   = parseFloat(document.getElementById('sl-extra').value);
+  const income   = (USER.income + USER.otherIncome) * (1 + incChg) + extra;
+  const expenses = USER.housing + USER.food + USER.transport + USER.otherExp;
+  const assets   = USER.savings + USER.investments;
+  const surplus  = income - expenses;
+
+  // Metric cards
   const gain = d.base[12] - d.base[0];
-  document.getElementById('m-networth').textContent = '$' + d.base[12].toLocaleString();
-  document.getElementById('m-savings').textContent  = '$' + Math.round(d.monthly).toLocaleString();
-  const dMonths = d.monthly > 0 ? Math.ceil(8000 / Math.max(1, 550)) : 99;
-  document.getElementById('m-debt').textContent = dMonths + ' mo';
+  const nwEl = document.getElementById('m-networth');
+  if (nwEl) {
+    nwEl.textContent = sym + d.base[12].toLocaleString();
+    nwEl.style.color = gain >= 0 ? 'var(--teal)' : 'var(--red)';
+  }
+  const svEl = document.getElementById('m-savings');
+  if (svEl) svEl.textContent = sym + Math.round(Math.max(0, d.monthly)).toLocaleString();
+  const debtPay = USER.debtPay;
+  const dMonths = debtPay > 0 && USER.debt > 0 ? Math.ceil(USER.debt / Math.max(1, debtPay)) : 0;
+  const dbEl = document.getElementById('m-debt');
+  if (dbEl) dbEl.textContent = dMonths > 0 ? dMonths + ' mo' : 'Debt free!';
+
+  // ── HEALTH SCORE recalc ──
+  const savePct = income > 0 ? surplus / income : 0;
+  let score = 0;
+  if (savePct >= 0.2) score += 30; else if (savePct >= 0.1) score += 20; else if (savePct > 0) score += 10;
+  if (surplus > 0) score += 20;
+  if (USER.debt === 0) score += 25; else if (USER.debt < assets) score += 12;
+  if (assets >= surplus * 3) score += 15; else if (assets > 0) score += 8;
+  if (d.base[12] > d.base[0]) score += 10;
+  score = Math.min(99, Math.max(5, score));
+
+  const scEl = document.getElementById('m-score');
+  if (scEl) { scEl.textContent = score; scEl.style.color = score >= 70 ? 'var(--teal)' : score >= 40 ? 'var(--amber)' : 'var(--red)'; }
+
+  // Health ring
+  const ringArc = document.querySelector('circle[stroke-linecap="round"]');
+  if (ringArc) {
+    ringArc.setAttribute('stroke-dashoffset', Math.round(339 - (339 * score / 100)));
+    ringArc.setAttribute('stroke', score >= 70 ? '#00C896' : score >= 40 ? '#F5A623' : '#E05252');
+  }
+  const ringNum = document.querySelector('text[font-size="28"]');
+  if (ringNum) ringNum.textContent = score;
+  const ringLabel = document.querySelector('text[font-size="11"]');
+  if (ringLabel) ringLabel.textContent = 'out of 100';
+
+  // Score badge
+  const scoreBadge = document.querySelector('.badge-amber');
+  if (scoreBadge) {
+    scoreBadge.textContent = score >= 70 ? 'Great' : score >= 50 ? 'Good' : score >= 30 ? 'Fair' : 'Needs work';
+    scoreBadge.className = 'card-badge ' + (score >= 70 ? 'badge-teal' : score >= 50 ? 'badge-amber' : 'badge-red');
+  }
+
+  // Score breakdown bars
+  const pct = Math.round(Math.max(0, savePct * 100));
+  const emergencyMo = surplus > 0 ? +(assets / Math.max(1, expenses)).toFixed(1) : 0;
+  document.querySelectorAll('.score-row').forEach(row => {
+    const label = row.querySelector('.score-row-label')?.textContent.toLowerCase() || '';
+    const fill  = row.querySelector('.score-row-fill');
+    const val   = row.querySelector('.score-row-val');
+    if (!fill || !val) return;
+    if (label.includes('savings')) {
+      fill.style.width = Math.min(100, pct * 2) + '%';
+      fill.style.background = pct >= 20 ? '#00C896' : '#F5A623';
+      val.textContent = pct + '%'; val.style.color = pct >= 20 ? 'var(--teal)' : 'var(--amber)';
+    } else if (label.includes('debt')) {
+      const dr = USER.debt === 0 ? 100 : Math.max(0, Math.round((1 - USER.debt / Math.max(1, assets + USER.debt)) * 100));
+      fill.style.width = dr + '%';
+      val.textContent = USER.debt === 0 ? 'None' : 'Mid';
+    } else if (label.includes('emergency')) {
+      fill.style.width = Math.min(100, emergencyMo / 6 * 100) + '%';
+      fill.style.background = emergencyMo >= 3 ? '#00C896' : '#F5A623';
+      val.textContent = emergencyMo + 'mo'; val.style.color = emergencyMo >= 3 ? 'var(--teal)' : 'var(--amber)';
+    } else if (label.includes('spending')) {
+      const sp = surplus > 0 ? Math.min(100, Math.round((1 - Math.abs(surplus - d.monthly) / Math.max(1, income)) * 100)) : 30;
+      fill.style.width = sp + '%';
+      val.textContent = sp >= 70 ? 'Good' : 'Fair';
+    }
+  });
+
+  // ── SAGE INSIGHTS update ──
+  const insightsList = document.getElementById('insights-list');
+  if (insightsList) {
+    const insights = [];
+    if (savePct >= 0.2) insights.push({ color:'var(--teal)', text:`Your savings rate of <strong>${pct}%</strong> is excellent — above the 20% benchmark. You're building wealth faster than most.` });
+    else if (savePct >= 0.1) insights.push({ color:'var(--amber)', text:`You're saving <strong>${pct}%</strong> monthly. Aim for 20%+ by reducing dining or subscriptions to hit the next level.` });
+    else if (surplus > 0) insights.push({ color:'var(--red)', text:`Savings rate of <strong>${pct}%</strong> is below 10%. Review your largest expense categories first.` });
+    else insights.push({ color:'var(--red)', text:`Your expenses exceed income. Check the <strong>Edit finances</strong> button to update your numbers.` });
+
+    if (USER.debt > 0) {
+      if (dMonths <= 18) insights.push({ color:'var(--teal)', text:`You'll be completely debt-free in <strong>${dMonths} months</strong>. Keep your current payment pace.` });
+      else insights.push({ color:'var(--amber)', text:`Debt payoff in <strong>${dMonths} months</strong> at your current rate. Adding $100/mo could cut this by ~3 months.` });
+    } else {
+      insights.push({ color:'var(--teal)', text:`You're debt-free! Consider redirecting those payments into investments.` });
+    }
+
+    if (emergencyMo >= 3) insights.push({ color:'var(--blue)', text:`Emergency fund covers <strong>${emergencyMo} months</strong> — you're in the safe zone. Recommended is 3–6 months.` });
+    else insights.push({ color:'var(--amber)', text:`Emergency fund covers only <strong>${emergencyMo} months</strong>. Try to build to 3 months before investing.` });
+
+    insightsList.innerHTML = insights.slice(0, 4).map(i =>
+      `<div class="insight-item"><div class="insight-dot" style="background:${i.color};"></div><div class="insight-text">${i.text}</div></div>`
+    ).join('');
+  }
 }
 
 function initChart() {
@@ -1485,6 +1635,171 @@ function updateAllCards() {
   }
 }
 
+// ── GOALS SYSTEM ──
+let GOALS = [];
+let editingGoalIdx = -1;
+let selectedGoalColor = 'var(--teal)';
+
+function loadGoals() {
+  try {
+    const saved = localStorage.getItem('pfc_goals');
+    GOALS = saved ? JSON.parse(saved) : [
+      { name:'Emergency fund', current:12600, target:15000, color:'var(--teal)' },
+      { name:'Home deposit',   current:4200,  target:25000, color:'var(--blue)' },
+      { name:'Holiday fund',   current:1140,  target:2000,  color:'var(--amber)' }
+    ];
+  } catch(e) {
+    GOALS = [];
+  }
+  renderGoals();
+}
+
+function saveGoals() {
+  try { localStorage.setItem('pfc_goals', JSON.stringify(GOALS)); } catch(e) {}
+}
+
+function renderGoals() {
+  const list    = document.getElementById('goals-list');
+  const surplus = Math.max(0, (USER.income + USER.otherIncome) - (USER.housing + USER.food + USER.transport + USER.otherExp));
+  const sym     = USER.currency;
+  if (!list) return;
+
+  if (GOALS.length === 0) {
+    list.innerHTML = `<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px;">No goals yet — add your first one below.</div>`;
+    const badge = document.querySelector('.badge-blue');
+    if (badge) badge.textContent = '0 active goals';
+    return;
+  }
+
+  list.innerHTML = GOALS.map((g, i) => {
+    const pct      = Math.min(100, Math.round((g.current / Math.max(1, g.target)) * 100));
+    const remaining = Math.max(0, g.target - g.current);
+    const months   = surplus > 0 ? Math.ceil(remaining / surplus) : null;
+    const barColor = g.color || 'var(--teal)';
+    const pctColor = pct >= 100 ? 'var(--teal)' : barColor;
+    return `
+      <div style="position:relative;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+          <div>
+            <div style="font-size:13.5px;font-weight:500;">${g.name}</div>
+            <div style="font-size:11px;color:var(--text3);">${sym}${Math.round(g.current).toLocaleString()} of ${sym}${Math.round(g.target).toLocaleString()}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div style="font-size:13px;font-weight:600;color:${pctColor};">${pct}%</div>
+            <div style="display:flex;gap:4px;">
+              <button onclick="editGoal(${i})" style="width:22px;height:22px;border-radius:5px;background:var(--bg3);border:1px solid var(--border);cursor:pointer;font-size:11px;color:var(--text3);display:flex;align-items:center;justify-content:center;" title="Edit">✏</button>
+              <button onclick="deleteGoal(${i})" style="width:22px;height:22px;border-radius:5px;background:var(--bg3);border:1px solid var(--border);cursor:pointer;font-size:11px;color:var(--red);display:flex;align-items:center;justify-content:center;" title="Delete">✕</button>
+            </div>
+          </div>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" style="width:${pct}%;background:${barColor};"></div></div>
+        <div style="font-size:11px;color:var(--text3);margin-top:4px;">
+          ${pct >= 100 ? '🎉 Goal reached!' : months ? `~${months} month${months===1?'':'s'} to reach goal` : 'Increase your surplus to reach this goal'}
+        </div>
+      </div>`;
+  }).join('');
+
+  const badge = document.querySelector('.badge-blue');
+  if (badge) badge.textContent = GOALS.length + ' active goal' + (GOALS.length===1?'':'s');
+}
+
+function openAddGoal() {
+  editingGoalIdx = -1;
+  document.getElementById('goal-modal-title').textContent = 'Add new goal';
+  document.getElementById('goal-name').value    = '';
+  document.getElementById('goal-current').value = '';
+  document.getElementById('goal-target').value  = '';
+  selectedGoalColor = 'var(--teal)';
+  document.querySelectorAll('.goal-color-opt').forEach(el => {
+    el.style.border = el.dataset.color === selectedGoalColor ? '2px solid white' : '2px solid transparent';
+  });
+  document.getElementById('goal-preview').style.display = 'none';
+  document.getElementById('goal-overlay').style.display = 'flex';
+  setTimeout(() => document.getElementById('goal-name').focus(), 100);
+}
+
+function editGoal(i) {
+  const g = GOALS[i];
+  editingGoalIdx = i;
+  document.getElementById('goal-modal-title').textContent = 'Edit goal';
+  document.getElementById('goal-name').value    = g.name;
+  document.getElementById('goal-current').value = g.current;
+  document.getElementById('goal-target').value  = g.target;
+  selectedGoalColor = g.color || 'var(--teal)';
+  document.querySelectorAll('.goal-color-opt').forEach(el => {
+    el.style.border = el.dataset.color === selectedGoalColor ? '2px solid white' : '2px solid transparent';
+  });
+  goalCalcPreview();
+  document.getElementById('goal-overlay').style.display = 'flex';
+}
+
+function deleteGoal(i) {
+  if (!confirm('Delete "' + GOALS[i].name + '"?')) return;
+  GOALS.splice(i, 1);
+  saveGoals();
+  renderGoals();
+  showDashToast('Goal deleted');
+}
+
+function closeGoalModal() {
+  document.getElementById('goal-overlay').style.display = 'none';
+}
+
+function goalCalcPreview() {
+  const name    = document.getElementById('goal-name').value || 'My goal';
+  const current = parseFloat(document.getElementById('goal-current').value) || 0;
+  const target  = parseFloat(document.getElementById('goal-target').value)  || 0;
+  if (target <= 0) { document.getElementById('goal-preview').style.display = 'none'; return; }
+
+  const pct      = Math.min(100, Math.round(current / target * 100));
+  const surplus  = Math.max(0, (USER.income + USER.otherIncome) - (USER.housing + USER.food + USER.transport + USER.otherExp));
+  const remaining = Math.max(0, target - current);
+  const months   = surplus > 0 ? Math.ceil(remaining / surplus) : null;
+  const sym      = USER.currency;
+
+  document.getElementById('goal-preview').style.display = 'block';
+  document.getElementById('gp-name').textContent = name;
+  document.getElementById('gp-pct').textContent  = pct + '%';
+  document.getElementById('gp-bar').style.width  = pct + '%';
+  document.getElementById('gp-bar').style.background = selectedGoalColor.includes('--') ? 'var(' + selectedGoalColor.match(/--[\w-]+/)?.[0] + ')' : selectedGoalColor;
+  document.getElementById('gp-months').textContent = months
+    ? sym + Math.round(remaining).toLocaleString() + ' remaining · ~' + months + ' month' + (months===1?'':'s') + ' at your current surplus'
+    : 'Increase your surplus to estimate timeline';
+}
+
+function saveGoal() {
+  const name    = document.getElementById('goal-name').value.trim();
+  const current = parseFloat(document.getElementById('goal-current').value) || 0;
+  const target  = parseFloat(document.getElementById('goal-target').value);
+
+  if (!name)    { document.getElementById('goal-name').style.borderColor = 'rgba(224,82,82,.6)'; setTimeout(()=>document.getElementById('goal-name').style.borderColor='',1500); return; }
+  if (!target || target <= 0) { document.getElementById('goal-target').style.borderColor = 'rgba(224,82,82,.6)'; setTimeout(()=>document.getElementById('goal-target').style.borderColor='',1500); return; }
+
+  const goal = { name, current, target, color: selectedGoalColor };
+  if (editingGoalIdx >= 0) {
+    GOALS[editingGoalIdx] = goal;
+    showDashToast('Goal updated');
+  } else {
+    GOALS.push(goal);
+    showDashToast('Goal added — ' + name);
+  }
+  saveGoals();
+  renderGoals();
+  closeGoalModal();
+}
+
+// Wire up colour picker
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.goal-color-opt').forEach(el => {
+    el.addEventListener('click', () => {
+      selectedGoalColor = el.dataset.color;
+      document.querySelectorAll('.goal-color-opt').forEach(e => e.style.border = '2px solid transparent');
+      el.style.border = '2px solid white';
+      goalCalcPreview();
+    });
+  });
+});
+
 // ── NOTIFICATIONS ──
 let unreadCount = 2;
 function toggleNotifications(btn) {
@@ -1642,6 +1957,7 @@ function showNavToast(key) {
 // ── INIT ──
 initChart();
 updateAllCards();
+loadGoals();
 </script>
 </body>
 </html>
