@@ -469,6 +469,10 @@
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
         Import CSV
       </button>
+      <button class="topbar-btn" onclick="openEditFinances()" style="border-color:rgba(0,200,150,0.35);color:var(--teal);">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9.5 1.5a1.5 1.5 0 012.1 2.1L4.5 10.7 2 11.5l.8-2.5z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>
+        Edit finances
+      </button>
       <button class="topbar-btn" onclick="toggleNotifications(this)">
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.4"/><path d="M7 4v3.5l2 1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
         Notifications
@@ -971,10 +975,160 @@
     </div><!-- /panel-goals -->
 
   </div><!-- /content -->
+<!-- ═══════════════════════════════
+     EDIT FINANCES MODAL
+════════════════════════════════ -->
+<div id="ef-overlay" style="display:none;position:fixed;inset:0;background:rgba(4,6,10,0.85);backdrop-filter:blur(6px);z-index:100;align-items:flex-start;justify-content:center;overflow-y:auto;padding:20px;">
+  <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:16px;width:100%;max-width:600px;margin:auto;overflow:hidden;">
+
+    <!-- Header -->
+    <div style="padding:20px 24px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+      <div>
+        <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700;">Edit my finances</div>
+        <div style="font-size:12px;color:var(--text3);margin-top:2px;">Changes update your forecast, health score and all charts instantly</div>
+      </div>
+      <div onclick="closeEditFinances()" style="width:30px;height:30px;border-radius:50%;background:var(--bg3);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2);font-size:16px;">✕</div>
+    </div>
+
+    <div style="padding:22px 24px;">
+
+      <!-- LIVE NET WORTH PREVIEW -->
+      <div style="background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);padding:14px 18px;display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:22px;">
+        <div style="text-align:center;">
+          <div style="font-size:11px;color:var(--text3);margin-bottom:3px;">Monthly surplus</div>
+          <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700;" id="ef-surplus">$0</div>
+        </div>
+        <div style="text-align:center;border-left:1px solid var(--border);border-right:1px solid var(--border);">
+          <div style="font-size:11px;color:var(--text3);margin-bottom:3px;">Net worth today</div>
+          <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700;" id="ef-nw">$0</div>
+        </div>
+        <div style="text-align:center;">
+          <div style="font-size:11px;color:var(--text3);margin-bottom:3px;">Health score</div>
+          <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700;" id="ef-score">0</div>
+        </div>
+      </div>
+
+      <!-- INCOME -->
+      <div style="font-size:11px;font-weight:700;color:var(--teal);letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px;">Income</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px;">
+        <div>
+          <label style="font-size:12px;color:var(--text2);display:block;margin-bottom:5px;">Monthly take-home pay</label>
+          <div style="position:relative;">
+            <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:14px;" id="ef-sym1">$</span>
+            <input type="number" id="ef-income" style="width:100%;padding:9px 12px 9px 26px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;" oninput="efCalc()">
+          </div>
+        </div>
+        <div>
+          <label style="font-size:12px;color:var(--text2);display:block;margin-bottom:5px;">Other income (optional)</label>
+          <div style="position:relative;">
+            <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:14px;" id="ef-sym2">$</span>
+            <input type="number" id="ef-other-income" style="width:100%;padding:9px 12px 9px 26px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;" oninput="efCalc()">
+          </div>
+        </div>
+      </div>
+
+      <!-- EXPENSES -->
+      <div style="font-size:11px;font-weight:700;color:var(--amber);letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px;">Monthly expenses</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px;">
+        <div>
+          <label style="font-size:12px;color:var(--text2);display:block;margin-bottom:5px;">Housing (rent/mortgage)</label>
+          <input type="number" id="ef-housing" style="width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;" oninput="efCalc()">
+        </div>
+        <div>
+          <label style="font-size:12px;color:var(--text2);display:block;margin-bottom:5px;">Food & groceries</label>
+          <input type="number" id="ef-food" style="width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;" oninput="efCalc()">
+        </div>
+        <div>
+          <label style="font-size:12px;color:var(--text2);display:block;margin-bottom:5px;">Transport</label>
+          <input type="number" id="ef-transport" style="width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;" oninput="efCalc()">
+        </div>
+        <div>
+          <label style="font-size:12px;color:var(--text2);display:block;margin-bottom:5px;">Other expenses</label>
+          <input type="number" id="ef-other-exp" style="width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;" oninput="efCalc()">
+        </div>
+      </div>
+
+      <!-- SAVINGS & DEBT -->
+      <div style="font-size:11px;font-weight:700;color:var(--blue);letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px;">Savings & debt</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:22px;">
+        <div>
+          <label style="font-size:12px;color:var(--text2);display:block;margin-bottom:5px;">Current savings / cash</label>
+          <input type="number" id="ef-savings" style="width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;" oninput="efCalc()">
+        </div>
+        <div>
+          <label style="font-size:12px;color:var(--text2);display:block;margin-bottom:5px;">Investments (optional)</label>
+          <input type="number" id="ef-investments" style="width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;" oninput="efCalc()">
+        </div>
+        <div>
+          <label style="font-size:12px;color:var(--text2);display:block;margin-bottom:5px;">Total debt</label>
+          <input type="number" id="ef-debt" style="width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;" oninput="efCalc()">
+        </div>
+        <div>
+          <label style="font-size:12px;color:var(--text2);display:block;margin-bottom:5px;">Monthly debt payment</label>
+          <input type="number" id="ef-debtpay" style="width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;" oninput="efCalc()">
+        </div>
+      </div>
+
+      <!-- CURRENCY -->
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:22px;">
+        <div style="flex:1;">
+          <label style="font-size:12px;color:var(--text2);display:block;margin-bottom:5px;">Currency</label>
+          <select id="ef-currency" style="width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;" onchange="efCalc()">
+            <option value="$">US Dollar ($)</option>
+            <option value="€">Euro (€)</option>
+            <option value="£">British Pound (£)</option>
+            <option value="₨">Mauritian Rupee (₨)</option>
+            <option value="A$">Australian Dollar (A$)</option>
+            <option value="C$">Canadian Dollar (C$)</option>
+            <option value="₹">Indian Rupee (₹)</option>
+            <option value="R">South African Rand (R)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- BUTTONS -->
+      <div style="display:flex;gap:10px;">
+        <button onclick="saveEditFinances()" style="flex:1;padding:12px;background:var(--teal);border:none;border-radius:var(--r-sm);font-size:14px;font-weight:700;color:#080C12;font-family:'DM Sans',sans-serif;cursor:pointer;transition:opacity .15s;" onmouseover="this.style.opacity='.88'" onmouseout="this.style.opacity='1'">
+          Save & update dashboard
+        </button>
+        <button onclick="resetFinances()" style="padding:12px 18px;background:transparent;border:1px solid var(--border2);border-radius:var(--r-sm);font-size:13px;color:var(--text2);font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .15s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--text2)'">
+          Reset to defaults
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
 </main><!-- /main -->
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script>
+// ── CENTRAL USER DATA (persisted to localStorage) ──
+const DEFAULT_USER = {
+  income: 3000, otherIncome: 0,
+  housing: 1200, food: 540, transport: 310, otherExp: 380,
+  savings: 11580, investments: 0,
+  debt: 8000, debtPay: 550,
+  currency: '$', name: 'Divyesh K.'
+};
+
+function loadUser() {
+  try {
+    const saved = localStorage.getItem('pfc_user');
+    return saved ? { ...DEFAULT_USER, ...JSON.parse(saved) } : { ...DEFAULT_USER };
+  } catch(e) { return { ...DEFAULT_USER }; }
+}
+function saveUser(u) {
+  try { localStorage.setItem('pfc_user', JSON.stringify(u)); } catch(e) {}
+}
+
+let USER = loadUser();
+
+function fmt(v) {
+  return USER.currency + Math.abs(Math.round(v)).toLocaleString();
+}
+
 // ── FORECAST CHART ──
 const MONTHS = ['Now','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 let chart;
@@ -985,11 +1139,11 @@ function buildData() {
   const infl    = parseFloat(document.getElementById('sl-inflation').value) / 100;
   const intRate = parseFloat(document.getElementById('sl-interest').value)  / 100 / 12;
 
-  const income   = 3000 * (1 + incChg);
-  const expenses = 2430;
-  const savings  = 11580;
-  const debt     = 8000;
-  const debtPay  = 550;
+  const income   = (USER.income + USER.otherIncome) * (1 + incChg);
+  const expenses = USER.housing + USER.food + USER.transport + USER.otherExp;
+  const savings  = USER.savings + USER.investments;
+  const debt     = USER.debt;
+  const debtPay  = USER.debtPay;
 
   const monthly = income - expenses + extra;
   let nw = savings - debt, nwO = nw, nwC = nw;
@@ -1181,6 +1335,156 @@ function getSageReply(msg) {
   return 'Great question! Based on your current financial profile — <em>$570/month savings rate</em>, <em>14 months to debt-free</em>, and a health score of <em>74/100</em> — you\'re in a solid position. Could you tell me more specifically what you\'d like to plan for?';
 }
 
+// ── EDIT FINANCES MODAL ──
+function openEditFinances() {
+  document.getElementById('ef-income').value       = USER.income;
+  document.getElementById('ef-other-income').value = USER.otherIncome;
+  document.getElementById('ef-housing').value      = USER.housing;
+  document.getElementById('ef-food').value         = USER.food;
+  document.getElementById('ef-transport').value    = USER.transport;
+  document.getElementById('ef-other-exp').value    = USER.otherExp;
+  document.getElementById('ef-savings').value      = USER.savings;
+  document.getElementById('ef-investments').value  = USER.investments;
+  document.getElementById('ef-debt').value         = USER.debt;
+  document.getElementById('ef-debtpay').value      = USER.debtPay;
+  const sel = document.getElementById('ef-currency');
+  for (let i = 0; i < sel.options.length; i++) {
+    if (sel.options[i].value === USER.currency) { sel.selectedIndex = i; break; }
+  }
+  efCalc();
+  document.getElementById('ef-overlay').style.display = 'flex';
+  document.addEventListener('keydown', efEscHandler);
+}
+function efEscHandler(e) { if (e.key === 'Escape') closeEditFinances(); }
+function closeEditFinances() {
+  document.getElementById('ef-overlay').style.display = 'none';
+  document.removeEventListener('keydown', efEscHandler);
+}
+function efGet(id) { return parseFloat(document.getElementById(id).value) || 0; }
+function efCalc() {
+  const income   = efGet('ef-income') + efGet('ef-other-income');
+  const expenses = efGet('ef-housing') + efGet('ef-food') + efGet('ef-transport') + efGet('ef-other-exp');
+  const savings  = efGet('ef-savings') + efGet('ef-investments');
+  const debt     = efGet('ef-debt');
+  const sym      = document.getElementById('ef-currency').value;
+  const surplus  = income - expenses;
+  const nw       = savings - debt;
+  const surpEl   = document.getElementById('ef-surplus');
+  surpEl.textContent = (surplus >= 0 ? sym : '-' + sym) + Math.abs(Math.round(surplus)).toLocaleString();
+  surpEl.style.color = surplus >= 0 ? 'var(--teal)' : 'var(--red)';
+  const nwEl2    = document.getElementById('ef-nw');
+  nwEl2.textContent = (nw >= 0 ? sym : '-' + sym) + Math.abs(Math.round(nw)).toLocaleString();
+  nwEl2.style.color = nw >= 0 ? 'var(--teal)' : 'var(--red)';
+  const savePct  = income > 0 ? surplus / income : 0;
+  let score = 0;
+  if (savePct >= 0.2) score += 30; else if (savePct >= 0.1) score += 20; else if (savePct > 0) score += 10;
+  if (surplus > 0) score += 20;
+  if (debt === 0) score += 25; else if (debt < savings) score += 12;
+  if (savings >= surplus * 3) score += 15; else if (savings > 0) score += 8;
+  score = Math.min(99, Math.max(5, score));
+  const scEl2 = document.getElementById('ef-score');
+  scEl2.textContent = score + ' / 100';
+  scEl2.style.color = score >= 70 ? 'var(--teal)' : score >= 40 ? 'var(--amber)' : 'var(--red)';
+  ['ef-sym1','ef-sym2'].forEach(id => { const el = document.getElementById(id); if(el) el.textContent = sym; });
+}
+function saveEditFinances() {
+  USER.income = efGet('ef-income'); USER.otherIncome = efGet('ef-other-income');
+  USER.housing = efGet('ef-housing'); USER.food = efGet('ef-food');
+  USER.transport = efGet('ef-transport'); USER.otherExp = efGet('ef-other-exp');
+  USER.savings = efGet('ef-savings'); USER.investments = efGet('ef-investments');
+  USER.debt = efGet('ef-debt'); USER.debtPay = efGet('ef-debtpay');
+  USER.currency = document.getElementById('ef-currency').value;
+  saveUser(USER);
+  closeEditFinances();
+  recalcForecast();
+  updateAllCards();
+  showDashToast('Financial data saved — all charts updated');
+}
+function resetFinances() {
+  if (!confirm('Reset all financial data to example defaults?')) return;
+  USER = { ...DEFAULT_USER }; saveUser(USER);
+  closeEditFinances(); recalcForecast(); updateAllCards();
+  showDashToast('Reset to default data');
+}
+function updateAllCards() {
+  const sym      = USER.currency;
+  const income   = USER.income + USER.otherIncome;
+  const expenses = USER.housing + USER.food + USER.transport + USER.otherExp;
+  const assets   = USER.savings + USER.investments;
+  const surplus  = income - expenses;
+  const nw       = assets - USER.debt;
+  const nw12     = nw + surplus * 12 * 0.9;
+  const dMonths  = USER.debtPay > 0 && USER.debt > 0 ? Math.ceil(USER.debt / USER.debtPay) : 0;
+  const pct      = income > 0 ? Math.round((surplus/income)*100) : 0;
+
+  // Health score
+  const savePct = income > 0 ? surplus / income : 0;
+  let score = 0;
+  if (savePct >= 0.2) score += 30; else if (savePct >= 0.1) score += 20; else if (savePct > 0) score += 10;
+  if (surplus > 0) score += 20;
+  if (USER.debt === 0) score += 25; else if (USER.debt < assets) score += 12;
+  if (assets >= surplus * 3) score += 15; else if (assets > 0) score += 8;
+  score = Math.min(99, Math.max(5, score));
+
+  // Update metric cards
+  const nwEl = document.getElementById('m-networth');
+  if (nwEl) { nwEl.textContent = sym + Math.round(nw12).toLocaleString(); nwEl.style.color = nw12 >= 0 ? 'var(--teal)' : 'var(--red)'; }
+  const svEl = document.getElementById('m-savings');
+  if (svEl) svEl.textContent = sym + Math.round(Math.max(0,surplus)).toLocaleString();
+  const dbEl = document.getElementById('m-debt');
+  if (dbEl) dbEl.textContent = dMonths > 0 ? dMonths + ' mo' : 'Debt free!';
+  const scEl = document.getElementById('m-score');
+  if (scEl) { scEl.textContent = score; scEl.style.color = score >= 70 ? 'var(--teal)' : score >= 40 ? 'var(--amber)' : 'var(--red)'; }
+
+  // Health ring score number
+  const ringNum = document.querySelector('text[font-size="28"]');
+  if (ringNum) ringNum.textContent = score;
+  const ringArc = document.querySelector('circle[stroke-linecap="round"]');
+  if (ringArc) {
+    const dashOff = Math.round(339 - (339 * score / 100));
+    ringArc.setAttribute('stroke-dashoffset', dashOff);
+    ringArc.setAttribute('stroke', score >= 70 ? '#00C896' : score >= 40 ? '#F5A623' : '#E05252');
+  }
+
+  // Score breakdown bars
+  const emergencyMo = surplus > 0 ? +(assets/Math.max(1,expenses)).toFixed(1) : 0;
+  document.querySelectorAll('.score-row').forEach(row => {
+    const label = row.querySelector('.score-row-label')?.textContent.toLowerCase() || '';
+    const fill  = row.querySelector('.score-row-fill');
+    const val   = row.querySelector('.score-row-val');
+    if (!fill || !val) return;
+    if (label.includes('savings')) {
+      fill.style.width = Math.min(100,pct*2) + '%';
+      val.textContent = pct + '%';
+      val.style.color = pct >= 20 ? 'var(--teal)' : 'var(--amber)';
+    } else if (label.includes('emergency')) {
+      const em = Math.min(100, emergencyMo/6*100);
+      fill.style.width = em + '%';
+      val.textContent = emergencyMo + 'mo';
+      val.style.color = emergencyMo >= 3 ? 'var(--teal)' : 'var(--amber)';
+    }
+  });
+
+  // Spending breakdown
+  const spendMap = {Housing: USER.housing, Food: USER.food, Transport: USER.transport, Other: USER.otherExp};
+  const totalExp = expenses || 1;
+  document.querySelectorAll('#spend-list > div').forEach(row => {
+    const label = row.querySelector('div:first-child')?.textContent.trim();
+    const barFill = row.querySelector('div > div');
+    const valEl = row.querySelector('div:last-child');
+    if (label && spendMap[label] !== undefined) {
+      if (barFill) barFill.style.width = Math.round(spendMap[label]/totalExp*100) + '%';
+      if (valEl) valEl.textContent = sym + Math.round(spendMap[label]).toLocaleString();
+    }
+  });
+
+  // Debt table
+  const debtSubEl = document.querySelector('.card-sub');
+  if (debtSubEl && debtSubEl.textContent.includes('remaining')) {
+    debtSubEl.textContent = 'Total: ' + sym + USER.debt.toLocaleString() + ' remaining';
+  }
+}
+
 // ── NOTIFICATIONS ──
 let unreadCount = 2;
 function toggleNotifications(btn) {
@@ -1337,6 +1641,7 @@ function showNavToast(key) {
 
 // ── INIT ──
 initChart();
+updateAllCards();
 </script>
 </body>
 </html>
