@@ -384,6 +384,16 @@
     .grid-2-equal { grid-template-columns: 1fr; }
     .grid-3 { grid-template-columns: 1fr; }
   }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .cat-tag {
+    display:inline-block;padding:2px 8px;border-radius:5px;
+    font-size:11px;font-weight:600;
+  }
+  select.cat-select {
+    background:var(--bg3);border:1px solid var(--border2);
+    border-radius:5px;font-size:11px;color:var(--text);
+    padding:2px 6px;cursor:pointer;font-family:'DM Sans',sans-serif;outline:none;
+  }
 </style>
 </head>
 <body>
@@ -522,36 +532,168 @@
     </div>
   </div>
 
-  <!-- CSV IMPORT MODAL -->
-  <div id="csv-overlay" style="display:none;position:fixed;inset:0;background:rgba(4,6,10,0.8);backdrop-filter:blur(6px);z-index:100;align-items:center;justify-content:center;">
-    <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:16px;width:100%;max-width:480px;margin:20px;overflow:hidden;">
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- CSV IMPORT MODAL — full 3-stage engine     -->
+  <!-- ═══════════════════════════════════════════ -->
+  <div id="csv-overlay" style="display:none;position:fixed;inset:0;background:rgba(4,6,10,0.88);backdrop-filter:blur(8px);z-index:100;align-items:flex-start;justify-content:center;overflow-y:auto;padding:20px;">
+
+    <!-- ── STAGE 1: UPLOAD ── -->
+    <div id="csv-stage-upload" style="background:var(--bg2);border:1px solid var(--border2);border-radius:16px;width:100%;max-width:500px;margin:auto;overflow:hidden;">
       <div style="padding:20px 24px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
-        <div style="font-family:'Syne',sans-serif;font-size:17px;font-weight:700;">Import bank statement (CSV)</div>
+        <div>
+          <div style="font-family:'Syne',sans-serif;font-size:17px;font-weight:700;">Import bank statement</div>
+          <div style="font-size:12px;color:var(--text3);margin-top:2px;">Real analysis · AI categorisation · Dashboard sync</div>
+        </div>
         <div onclick="closeCSV()" style="width:28px;height:28px;border-radius:50%;background:var(--bg3);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2);">✕</div>
       </div>
       <div style="padding:22px 24px;">
-        <div style="background:var(--bg3);border:2px dashed var(--border2);border-radius:var(--r);padding:32px;text-align:center;margin-bottom:16px;cursor:pointer;transition:border-color .2s;" id="csv-drop" onclick="document.getElementById('csv-file').click()" ondragover="event.preventDefault();this.style.borderColor='var(--teal)'" ondragleave="this.style.borderColor=''" ondrop="handleDrop(event)">
-          <svg width="32" height="32" viewBox="0 0 32 32" fill="none" style="margin:0 auto 10px;display:block;"><path d="M16 4v16M8 12l8-8 8 8" stroke="#00C896" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 24h24" stroke="#8A9BB0" stroke-width="2" stroke-linecap="round"/></svg>
-          <div style="font-size:14px;font-weight:500;margin-bottom:4px;">Drop your CSV here or click to browse</div>
-          <div style="font-size:12px;color:var(--text3);">Supports exports from most banks · Max 10MB</div>
-          <input type="file" id="csv-file" accept=".csv" style="display:none" onchange="handleCSVFile(this)">
+        <div id="csv-drop" onclick="document.getElementById('csv-file').click()"
+          ondragover="event.preventDefault();this.style.borderColor='var(--teal)';this.style.background='rgba(0,200,150,0.04)'"
+          ondragleave="this.style.borderColor='';this.style.background=''"
+          ondrop="handleDrop(event)"
+          style="background:var(--bg3);border:2px dashed var(--border2);border-radius:var(--r);padding:36px;text-align:center;margin-bottom:16px;cursor:pointer;transition:all .2s;">
+          <svg width="36" height="36" viewBox="0 0 36 36" fill="none" style="margin:0 auto 12px;display:block;"><path d="M18 4v20M8 14l10-10 10 10" stroke="#00C896" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 28h28" stroke="#4A5A6E" stroke-width="2" stroke-linecap="round"/></svg>
+          <div style="font-size:14px;font-weight:600;margin-bottom:5px;">Drop your CSV here or click to browse</div>
+          <div style="font-size:12px;color:var(--text3);">Works with MCB, Barclays, HSBC, SBM, standard exports · Max 10MB</div>
+          <input type="file" id="csv-file" accept=".csv,.txt" style="display:none" onchange="handleCSVFile(this)">
         </div>
-        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px 14px;margin-bottom:16px;">
-          <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px;">How to export your CSV:</div>
-          <div style="font-size:12.5px;color:var(--text3);line-height:1.6;">
-            <b style="color:var(--text2);">Most banks:</b> Log in → Account history → Export/Download → choose CSV<br>
-            <b style="color:var(--text2);">PayPal:</b> Activity → Statements → Download → CSV<br>
-            Sage will auto-categorise every transaction for you.
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px 14px;margin-bottom:12px;">
+          <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:7px;">How to export from your bank:</div>
+          <div style="font-size:12px;color:var(--text3);line-height:1.7;">
+            <b style="color:var(--text2);">MCB / SBM / AfrAsia (Mauritius):</b> Log in → Transactions → Export → CSV<br>
+            <b style="color:var(--text2);">Most international banks:</b> Account history → Download → CSV<br>
+            <b style="color:var(--text2);">PayPal:</b> Activity → Statements → CSV
           </div>
         </div>
-        <div id="csv-status" style="display:none;background:var(--teal-dim);border:1px solid rgba(0,200,150,0.3);border-radius:var(--r-sm);padding:12px 14px;font-size:13px;color:var(--teal);"></div>
-        <div style="font-size:12px;color:var(--text3);display:flex;align-items:center;gap:6px;margin-top:10px;">
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1l2.5 3H11L8.5 6l1 3.5L6 8 2.5 9.5l1-3.5L1 4h2.5z" stroke="#4A5A6E" stroke-width="1.2" stroke-linejoin="round"/></svg>
-          Your CSV is processed locally — it never leaves your browser unencrypted
+        <div style="font-size:11.5px;color:var(--text3);display:flex;align-items:center;gap:6px;">
+          <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M5.5 1l1.5 2.5L10 4.5 8 6.5l.5 3-3-1.5-3 1.5.5-3L1 4.5l3-.9z" stroke="#4A5A6E" stroke-width="1.1" stroke-linejoin="round"/></svg>
+          Processed entirely in your browser — nothing uploaded to any server
         </div>
       </div>
     </div>
-  </div>
+
+    <!-- ── STAGE 2: PROCESSING ── -->
+    <div id="csv-stage-processing" style="display:none;background:var(--bg2);border:1px solid var(--border2);border-radius:16px;width:100%;max-width:500px;margin:auto;overflow:hidden;">
+      <div style="padding:40px 32px;text-align:center;">
+        <div id="csv-spinner" style="width:56px;height:56px;border:3px solid var(--bg3);border-top-color:var(--teal);border-radius:50%;margin:0 auto 20px;animation:spin 0.8s linear infinite;"></div>
+        <div style="font-family:'Syne',sans-serif;font-size:17px;font-weight:700;margin-bottom:8px;" id="csv-proc-title">Reading your statement…</div>
+        <div style="font-size:13px;color:var(--text3);margin-bottom:20px;" id="csv-proc-sub">Detecting bank format and parsing transactions</div>
+        <div style="height:4px;background:var(--bg3);border-radius:2px;overflow:hidden;">
+          <div id="csv-proc-bar" style="height:100%;background:var(--teal);border-radius:2px;width:0%;transition:width .4s ease;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── STAGE 3: REPORT ── -->
+    <div id="csv-stage-report" style="display:none;background:var(--bg2);border:1px solid var(--border2);border-radius:16px;width:100%;max-width:900px;margin:auto;overflow:hidden;">
+
+      <!-- Report header -->
+      <div style="padding:18px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+        <div>
+          <div style="font-family:'Syne',sans-serif;font-size:17px;font-weight:700;">Statement Analysis</div>
+          <div style="font-size:12px;color:var(--text3);margin-top:2px;" id="rpt-filename">—</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <button onclick="csvStage('upload')" style="padding:6px 14px;background:transparent;border:1px solid var(--border2);border-radius:var(--r-sm);font-size:12px;color:var(--text2);cursor:pointer;font-family:'DM Sans',sans-serif;">← New file</button>
+          <div onclick="closeCSV()" style="width:28px;height:28px;border-radius:50%;background:var(--bg3);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2);">✕</div>
+        </div>
+      </div>
+
+      <!-- Summary cards -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0;border-bottom:1px solid var(--border);">
+        <div style="padding:16px 20px;border-right:1px solid var(--border);">
+          <div style="font-size:11px;color:var(--text3);margin-bottom:4px;font-weight:500;">Total income found</div>
+          <div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:700;color:var(--teal);" id="rpt-income">—</div>
+        </div>
+        <div style="padding:16px 20px;border-right:1px solid var(--border);">
+          <div style="font-size:11px;color:var(--text3);margin-bottom:4px;font-weight:500;">Total spent</div>
+          <div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:700;color:var(--red);" id="rpt-spent">—</div>
+        </div>
+        <div style="padding:16px 20px;border-right:1px solid var(--border);">
+          <div style="font-size:11px;color:var(--text3);margin-bottom:4px;font-weight:500;">Net cash flow</div>
+          <div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:700;" id="rpt-net">—</div>
+        </div>
+        <div style="padding:16px 20px;">
+          <div style="font-size:11px;color:var(--text3);margin-bottom:4px;font-weight:500;">Transactions</div>
+          <div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:700;" id="rpt-count">—</div>
+        </div>
+      </div>
+
+      <!-- Gemini status bar -->
+      <div id="rpt-ai-bar" style="display:none;padding:10px 20px;background:rgba(0,200,150,0.06);border-bottom:1px solid rgba(0,200,150,0.15);font-size:12px;color:var(--teal);display:flex;align-items:center;gap:8px;">
+        <div style="width:10px;height:10px;border:2px solid var(--teal);border-top-color:transparent;border-radius:50%;animation:spin 0.8s linear infinite;flex-shrink:0;"></div>
+        <span id="rpt-ai-msg">Sage is categorising unrecognised transactions…</span>
+      </div>
+
+      <div style="display:grid;grid-template-columns:280px 1fr;">
+
+        <!-- Left: category breakdown + top merchants -->
+        <div style="border-right:1px solid var(--border);padding:18px 20px;max-height:520px;overflow-y:auto;">
+          <div style="font-size:11px;font-weight:700;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:12px;">By category</div>
+          <div id="rpt-cats" style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px;"></div>
+
+          <div style="font-size:11px;font-weight:700;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:12px;border-top:1px solid var(--border);padding-top:16px;">Top merchants</div>
+          <div id="rpt-merchants" style="display:flex;flex-direction:column;gap:7px;"></div>
+
+          <!-- Monthly avg -->
+          <div style="border-top:1px solid var(--border);padding-top:14px;margin-top:16px;">
+            <div style="font-size:11px;font-weight:700;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px;">Monthly averages</div>
+            <div id="rpt-monthly" style="display:flex;flex-direction:column;gap:6px;font-size:12.5px;color:var(--text2);"></div>
+          </div>
+        </div>
+
+        <!-- Right: transaction table -->
+        <div style="display:flex;flex-direction:column;max-height:520px;">
+          <!-- Table toolbar -->
+          <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0;">
+            <input id="txn-search" type="text" placeholder="Search transactions…" oninput="filterTxns()"
+              style="flex:1;padding:7px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:13px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;">
+            <select id="txn-filter-cat" onchange="filterTxns()"
+              style="padding:7px 10px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:12px;color:var(--text2);cursor:pointer;font-family:'DM Sans',sans-serif;outline:none;">
+              <option value="">All categories</option>
+              <option value="income">Income</option>
+              <option value="housing">Housing</option>
+              <option value="food">Food</option>
+              <option value="transport">Transport</option>
+              <option value="subscriptions">Subscriptions</option>
+              <option value="entertainment">Entertainment</option>
+              <option value="health">Health</option>
+              <option value="other">Other</option>
+            </select>
+            <div style="font-size:12px;color:var(--text3);" id="txn-count-label">0 rows</div>
+          </div>
+          <!-- Table -->
+          <div style="overflow-y:auto;flex:1;">
+            <table style="width:100%;border-collapse:collapse;" id="txn-table">
+              <thead style="position:sticky;top:0;background:var(--bg2);z-index:2;">
+                <tr>
+                  <th style="padding:10px 14px;font-size:11px;color:var(--text3);text-align:left;font-weight:600;letter-spacing:.04em;border-bottom:1px solid var(--border);">DATE</th>
+                  <th style="padding:10px 14px;font-size:11px;color:var(--text3);text-align:left;font-weight:600;letter-spacing:.04em;border-bottom:1px solid var(--border);">DESCRIPTION</th>
+                  <th style="padding:10px 14px;font-size:11px;color:var(--text3);text-align:right;font-weight:600;letter-spacing:.04em;border-bottom:1px solid var(--border);">AMOUNT</th>
+                  <th style="padding:10px 14px;font-size:11px;color:var(--text3);text-align:left;font-weight:600;letter-spacing:.04em;border-bottom:1px solid var(--border);">CATEGORY</th>
+                </tr>
+              </thead>
+              <tbody id="txn-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Apply bar -->
+      <div style="padding:14px 24px;border-top:1px solid var(--border);background:var(--bg);display:flex;align-items:center;justify-content:space-between;gap:16px;">
+        <div style="font-size:13px;color:var(--text2);" id="rpt-apply-hint">Review categories above, then apply real numbers to your dashboard.</div>
+        <div style="display:flex;gap:10px;flex-shrink:0;">
+          <button onclick="closeCSV()" style="padding:9px 18px;background:transparent;border:1px solid var(--border2);border-radius:var(--r-sm);font-size:13px;color:var(--text2);cursor:pointer;font-family:'DM Sans',sans-serif;">Close</button>
+          <button onclick="applyToDashboard()" style="padding:9px 20px;background:var(--teal);border:none;border-radius:var(--r-sm);font-size:13px;font-weight:700;color:#080C12;cursor:pointer;font-family:'DM Sans',sans-serif;display:flex;align-items:center;gap:7px;">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 7l3.5 3.5L11 3" stroke="#080C12" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Apply to dashboard
+          </button>
+        </div>
+      </div>
+
+    </div><!-- /csv-stage-report -->
+
+  </div><!-- /csv-overlay -->
 
   <!-- CONTENT -->
   <div class="content">
@@ -1863,8 +2005,460 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
-// ── NOTIFICATIONS ──
-let unreadCount = 2;
+// ═══════════════════════════════════════════════════════
+// CSV IMPORT ENGINE — keyword + Gemini combined approach
+// ═══════════════════════════════════════════════════════
+
+// ── Category definitions ──
+const CAT_META = {
+  income:        { label: 'Income',        color: '#00C896', bg: 'rgba(0,200,150,0.12)' },
+  housing:       { label: 'Housing',       color: '#3B82F6', bg: 'rgba(59,130,246,0.12)' },
+  food:          { label: 'Food',          color: '#F5A623', bg: 'rgba(245,166,35,0.12)' },
+  transport:     { label: 'Transport',     color: '#F97316', bg: 'rgba(249,115,22,0.12)' },
+  subscriptions: { label: 'Subscriptions', color: '#A78BFA', bg: 'rgba(167,139,250,0.12)' },
+  entertainment: { label: 'Entertainment', color: '#EC4899', bg: 'rgba(236,72,153,0.12)' },
+  health:        { label: 'Health',        color: '#22C55E', bg: 'rgba(34,197,94,0.12)' },
+  other:         { label: 'Other',         color: '#8A9BB0', bg: 'rgba(138,155,176,0.12)' },
+};
+
+// ── Keyword rules ──
+const KEYWORD_RULES = [
+  // Income signals
+  { cat: 'income', keys: ['salary','salaire','payroll','wages','pay credit','direct dep','direct credit','bank transfer in','virement recu','transfer received','freelance payment','dividend','interest earned','refund credit','cashback','commission credit'] },
+  // Housing
+  { cat: 'housing', keys: ['rent','loyer','mortgage','hypotheque','lease','electricite','electricity','water authority','cwma','cem ','internet','fiber','ftth','airtel','emtel','my.t','myt ','orange ','landlord','syndic','condominium','facility mgmt','facilities'] },
+  // Food & groceries
+  { cat: 'food', keys: ['shoprite','jumbo','super u','hyper u','winner','auchan','carrefour','happy world','casino','spar','simply','food court','kfc','mcdonalds','mc donald','pizza','burger','resto','restaurant','bistro','cafe','coffee','boulangerie','patisserie','bakery','subway','domino','hungry','wolt','bolt food','glovo','uber eat','deliveroo','takeway','takeaway','grocery','alimentation','provost','prix rite','monoprix'] },
+  // Transport
+  { cat: 'transport', keys: ['shell','total ','engen','caltex','petrol','diesel','fuel','esso','bp ','sinopec','parking','autopay','toll','bus ','autobus','taxi','bolt ','uber ','pick me','yango','hertz','avis','budget car','auto repair','garage','mécanique','mechanics','pneu','tyre','tire','motor vehicle','license ','registration fee','rta ','nta ','airport','sita ','air mauritius','air france','british airways','easyjet','ryanair','emirates','qatar air'] },
+  // Subscriptions
+  { cat: 'subscriptions', keys: ['netflix','spotify','apple ','amazon prime','deezer','canal+','canal plus','showmax','bein','sky ','microsoft 365','office 365','adobe','dropbox','google one','icloud','linkedin','canva','zoom ','slack ','notion','github','digitalocean','aws ','cloudflare','openai','anthropic','midjourney','chatgpt'] },
+  // Entertainment
+  { cat: 'entertainment', keys: ['cinema','cinema','cinerama','star ','bagatelle mall','phoenix mall','trianon','so ','caudan','port louis waterfront','bar ','nightclub','club ','concert','event ','billeterie','ticketing','sport ','gym ','fitness','yoga','swimming','golf','tennis','steam ','playstation','nintendo','xbox','game '] },
+  // Health
+  { cat: 'health', keys: ['pharmacy','pharmacie','apollo','dr ','doctor','clinic','hospital','nhosco','hcil','dentist','optician','opticien','laboratory','labo ','scan ','xray','x-ray','physiotherapy','medecin','medical','health ins','assurance sante','blue cross','axa health','swan life','sirdar','mauritius union','bmo','sham '] },
+];
+
+// ── Column header synonyms for auto-detection ──
+const COL_SYNONYMS = {
+  date:   ['date','transaction date','trans date','value date','posted date','posting date','txn date'],
+  desc:   ['description','details','narrative','merchant','payee','reference','particulars','transaction description','libelle','trans description','memo'],
+  debit:  ['debit','amount debit','withdrawal','debit amount','paid out','dr','charges'],
+  credit: ['credit','amount credit','deposit','credit amount','paid in','cr','amount received'],
+  amount: ['amount','net amount','transaction amount','value','montant'],
+};
+
+let CSV_TRANSACTIONS = [];
+let CSV_FILTERED = [];
+
+// ── Stage switcher ──
+function csvStage(name) {
+  ['upload','processing','report'].forEach(s => {
+    document.getElementById('csv-stage-' + s).style.display = 'none';
+  });
+  document.getElementById('csv-stage-' + name).style.display = 'block';
+}
+
+function openCSV() {
+  document.getElementById('csv-overlay').style.display = 'flex';
+  csvStage('upload');
+  document.addEventListener('keydown', csvEscHandler);
+}
+function closeCSV() {
+  document.getElementById('csv-overlay').style.display = 'none';
+  document.removeEventListener('keydown', csvEscHandler);
+  document.getElementById('csv-file').value = '';
+}
+function csvEscHandler(e) { if (e.key === 'Escape') closeCSV(); }
+
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('csv-drop').style.borderColor = '';
+  document.getElementById('csv-drop').style.background = '';
+  const file = e.dataTransfer.files[0];
+  if (file) startCSVProcess(file);
+}
+function handleCSVFile(input) {
+  if (input.files[0]) startCSVProcess(input.files[0]);
+}
+
+// ── MAIN ENTRY: read file → parse → categorise → Gemini → render ──
+async function startCSVProcess(file) {
+  if (file.size > 10 * 1024 * 1024) { alert('File too large. Max 10MB.'); return; }
+  csvStage('processing');
+  setProc('Reading file…', 'Detecting bank format', 5);
+
+  const text = await file.text();
+  document.getElementById('rpt-filename').textContent = file.name + ' · ' + (text.split('\n').length - 1) + ' rows detected';
+
+  setProc('Parsing transactions…', 'Extracting dates, descriptions and amounts', 25);
+  await sleep(200);
+
+  let txns;
+  try { txns = parseCSV(text); }
+  catch(e) { alert('Could not parse this CSV. Try exporting again from your bank.'); csvStage('upload'); return; }
+
+  if (!txns.length) { alert('No transactions found. Check that your file has a date, description and amount column.'); csvStage('upload'); return; }
+
+  setProc('Categorising…', `Running keyword engine on ${txns.length} transactions`, 55);
+  await sleep(150);
+
+  // Keyword pass
+  txns.forEach(t => { t.cat = keywordCategorise(t.desc); t.aiAssisted = false; });
+  const unknown = txns.filter(t => !t.cat);
+
+  setProc('AI enrichment…', `Sending ${unknown.length} unrecognised transactions to Sage`, 72);
+  await sleep(100);
+
+  // Gemini pass for unknowns
+  if (unknown.length > 0) {
+    try { await geminiCategorise(unknown, txns); }
+    catch(e) { /* fallback: mark as other */ unknown.forEach(t => { t.cat = t.cat || 'other'; }); }
+  }
+  txns.forEach(t => { if (!t.cat) t.cat = 'other'; });
+
+  setProc('Building report…', 'Calculating totals and top merchants', 92);
+  await sleep(200);
+
+  CSV_TRANSACTIONS = txns;
+  renderReport(txns);
+  setProc('Done', '', 100);
+  await sleep(180);
+  csvStage('report');
+}
+
+// ── CSV PARSER ──
+function parseCSV(text) {
+  // Normalize line endings
+  const lines = text.replace(/\r\n/g,'\n').replace(/\r/g,'\n').trim().split('\n');
+  if (lines.length < 2) return [];
+
+  // Find header row (first row with recognisable column)
+  let headerIdx = 0;
+  for (let i = 0; i < Math.min(5, lines.length); i++) {
+    const row = lines[i].toLowerCase();
+    if (COL_SYNONYMS.date.some(s => row.includes(s)) || COL_SYNONYMS.desc.some(s => row.includes(s))) {
+      headerIdx = i; break;
+    }
+  }
+
+  const headers = parseCSVRow(lines[headerIdx]).map(h => h.toLowerCase().trim().replace(/['"]/g,''));
+  const colIdx = findColumns(headers);
+
+  if (colIdx.date === -1 || colIdx.desc === -1) throw new Error('No date/desc columns');
+
+  const txns = [];
+  for (let i = headerIdx + 1; i < lines.length; i++) {
+    const row = parseCSVRow(lines[i]);
+    if (!row.length || row.every(c => !c.trim())) continue;
+
+    const rawDate = (row[colIdx.date] || '').trim().replace(/['"]/g,'');
+    const rawDesc = (row[colIdx.desc] || '').trim().replace(/['"]/g,'');
+    if (!rawDate && !rawDesc) continue;
+
+    let amount = 0;
+    let isDebit = false;
+
+    if (colIdx.amount !== -1) {
+      // Single amount column — negative = debit, positive = credit
+      const raw = (row[colIdx.amount] || '').replace(/['",$€£Rs\s]/g,'').replace(/,(?=\d{3})/g,'');
+      amount = parseFloat(raw) || 0;
+      isDebit = amount < 0;
+      amount = Math.abs(amount);
+    } else {
+      // Separate debit/credit columns
+      const dRaw = colIdx.debit !== -1 ? (row[colIdx.debit]||'').replace(/['",$€£Rs\s]/g,'') : '';
+      const cRaw = colIdx.credit !== -1 ? (row[colIdx.credit]||'').replace(/['",$€£Rs\s]/g,'') : '';
+      const d = parseFloat(dRaw) || 0;
+      const c = parseFloat(cRaw) || 0;
+      if (d > 0) { amount = d; isDebit = true; }
+      else if (c > 0) { amount = c; isDebit = false; }
+      else continue;
+    }
+
+    if (!amount) continue;
+
+    txns.push({
+      date: formatDate(rawDate),
+      rawDate,
+      desc: cleanDesc(rawDesc),
+      amount,
+      isDebit,
+      cat: null,
+      aiAssisted: false,
+    });
+  }
+  return txns;
+}
+
+function parseCSVRow(line) {
+  const result = []; let cell = ''; let inQuote = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (c === '"') { inQuote = !inQuote; }
+    else if ((c === ',' || c === ';' || c === '\t') && !inQuote) { result.push(cell); cell = ''; }
+    else { cell += c; }
+  }
+  result.push(cell);
+  return result;
+}
+
+function findColumns(headers) {
+  const find = (synonyms) => headers.findIndex(h => synonyms.some(s => h.includes(s)));
+  const colIdx = {
+    date:   find(COL_SYNONYMS.date),
+    desc:   find(COL_SYNONYMS.desc),
+    debit:  find(COL_SYNONYMS.debit),
+    credit: find(COL_SYNONYMS.credit),
+    amount: find(COL_SYNONYMS.amount),
+  };
+  // If we have separate debit+credit prefer those; if only amount column use that
+  if (colIdx.debit !== -1 || colIdx.credit !== -1) colIdx.amount = -1;
+  return colIdx;
+}
+
+function formatDate(raw) {
+  // Try to parse various date formats
+  const s = raw.replace(/['"]/g,'').trim();
+  // ISO: 2024-01-15
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0,10);
+  // DD/MM/YYYY or DD-MM-YYYY
+  const m1 = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+  if (m1) return `${m1[3]}-${m1[2].padStart(2,'0')}-${m1[1].padStart(2,'0')}`;
+  // MM/DD/YYYY
+  const m2 = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
+  if (m2) { const yr = m2[3].length===2 ? '20'+m2[3] : m2[3]; return `${yr}-${m2[1].padStart(2,'0')}-${m2[2].padStart(2,'0')}`; }
+  return s;
+}
+
+function cleanDesc(d) {
+  return d.replace(/\s+/g,' ').replace(/[*#]/g,'').trim().slice(0, 80);
+}
+
+// ── KEYWORD CATEGORISER ──
+function keywordCategorise(desc) {
+  const lower = desc.toLowerCase();
+  for (const rule of KEYWORD_RULES) {
+    for (const kw of rule.keys) {
+      if (lower.includes(kw)) return rule.cat;
+    }
+  }
+  return null;
+}
+
+// ── GEMINI BATCH CATEGORISER ──
+async function geminiCategorise(unknownTxns, allTxns) {
+  const bar = document.getElementById('rpt-ai-bar');
+  bar.style.display = 'flex';
+
+  // Build a compact list for the prompt
+  const lines = unknownTxns.slice(0, 60).map((t, i) => `${i}: "${t.desc}" (${t.isDebit ? 'expense' : 'income'})`).join('\n');
+  const categories = Object.keys(CAT_META).join(', ');
+
+  const prompt = `You are a financial transaction categoriser. Categorise each transaction into exactly one of these categories: ${categories}.
+
+Transactions:
+${lines}
+
+Rules:
+- income = salary, transfers received, deposits, refunds
+- housing = rent, utilities, internet, phone bills
+- food = supermarkets, restaurants, delivery, cafes
+- transport = fuel, taxis, buses, flights, car expenses
+- subscriptions = streaming, software, memberships
+- entertainment = bars, movies, events, games, shopping malls
+- health = pharmacy, doctors, clinics, gym
+- other = anything that doesn't fit clearly
+
+Respond ONLY with a JSON array of objects like: [{"i":0,"cat":"food"},{"i":1,"cat":"transport"}]
+No explanation, no markdown, just the JSON array.`;
+
+  const response = await fetch('/api/sage', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message: prompt, csvMode: true }),
+  });
+
+  if (!response.ok) throw new Error('API error');
+  const data = await response.json();
+  const replyText = data.reply || data.content || '';
+
+  // Extract JSON from reply
+  const jsonMatch = replyText.match(/\[[\s\S]*\]/);
+  if (!jsonMatch) throw new Error('No JSON in reply');
+  const results = JSON.parse(jsonMatch[0]);
+
+  results.forEach(r => {
+    if (unknownTxns[r.i] && CAT_META[r.cat]) {
+      unknownTxns[r.i].cat = r.cat;
+      unknownTxns[r.i].aiAssisted = true;
+    }
+  });
+
+  document.getElementById('rpt-ai-msg').textContent = `✓ Sage categorised ${results.length} transactions`;
+  setTimeout(() => { bar.style.display = 'none'; }, 2500);
+}
+
+// ── REPORT RENDERER ──
+function renderReport(txns) {
+  const sym = USER.currency || '$';
+  const totalIncome  = txns.filter(t => !t.isDebit).reduce((s,t) => s + t.amount, 0);
+  const totalSpent   = txns.filter(t => t.isDebit).reduce((s,t) => s + t.amount, 0);
+  const net          = totalIncome - totalSpent;
+
+  document.getElementById('rpt-income').textContent = sym + Math.round(totalIncome).toLocaleString();
+  document.getElementById('rpt-spent').textContent  = sym + Math.round(totalSpent).toLocaleString();
+  const netEl = document.getElementById('rpt-net');
+  netEl.textContent = (net >= 0 ? '+' : '') + sym + Math.round(net).toLocaleString();
+  netEl.style.color = net >= 0 ? 'var(--teal)' : 'var(--red)';
+  document.getElementById('rpt-count').textContent = txns.length;
+
+  // Category totals (expenses only)
+  const catTotals = {};
+  txns.filter(t => t.isDebit).forEach(t => { catTotals[t.cat] = (catTotals[t.cat]||0) + t.amount; });
+  const maxCat = Math.max(...Object.values(catTotals), 1);
+  const catsEl = document.getElementById('rpt-cats');
+  catsEl.innerHTML = '';
+  Object.entries(catTotals).sort((a,b) => b[1]-a[1]).forEach(([cat, total]) => {
+    const meta = CAT_META[cat] || CAT_META.other;
+    const pct = Math.round(total / maxCat * 100);
+    catsEl.innerHTML += `
+      <div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;">
+          <span style="color:${meta.color};font-weight:600;">${meta.label}</span>
+          <span style="color:var(--text);">${sym}${Math.round(total).toLocaleString()}</span>
+        </div>
+        <div style="height:4px;background:var(--bg3);border-radius:2px;overflow:hidden;">
+          <div style="height:100%;width:${pct}%;background:${meta.color};border-radius:2px;transition:width .5s ease;"></div>
+        </div>
+      </div>`;
+  });
+
+  // Top merchants
+  const merchants = {};
+  txns.filter(t => t.isDebit).forEach(t => {
+    const key = t.desc.split(' ').slice(0,3).join(' ').toUpperCase();
+    merchants[key] = (merchants[key]||0) + t.amount;
+  });
+  const topM = Object.entries(merchants).sort((a,b) => b[1]-a[1]).slice(0,6);
+  const mEl = document.getElementById('rpt-merchants');
+  mEl.innerHTML = topM.map(([name,amt]) =>
+    `<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text2);">
+      <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:140px;">${name}</span>
+      <span style="color:var(--text);font-weight:500;">${sym}${Math.round(amt).toLocaleString()}</span>
+    </div>`
+  ).join('');
+
+  // Monthly averages
+  const dates = txns.map(t => t.date).filter(Boolean).sort();
+  let months = 1;
+  if (dates.length >= 2) {
+    const d1 = new Date(dates[0]), d2 = new Date(dates[dates.length-1]);
+    months = Math.max(1, Math.round((d2 - d1) / (1000*60*60*24*30)));
+  }
+  const mthEl = document.getElementById('rpt-monthly');
+  mthEl.innerHTML = `
+    <div style="display:flex;justify-content:space-between;"><span>Avg income/mo</span><span style="color:var(--teal);font-weight:600;">${sym}${Math.round(totalIncome/months).toLocaleString()}</span></div>
+    <div style="display:flex;justify-content:space-between;"><span>Avg spending/mo</span><span style="color:var(--amber);font-weight:600;">${sym}${Math.round(totalSpent/months).toLocaleString()}</span></div>
+    <div style="display:flex;justify-content:space-between;"><span>Period covered</span><span style="color:var(--text);font-weight:600;">${months} month${months>1?'s':''}</span></div>
+  `;
+
+  // Update apply hint
+  document.getElementById('rpt-apply-hint').textContent =
+    `Found ${sym}${Math.round(totalIncome/months).toLocaleString()} avg income & ${sym}${Math.round(totalSpent/months).toLocaleString()} avg expenses/mo. Apply to sync your dashboard.`;
+
+  CSV_FILTERED = [...txns];
+  renderTxnTable(CSV_FILTERED);
+}
+
+function renderTxnTable(txns) {
+  const sym = USER.currency || '$';
+  const tbody = document.getElementById('txn-body');
+  const cats = Object.keys(CAT_META);
+  document.getElementById('txn-count-label').textContent = txns.length + ' transactions';
+
+  tbody.innerHTML = txns.map((t, i) => {
+    const meta = CAT_META[t.cat] || CAT_META.other;
+    const opts = cats.map(c => `<option value="${c}" ${c===t.cat?'selected':''}>${CAT_META[c].label}</option>`).join('');
+    const globalIdx = CSV_TRANSACTIONS.indexOf(t);
+    return `<tr style="border-bottom:1px solid var(--border);transition:background .1s;" onmouseover="this.style.background='rgba(255,255,255,0.02)'" onmouseout="this.style.background=''">
+      <td style="padding:9px 14px;font-size:12px;color:var(--text3);white-space:nowrap;">${t.date}</td>
+      <td style="padding:9px 14px;font-size:12.5px;color:var(--text);max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${t.desc}">
+        ${t.desc}
+        ${t.aiAssisted ? '<span style="font-size:10px;color:var(--teal);margin-left:4px;">AI</span>' : ''}
+      </td>
+      <td style="padding:9px 14px;font-size:13px;font-weight:600;text-align:right;white-space:nowrap;color:${t.isDebit?'var(--red)':'var(--teal)'};">
+        ${t.isDebit ? '-' : '+'}${sym}${t.amount.toFixed(2)}
+      </td>
+      <td style="padding:9px 14px;">
+        <select class="cat-select" onchange="changeTxnCat(${globalIdx}, this.value)" style="background:${meta.bg};color:${meta.color};border-color:transparent;">
+          ${opts}
+        </select>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function changeTxnCat(idx, newCat) {
+  CSV_TRANSACTIONS[idx].cat = newCat;
+  // Re-render cats and merchants without re-doing table
+  renderReport(CSV_TRANSACTIONS);
+  // Restore filter
+  filterTxns();
+}
+
+function filterTxns() {
+  const search = (document.getElementById('txn-search').value || '').toLowerCase();
+  const cat    = document.getElementById('txn-filter-cat').value;
+  CSV_FILTERED = CSV_TRANSACTIONS.filter(t =>
+    (!search || t.desc.toLowerCase().includes(search) || t.date.includes(search)) &&
+    (!cat || t.cat === cat)
+  );
+  renderTxnTable(CSV_FILTERED);
+}
+
+// ── APPLY TO DASHBOARD ──
+function applyToDashboard() {
+  const sym = USER.currency || '$';
+  const txns = CSV_TRANSACTIONS;
+  const dates = txns.map(t => t.date).filter(Boolean).sort();
+  let months = 1;
+  if (dates.length >= 2) {
+    const d1 = new Date(dates[0]), d2 = new Date(dates[dates.length-1]);
+    months = Math.max(1, Math.round((d2 - d1) / (1000*60*60*24*30)));
+  }
+
+  const avgOf = (cat) => {
+    const total = txns.filter(t => t.isDebit && t.cat === cat).reduce((s,t) => s+t.amount, 0);
+    return Math.round(total / months);
+  };
+  const avgIncome = Math.round(txns.filter(t => !t.isDebit).reduce((s,t)=>s+t.amount,0) / months);
+
+  // Update USER object
+  USER.income        = avgIncome || USER.income;
+  USER.housing       = avgOf('housing') || USER.housing;
+  USER.food          = avgOf('food') || USER.food;
+  USER.transport     = avgOf('transport') || USER.transport;
+  USER.otherExp      = (avgOf('subscriptions') + avgOf('entertainment') + avgOf('health') + avgOf('other')) || USER.otherExp;
+
+  // Save to localStorage
+  localStorage.setItem('pfc_user', JSON.stringify(USER));
+
+  // Update dashboard
+  updateAllCards();
+  refreshInflBoxes();
+  closeCSV();
+
+  showDashToast('Dashboard updated from your bank statement — ' + months + ' month' + (months>1?'s':'') + ' of data applied');
+}
+
+// ── HELPERS ──
+function setProc(title, sub, pct) {
+  document.getElementById('csv-proc-title').textContent = title;
+  document.getElementById('csv-proc-sub').textContent = sub;
+  document.getElementById('csv-proc-bar').style.width = pct + '%';
+}
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 function toggleNotifications(btn) {
   const panel = document.getElementById('notif-panel');
   const isOpen = panel.style.display === 'flex';
@@ -1887,57 +2481,6 @@ function markRead(item) {
 }
 function markAllRead() {
   document.querySelectorAll('.notif-item.unread').forEach(i => markRead(i));
-}
-
-// ── CSV IMPORT ──
-function openCSV() {
-  const ov = document.getElementById('csv-overlay');
-  ov.style.display = 'flex';
-  document.addEventListener('keydown', function esc(e) {
-    if (e.key === 'Escape') { closeCSV(); document.removeEventListener('keydown', esc); }
-  });
-}
-function closeCSV() {
-  document.getElementById('csv-overlay').style.display = 'none';
-  document.getElementById('csv-status').style.display = 'none';
-  document.getElementById('csv-file').value = '';
-}
-function handleDrop(e) {
-  e.preventDefault();
-  document.getElementById('csv-drop').style.borderColor = '';
-  const file = e.dataTransfer.files[0];
-  if (file && file.name.endsWith('.csv')) processCSV(file);
-  else showCSVStatus('Please drop a .csv file.', false);
-}
-function handleCSVFile(input) {
-  if (input.files[0]) processCSV(input.files[0]);
-}
-function processCSV(file) {
-  showCSVStatus('Reading ' + file.name + '…', true);
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    const lines = e.target.result.split('\n').filter(l => l.trim()).length;
-    setTimeout(() => {
-      showCSVStatus('✓ Imported ' + (lines - 1) + ' transactions from ' + file.name + '. Sage is categorising them now…', true);
-      setTimeout(() => { closeCSV(); showDashToast('CSV imported successfully — ' + (lines-1) + ' transactions categorised.'); }, 2000);
-    }, 800);
-  };
-  reader.readAsText(file);
-}
-function showCSVStatus(msg, ok) {
-  const el = document.getElementById('csv-status');
-  el.style.display = 'block';
-  el.style.background = ok ? 'rgba(0,200,150,0.08)' : 'rgba(224,82,82,0.08)';
-  el.style.borderColor = ok ? 'rgba(0,200,150,0.3)' : 'rgba(224,82,82,0.3)';
-  el.style.color = ok ? 'var(--teal)' : 'var(--red)';
-  el.textContent = msg;
-}
-function showDashToast(msg) {
-  const t = document.createElement('div');
-  t.style.cssText = 'position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:var(--card);border:1px solid rgba(0,200,150,0.3);border-radius:10px;padding:12px 20px;font-size:13.5px;color:var(--text);z-index:200;white-space:nowrap;';
-  t.textContent = '✓ ' + msg;
-  document.body.appendChild(t);
-  setTimeout(() => t.remove(), 3500);
 }
 
 // ── UPDATE DATE ──
