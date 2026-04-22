@@ -1,6 +1,6 @@
-// api/sage.js  — Vercel Serverless Function
-// This file lives at /api/sage.js in your project root.
-// It proxies requests to Gemini so your API key NEVER reaches the browser.
+// api/sage.js — Vercel Serverless Function
+// Lives at /api/sage.js in your project root.
+// Proxies requests to Gemini so your API key NEVER reaches the browser.
 //
 // HOW TO SET UP YOUR API KEY (safe method):
 //   1. Go to vercel.com → your project → Settings → Environment Variables
@@ -19,20 +19,65 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'API key not configured. Add GEMINI_API_KEY to Vercel environment variables.' });
   }
 
-  const { message, history = [], systemPrompt } = req.body;
+  const { message, history = [], systemPrompt, csvMode = false } = req.body;
 
   if (!message || typeof message !== 'string') {
     return res.status(400).json({ error: 'Missing message' });
   }
 
-  // Enforce message length limit (security)
-  if (message.length > 500) {
+  // Normal chat: 500 char limit. CSV batch mode: allow up to 8000 chars
+  const limit = csvMode ? 8000 : 500;
+  if (message.length > limit) {
     return res.status(400).json({ error: 'Message too long' });
   }
 
-  // Build Gemini request
-  // We use gemini-1.5-flash — fast, free tier, excellent for financial Q&A
   const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`;
+
+  // ── CSV batch mode: single-turn, low temperature, expects JSON array back ──
+  if (csvMode) {
+    const geminiBody = {
+      contents: [
+        {
+          role: 'user',
+          parts: [{ text: message }]
+        }
+      ],
+      generationConfig: {
+        maxOutputTokens: 1200,
+        temperature: 0.1,   // Low temperature for consistent JSON output
+        topP: 0.9,
+      }
+    };
+
+    try {
+      const geminiRes = await fetch(GEMINI_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(geminiBody)
+      });
+
+      if (!geminiRes.ok) {
+        const errText = await geminiRes.text();
+        console.error('Gemini CSV error:', errText);
+        return res.status(502).json({ error: 'AI service temporarily unavailable.' });
+      }
+
+      const data = await geminiRes.json();
+      const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+      if (!reply) {
+        return res.status(502).json({ error: 'No response from AI.' });
+      }
+
+      return res.status(200).json({ reply });
+
+    } catch (err) {
+      console.error('Sage CSV API error:', err);
+      return res.status(500).json({ error: 'Internal error.' });
+    }
+  }
+
+  // ── Normal chat mode (original behaviour, fully preserved) ──
 
   // Build conversation history for multi-turn context
   const contents = [
@@ -79,7 +124,6 @@ export default async function handler(req, res) {
     if (!geminiRes.ok) {
       const errText = await geminiRes.text();
       console.error('Gemini error:', errText);
-      // Don't expose raw API errors to users
       return res.status(502).json({ error: 'AI service temporarily unavailable. Please try again.' });
     }
 
