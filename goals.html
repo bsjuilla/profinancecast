@@ -1,0 +1,1184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<title>Goals — ProFinanceCast</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:    #080C12;
+    --bg2:   #0D1320;
+    --bg3:   #111827;
+    --card:  #0F1923;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.13);
+    --teal:  #00C896;
+    --teal-dim: rgba(0,200,150,0.12);
+    --text:  #F0F4F8;
+    --text2: #8A9BB0;
+    --text3: #4A5A6E;
+    --amber: #F5A623;
+    --red:   #E05252;
+    --blue:  #3B82F6;
+    --purple:#A78BFA;
+    --green: #22C55E;
+    --r:     12px;
+    --r-sm:  8px;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    display: flex;
+    overflow: hidden;
+  }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    width: 240px; flex-shrink: 0;
+    background: var(--bg2);
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    height: 100vh; overflow-y: auto;
+  }
+  .sidebar-logo {
+    display: flex; align-items: center; gap: 10px;
+    padding: 22px 20px 18px;
+    border-bottom: 1px solid var(--border);
+    font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700;
+    color: var(--text); text-decoration: none;
+  }
+  .logo-mark {
+    width: 30px; height: 30px; background: var(--teal);
+    border-radius: 7px; display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 800; color: #080C12; font-family: 'Syne', sans-serif;
+    flex-shrink: 0;
+  }
+  .sidebar-section {
+    padding: 18px 12px 8px;
+    font-size: 10px; font-weight: 600; color: var(--text3);
+    letter-spacing: .1em; text-transform: uppercase;
+  }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 12px; border-radius: var(--r-sm); margin: 1px 8px;
+    font-size: 13.5px; color: var(--text2); cursor: pointer;
+    transition: background .15s, color .15s; text-decoration: none;
+  }
+  .nav-item:hover { background: rgba(255,255,255,0.05); color: var(--text); }
+  .nav-item.active { background: var(--teal-dim); color: var(--teal); }
+  .nav-item svg { flex-shrink: 0; opacity: .8; }
+  .nav-item.active svg { opacity: 1; }
+  .nav-badge {
+    margin-left: auto; font-size: 10px; background: rgba(0,200,150,0.15);
+    color: var(--teal); padding: 2px 7px; border-radius: 6px; font-weight: 600;
+  }
+  .nav-badge-pro {
+    margin-left: auto; font-size: 10px; background: rgba(245,166,35,0.12);
+    color: var(--amber); padding: 2px 7px; border-radius: 6px; font-weight: 600;
+  }
+  .sidebar-footer {
+    margin-top: auto; padding: 16px 12px;
+    border-top: 1px solid var(--border);
+  }
+  .user-pill {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 10px; border-radius: var(--r-sm);
+    cursor: pointer; transition: background .15s;
+  }
+  .user-pill:hover { background: rgba(255,255,255,0.05); }
+  .user-avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--teal); display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; color: #080C12; font-family: 'Syne', sans-serif;
+    flex-shrink: 0;
+  }
+  .user-name { font-size: 13px; font-weight: 500; }
+  .user-plan { font-size: 11px; color: var(--text3); }
+
+  /* ── MAIN ── */
+  .main { flex: 1; height: 100vh; overflow-y: auto; display: flex; flex-direction: column; }
+
+  /* ── TOPBAR ── */
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 28px; height: 64px; flex-shrink: 0;
+    border-bottom: 1px solid var(--border);
+    background: rgba(8,12,18,0.9);
+    position: sticky; top: 0; z-index: 10;
+    backdrop-filter: blur(12px);
+  }
+  .topbar-left { display: flex; flex-direction: column; }
+  .topbar-title { font-family: 'Syne', sans-serif; font-size: 17px; font-weight: 700; }
+  .topbar-sub { font-size: 12px; color: var(--text3); margin-top: 1px; }
+  .topbar-right { display: flex; align-items: center; gap: 12px; }
+  .topbar-btn {
+    display: flex; align-items: center; gap: 6px;
+    padding: 7px 14px; border-radius: var(--r-sm);
+    font-size: 13px; font-family: 'DM Sans', sans-serif;
+    cursor: pointer; border: 1px solid var(--border2);
+    background: transparent; color: var(--text2);
+    transition: all .15s;
+  }
+  .topbar-btn:hover { color: var(--text); border-color: rgba(255,255,255,0.2); }
+  .topbar-btn.primary {
+    background: var(--teal); color: #080C12;
+    border-color: var(--teal); font-weight: 600;
+  }
+  .topbar-btn.primary:hover { opacity: .88; }
+
+  /* ── CONTENT ── */
+  .content { padding: 28px; flex: 1; }
+
+  /* ── SUMMARY BAR ── */
+  .summary-bar {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 14px; margin-bottom: 24px;
+  }
+  .summary-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--r); padding: 16px 20px;
+    position: relative; overflow: hidden;
+  }
+  .summary-card::after {
+    content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 2px;
+  }
+  .summary-card.s-teal::after { background: var(--teal); }
+  .summary-card.s-blue::after { background: var(--blue); }
+  .summary-card.s-amber::after { background: var(--amber); }
+  .summary-card.s-purple::after { background: var(--purple); }
+  .summary-label { font-size: 11px; color: var(--text3); margin-bottom: 5px; font-weight: 500; letter-spacing: .03em; }
+  .summary-val { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 700; margin-bottom: 2px; }
+  .summary-hint { font-size: 11.5px; color: var(--text3); }
+
+  /* ── ALLOCATION BAR ── */
+  .alloc-wrap {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--r); padding: 18px 22px; margin-bottom: 24px;
+  }
+  .alloc-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .alloc-title { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; }
+  .alloc-bar-track {
+    height: 10px; background: var(--bg3); border-radius: 5px;
+    overflow: hidden; display: flex; margin-bottom: 12px;
+  }
+  .alloc-segment {
+    height: 100%; transition: width .6s ease;
+    position: relative;
+  }
+  .alloc-legend {
+    display: flex; flex-wrap: wrap; gap: 12px;
+  }
+  .alloc-legend-item {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 12px; color: var(--text2);
+  }
+  .alloc-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+  /* ── CONFLICT BANNER ── */
+  .conflict-banner {
+    display: none;
+    background: rgba(224,82,82,0.08); border: 1px solid rgba(224,82,82,0.25);
+    border-radius: var(--r); padding: 14px 20px; margin-bottom: 20px;
+    align-items: center; gap: 14px;
+  }
+  .conflict-banner.show { display: flex; }
+  .conflict-icon { flex-shrink: 0; color: var(--red); }
+  .conflict-text { flex: 1; font-size: 13px; color: var(--text2); line-height: 1.5; }
+  .conflict-text strong { color: var(--red); }
+  .conflict-pro-btn {
+    flex-shrink: 0; padding: 7px 14px; background: rgba(224,82,82,0.15);
+    border: 1px solid rgba(224,82,82,0.3); border-radius: var(--r-sm);
+    font-size: 12px; color: var(--red); cursor: pointer;
+    font-family: 'DM Sans', sans-serif; font-weight: 600;
+    text-decoration: none; transition: all .15s;
+  }
+  .conflict-pro-btn:hover { background: rgba(224,82,82,0.25); }
+
+  /* ── GOALS GRID ── */
+  .goals-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 16px;
+  }
+
+  /* ── GOAL CARD ── */
+  .goal-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--r); overflow: hidden;
+    transition: border-color .2s, transform .15s;
+    animation: cardIn .3s ease both;
+  }
+  @keyframes cardIn { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+  .goal-card:hover { border-color: var(--border2); transform: translateY(-1px); }
+  .goal-card.completed { border-color: rgba(34,197,94,0.3); }
+
+  .goal-card-top {
+    padding: 18px 20px 14px;
+    display: flex; align-items: flex-start; gap: 14px;
+  }
+  .goal-ring-wrap { flex-shrink: 0; }
+  .goal-info { flex: 1; min-width: 0; }
+  .goal-name {
+    font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700;
+    margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .goal-amounts { font-size: 12px; color: var(--text3); margin-bottom: 8px; }
+  .goal-status-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 6px;
+  }
+  .status-funded   { background: rgba(0,200,150,0.12); color: var(--teal); }
+  .status-ontrack  { background: rgba(59,130,246,0.12); color: var(--blue); }
+  .status-atrisk   { background: rgba(245,166,35,0.12); color: var(--amber); }
+  .status-starved  { background: rgba(224,82,82,0.12); color: var(--red); }
+  .status-done     { background: rgba(34,197,94,0.12); color: var(--green); }
+
+  .goal-card-body {
+    padding: 0 20px 14px; border-top: 1px solid var(--border);
+    padding-top: 14px;
+  }
+
+  /* Timeline */
+  .goal-timeline {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .goal-timeline-label { font-size: 12px; color: var(--text3); }
+  .goal-timeline-val { font-size: 13px; font-weight: 600; color: var(--text); }
+
+  /* Monthly allocation row */
+  .goal-alloc-row {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 12px; padding: 9px 12px;
+    background: var(--bg3); border-radius: var(--r-sm);
+  }
+  .goal-alloc-label { font-size: 12px; color: var(--text2); }
+  .goal-alloc-vals { text-align: right; }
+  .goal-alloc-num { font-size: 13px; font-weight: 600; }
+  .goal-alloc-sub { font-size: 11px; color: var(--text3); }
+
+  /* Boost slider */
+  .boost-wrap {
+    margin-bottom: 12px; display: none;
+  }
+  .boost-wrap.open { display: block; }
+  .boost-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 8px; font-size: 12px; color: var(--text2);
+  }
+  .boost-result { font-size: 12px; color: var(--teal); font-weight: 600; }
+  .boost-track {
+    width: 100%; appearance: none; height: 4px; border-radius: 2px;
+    background: var(--bg3); outline: none; cursor: pointer;
+  }
+  .boost-track::-webkit-slider-thumb {
+    appearance: none; width: 14px; height: 14px;
+    border-radius: 50%; background: var(--teal);
+    cursor: pointer; border: 2px solid var(--bg2);
+  }
+
+  /* Actions */
+  .goal-actions {
+    display: flex; gap: 8px;
+  }
+  .goal-action-btn {
+    flex: 1; padding: 7px; border-radius: var(--r-sm);
+    font-size: 12px; cursor: pointer; font-family: 'DM Sans', sans-serif;
+    border: 1px solid var(--border2); background: transparent; color: var(--text2);
+    transition: all .15s; display: flex; align-items: center; justify-content: center; gap: 5px;
+  }
+  .goal-action-btn:hover { border-color: rgba(255,255,255,0.2); color: var(--text); }
+  .goal-action-btn.boost-btn { color: var(--teal); border-color: rgba(0,200,150,0.25); }
+  .goal-action-btn.boost-btn:hover { background: var(--teal-dim); }
+  .goal-action-btn.delete-btn { color: var(--red); border-color: rgba(224,82,82,0.2); }
+  .goal-action-btn.delete-btn:hover { background: rgba(224,82,82,0.08); }
+
+  /* Priority badge */
+  .priority-badge {
+    width: 20px; height: 20px; border-radius: 50%;
+    background: var(--bg3); border: 1px solid var(--border2);
+    font-size: 10px; font-weight: 700; color: var(--text3);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+
+  /* ── MILESTONE FLASH ── */
+  .milestone-flash {
+    position: fixed; inset: 0; pointer-events: none;
+    display: flex; align-items: center; justify-content: center;
+    z-index: 999; opacity: 0; transition: opacity .3s;
+  }
+  .milestone-flash.show { opacity: 1; }
+  .milestone-inner {
+    background: var(--bg2); border: 1px solid rgba(0,200,150,0.4);
+    border-radius: 20px; padding: 24px 36px; text-align: center;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.6);
+  }
+  .milestone-emoji { font-size: 40px; margin-bottom: 8px; }
+  .milestone-title {
+    font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800;
+    color: var(--teal); margin-bottom: 4px;
+  }
+  .milestone-sub { font-size: 13px; color: var(--text2); }
+
+  /* ── EMPTY STATE ── */
+  .empty-state {
+    display: none; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; padding: 80px 40px;
+  }
+  .empty-state.show { display: flex; }
+  .empty-icon {
+    width: 72px; height: 72px; background: var(--teal-dim);
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    margin-bottom: 20px;
+  }
+  .empty-title {
+    font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .empty-sub { font-size: 14px; color: var(--text2); line-height: 1.6; max-width: 360px; margin-bottom: 24px; }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(4,6,10,0.85); backdrop-filter: blur(6px);
+    z-index: 100; align-items: flex-start; justify-content: center;
+    overflow-y: auto; padding: 20px;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-box {
+    background: var(--bg2); border: 1px solid var(--border2);
+    border-radius: 16px; width: 100%; max-width: 480px;
+    margin: auto; overflow: hidden;
+  }
+  .modal-head {
+    padding: 20px 24px 16px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .modal-title { font-family: 'Syne', sans-serif; font-size: 17px; font-weight: 700; }
+  .modal-close {
+    width: 30px; height: 30px; border-radius: 50%;
+    background: var(--bg3); border: 1px solid var(--border2);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: var(--text2); font-size: 16px;
+  }
+  .modal-body { padding: 22px 24px; }
+
+  .field-label { font-size: 12px; color: var(--text2); display: block; margin-bottom: 5px; }
+  .field-input {
+    width: 100%; padding: 10px 13px;
+    background: var(--bg3); border: 1px solid var(--border2);
+    border-radius: var(--r-sm); font-size: 14px; color: var(--text);
+    font-family: 'DM Sans', sans-serif; outline: none;
+    transition: border-color .15s;
+  }
+  .field-input:focus { border-color: rgba(0,200,150,0.4); }
+  .field-input::placeholder { color: var(--text3); }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  /* Category picker */
+  .cat-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+    margin-bottom: 18px;
+  }
+  .cat-opt {
+    padding: 10px 8px; border-radius: var(--r-sm);
+    background: var(--bg3); border: 1px solid var(--border);
+    cursor: pointer; text-align: center; transition: all .15s;
+    font-size: 12px; color: var(--text2);
+  }
+  .cat-opt:hover { border-color: rgba(0,200,150,0.3); }
+  .cat-opt.selected { border-color: var(--teal); background: var(--teal-dim); color: var(--teal); }
+  .cat-opt-icon { font-size: 18px; margin-bottom: 4px; }
+
+  /* Color picker */
+  .color-row { display: flex; gap: 8px; }
+  .color-opt {
+    width: 24px; height: 24px; border-radius: 50%;
+    cursor: pointer; border: 2px solid transparent;
+    transition: transform .15s;
+  }
+  .color-opt:hover { transform: scale(1.15); }
+  .color-opt.selected { border-color: white; }
+
+  /* Modal live preview */
+  .modal-preview {
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: var(--r-sm); padding: 12px 14px; margin: 14px 0;
+    display: none;
+  }
+  .modal-preview.show { display: block; }
+  .preview-row { display: flex; justify-content: space-between; font-size: 12.5px; margin-bottom: 4px; }
+  .preview-label { color: var(--text3); }
+  .preview-val { font-weight: 600; }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--bg3); border-radius: 2px; }
+
+  /* ── PRO LOCK ── */
+  .pro-lock {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 14px; background: rgba(245,166,35,0.06);
+    border: 1px solid rgba(245,166,35,0.2); border-radius: var(--r-sm);
+    margin-bottom: 16px; font-size: 12.5px; color: var(--text2);
+  }
+  .pro-lock strong { color: var(--amber); }
+  .pro-lock a { color: var(--teal); text-decoration: none; margin-left: auto; font-size: 12px; font-weight: 600; }
+
+  /* ── COMPLETED CONFETTI STRIP ── */
+  .completed-strip {
+    background: rgba(34,197,94,0.08); border-top: 1px solid rgba(34,197,94,0.2);
+    padding: 8px 20px; font-size: 12px; color: var(--green);
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
+    background: var(--card); border: 1px solid rgba(0,200,150,0.3);
+    border-radius: 10px; padding: 12px 20px;
+    font-size: 13.5px; color: var(--text); z-index: 200;
+    white-space: nowrap; animation: toastIn .25s ease;
+    pointer-events: none;
+  }
+  @keyframes toastIn { from { opacity:0; transform:translateX(-50%) translateY(8px); } to { opacity:1; transform:translateX(-50%) translateY(0); } }
+
+  @keyframes slideUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+</style>
+</head>
+<body>
+
+<!-- ── SIDEBAR ── -->
+<nav class="sidebar">
+  <a class="sidebar-logo" href="dashboard.html">
+    <div class="logo-mark">PF</div>
+    ProFinanceCast
+  </a>
+
+  <div class="sidebar-section">Overview</div>
+  <a class="nav-item" href="dashboard.html">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="5" height="5" rx="1.2" stroke="currentColor" stroke-width="1.3"/><rect x="9" y="2" width="5" height="5" rx="1.2" stroke="currentColor" stroke-width="1.3"/><rect x="2" y="9" width="5" height="5" rx="1.2" stroke="currentColor" stroke-width="1.3"/><rect x="9" y="9" width="5" height="5" rx="1.2" stroke="currentColor" stroke-width="1.3"/></svg>
+    Dashboard
+  </a>
+  <a class="nav-item" href="dashboard.html">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 11.5L5 8l3 2.5L12 5l2 2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    Forecast
+  </a>
+  <a class="nav-item active" href="goals.html">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.3"/><circle cx="8" cy="8" r="2.5" stroke="currentColor" stroke-width="1.3"/><path d="M8 2v1.5M8 12.5V14M2 8h1.5M12.5 8H14" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+    Goals
+  </a>
+
+  <div class="sidebar-section">Planning</div>
+  <a class="nav-item" href="dashboard.html">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 8h12M8 3l5 5-5 5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    Scenarios
+    <span class="nav-badge-pro">Pro</span>
+  </a>
+  <a class="nav-item" href="dashboard.html">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 13V9m4 4V6m4 7V3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+    Debt planner
+  </a>
+  <a class="nav-item" href="dashboard.html">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="6" r="3" stroke="currentColor" stroke-width="1.3"/><path d="M3 14c0-2.5 2.5-4 5-4s5 1.5 5 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+    Salary sim
+    <span class="nav-badge-pro">Pro</span>
+  </a>
+
+  <div class="sidebar-section">AI & Insights</div>
+  <a class="nav-item" href="sage.html">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 4h10M3 8h7M3 12h5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+    Ask Sage
+  </a>
+  <a class="nav-item" href="dashboard.html">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="10" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M5 8l2 2 4-4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    Report card
+    <span class="nav-badge-pro">Pro</span>
+  </a>
+
+  <div class="sidebar-section">Account</div>
+  <a class="nav-item" href="settings.html">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="6" r="2.5" stroke="currentColor" stroke-width="1.3"/><path d="M3 13.5c0-2.2 2.2-4 5-4s5 1.8 5 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+    Profile
+  </a>
+  <a class="nav-item" href="billing.html">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="4" width="12" height="9" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M2 7h12" stroke="currentColor" stroke-width="1.3"/></svg>
+    Billing
+  </a>
+
+  <div class="sidebar-footer">
+    <div class="user-pill" onclick="window.location='settings.html'">
+      <div class="user-avatar" id="sb-avatar">U</div>
+      <div>
+        <div class="user-name" id="sb-name">My Account</div>
+        <div class="user-plan" id="sb-plan">Free plan</div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- ── MAIN ── -->
+<div class="main">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-title">My Goals</div>
+      <div class="topbar-sub" id="topbar-sub">Loading your goals…</div>
+    </div>
+    <div class="topbar-right">
+      <a href="dashboard.html" class="topbar-btn">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><rect x="1.5" y="1.5" width="4" height="4" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="7.5" y="1.5" width="4" height="4" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="1.5" y="7.5" width="4" height="4" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="7.5" y="7.5" width="4" height="4" rx="1" stroke="currentColor" stroke-width="1.3"/></svg>
+        Dashboard
+      </a>
+      <button class="topbar-btn primary" onclick="openAddGoal()">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1v11M1 6.5h11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        Add goal
+      </button>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- SUMMARY BAR -->
+    <div class="summary-bar" id="summary-bar">
+      <div class="summary-card s-teal">
+        <div class="summary-label">Total goal amount</div>
+        <div class="summary-val" id="s-total" style="color:var(--teal);">$0</div>
+        <div class="summary-hint" id="s-total-hint">across 0 goals</div>
+      </div>
+      <div class="summary-card s-blue">
+        <div class="summary-label">Monthly surplus available</div>
+        <div class="summary-val" id="s-surplus" style="color:var(--blue);">$0</div>
+        <div class="summary-hint">after all expenses & debt</div>
+      </div>
+      <div class="summary-card s-amber">
+        <div class="summary-label">Monthly needed (all goals)</div>
+        <div class="summary-val" id="s-needed" style="color:var(--amber);">$0</div>
+        <div class="summary-hint" id="s-needed-hint">to hit all targets on time</div>
+      </div>
+      <div class="summary-card s-purple">
+        <div class="summary-label">Overall progress</div>
+        <div class="summary-val" id="s-progress" style="color:var(--purple);">0%</div>
+        <div class="summary-hint" id="s-progress-hint">funded towards all goals</div>
+      </div>
+    </div>
+
+    <!-- ALLOCATION BAR -->
+    <div class="alloc-wrap" id="alloc-wrap" style="display:none;">
+      <div class="alloc-header">
+        <div class="alloc-title">Monthly surplus allocation</div>
+        <div style="font-size:12px;color:var(--text3);" id="alloc-total-label">Distributing $0 / month</div>
+      </div>
+      <div class="alloc-bar-track" id="alloc-bar"></div>
+      <div class="alloc-legend" id="alloc-legend"></div>
+    </div>
+
+    <!-- CONFLICT BANNER (Pro) -->
+    <div class="conflict-banner" id="conflict-banner">
+      <div class="conflict-icon">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 2L1.5 17.5h17L10 2z" stroke="#E05252" stroke-width="1.5" stroke-linejoin="round"/><path d="M10 8v4" stroke="#E05252" stroke-width="1.5" stroke-linecap="round"/><circle cx="10" cy="14.5" r="0.8" fill="#E05252"/></svg>
+      </div>
+      <div class="conflict-text" id="conflict-text">
+        <strong>Goal conflict detected</strong> — upgrade to Pro to see which goals to reprioritise and how much to reallocate.
+      </div>
+      <a href="billing.html" class="conflict-pro-btn">Fix with Pro →</a>
+    </div>
+
+    <!-- EMPTY STATE -->
+    <div class="empty-state" id="empty-state">
+      <div class="empty-icon">
+        <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="12" stroke="#00C896" stroke-width="1.5"/><circle cx="16" cy="16" r="5" stroke="#00C896" stroke-width="1.5"/><path d="M16 4v4M16 24v4M4 16h4M24 16h4" stroke="#00C896" stroke-width="1.5" stroke-linecap="round"/></svg>
+      </div>
+      <div class="empty-title">Set your first goal</div>
+      <div class="empty-sub">Goals turn your financial data into a real plan. Add your first goal and see exactly when you'll reach it — and how much you need each month.</div>
+      <button class="topbar-btn primary" onclick="openAddGoal()" style="padding:10px 24px;font-size:14px;">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1v11M1 6.5h11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        Add your first goal
+      </button>
+    </div>
+
+    <!-- GOALS GRID -->
+    <div class="goals-grid" id="goals-grid"></div>
+
+  </div>
+</div>
+
+<!-- ── ADD / EDIT GOAL MODAL ── -->
+<div class="modal-overlay" id="goal-modal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <div class="modal-title" id="modal-title">Add new goal</div>
+      <div class="modal-close" onclick="closeModal()">✕</div>
+    </div>
+    <div class="modal-body">
+
+      <!-- Category picker -->
+      <label class="field-label" style="margin-bottom:10px;">Category</label>
+      <div class="cat-grid" id="cat-grid">
+        <div class="cat-opt selected" data-cat="emergency" onclick="selectCat(this)"><div class="cat-opt-icon">🛡️</div>Emergency</div>
+        <div class="cat-opt" data-cat="home" onclick="selectCat(this)"><div class="cat-opt-icon">🏠</div>Home</div>
+        <div class="cat-opt" data-cat="car" onclick="selectCat(this)"><div class="cat-opt-icon">🚗</div>Car</div>
+        <div class="cat-opt" data-cat="travel" onclick="selectCat(this)"><div class="cat-opt-icon">✈️</div>Travel</div>
+        <div class="cat-opt" data-cat="invest" onclick="selectCat(this)"><div class="cat-opt-icon">📈</div>Invest</div>
+        <div class="cat-opt" data-cat="retire" onclick="selectCat(this)"><div class="cat-opt-icon">🌅</div>Retire</div>
+        <div class="cat-opt" data-cat="education" onclick="selectCat(this)"><div class="cat-opt-icon">🎓</div>Education</div>
+        <div class="cat-opt" data-cat="wedding" onclick="selectCat(this)"><div class="cat-opt-icon">💍</div>Wedding</div>
+        <div class="cat-opt" data-cat="custom" onclick="selectCat(this)"><div class="cat-opt-icon">⭐</div>Custom</div>
+      </div>
+
+      <!-- Smart target hint -->
+      <div id="smart-hint" style="font-size:12px;color:var(--teal);background:var(--teal-dim);border-radius:var(--r-sm);padding:8px 12px;margin-bottom:14px;display:none;"></div>
+
+      <!-- Name -->
+      <div style="margin-bottom:14px;">
+        <label class="field-label">Goal name</label>
+        <input type="text" class="field-input" id="m-name" placeholder="e.g. Emergency fund, Dream holiday…" oninput="modalCalc()">
+      </div>
+
+      <!-- Amounts -->
+      <div class="field-row" style="margin-bottom:14px;">
+        <div>
+          <label class="field-label">Already saved</label>
+          <input type="number" class="field-input" id="m-current" placeholder="0" min="0" oninput="modalCalc()">
+        </div>
+        <div>
+          <label class="field-label">Target amount</label>
+          <input type="number" class="field-input" id="m-target" placeholder="10000" min="1" oninput="modalCalc()">
+        </div>
+      </div>
+
+      <!-- Target date (optional) -->
+      <div style="margin-bottom:14px;">
+        <label class="field-label">Target date <span style="color:var(--text3);">(optional)</span></label>
+        <input type="month" class="field-input" id="m-date" oninput="modalCalc()" style="color-scheme:dark;">
+      </div>
+
+      <!-- Colour -->
+      <div style="margin-bottom:16px;">
+        <label class="field-label" style="margin-bottom:8px;">Colour</label>
+        <div class="color-row" id="color-row">
+          <div class="color-opt selected" data-color="#00C896" style="background:#00C896;" onclick="selectColor(this)"></div>
+          <div class="color-opt" data-color="#3B82F6" style="background:#3B82F6;" onclick="selectColor(this)"></div>
+          <div class="color-opt" data-color="#F5A623" style="background:#F5A623;" onclick="selectColor(this)"></div>
+          <div class="color-opt" data-color="#A78BFA" style="background:#A78BFA;" onclick="selectColor(this)"></div>
+          <div class="color-opt" data-color="#E05252" style="background:#E05252;" onclick="selectColor(this)"></div>
+          <div class="color-opt" data-color="#22C55E" style="background:#22C55E;" onclick="selectColor(this)"></div>
+        </div>
+      </div>
+
+      <!-- Live preview -->
+      <div class="modal-preview" id="modal-preview">
+        <div class="preview-row">
+          <span class="preview-label">Progress today</span>
+          <span class="preview-val" id="prev-pct">—</span>
+        </div>
+        <div class="preview-row">
+          <span class="preview-label">Monthly surplus available</span>
+          <span class="preview-val" id="prev-surplus">—</span>
+        </div>
+        <div class="preview-row">
+          <span class="preview-label">Estimated months to goal</span>
+          <span class="preview-val" id="prev-months">—</span>
+        </div>
+        <div class="preview-row" id="prev-date-row" style="display:none;">
+          <span class="preview-label">To hit your target date you need</span>
+          <span class="preview-val" id="prev-date-needed">—</span>
+        </div>
+      </div>
+
+      <!-- Buttons -->
+      <div style="display:flex;gap:10px;">
+        <button onclick="saveGoal()" style="flex:1;padding:11px;background:var(--teal);border:none;border-radius:var(--r-sm);font-size:14px;font-weight:700;color:#080C12;font-family:'DM Sans',sans-serif;cursor:pointer;">Save goal</button>
+        <button onclick="closeModal()" style="padding:11px 18px;background:transparent;border:1px solid var(--border2);border-radius:var(--r-sm);font-size:13px;color:var(--text2);font-family:'DM Sans',sans-serif;cursor:pointer;">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── MILESTONE FLASH ── -->
+<div class="milestone-flash" id="milestone-flash">
+  <div class="milestone-inner">
+    <div class="milestone-emoji" id="milestone-emoji">🎉</div>
+    <div class="milestone-title" id="milestone-title">Milestone reached!</div>
+    <div class="milestone-sub" id="milestone-sub">Keep going — you're doing great.</div>
+  </div>
+</div>
+
+<script>
+// ── DATA ──
+let USER = {};
+let GOALS = [];
+let editingIdx = -1;
+let selectedCat = 'emergency';
+let selectedColor = '#00C896';
+
+const GOAL_COLORS = ['#00C896','#3B82F6','#F5A623','#A78BFA','#E05252','#22C55E'];
+const PALETTE = ['#00C896','#3B82F6','#F5A623','#A78BFA','#E05252','#22C55E','#F97316','#EC4899'];
+
+const CAT_DEFAULTS = {
+  emergency: { name: 'Emergency fund', hint: (u) => `Recommended: 6× your monthly expenses = ${u.sym}${Math.round((u.housing+u.food+u.transport+u.otherExp)*6).toLocaleString()}` },
+  home:      { name: 'Home deposit', hint: () => 'Typical deposit: 10–20% of property value' },
+  car:       { name: 'Car fund', hint: () => 'Include insurance, registration, and running costs' },
+  travel:    { name: 'Holiday fund', hint: () => 'Include flights, accommodation, and spending money' },
+  invest:    { name: 'Investment fund', hint: () => 'Even small regular amounts compound significantly' },
+  retire:    { name: 'Retirement fund', hint: () => 'Target: 25× your annual expenses (the 4% rule)' },
+  education: { name: 'Education fund', hint: () => 'Include tuition, books, and living costs' },
+  wedding:   { name: 'Wedding fund', hint: () => 'Average wedding costs vary widely by region' },
+  custom:    { name: '', hint: () => '' },
+};
+
+const CAT_ICONS = {
+  emergency:'🛡️', home:'🏠', car:'🚗', travel:'✈️',
+  invest:'📈', retire:'🌅', education:'🎓', wedding:'💍', custom:'⭐'
+};
+
+// ── LOAD ──
+function load() {
+  try { USER = JSON.parse(localStorage.getItem('pfc_user')) || {}; } catch(e) { USER = {}; }
+  try { GOALS = JSON.parse(localStorage.getItem('pfc_goals')) || []; } catch(e) { GOALS = []; }
+
+  // Compute surplus
+  USER.surplus = Math.max(0,
+    ((USER.income||0) + (USER.otherIncome||0)) -
+    ((USER.housing||0) + (USER.food||0) + (USER.transport||0) + (USER.otherExp||0) + (USER.debtPay||0))
+  );
+  USER.sym = USER.currency || '$';
+
+  // Sidebar
+  const name = (USER.name || '').trim();
+  if (name) {
+    document.getElementById('sb-name').textContent = name;
+    document.getElementById('sb-avatar').textContent = name.charAt(0).toUpperCase();
+  }
+
+  render();
+}
+
+// ── SAVE ──
+function save() {
+  localStorage.setItem('pfc_goals', JSON.stringify(GOALS));
+}
+
+// ── RENDER ──
+function render() {
+  const grid = document.getElementById('goals-grid');
+  const empty = document.getElementById('empty-state');
+  const allocWrap = document.getElementById('alloc-wrap');
+  grid.innerHTML = '';
+
+  // Summary
+  const totalTarget = GOALS.reduce((s,g) => s + (g.target||0), 0);
+  const totalCurrent = GOALS.reduce((s,g) => s + (g.current||0), 0);
+  const sym = USER.sym || '$';
+  document.getElementById('s-total').textContent = sym + totalTarget.toLocaleString();
+  document.getElementById('s-total-hint').textContent = `across ${GOALS.length} goal${GOALS.length!==1?'s':''}`;
+  document.getElementById('s-surplus').textContent = sym + Math.round(USER.surplus||0).toLocaleString();
+  const overallPct = totalTarget > 0 ? Math.min(100, Math.round(totalCurrent / totalTarget * 100)) : 0;
+  document.getElementById('s-progress').textContent = overallPct + '%';
+  document.getElementById('s-progress-hint').textContent = sym + totalCurrent.toLocaleString() + ' of ' + sym + totalTarget.toLocaleString();
+  document.getElementById('topbar-sub').textContent = GOALS.length
+    ? `${GOALS.length} active goal${GOALS.length!==1?'s':''} · ${overallPct}% funded overall`
+    : 'No goals yet — add your first one';
+
+  if (!GOALS.length) {
+    empty.classList.add('show');
+    allocWrap.style.display = 'none';
+    document.getElementById('s-needed').textContent = sym + '0';
+    document.getElementById('conflict-banner').classList.remove('show');
+    return;
+  }
+  empty.classList.remove('show');
+
+  // Allocate surplus across goals by priority
+  let remainingSurplus = USER.surplus || 0;
+  const allocations = GOALS.map((g, i) => {
+    const rem = Math.max(0, (g.target||0) - (g.current||0));
+    const needed = g.monthlyNeeded || Math.ceil(rem / 24); // default 24 months if no date
+    const allocated = Math.min(remainingSurplus, needed);
+    remainingSurplus = Math.max(0, remainingSurplus - allocated);
+    return { allocated, needed, shortfall: Math.max(0, needed - allocated) };
+  });
+
+  // Total needed
+  const totalNeeded = GOALS.reduce((s, g, i) => s + allocations[i].needed, 0);
+  document.getElementById('s-needed').textContent = sym + Math.round(totalNeeded).toLocaleString();
+  const hasConflict = totalNeeded > (USER.surplus || 0) * 1.05;
+  document.getElementById('conflict-banner').classList.toggle('show', hasConflict);
+  if (hasConflict) {
+    const shortfall = Math.round(totalNeeded - (USER.surplus||0));
+    document.getElementById('conflict-text').innerHTML =
+      `<strong>Goal conflict detected</strong> — your goals need ${sym}${shortfall.toLocaleString()}/mo more than your current surplus. Upgrade to Pro to see the optimal reallocation plan.`;
+  }
+
+  // Allocation bar
+  allocWrap.style.display = 'block';
+  const barEl = document.getElementById('alloc-bar');
+  const legendEl = document.getElementById('alloc-legend');
+  const totalSurplus = USER.surplus || 1;
+  barEl.innerHTML = '';
+  legendEl.innerHTML = '';
+  document.getElementById('alloc-total-label').textContent = `Distributing ${sym}${Math.round(USER.surplus||0).toLocaleString()} / month`;
+
+  GOALS.forEach((g, i) => {
+    const alloc = allocations[i].allocated;
+    const pct = Math.min(100, alloc / totalSurplus * 100);
+    const color = g.color || PALETTE[i % PALETTE.length];
+    if (pct > 0) {
+      const seg = document.createElement('div');
+      seg.className = 'alloc-segment';
+      seg.style.cssText = `width:${pct}%;background:${color};`;
+      barEl.appendChild(seg);
+    }
+    legendEl.innerHTML += `<div class="alloc-legend-item"><div class="alloc-dot" style="background:${color};"></div>${g.name} — ${sym}${Math.round(alloc).toLocaleString()}/mo</div>`;
+  });
+  // Unallocated
+  const unallocPct = Math.max(0, (remainingSurplus / totalSurplus) * 100);
+  if (unallocPct > 1) {
+    const seg = document.createElement('div');
+    seg.className = 'alloc-segment';
+    seg.style.cssText = `width:${unallocPct}%;background:var(--bg3);`;
+    barEl.appendChild(seg);
+    legendEl.innerHTML += `<div class="alloc-legend-item"><div class="alloc-dot" style="background:var(--bg3);border:1px solid var(--border2);"></div>Unallocated — ${sym}${Math.round(remainingSurplus).toLocaleString()}/mo</div>`;
+  }
+
+  // Render cards
+  GOALS.forEach((g, i) => {
+    const pct = Math.min(100, g.target > 0 ? Math.round(g.current / g.target * 100) : 0);
+    const alloc = allocations[i];
+    const color = g.color || PALETTE[i % PALETTE.length];
+    const rem = Math.max(0, (g.target||0) - (g.current||0));
+    const months = alloc.allocated > 0 ? Math.ceil(rem / alloc.allocated) : null;
+    const monthsWithBoost = g.boost > 0 ? Math.ceil(rem / (alloc.allocated + g.boost)) : null;
+
+    // Status
+    let statusClass, statusLabel;
+    if (pct >= 100) { statusClass = 'status-done'; statusLabel = '✓ Completed'; }
+    else if (alloc.shortfall === 0 && alloc.allocated > 0) { statusClass = 'status-funded'; statusLabel = '● Fully funded'; }
+    else if (alloc.allocated > 0) { statusClass = 'status-ontrack'; statusLabel = '◗ Partially funded'; }
+    else if (alloc.needed > 0) { statusClass = 'status-starved'; statusLabel = '⚠ Needs funding'; }
+    else { statusClass = 'status-ontrack'; statusLabel = '◎ On track'; }
+
+    const icon = CAT_ICONS[g.category || 'custom'] || '⭐';
+    const completed = pct >= 100;
+
+    // SVG ring
+    const ringR = 34, ringC = 40;
+    const circ = 2 * Math.PI * ringR;
+    const offset = circ * (1 - pct / 100);
+
+    const card = document.createElement('div');
+    card.className = 'goal-card' + (completed ? ' completed' : '');
+    card.style.setProperty('--goal-color', color);
+    card.style.animationDelay = (i * 0.06) + 's';
+
+    card.innerHTML = `
+      <div class="goal-card-top">
+        <div class="goal-ring-wrap">
+          <svg width="80" height="80" viewBox="0 0 80 80">
+            <circle cx="40" cy="40" r="${ringR}" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="8"/>
+            <circle cx="40" cy="40" r="${ringR}" fill="none" stroke="${color}" stroke-width="8"
+              stroke-dasharray="${circ.toFixed(1)}" stroke-dashoffset="${offset.toFixed(1)}"
+              stroke-linecap="round" transform="rotate(-90 40 40)"
+              style="transition:stroke-dashoffset .8s ease;"/>
+            <text x="40" y="37" text-anchor="middle" font-family="Syne,sans-serif" font-size="15" font-weight="800" fill="#F0F4F8">${pct}%</text>
+            <text x="40" y="51" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="9" fill="#4A5A6E">${icon}</text>
+          </svg>
+        </div>
+        <div class="goal-info">
+          <div class="goal-name" title="${g.name}">${g.name}</div>
+          <div class="goal-amounts">${USER.sym}${Math.round(g.current||0).toLocaleString()} of ${USER.sym}${Math.round(g.target||0).toLocaleString()}</div>
+          <div class="goal-status-badge ${statusClass}">${statusLabel}</div>
+        </div>
+        <div class="priority-badge" title="Priority ${i+1}">${i + 1}</div>
+      </div>
+
+      <div class="goal-card-body">
+        <div class="goal-timeline">
+          <span class="goal-timeline-label">Est. completion</span>
+          <span class="goal-timeline-val">${completed ? '🎉 Done!' : months ? months + ' month' + (months===1?'':'s') : '—'}</span>
+        </div>
+
+        <div class="goal-alloc-row">
+          <div class="goal-alloc-label">Monthly allocation</div>
+          <div class="goal-alloc-vals">
+            <div class="goal-alloc-num" style="color:${color};">${USER.sym}${Math.round(alloc.allocated).toLocaleString()}/mo</div>
+            <div class="goal-alloc-sub">need ${USER.sym}${Math.round(alloc.needed).toLocaleString()}/mo ${alloc.shortfall > 0 ? '· <span style="color:var(--red);">-'+USER.sym+Math.round(alloc.shortfall).toLocaleString()+'</span>' : '· <span style="color:var(--teal);">✓ covered</span>'}</div>
+          </div>
+        </div>
+
+        <!-- Boost slider -->
+        <div class="boost-wrap" id="boost-${i}">
+          <div class="boost-header">
+            <span>Extra monthly boost</span>
+            <span class="boost-result" id="boost-result-${i}">${g.boost > 0 ? `+${USER.sym}${g.boost}/mo → ${monthsWithBoost} months` : 'move slider to see impact'}</span>
+          </div>
+          <input type="range" class="boost-track" min="0" max="${Math.max(200, Math.round(USER.surplus||200))}" step="10" value="${g.boost||0}"
+            oninput="updateBoost(${i}, this.value, ${rem}, ${alloc.allocated})">
+        </div>
+
+        <div class="goal-actions">
+          <button class="goal-action-btn boost-btn" onclick="toggleBoost(${i})">
+            <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M5.5 1v9M1 5.5l4.5-4.5 4.5 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Boost
+          </button>
+          <button class="goal-action-btn" onclick="editGoal(${i})">
+            <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M7.5 1.5l2 2L3 10l-2.5.5.5-2.5z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>
+            Edit
+          </button>
+          ${i > 0 ? `<button class="goal-action-btn" onclick="moveGoal(${i},-1)" title="Increase priority">↑</button>` : ''}
+          ${i < GOALS.length-1 ? `<button class="goal-action-btn" onclick="moveGoal(${i},1)" title="Decrease priority">↓</button>` : ''}
+          <button class="goal-action-btn delete-btn" onclick="deleteGoal(${i})">
+            <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M1 2.5h9M3.5 2.5V2a.5.5 0 01.5-.5h3a.5.5 0 01.5.5v.5M7.5 4.5v4M5.5 4.5v4M3.5 4.5v4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+            Delete
+          </button>
+        </div>
+      </div>
+
+      ${completed ? '<div class="completed-strip">🎉 Goal reached! Add funds to this goal or set a new target.</div>' : ''}
+    `;
+
+    grid.appendChild(card);
+
+    // Check milestones
+    checkMilestone(g, pct, i);
+  });
+}
+
+// ── BOOST ──
+function toggleBoost(idx) {
+  const el = document.getElementById('boost-' + idx);
+  el.classList.toggle('open');
+}
+
+function updateBoost(idx, val, rem, baseAlloc) {
+  val = parseInt(val) || 0;
+  GOALS[idx].boost = val;
+  save();
+  const total = baseAlloc + val;
+  const months = total > 0 ? Math.ceil(rem / total) : null;
+  document.getElementById('boost-result-' + idx).textContent =
+    val > 0
+      ? `+${USER.sym}${val}/mo → ${months ? months + ' months' : '—'}`
+      : 'move slider to see impact';
+}
+
+// ── PRIORITY REORDER ──
+function moveGoal(idx, dir) {
+  const newIdx = idx + dir;
+  if (newIdx < 0 || newIdx >= GOALS.length) return;
+  [GOALS[idx], GOALS[newIdx]] = [GOALS[newIdx], GOALS[idx]];
+  save();
+  render();
+  showToast(dir < 0 ? '↑ Priority increased' : '↓ Priority decreased');
+}
+
+// ── MILESTONES ──
+const shownMilestones = new Set();
+function checkMilestone(g, pct, idx) {
+  const key = g.name + '-' + Math.floor(pct / 25) * 25;
+  if (shownMilestones.has(key)) return;
+  if (pct >= 100 && !shownMilestones.has(g.name + '-100')) {
+    shownMilestones.add(g.name + '-100');
+    showMilestone('🎉', g.name + ' — Complete!', 'You reached your goal! Time to celebrate.');
+  } else if (pct >= 75 && pct < 100 && !shownMilestones.has(g.name + '-75')) {
+    shownMilestones.add(g.name + '-75');
+    showMilestone('🔥', '75% there!', `Just ${USER.sym}${Math.round((g.target - g.current)).toLocaleString()} left on ${g.name}.`);
+  } else if (pct >= 50 && pct < 75 && !shownMilestones.has(g.name + '-50')) {
+    shownMilestones.add(g.name + '-50');
+    showMilestone('⚡', 'Halfway there!', `${g.name} is 50% funded. Keep going!`);
+  }
+}
+function showMilestone(emoji, title, sub) {
+  const f = document.getElementById('milestone-flash');
+  document.getElementById('milestone-emoji').textContent = emoji;
+  document.getElementById('milestone-title').textContent = title;
+  document.getElementById('milestone-sub').textContent = sub;
+  f.classList.add('show');
+  setTimeout(() => f.classList.remove('show'), 3500);
+}
+
+// ── MODAL ──
+function openAddGoal() {
+  editingIdx = -1;
+  document.getElementById('modal-title').textContent = 'Add new goal';
+  document.getElementById('m-name').value = '';
+  document.getElementById('m-current').value = '';
+  document.getElementById('m-target').value = '';
+  document.getElementById('m-date').value = '';
+  selectedCat = 'emergency';
+  selectedColor = '#00C896';
+  document.querySelectorAll('.cat-opt').forEach(o => o.classList.remove('selected'));
+  document.querySelector('[data-cat="emergency"]').classList.add('selected');
+  document.querySelectorAll('.color-opt').forEach(o => o.classList.remove('selected'));
+  document.querySelector('[data-color="#00C896"]').classList.add('selected');
+  document.getElementById('modal-preview').classList.remove('show');
+  updateSmartHint();
+  document.getElementById('goal-modal').classList.add('open');
+}
+
+function editGoal(idx) {
+  editingIdx = idx;
+  const g = GOALS[idx];
+  document.getElementById('modal-title').textContent = 'Edit goal';
+  document.getElementById('m-name').value = g.name || '';
+  document.getElementById('m-current').value = g.current || '';
+  document.getElementById('m-target').value = g.target || '';
+  document.getElementById('m-date').value = g.targetDate || '';
+  selectedCat = g.category || 'custom';
+  selectedColor = g.color || '#00C896';
+  document.querySelectorAll('.cat-opt').forEach(o => o.classList.remove('selected'));
+  const catEl = document.querySelector(`[data-cat="${selectedCat}"]`);
+  if (catEl) catEl.classList.add('selected');
+  document.querySelectorAll('.color-opt').forEach(o => o.classList.remove('selected'));
+  const colEl = document.querySelector(`[data-color="${selectedColor}"]`);
+  if (colEl) colEl.classList.add('selected');
+  updateSmartHint();
+  modalCalc();
+  document.getElementById('goal-modal').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('goal-modal').classList.remove('open');
+}
+
+function selectCat(el) {
+  document.querySelectorAll('.cat-opt').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedCat = el.dataset.cat;
+  // Auto-fill name if empty
+  const nameEl = document.getElementById('m-name');
+  if (!nameEl.value && CAT_DEFAULTS[selectedCat]?.name) {
+    nameEl.value = CAT_DEFAULTS[selectedCat].name;
+  }
+  // Auto-fill emergency fund target
+  if (selectedCat === 'emergency' && !document.getElementById('m-target').value) {
+    const rec = Math.round(((USER.housing||0)+(USER.food||0)+(USER.transport||0)+(USER.otherExp||0)) * 6);
+    if (rec > 0) document.getElementById('m-target').value = rec;
+  }
+  updateSmartHint();
+  modalCalc();
+}
+
+function updateSmartHint() {
+  const hint = CAT_DEFAULTS[selectedCat]?.hint;
+  const hintEl = document.getElementById('smart-hint');
+  if (hint) {
+    const txt = hint({ sym: USER.sym||'$', housing: USER.housing||0, food: USER.food||0, transport: USER.transport||0, otherExp: USER.otherExp||0 });
+    if (txt) { hintEl.textContent = '💡 ' + txt; hintEl.style.display = 'block'; return; }
+  }
+  hintEl.style.display = 'none';
+}
+
+function selectColor(el) {
+  document.querySelectorAll('.color-opt').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedColor = el.dataset.color;
+}
+
+function modalCalc() {
+  const current = parseFloat(document.getElementById('m-current').value) || 0;
+  const target  = parseFloat(document.getElementById('m-target').value) || 0;
+  const dateVal = document.getElementById('m-date').value;
+  if (!target) { document.getElementById('modal-preview').classList.remove('show'); return; }
+
+  const pct = Math.min(100, Math.round(current / target * 100));
+  const rem = Math.max(0, target - current);
+  const surplus = USER.surplus || 0;
+  const months = surplus > 0 ? Math.ceil(rem / surplus) : null;
+
+  document.getElementById('modal-preview').classList.add('show');
+  document.getElementById('prev-pct').textContent = pct + '% saved';
+  document.getElementById('prev-pct').style.color = pct >= 50 ? 'var(--teal)' : pct >= 25 ? 'var(--amber)' : 'var(--text)';
+  document.getElementById('prev-surplus').textContent = (USER.sym||'$') + Math.round(surplus).toLocaleString() + '/mo available';
+  document.getElementById('prev-months').textContent = months ? months + ' months' : 'Add income data in dashboard';
+
+  const dateRow = document.getElementById('prev-date-row');
+  if (dateVal && surplus > 0) {
+    const targetDate = new Date(dateVal + '-01');
+    const now = new Date();
+    const diffMonths = (targetDate.getFullYear() - now.getFullYear()) * 12 + (targetDate.getMonth() - now.getMonth());
+    if (diffMonths > 0) {
+      const needed = Math.ceil(rem / diffMonths);
+      document.getElementById('prev-date-needed').textContent = (USER.sym||'$') + needed.toLocaleString() + '/mo';
+      document.getElementById('prev-date-needed').style.color = needed > surplus ? 'var(--red)' : 'var(--teal)';
+      dateRow.style.display = 'flex';
+    } else { dateRow.style.display = 'none'; }
+  } else { dateRow.style.display = 'none'; }
+}
+
+function saveGoal() {
+  const name    = document.getElementById('m-name').value.trim();
+  const current = parseFloat(document.getElementById('m-current').value) || 0;
+  const target  = parseFloat(document.getElementById('m-target').value);
+  const dateVal = document.getElementById('m-date').value;
+
+  if (!name) { flash('m-name'); return; }
+  if (!target || target <= 0) { flash('m-target'); return; }
+
+  // Calculate monthlyNeeded from date if provided
+  let monthlyNeeded = null;
+  if (dateVal) {
+    const targetDate = new Date(dateVal + '-01');
+    const now = new Date();
+    const diffMonths = (targetDate.getFullYear() - now.getFullYear()) * 12 + (targetDate.getMonth() - now.getMonth());
+    if (diffMonths > 0) monthlyNeeded = Math.ceil(Math.max(0, target - current) / diffMonths);
+  }
+
+  const goal = { name, current, target, color: selectedColor, category: selectedCat, targetDate: dateVal || null, monthlyNeeded, boost: 0 };
+
+  if (editingIdx >= 0) {
+    goal.boost = GOALS[editingIdx].boost || 0;
+    GOALS[editingIdx] = goal;
+    showToast('Goal updated — ' + name);
+  } else {
+    GOALS.push(goal);
+    showToast('Goal added — ' + name);
+  }
+  save();
+  render();
+  closeModal();
+}
+
+function deleteGoal(idx) {
+  if (!confirm(`Delete "${GOALS[idx].name}"?`)) return;
+  const name = GOALS[idx].name;
+  GOALS.splice(idx, 1);
+  save();
+  render();
+  showToast('Goal removed — ' + name);
+}
+
+function flash(id) {
+  const el = document.getElementById(id);
+  el.style.borderColor = 'rgba(224,82,82,.6)';
+  setTimeout(() => el.style.borderColor = '', 1500);
+}
+
+// ── TOAST ──
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = '✓ ' + msg;
+  document.body.appendChild(t);
+  setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity .3s'; }, 2800);
+  setTimeout(() => t.remove(), 3200);
+}
+
+// ── INIT ──
+load();
+</script>
+</body>
+</html>
