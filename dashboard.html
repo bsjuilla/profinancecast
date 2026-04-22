@@ -714,7 +714,7 @@
           <div style="font-size:11px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:12px;font-weight:600;">Fine-tune</div>
           <div class="slider-row">
             <div class="slider-label">Inflation rate</div>
-            <input class="slider-track" type="range" min="1" max="12" step="0.5" value="3.5" id="sl-inflation" oninput="updateSlider('sl-inflation','sv-inflation','%'); recalcForecast()">
+            <input class="slider-track" type="range" min="1" max="12" step="0.5" value="3.5" id="sl-inflation" oninput="updateSlider('sl-inflation','sv-inflation','%'); recalcForecast(); refreshInflBoxes()">
             <div class="slider-val" id="sv-inflation">3.5%</div>
           </div>
           <div class="slider-row">
@@ -915,30 +915,84 @@
         <div class="card-header">
           <div>
             <div class="card-title">Inflation impact meter</div>
-            <div class="card-sub">How inflation erodes your purchasing power</div>
+            <div class="card-sub" id="infl-sub">How inflation erodes your purchasing power</div>
           </div>
-          <span class="card-badge badge-red">3.5% rate</span>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <button onclick="openInflCountry()" style="display:flex;align-items:center;gap:5px;padding:5px 10px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:11.5px;color:var(--text2);cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;" onmouseover="this.style.borderColor='rgba(0,200,150,0.4)';this.style.color='var(--teal)'" onmouseout="this.style.borderColor='';this.style.color=''">
+              <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><circle cx="5.5" cy="5.5" r="4.5" stroke="currentColor" stroke-width="1.2"/><ellipse cx="5.5" cy="5.5" rx="2" ry="4.5" stroke="currentColor" stroke-width="1.2"/><line x1="1" y1="5.5" x2="10" y2="5.5" stroke="currentColor" stroke-width="1.2"/></svg>
+              Live rate
+            </button>
+            <span class="card-badge badge-red" id="infl-badge">3.5% rate</span>
+          </div>
         </div>
+
+        <!-- Country picker modal (inline dropdown) -->
+        <div id="infl-country-modal" style="display:none;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);padding:16px;margin-bottom:16px;position:relative;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+            <div style="font-size:13px;font-weight:600;color:var(--text);">Select your country</div>
+            <span onclick="closeInflCountry()" style="cursor:pointer;color:var(--text3);font-size:15px;line-height:1;">✕</span>
+          </div>
+          <select id="infl-country-select" style="width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:13.5px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;margin-bottom:10px;">
+            <option value="">— Choose a country —</option>
+            <option value="MU">🇲🇺 Mauritius</option>
+            <option value="US">🇺🇸 United States</option>
+            <option value="GB">🇬🇧 United Kingdom</option>
+            <option value="FR">🇫🇷 France</option>
+            <option value="DE">🇩🇪 Germany</option>
+            <option value="ZA">🇿🇦 South Africa</option>
+            <option value="IN">🇮🇳 India</option>
+            <option value="AU">🇦🇺 Australia</option>
+            <option value="CA">🇨🇦 Canada</option>
+            <option value="SG">🇸🇬 Singapore</option>
+            <option value="AE">🇦🇪 UAE</option>
+            <option value="NG">🇳🇬 Nigeria</option>
+            <option value="KE">🇰🇪 Kenya</option>
+            <option value="GH">🇬🇭 Ghana</option>
+            <option value="BR">🇧🇷 Brazil</option>
+            <option value="MX">🇲🇽 Mexico</option>
+            <option value="PH">🇵🇭 Philippines</option>
+            <option value="PK">🇵🇰 Pakistan</option>
+            <option value="TR">🇹🇷 Turkey</option>
+            <option value="AR">🇦🇷 Argentina</option>
+            <option value="EG">🇪🇬 Egypt</option>
+            <option value="JP">🇯🇵 Japan</option>
+            <option value="CN">🇨🇳 China</option>
+            <option value="IT">🇮🇹 Italy</option>
+            <option value="ES">🇪🇸 Spain</option>
+            <option value="PT">🇵🇹 Portugal</option>
+            <option value="NL">🇳🇱 Netherlands</option>
+            <option value="SE">🇸🇪 Sweden</option>
+            <option value="NO">🇳🇴 Norway</option>
+            <option value="NZ">🇳🇿 New Zealand</option>
+          </select>
+          <button onclick="fetchLiveInflation()" style="width:100%;padding:9px;background:var(--teal);border:none;border-radius:var(--r-sm);font-size:13px;font-weight:700;color:#080C12;font-family:'DM Sans',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;" id="infl-fetch-btn">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M10 6A4 4 0 1 1 6 2" stroke="#080C12" stroke-width="1.5" stroke-linecap="round"/><path d="M10 2v4H6" stroke="#080C12" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Fetch live rate
+          </button>
+          <div id="infl-status" style="display:none;margin-top:8px;font-size:12px;padding:8px 10px;border-radius:var(--r-sm);"></div>
+        </div>
+
         <div style="margin-bottom:20px;">
-          <div style="font-size:13px;color:var(--text2);margin-bottom:12px;">At 3.5% inflation, $3,000 today has the purchasing power of:</div>
+          <div style="font-size:13px;color:var(--text2);margin-bottom:12px;" id="infl-desc">At <span id="infl-rate-text">3.5%</span> inflation, <span id="infl-base-text">$3,000</span> today has the purchasing power of:</div>
           <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;text-align:center;">
             <div style="background:var(--bg3);border-radius:var(--r-sm);padding:12px 8px;">
-              <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--text);">$2,895</div>
+              <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--text);" id="infl-y1">$2,895</div>
               <div style="font-size:11px;color:var(--text3);margin-top:3px;">in 1 year</div>
             </div>
             <div style="background:var(--bg3);border-radius:var(--r-sm);padding:12px 8px;">
-              <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--amber);">$2,552</div>
+              <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--amber);" id="infl-y3">$2,552</div>
               <div style="font-size:11px;color:var(--text3);margin-top:3px;">in 3 years</div>
             </div>
             <div style="background:var(--bg3);border-radius:var(--r-sm);padding:12px 8px;">
-              <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--red);">$2,124</div>
+              <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--red);" id="infl-y5">$2,124</div>
               <div style="font-size:11px;color:var(--text3);margin-top:3px;">in 5 years</div>
             </div>
             <div style="background:var(--bg3);border-radius:var(--r-sm);padding:12px 8px;">
-              <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--red);">$1,459</div>
+              <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--red);" id="infl-y10">$1,459</div>
               <div style="font-size:11px;color:var(--text3);margin-top:3px;">in 10 years</div>
             </div>
           </div>
+          <div id="infl-source" style="display:none;font-size:11px;color:var(--text3);margin-top:8px;text-align:right;"></div>
         </div>
         <div style="border-top:1px solid var(--border);padding-top:16px;">
           <div class="card-title" style="margin-bottom:12px;font-size:13px;">Monthly spending breakdown</div>
@@ -1954,10 +2008,122 @@ function showNavToast(key) {
   setTimeout(() => t.remove(), 4300);
 }
 
+// ── INFLATION LIVE RATE ──
+function openInflCountry() {
+  const modal = document.getElementById('infl-country-modal');
+  modal.style.display = modal.style.display === 'none' ? 'block' : 'none';
+}
+function closeInflCountry() {
+  document.getElementById('infl-country-modal').style.display = 'none';
+}
+
+async function fetchLiveInflation() {
+  const country = document.getElementById('infl-country-select').value;
+  if (!country) {
+    showInflStatus('Please select a country first.', false);
+    return;
+  }
+
+  const btn = document.getElementById('infl-fetch-btn');
+  btn.textContent = 'Fetching…';
+  btn.disabled = true;
+  showInflStatus('Connecting to World Bank…', true);
+
+  try {
+    const res = await fetch('/api/inflation?country=' + country);
+    if (!res.ok) throw new Error('API error ' + res.status);
+    const data = await res.json();
+
+    if (data.fallback || !data.rate) {
+      showInflStatus('No recent data for this country. Try another.', false);
+      btn.textContent = 'Fetch live rate';
+      btn.disabled = false;
+      return;
+    }
+
+    applyInflationData(data);
+    btn.textContent = 'Fetch live rate';
+    btn.disabled = false;
+    closeInflCountry();
+    showDashToast('Live inflation loaded — ' + data.countryName + ' ' + data.rate.toFixed(1) + '% (' + data.year + ')');
+
+  } catch (err) {
+    showInflStatus('Could not reach the server. Check your connection.', false);
+    btn.textContent = 'Fetch live rate';
+    btn.disabled = false;
+  }
+}
+
+function applyInflationData(data) {
+  const rate = parseFloat(data.rate);
+
+  // Sync slider (clamp to slider range 1–12)
+  const sliderVal = Math.min(12, Math.max(1, rate));
+  const sliderEl = document.getElementById('sl-inflation');
+  sliderEl.value = sliderVal;
+  document.getElementById('sv-inflation').textContent = sliderVal.toFixed(1) + '%';
+
+  // Update badge
+  const badge = document.getElementById('infl-badge');
+  badge.textContent = rate.toFixed(1) + '% rate';
+  badge.className = 'card-badge ' + (rate > 7 ? 'badge-red' : rate > 4 ? 'badge-amber' : 'badge-teal');
+
+  // Update subheading
+  document.getElementById('infl-sub').textContent =
+    data.countryName + ' — ' + data.year + ' official rate' +
+    (data.trend ? ' · ' + (data.trend === 'rising' ? '↑ Rising' : data.trend === 'falling' ? '↓ Falling' : '→ Stable') : '');
+
+  // Recalculate purchasing power boxes
+  const base = USER.income > 0 ? USER.income : 3000;
+  const r = rate / 100;
+  const sym = USER.currency || '$';
+  const fmt = v => sym + Math.round(v).toLocaleString();
+
+  document.getElementById('infl-rate-text').textContent = rate.toFixed(1) + '%';
+  document.getElementById('infl-base-text').textContent = fmt(base);
+  document.getElementById('infl-y1').textContent  = fmt(base * Math.pow(1 - r, 1));
+  document.getElementById('infl-y3').textContent  = fmt(base * Math.pow(1 - r, 3));
+  document.getElementById('infl-y5').textContent  = fmt(base * Math.pow(1 - r, 5));
+  document.getElementById('infl-y10').textContent = fmt(base * Math.pow(1 - r, 10));
+
+  // Source link
+  const srcEl = document.getElementById('infl-source');
+  srcEl.style.display = 'block';
+  srcEl.innerHTML = 'Source: <a href="' + (data.sourceUrl || 'https://data.worldbank.org') + '" target="_blank" style="color:var(--teal);text-decoration:none;">World Bank</a> · Data for ' + data.year;
+
+  // Also trigger forecast recalc with new rate
+  recalcForecast();
+}
+
+function showInflStatus(msg, ok) {
+  const el = document.getElementById('infl-status');
+  el.style.display = 'block';
+  el.style.background = ok ? 'rgba(0,200,150,0.08)' : 'rgba(224,82,82,0.08)';
+  el.style.border = '1px solid ' + (ok ? 'rgba(0,200,150,0.25)' : 'rgba(224,82,82,0.25)');
+  el.style.color = ok ? 'var(--teal)' : 'var(--red)';
+  el.textContent = msg;
+}
+
+// Update inflation boxes whenever Edit Finances saves new income
+function refreshInflBoxes() {
+  const base = USER.income > 0 ? USER.income : 3000;
+  const rate = parseFloat(document.getElementById('sl-inflation').value) || 3.5;
+  const r = rate / 100;
+  const sym = USER.currency || '$';
+  const fmt = v => sym + Math.round(v).toLocaleString();
+  document.getElementById('infl-rate-text').textContent = rate.toFixed(1) + '%';
+  document.getElementById('infl-base-text').textContent = fmt(base);
+  document.getElementById('infl-y1').textContent  = fmt(base * Math.pow(1 - r, 1));
+  document.getElementById('infl-y3').textContent  = fmt(base * Math.pow(1 - r, 3));
+  document.getElementById('infl-y5').textContent  = fmt(base * Math.pow(1 - r, 5));
+  document.getElementById('infl-y10').textContent = fmt(base * Math.pow(1 - r, 10));
+}
+
 // ── INIT ──
 initChart();
 updateAllCards();
 loadGoals();
+refreshInflBoxes();
 </script>
 </body>
 </html>
