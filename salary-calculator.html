@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<title>Salary Negotiation Calculator — ProFinanceCast</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg:#080C12;--bg2:#0D1320;--bg3:#111827;--card:#0F1923;
+    --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);
+    --teal:#00C896;--teal-dim:rgba(0,200,150,0.12);
+    --text:#F0F4F8;--text2:#8A9BB0;--text3:#4A5A6E;
+    --amber:#F5A623;--red:#E05252;--blue:#3B82F6;
+    --purple:#A78BFA;--green:#22C55E;--r:12px;--r-sm:8px;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;}
+  body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);display:flex;overflow:hidden;}
+
+  /* SIDEBAR */
+  .sidebar{width:240px;flex-shrink:0;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;height:100vh;overflow-y:auto;}
+  .sidebar-logo{display:flex;align-items:center;gap:10px;padding:22px 20px 18px;border-bottom:1px solid var(--border);font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:var(--text);text-decoration:none;}
+  .logo-mark{width:30px;height:30px;background:var(--teal);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#080C12;font-family:'Syne',sans-serif;flex-shrink:0;}
+  .sidebar-section{padding:18px 12px 8px;font-size:10px;font-weight:600;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--r-sm);margin:1px 8px;font-size:13.5px;color:var(--text2);cursor:pointer;transition:background .15s,color .15s;text-decoration:none;}
+  .nav-item:hover{background:rgba(255,255,255,0.05);color:var(--text);}
+  .nav-item.active{background:var(--teal-dim);color:var(--teal);}
+  .nav-item svg{flex-shrink:0;opacity:.8;}
+  .nav-item.active svg{opacity:1;}
+  .nav-badge{margin-left:auto;font-size:10px;background:rgba(245,166,35,0.12);color:var(--amber);padding:2px 7px;border-radius:6px;font-weight:600;}
+  .sidebar-footer{margin-top:auto;padding:16px 12px;border-top:1px solid var(--border);}
+  .user-pill{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:var(--r-sm);cursor:pointer;transition:background .15s;}
+  .user-pill:hover{background:rgba(255,255,255,0.05);}
+  .user-avatar{width:32px;height:32px;border-radius:50%;background:var(--teal);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#080C12;font-family:'Syne',sans-serif;flex-shrink:0;}
+  .user-name{font-size:13px;font-weight:500;}
+  .user-plan{font-size:11px;color:var(--text3);}
+
+  /* MAIN */
+  .main{flex:1;height:100vh;overflow-y:auto;display:flex;flex-direction:column;}
+
+  /* TOPBAR */
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:0 28px;height:64px;flex-shrink:0;border-bottom:1px solid var(--border);background:rgba(8,12,18,0.9);position:sticky;top:0;z-index:10;backdrop-filter:blur(12px);}
+  .topbar-left{display:flex;flex-direction:column;}
+  .topbar-title{font-family:'Syne',sans-serif;font-size:17px;font-weight:700;}
+  .topbar-sub{font-size:12px;color:var(--text3);margin-top:1px;}
+  .topbar-right{display:flex;align-items:center;gap:12px;}
+  .topbar-btn{display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--r-sm);font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;border:1px solid var(--border2);background:transparent;color:var(--text2);transition:all .15s;}
+  .topbar-btn:hover{color:var(--text);border-color:rgba(255,255,255,0.2);}
+  .topbar-btn.primary{background:var(--teal);color:#080C12;border-color:var(--teal);font-weight:600;}
+  .topbar-btn.primary:hover{opacity:.88;}
+
+  /* CONTENT */
+  .content{padding:28px;flex:1;}
+
+  /* CARD */
+  .card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);}
+  .card-inner{padding:20px 22px;}
+  .card-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;margin-bottom:3px;}
+  .card-sub{font-size:12px;color:var(--text3);}
+
+  /* INPUTS */
+  .field-label{font-size:12px;color:var(--text2);display:block;margin-bottom:5px;}
+  .field-input{width:100%;padding:10px 13px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;transition:border-color .15s;}
+  .field-input:focus{border-color:rgba(0,200,150,0.4);}
+  .field-input::placeholder{color:var(--text3);}
+  .field-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  .field-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;}
+  select.field-input{cursor:pointer;color-scheme:dark;}
+  input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;}
+  input[type=number]{-moz-appearance:textfield;appearance:textfield;}
+
+  /* METRIC CARDS */
+  .metric-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px;}
+  .metric-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px 20px;position:relative;overflow:hidden;transition:border-color .2s;}
+  .metric-card:hover{border-color:var(--border2);}
+  .metric-accent{position:absolute;bottom:0;left:0;right:0;height:2px;}
+  .metric-label{font-size:11px;color:var(--text3);margin-bottom:5px;font-weight:500;letter-spacing:.02em;}
+  .metric-val{font-family:'Syne',sans-serif;font-size:21px;font-weight:700;margin-bottom:2px;}
+  .metric-hint{font-size:11.5px;color:var(--text3);}
+
+  /* RAISE BUTTONS */
+  .raise-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:14px;}
+  .raise-btn{padding:10px 6px;border-radius:var(--r-sm);border:1px solid var(--border2);background:var(--bg3);cursor:pointer;text-align:center;transition:all .15s;font-family:'DM Sans',sans-serif;}
+  .raise-btn:hover{border-color:rgba(0,200,150,0.4);}
+  .raise-btn.active{border-color:var(--teal);background:var(--teal-dim);}
+  .raise-btn .pct{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--teal);margin-bottom:3px;}
+  .raise-btn .amt{font-size:11px;color:var(--text3);}
+  .raise-btn.active .amt{color:var(--teal);}
+
+  /* MARKET RANGE BAR */
+  .range-bar-wrap{position:relative;height:10px;background:var(--bg3);border-radius:5px;margin:18px 0 8px;}
+  .range-bar-fill{position:absolute;height:100%;border-radius:5px;transition:all .5s ease;}
+  .range-marker{position:absolute;top:-5px;width:2px;height:20px;border-radius:1px;transform:translateX(-50%);}
+  .range-marker-label{position:absolute;top:-22px;transform:translateX(-50%);font-size:10px;font-weight:700;white-space:nowrap;}
+
+  /* 5-YEAR TABLE */
+  .yr-table{width:100%;border-collapse:collapse;}
+  .yr-table th{font-size:11px;color:var(--text3);text-align:left;padding:0 0 10px;font-weight:600;letter-spacing:.04em;border-bottom:1px solid var(--border);}
+  .yr-table td{font-size:13px;padding:11px 0;border-bottom:1px solid var(--border);color:var(--text2);vertical-align:middle;}
+  .yr-table tr:last-child td{border-bottom:none;}
+  .yr-table td:first-child{color:var(--text);font-weight:600;}
+  .yr-table .gain{color:var(--teal);font-weight:700;}
+  .yr-table .highlight-row td{background:rgba(0,200,150,0.04);}
+
+  /* SCRIPT BOX */
+  .script-box{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);padding:18px 20px;font-size:13.5px;color:var(--text2);line-height:1.75;white-space:pre-wrap;min-height:120px;position:relative;}
+  .script-loading{display:flex;align-items:center;gap:10px;color:var(--teal);font-size:13px;}
+  .spin{width:14px;height:14px;border:2px solid rgba(0,200,150,0.2);border-top-color:var(--teal);border-radius:50%;animation:spin .7s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  /* COUNTER OFFER */
+  .counter-row{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+  .counter-label{font-size:12px;color:var(--text3);width:130px;flex-shrink:0;}
+  .counter-val{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;}
+  .counter-bar{flex:1;height:5px;background:var(--bg3);border-radius:3px;overflow:hidden;}
+  .counter-bar-fill{height:100%;border-radius:3px;transition:width .4s ease;}
+
+  /* BENEFITS */
+  .benefit-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);}
+  .benefit-row:last-child{border-bottom:none;}
+  .benefit-input{width:90px;padding:6px 10px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:13px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;text-align:right;}
+  .benefit-input:focus{border-color:rgba(0,200,150,0.4);}
+
+  /* LIFETIME CHART */
+  .chart-wrap{height:200px;position:relative;}
+  .chart-wrap-tall{height:240px;position:relative;}
+
+  /* GRID */
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px;}
+  .grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:18px;}
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar{width:4px;}
+  ::-webkit-scrollbar-track{background:transparent;}
+  ::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:2px;}
+
+  /* TOAST */
+  .toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:var(--card);border:1px solid rgba(0,200,150,0.3);border-radius:10px;padding:12px 20px;font-size:13.5px;color:var(--text);z-index:200;white-space:nowrap;animation:toastIn .25s ease;pointer-events:none;}
+  @keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(8px);}to{opacity:1;transform:translateX(-50%) translateY(0);}}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+
+  /* HIGHLIGHT PULSE */
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(0,200,150,0);}50%{box-shadow:0 0 0 6px rgba(0,200,150,0.12);}}
+  .pulse{animation:pulse 1.2s ease 1;}
+
+  .section-gap{margin-bottom:18px;}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <a class="sidebar-logo" href="dashboard.html">
+    <div class="logo-mark">PF</div>
+    ProFinanceCast
+  </a>
+  <div class="sidebar-section">Overview</div>
+  <a class="nav-item" href="dashboard.html">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="5" height="5" rx="1.2" stroke="currentColor" stroke-width="1.3"/><rect x="9" y="2" width="5" height="5" rx="1.2" stroke="currentColor" stroke-width="1.3"/><rect x="2" y="9" width="5" height="5" rx="1.2" stroke="currentColor" stroke-width="1.3"/><rect x="9" y="9" width="5" height="5" rx="1.2" stroke="currentColor" stroke-width="1.3"/></svg>
+    Dashboard
+  </a>
+  <a class="nav-item" href="goals.html">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.3"/><circle cx="8" cy="8" r="2.5" stroke="currentColor" stroke-width="1.3"/><path d="M8 2v1.5M8 12.5V14M2 8h1.5M12.5 8H14" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+    Goals
+  </a>
+  <div class="sidebar-section">Planning</div>
+  <a class="nav-item" href="debt-optimizer.html">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 13V9m4 4V6m4 7V3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+    Debt planner
+  </a>
+  <a class="nav-item active" href="salary-calculator.html">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="6" r="3" stroke="currentColor" stroke-width="1.3"/><path d="M3 14c0-2.5 2.5-4 5-4s5 1.5 5 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+    Salary sim
+  </a>
+  <a class="nav-item" href="dashboard.html">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 8h12M8 3l5 5-5 5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    Scenarios
+    <span class="nav-badge">Pro</span>
+  </a>
+  <div class="sidebar-section">AI & Insights</div>
+  <a class="nav-item" href="sage.html">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 4h10M3 8h7M3 12h5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+    Ask Sage
+  </a>
+  <a class="nav-item" href="dashboard.html">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="10" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M5 8l2 2 4-4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    Report card
+    <span class="nav-badge">Pro</span>
+  </a>
+  <div class="sidebar-section">Account</div>
+  <a class="nav-item" href="settings.html">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="6" r="2.5" stroke="currentColor" stroke-width="1.3"/><path d="M3 13.5c0-2.2 2.2-4 5-4s5 1.8 5 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+    Profile
+  </a>
+  <a class="nav-item" href="billing.html">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="4" width="12" height="9" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M2 7h12" stroke="currentColor" stroke-width="1.3"/></svg>
+    Billing
+  </a>
+  <div class="sidebar-footer">
+    <div class="user-pill" onclick="window.location='settings.html'">
+      <div class="user-avatar" id="sb-avatar">U</div>
+      <div>
+        <div class="user-name" id="sb-name">My Account</div>
+        <div class="user-plan">Pro plan</div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-title">Salary Negotiation Calculator</div>
+      <div class="topbar-sub" id="topbar-sub">Enter your details to see your full negotiation picture</div>
+    </div>
+    <div class="topbar-right">
+      <button class="topbar-btn" onclick="generateScript()" id="script-btn">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 3h9M2 6.5h6M2 10h4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="10.5" cy="10" r="2" stroke="currentColor" stroke-width="1.2"/></svg>
+        Generate negotiation script
+      </button>
+      <a href="dashboard.html" class="topbar-btn">← Dashboard</a>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- SECTION 1: YOUR SITUATION -->
+    <div class="grid-2 section-gap">
+      <!-- Current role inputs -->
+      <div class="card">
+        <div class="card-inner">
+          <div class="card-title" style="margin-bottom:4px;">Your current situation</div>
+          <div class="card-sub" style="margin-bottom:18px;">Fill in your details — all calculations update live</div>
+
+          <div style="margin-bottom:14px;">
+            <label class="field-label">Job title / Role</label>
+            <input type="text" class="field-input" id="i-role" placeholder="e.g. Software Engineer, Marketing Manager…" oninput="calc()">
+          </div>
+
+          <div class="field-row" style="margin-bottom:14px;">
+            <div>
+              <label class="field-label">Current annual salary</label>
+              <div style="position:relative;">
+                <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:13px;" id="sym-label">$</span>
+                <input type="number" class="field-input" id="i-salary" placeholder="50000" min="1" style="padding-left:26px;" oninput="calc()">
+              </div>
+            </div>
+            <div>
+              <label class="field-label">Years of experience</label>
+              <input type="number" class="field-input" id="i-exp" placeholder="3" min="0" max="50" oninput="calc()">
+            </div>
+          </div>
+
+          <div class="field-row" style="margin-bottom:14px;">
+            <div>
+              <label class="field-label">Industry</label>
+              <select class="field-input" id="i-industry" onchange="calc()">
+                <option value="tech">Technology / Software</option>
+                <option value="finance">Finance / Banking</option>
+                <option value="healthcare">Healthcare / Medical</option>
+                <option value="marketing">Marketing / Advertising</option>
+                <option value="engineering">Engineering</option>
+                <option value="education">Education</option>
+                <option value="retail">Retail / E-commerce</option>
+                <option value="hospitality">Hospitality / Tourism</option>
+                <option value="legal">Legal / Law</option>
+                <option value="hr">HR / People Ops</option>
+                <option value="design">Design / Creative</option>
+                <option value="consulting">Consulting</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div>
+              <label class="field-label">Country / Region</label>
+              <select class="field-input" id="i-country" onchange="calc()">
+                <option value="MU">🇲🇺 Mauritius</option>
+                <option value="US">🇺🇸 United States</option>
+                <option value="GB">🇬🇧 United Kingdom</option>
+                <option value="FR">🇫🇷 France</option>
+                <option value="DE">🇩🇪 Germany</option>
+                <option value="ZA">🇿🇦 South Africa</option>
+                <option value="IN">🇮🇳 India</option>
+                <option value="AU">🇦🇺 Australia</option>
+                <option value="CA">🇨🇦 Canada</option>
+                <option value="SG">🇸🇬 Singapore</option>
+                <option value="AE">🇦🇪 UAE</option>
+                <option value="NG">🇳🇬 Nigeria</option>
+                <option value="KE">🇰🇪 Kenya</option>
+                <option value="GH">🇬🇭 Ghana</option>
+                <option value="BR">🇧🇷 Brazil</option>
+                <option value="PH">🇵🇭 Philippines</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label class="field-label">Company size</label>
+            <select class="field-input" id="i-company" onchange="calc()">
+              <option value="startup">Startup (1–50)</option>
+              <option value="small">Small (51–200)</option>
+              <option value="mid" selected>Mid-size (201–1000)</option>
+              <option value="large">Large (1001–5000)</option>
+              <option value="enterprise">Enterprise (5000+)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Market range -->
+      <div class="card">
+        <div class="card-inner">
+          <div class="card-title" style="margin-bottom:4px;">Market rate analysis</div>
+          <div class="card-sub" style="margin-bottom:18px;">Estimated range for your role, experience &amp; region</div>
+
+          <!-- Range visual -->
+          <div style="margin-bottom:20px;">
+            <div class="range-bar-wrap" id="range-bar-wrap">
+              <div class="range-bar-fill" id="range-fill" style="left:0%;width:100%;background:linear-gradient(90deg,rgba(59,130,246,0.3),rgba(0,200,150,0.4),rgba(245,166,35,0.3));"></div>
+              <!-- You marker -->
+              <div class="range-marker" id="you-marker" style="left:50%;background:var(--teal);">
+                <div class="range-marker-label" style="color:var(--teal);">You</div>
+              </div>
+              <!-- Target marker -->
+              <div class="range-marker" id="target-marker" style="left:70%;background:var(--amber);">
+                <div class="range-marker-label" style="color:var(--amber);">Target</div>
+              </div>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3);">
+              <span id="range-low-label">Low</span>
+              <span id="range-mid-label" style="color:var(--teal);font-weight:600;">Market median</span>
+              <span id="range-high-label">Top</span>
+            </div>
+          </div>
+
+          <!-- Range breakdown -->
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:18px;">
+            <div style="background:var(--bg3);border-radius:var(--r-sm);padding:12px;text-align:center;">
+              <div style="font-size:10px;color:var(--text3);margin-bottom:4px;font-weight:600;letter-spacing:.04em;">25TH %ILE</div>
+              <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--blue);" id="r-low">—</div>
+            </div>
+            <div style="background:rgba(0,200,150,0.06);border:1px solid rgba(0,200,150,0.2);border-radius:var(--r-sm);padding:12px;text-align:center;">
+              <div style="font-size:10px;color:var(--teal);margin-bottom:4px;font-weight:600;letter-spacing:.04em;">MEDIAN</div>
+              <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--teal);" id="r-mid">—</div>
+            </div>
+            <div style="background:var(--bg3);border-radius:var(--r-sm);padding:12px;text-align:center;">
+              <div style="font-size:10px;color:var(--text3);margin-bottom:4px;font-weight:600;letter-spacing:.04em;">75TH %ILE</div>
+              <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--amber);" id="r-high">—</div>
+            </div>
+          </div>
+
+          <!-- Position assessment -->
+          <div id="position-box" style="padding:12px 14px;border-radius:var(--r-sm);font-size:13px;line-height:1.55;display:none;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 2: RAISE SELECTOR + SUMMARY -->
+    <div class="card section-gap">
+      <div class="card-inner">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+          <div>
+            <div class="card-title">How much are you asking for?</div>
+            <div class="card-sub">Click a raise percentage or enter a custom amount</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <label class="field-label" style="margin:0;white-space:nowrap;">Custom target:</label>
+            <div style="position:relative;">
+              <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:13px;" id="sym-custom">$</span>
+              <input type="number" class="field-input" id="i-target" placeholder="60000" min="1" style="padding-left:24px;width:130px;" oninput="setCustomTarget()">
+            </div>
+          </div>
+        </div>
+
+        <div class="raise-grid" id="raise-grid"></div>
+      </div>
+    </div>
+
+    <!-- SUMMARY METRICS -->
+    <div class="metric-strip" id="metric-strip">
+      <div class="metric-card">
+        <div class="metric-accent" style="background:var(--teal);"></div>
+        <div class="metric-label">Annual raise</div>
+        <div class="metric-val" id="m-raise" style="color:var(--teal);">—</div>
+        <div class="metric-hint" id="m-raise-hint">per year</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-accent" style="background:var(--blue);"></div>
+        <div class="metric-label">Monthly increase</div>
+        <div class="metric-val" id="m-monthly" style="color:var(--blue);">—</div>
+        <div class="metric-hint">take-home per month</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-accent" style="background:var(--amber);"></div>
+        <div class="metric-label">5-year extra earnings</div>
+        <div class="metric-val" id="m-5yr" style="color:var(--amber);">—</div>
+        <div class="metric-hint">compounded with 3% annual raises</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-accent" style="background:var(--purple);"></div>
+        <div class="metric-label">Lifetime impact</div>
+        <div class="metric-val" id="m-lifetime" style="color:var(--purple);">—</div>
+        <div class="metric-hint" id="m-lifetime-hint">over remaining career</div>
+      </div>
+    </div>
+
+    <!-- SECTION 3: 5-YEAR PROJECTION + LIFETIME CHART -->
+    <div class="grid-2 section-gap">
+      <!-- 5-year table -->
+      <div class="card">
+        <div class="card-inner">
+          <div class="card-title" style="margin-bottom:4px;">5-year earnings comparison</div>
+          <div class="card-sub" style="margin-bottom:16px;">Assumes 3% annual raise on top of your new base each year</div>
+          <table class="yr-table" id="yr-table">
+            <thead>
+              <tr>
+                <th>Year</th>
+                <th>Current path</th>
+                <th>With raise</th>
+                <th>Cumulative gain</th>
+              </tr>
+            </thead>
+            <tbody id="yr-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Lifetime chart -->
+      <div class="card">
+        <div class="card-inner">
+          <div class="card-title" style="margin-bottom:4px;">Lifetime earnings trajectory</div>
+          <div class="card-sub" style="margin-bottom:16px;">The compounding effect of getting this raise now</div>
+          <div class="chart-wrap-tall">
+            <canvas id="lifetimeChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 4: COUNTER-OFFER + BENEFITS -->
+    <div class="grid-2 section-gap">
+
+      <!-- Counter-offer calculator -->
+      <div class="card">
+        <div class="card-inner">
+          <div class="card-title" style="margin-bottom:4px;">Counter-offer calculator</div>
+          <div class="card-sub" style="margin-bottom:18px;">They offered less than you want — here's your negotiation range</div>
+
+          <div style="margin-bottom:16px;">
+            <label class="field-label">Their offer</label>
+            <div style="position:relative;">
+              <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:13px;" id="sym-offer">$</span>
+              <input type="number" class="field-input" id="i-offer" placeholder="55000" min="1" style="padding-left:26px;" oninput="calcCounter()">
+            </div>
+          </div>
+
+          <div id="counter-results" style="display:none;">
+            <div class="counter-row">
+              <div class="counter-label">Their offer</div>
+              <div class="counter-val" id="c-offer" style="color:var(--red);">—</div>
+            </div>
+            <div class="counter-row">
+              <div class="counter-label">Your walkaway point</div>
+              <div class="counter-val" id="c-walkaway" style="color:var(--amber);">—</div>
+            </div>
+            <div class="counter-row">
+              <div class="counter-label">Your counter (ask this)</div>
+              <div class="counter-val" id="c-counter" style="color:var(--teal);">—</div>
+            </div>
+            <div class="counter-row">
+              <div class="counter-label">Your dream number</div>
+              <div class="counter-val" id="c-dream" style="color:var(--blue);">—</div>
+            </div>
+
+            <!-- Visual bar -->
+            <div style="margin-top:14px;background:var(--bg3);border-radius:var(--r-sm);padding:12px 14px;">
+              <div id="counter-bar-row" style="position:relative;height:8px;background:rgba(255,255,255,0.06);border-radius:4px;margin-bottom:8px;">
+                <div id="counter-zone" style="position:absolute;height:100%;border-radius:4px;background:linear-gradient(90deg,rgba(245,166,35,0.4),rgba(0,200,150,0.4));transition:all .4s;"></div>
+              </div>
+              <div id="counter-advice" style="font-size:12px;color:var(--text2);line-height:1.55;"></div>
+            </div>
+          </div>
+
+          <div id="counter-empty" style="font-size:13px;color:var(--text3);padding:12px 0;">Enter their offer above to see your negotiation range.</div>
+        </div>
+      </div>
+
+      <!-- Benefits value calculator -->
+      <div class="card">
+        <div class="card-inner">
+          <div class="card-title" style="margin-bottom:4px;">Total compensation calculator</div>
+          <div class="card-sub" style="margin-bottom:16px;">Benefits have real monetary value — don't negotiate blind</div>
+
+          <div class="benefit-row">
+            <div>
+              <div style="font-size:13px;font-weight:500;">Annual bonus</div>
+              <div style="font-size:11px;color:var(--text3);">% of base salary</div>
+            </div>
+            <input type="number" class="benefit-input" id="b-bonus" value="0" placeholder="10" oninput="calcBenefits()">
+          </div>
+          <div class="benefit-row">
+            <div>
+              <div style="font-size:13px;font-weight:500;">Health insurance</div>
+              <div style="font-size:11px;color:var(--text3);">Annual value (if employer-paid)</div>
+            </div>
+            <input type="number" class="benefit-input" id="b-health" value="0" placeholder="3000" oninput="calcBenefits()">
+          </div>
+          <div class="benefit-row">
+            <div>
+              <div style="font-size:13px;font-weight:500;">Pension / 401k match</div>
+              <div style="font-size:11px;color:var(--text3);">% of salary matched</div>
+            </div>
+            <input type="number" class="benefit-input" id="b-pension" value="0" placeholder="5" oninput="calcBenefits()">
+          </div>
+          <div class="benefit-row">
+            <div>
+              <div style="font-size:13px;font-weight:500;">Remote work / WFH</div>
+              <div style="font-size:11px;color:var(--text3);">Commute cost saved annually</div>
+            </div>
+            <input type="number" class="benefit-input" id="b-remote" value="0" placeholder="2400" oninput="calcBenefits()">
+          </div>
+          <div class="benefit-row">
+            <div>
+              <div style="font-size:13px;font-weight:500;">Annual leave days</div>
+              <div style="font-size:11px;color:var(--text3);">Days above legal minimum</div>
+            </div>
+            <input type="number" class="benefit-input" id="b-leave" value="0" placeholder="5" oninput="calcBenefits()">
+          </div>
+
+          <div style="background:var(--bg3);border-radius:var(--r-sm);padding:14px;margin-top:14px;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+              <span style="font-size:12px;color:var(--text3);">Base salary</span>
+              <span style="font-size:13px;font-weight:600;" id="tc-base">—</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+              <span style="font-size:12px;color:var(--text3);">Benefits value</span>
+              <span style="font-size:13px;font-weight:600;color:var(--teal);" id="tc-benefits">—</span>
+            </div>
+            <div style="height:1px;background:var(--border2);margin-bottom:8px;"></div>
+            <div style="display:flex;justify-content:space-between;">
+              <span style="font-size:13px;font-weight:700;">Total comp</span>
+              <span style="font-family:'Syne',sans-serif;font-size:17px;font-weight:700;color:var(--teal);" id="tc-total">—</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 5: NEGOTIATION SCRIPT -->
+    <div class="card section-gap">
+      <div class="card-inner">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+          <div>
+            <div class="card-title">AI negotiation script</div>
+            <div class="card-sub">Personalised talking points based on your numbers — generated by Sage</div>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button onclick="copyScript()" id="copy-btn" style="display:none;padding:6px 14px;background:transparent;border:1px solid var(--border2);border-radius:var(--r-sm);font-size:12px;color:var(--text2);cursor:pointer;font-family:'DM Sans',sans-serif;">Copy script</button>
+            <button onclick="generateScript()" style="padding:6px 14px;background:var(--teal);border:none;border-radius:var(--r-sm);font-size:12px;font-weight:700;color:#080C12;cursor:pointer;font-family:'DM Sans',sans-serif;">Generate with Sage</button>
+          </div>
+        </div>
+        <div class="script-box" id="script-box">
+          <span style="color:var(--text3);">Fill in your role and salary above, then click "Generate with Sage" for a personalised negotiation script tailored to your exact situation, experience level, and target number.</span>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<script>
+// ── STATE ──
+let USER = {};
+let activeRaisePct = 10;
+let lifetimeChart = null;
+
+// ── MARKET RATE DATABASE ──
+// Multipliers relative to a $50k baseline, adjusted by exp/country/industry/company
+const INDUSTRY_MULT = {
+  tech:1.45, finance:1.35, consulting:1.3, legal:1.3, engineering:1.2,
+  healthcare:1.15, design:1.05, marketing:1.0, hr:0.95, education:0.85,
+  hospitality:0.8, retail:0.8, other:1.0,
+};
+const COUNTRY_MULT = {
+  US:1.0, AU:0.88, GB:0.82, CA:0.85, DE:0.78, FR:0.72, SG:0.80,
+  AE:0.75, ZA:0.35, MU:0.28, IN:0.22, NG:0.25, KE:0.22, GH:0.20, BR:0.32, PH:0.25,
+};
+const COMPANY_MULT = { startup:0.9, small:0.95, mid:1.0, large:1.1, enterprise:1.18 };
+const EXP_MULT = (y) => {
+  if (y <= 1)  return 0.72;
+  if (y <= 3)  return 0.88;
+  if (y <= 6)  return 1.0;
+  if (y <= 10) return 1.18;
+  if (y <= 15) return 1.35;
+  return 1.5;
+};
+
+function getMarketRange(salary) {
+  const industry = document.getElementById('i-industry').value;
+  const country  = document.getElementById('i-country').value;
+  const company  = document.getElementById('i-company').value;
+  const exp      = parseFloat(document.getElementById('i-exp').value) || 3;
+
+  const base = 50000;
+  const median = base
+    * (INDUSTRY_MULT[industry] || 1)
+    * (COUNTRY_MULT[country] || 0.5)
+    * (COMPANY_MULT[company] || 1)
+    * EXP_MULT(exp);
+
+  return {
+    low:    Math.round(median * 0.82),
+    median: Math.round(median),
+    high:   Math.round(median * 1.28),
+  };
+}
+
+// ── INIT ──
+function init() {
+  try { USER = JSON.parse(localStorage.getItem('pfc_user')) || {}; } catch(e) { USER = {}; }
+  const sym = USER.currency || '$';
+  ['sym-label','sym-custom','sym-offer'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = sym;
+  });
+  const name = (USER.name || '').trim();
+  if (name) {
+    document.getElementById('sb-name').textContent = name;
+    document.getElementById('sb-avatar').textContent = name.charAt(0).toUpperCase();
+  }
+  // Pre-fill salary from USER data if available
+  if (USER.income) document.getElementById('i-salary').value = USER.income * 12;
+
+  buildRaiseGrid(null, null);
+  calc();
+}
+
+// ── RAISE GRID ──
+function buildRaiseGrid(salary, sym) {
+  const pcts = [3, 5, 8, 10, 12, 15, 18, 20, 25];
+  const grid = document.getElementById('raise-grid');
+  grid.style.gridTemplateColumns = `repeat(${pcts.length}, 1fr)`;
+  grid.innerHTML = pcts.map(p => {
+    const amt = salary ? Math.round(salary * p / 100) : null;
+    return `<div class="raise-btn ${p === activeRaisePct ? 'active' : ''}" onclick="selectRaise(${p})" id="rbtn-${p}">
+      <div class="pct">+${p}%</div>
+      <div class="amt">${amt ? (sym || '$') + Math.round(amt).toLocaleString() : '—'}</div>
+    </div>`;
+  }).join('');
+}
+
+function selectRaise(pct) {
+  activeRaisePct = pct;
+  const salary = parseFloat(document.getElementById('i-salary').value) || 0;
+  const target = salary ? Math.round(salary * (1 + pct / 100)) : '';
+  document.getElementById('i-target').value = target || '';
+  document.querySelectorAll('.raise-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('rbtn-' + pct)?.classList.add('active');
+  calc();
+}
+
+function setCustomTarget() {
+  document.querySelectorAll('.raise-btn').forEach(b => b.classList.remove('active'));
+  activeRaisePct = null;
+  calc();
+}
+
+// ── MAIN CALC ──
+function calc() {
+  const salary  = parseFloat(document.getElementById('i-salary').value) || 0;
+  const sym     = USER.currency || '$';
+  const exp     = parseFloat(document.getElementById('i-exp').value) || 0;
+
+  // Rebuild raise grid with amounts
+  buildRaiseGrid(salary, sym);
+  if (activeRaisePct) document.getElementById('rbtn-' + activeRaisePct)?.classList.add('active');
+
+  // Target salary
+  let target = parseFloat(document.getElementById('i-target').value) || 0;
+  if (!target && salary && activeRaisePct) {
+    target = Math.round(salary * (1 + activeRaisePct / 100));
+    document.getElementById('i-target').value = target;
+  }
+
+  // Market range
+  const range = getMarketRange(salary);
+  updateMarketRange(range, salary, target, sym);
+
+  if (!salary || !target || target <= salary) {
+    clearMetrics(sym);
+    return;
+  }
+
+  const raise      = target - salary;
+  const raisePct   = raise / salary * 100;
+  const monthly    = Math.round(raise / 12);
+  const careerYrs  = Math.max(5, 40 - exp);
+
+  // 5-year compounding (3% annual raise each year on new base)
+  let curr = salary, newB = target, cumGain = 0;
+  const yrRows = [];
+  for (let yr = 1; yr <= 5; yr++) {
+    curr  = Math.round(curr  * 1.03);
+    newB  = Math.round(newB  * 1.03);
+    const gain = newB - curr;
+    cumGain += gain;
+    yrRows.push({ yr, curr, newB, gain, cumGain });
+  }
+  const fiveYrExtra = cumGain;
+
+  // Lifetime compounding
+  let lCurr = salary, lNew = target, lifetimeGain = 0;
+  const ltCurr = [], ltNew = [];
+  for (let yr = 0; yr < careerYrs; yr++) {
+    ltCurr.push(Math.round(lCurr));
+    ltNew.push(Math.round(lNew));
+    lifetimeGain += lNew - lCurr;
+    lCurr *= 1.03;
+    lNew  *= 1.03;
+  }
+
+  // Update metrics
+  document.getElementById('m-raise').textContent  = sym + raise.toLocaleString();
+  document.getElementById('m-raise-hint').textContent = '+' + raisePct.toFixed(1) + '% per year';
+  document.getElementById('m-monthly').textContent = sym + monthly.toLocaleString();
+  document.getElementById('m-5yr').textContent    = sym + fiveYrExtra.toLocaleString();
+  document.getElementById('m-lifetime').textContent = sym + Math.round(lifetimeGain / 1000) + 'k';
+  document.getElementById('m-lifetime-hint').textContent = `over ~${careerYrs} more career years`;
+
+  // Topbar
+  const role = document.getElementById('i-role').value.trim() || 'your role';
+  document.getElementById('topbar-sub').textContent =
+    `${role} · ${sym}${salary.toLocaleString()} → ${sym}${target.toLocaleString()} · +${raisePct.toFixed(1)}% · ${sym}${monthly.toLocaleString()}/mo more`;
+
+  // 5-year table
+  const tbody = document.getElementById('yr-body');
+  tbody.innerHTML = yrRows.map(r => `
+    <tr class="${r.yr === 5 ? 'highlight-row' : ''}">
+      <td>Year ${r.yr}</td>
+      <td style="color:var(--text3);">${sym}${r.curr.toLocaleString()}</td>
+      <td style="color:var(--text);">${sym}${r.newB.toLocaleString()}</td>
+      <td class="gain">+${sym}${r.cumGain.toLocaleString()}</td>
+    </tr>`
+  ).join('');
+
+  // Lifetime chart
+  renderLifetimeChart(ltCurr, ltNew, sym, careerYrs);
+
+  // Benefits base
+  calcBenefits();
+
+  // Counter-offer
+  calcCounter();
+}
+
+function clearMetrics(sym) {
+  ['m-raise','m-monthly','m-5yr','m-lifetime'].forEach(id => document.getElementById(id).textContent = '—');
+  document.getElementById('yr-body').innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text3);padding:20px 0;">Enter your salary and target above</td></tr>';
+  if (lifetimeChart) { lifetimeChart.destroy(); lifetimeChart = null; }
+}
+
+// ── MARKET RANGE UI ──
+function updateMarketRange(range, salary, target, sym) {
+  document.getElementById('r-low').textContent  = sym + range.low.toLocaleString();
+  document.getElementById('r-mid').textContent  = sym + range.median.toLocaleString();
+  document.getElementById('r-high').textContent = sym + range.high.toLocaleString();
+
+  if (!salary) { document.getElementById('position-box').style.display = 'none'; return; }
+
+  // Position markers on bar
+  const span = range.high - range.low;
+  const youPct  = span > 0 ? Math.min(95, Math.max(5, (salary - range.low) / span * 100)) : 50;
+  const targPct = target && span > 0 ? Math.min(95, Math.max(5, (target - range.low) / span * 100)) : null;
+
+  document.getElementById('you-marker').style.left  = youPct + '%';
+  if (targPct !== null) {
+    document.getElementById('target-marker').style.left    = targPct + '%';
+    document.getElementById('target-marker').style.display = 'block';
+  } else {
+    document.getElementById('target-marker').style.display = 'none';
+  }
+
+  // Position assessment
+  const box = document.getElementById('position-box');
+  let msg = '', bg = '', color = '';
+  if (salary < range.low) {
+    msg = `⚠️ You're earning <strong>${sym}${(range.low - salary).toLocaleString()} below</strong> the 25th percentile for your role. You have a strong case for a significant raise — market data strongly supports you.`;
+    bg = 'rgba(224,82,82,0.08)'; color = 'var(--red)';
+  } else if (salary < range.median) {
+    msg = `📊 You're <strong>below the market median</strong> by ${sym}${(range.median - salary).toLocaleString()}. Asking to move to median is a very reasonable and data-backed request.`;
+    bg = 'rgba(245,166,35,0.08)'; color = 'var(--amber)';
+  } else if (salary < range.high) {
+    msg = `✅ You're <strong>above median</strong> and in the upper-mid range. To push to the 75th percentile, emphasise specialised skills and impact. This is achievable.`;
+    bg = 'rgba(0,200,150,0.08)'; color = 'var(--teal)';
+  } else {
+    msg = `🏆 You're <strong>at or above the 75th percentile</strong> for your role. Focus your negotiation on total comp — bonus, equity, benefits, and flexibility rather than base.`;
+    bg = 'rgba(59,130,246,0.08)'; color = 'var(--blue)';
+  }
+  box.style.display = 'block';
+  box.style.background = bg;
+  box.style.border = `1px solid ${color.replace('var(--','').replace(')','') === color ? color + '40' : color}22`;
+  box.style.color = 'var(--text2)';
+  box.innerHTML = msg;
+}
+
+// ── LIFETIME CHART ──
+function renderLifetimeChart(curr, newB, sym, years) {
+  const canvas = document.getElementById('lifetimeChart');
+  if (lifetimeChart) { lifetimeChart.destroy(); lifetimeChart = null; }
+
+  const labels = Array.from({ length: years }, (_, i) => 'Yr ' + (i + 1));
+
+  lifetimeChart = new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Without raise',
+          data: curr,
+          borderColor: '#E05252',
+          backgroundColor: 'rgba(224,82,82,0.05)',
+          borderWidth: 1.5,
+          borderDash: [4,3],
+          pointRadius: 0,
+          tension: 0.3,
+          fill: true,
+        },
+        {
+          label: 'With raise',
+          data: newB,
+          borderColor: '#00C896',
+          backgroundColor: 'rgba(0,200,150,0.07)',
+          borderWidth: 2,
+          pointRadius: 0,
+          tension: 0.3,
+          fill: true,
+        },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { intersect: false, mode: 'index' },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#0F1923',
+          borderColor: 'rgba(255,255,255,0.1)',
+          borderWidth: 1,
+          titleColor: '#F0F4F8',
+          bodyColor: '#8A9BB0',
+          callbacks: { label: ctx => ' ' + ctx.dataset.label + ': ' + sym + ctx.parsed.y.toLocaleString() }
+        }
+      },
+      scales: {
+        x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#4A5A6E', font: { size: 10 }, maxTicksLimit: 10 } },
+        y: {
+          grid: { color: 'rgba(255,255,255,0.04)' },
+          ticks: { color: '#4A5A6E', font: { size: 10 }, callback: v => sym + (v >= 1000 ? (v/1000).toFixed(0)+'k' : v) }
+        }
+      }
+    }
+  });
+}
+
+// ── COUNTER OFFER ──
+function calcCounter() {
+  const sym    = USER.currency || '$';
+  const offer  = parseFloat(document.getElementById('i-offer').value) || 0;
+  const target = parseFloat(document.getElementById('i-target').value) || 0;
+  const salary = parseFloat(document.getElementById('i-salary').value) || 0;
+
+  document.getElementById('counter-results').style.display = offer ? 'block' : 'none';
+  document.getElementById('counter-empty').style.display   = offer ? 'none' : 'block';
+
+  if (!offer) return;
+
+  const anchor    = target || (salary * 1.15);
+  const walkaway  = Math.max(offer, salary * 1.02);
+  const counter   = Math.round(offer + (anchor - offer) * 0.65);
+  const dream     = Math.round(anchor * 1.05);
+
+  document.getElementById('c-offer').textContent    = sym + offer.toLocaleString();
+  document.getElementById('c-offer').style.color    = offer < (salary * 1.05) ? 'var(--red)' : 'var(--amber)';
+  document.getElementById('c-walkaway').textContent = sym + walkaway.toLocaleString();
+  document.getElementById('c-counter').textContent  = sym + counter.toLocaleString();
+  document.getElementById('c-dream').textContent    = sym + dream.toLocaleString();
+
+  // Zone bar (offer=0%, anchor=100%)
+  const span = anchor - offer;
+  const walkPct    = span > 0 ? ((walkaway - offer) / span * 100) : 5;
+  const counterPct = span > 0 ? ((counter - offer) / span * 100) : 65;
+  document.getElementById('counter-zone').style.cssText =
+    `left:${walkPct.toFixed(0)}%;width:${(counterPct - walkPct).toFixed(0)}%;position:absolute;height:100%;border-radius:4px;background:linear-gradient(90deg,rgba(245,166,35,0.4),rgba(0,200,150,0.4));transition:all .4s;`;
+
+  const gap = counter - offer;
+  document.getElementById('counter-advice').innerHTML =
+    `Counter with <strong style="color:var(--teal)">${sym}${counter.toLocaleString()}</strong> — that's ${sym}${gap.toLocaleString()} above their offer and leaves room to meet in the middle at ~${sym}${Math.round((offer+counter)/2).toLocaleString()}.
+Your absolute minimum is ${sym}${walkaway.toLocaleString()} — don't accept below this.`;
+}
+
+// ── BENEFITS ──
+function calcBenefits() {
+  const sym    = USER.currency || '$';
+  const salary = parseFloat(document.getElementById('i-target').value) || parseFloat(document.getElementById('i-salary').value) || 0;
+  if (!salary) return;
+
+  const bonus   = (parseFloat(document.getElementById('b-bonus').value)   || 0) / 100 * salary;
+  const health  = parseFloat(document.getElementById('b-health').value)   || 0;
+  const pension = (parseFloat(document.getElementById('b-pension').value) || 0) / 100 * salary;
+  const remote  = parseFloat(document.getElementById('b-remote').value)   || 0;
+  const leave   = (parseFloat(document.getElementById('b-leave').value)   || 0) * (salary / 260);
+
+  const benefitsTotal = Math.round(bonus + health + pension + remote + leave);
+  const totalComp = salary + benefitsTotal;
+
+  document.getElementById('tc-base').textContent     = sym + salary.toLocaleString();
+  document.getElementById('tc-benefits').textContent = sym + benefitsTotal.toLocaleString();
+  document.getElementById('tc-total').textContent    = sym + totalComp.toLocaleString();
+}
+
+// ── GENERATE SCRIPT ──
+async function generateScript() {
+  const salary  = parseFloat(document.getElementById('i-salary').value) || 0;
+  const target  = parseFloat(document.getElementById('i-target').value) || 0;
+  const role    = document.getElementById('i-role').value.trim() || 'professional';
+  const exp     = document.getElementById('i-exp').value || '3';
+  const sym     = USER.currency || '$';
+
+  if (!salary) { showToast('Enter your current salary first'); return; }
+
+  const range   = getMarketRange(salary);
+  const raisePct = salary ? ((target - salary) / salary * 100).toFixed(1) : '10';
+  const industry = document.getElementById('i-industry').options[document.getElementById('i-industry').selectedIndex].text;
+  const country  = document.getElementById('i-country').options[document.getElementById('i-country').selectedIndex].text;
+
+  const scriptBox = document.getElementById('script-box');
+  document.getElementById('copy-btn').style.display = 'none';
+  scriptBox.innerHTML = `<div class="script-loading"><div class="spin"></div> Sage is writing your personalised negotiation script…</div>`;
+
+  const prompt = `Write a professional salary negotiation script for someone with these details:
+- Role: ${role}
+- Industry: ${industry}
+- Country: ${country}
+- Years experience: ${exp}
+- Current salary: ${sym}${salary.toLocaleString()}
+- Target salary: ${target ? sym + target.toLocaleString() : 'not set, suggest ' + sym + range.median.toLocaleString()}
+- Raise requested: ${raisePct}%
+- Market median for this role: ${sym}${range.median.toLocaleString()}
+- Market range (25th–75th percentile): ${sym}${range.low.toLocaleString()} – ${sym}${range.high.toLocaleString()}
+
+Write a concise, confident negotiation script with:
+1. Opening statement (2-3 sentences) — express enthusiasm and set up the ask
+2. The ask itself — state the number confidently with market data backing
+3. Value justification — 2-3 bullet points on why they deserve this
+4. Response to pushback — how to handle "we don't have budget"
+5. Closing — professional regardless of outcome
+
+Keep it realistic, not arrogant. Use their actual numbers throughout. Format clearly with section headers.`;
+
+  try {
+    const res = await fetch('/api/sage', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: prompt, csvMode: true }),
+    });
+    const data = await res.json();
+    const text = data.reply || data.error || 'Could not generate script. Try again.';
+
+    // Format the script nicely
+    const formatted = text
+      .replace(/\*\*(.*?)\*\*/g, '<strong style="color:var(--text)">$1</strong>')
+      .replace(/^##\s(.+)$/gm, '<div style="font-size:12px;font-weight:700;color:var(--teal);letter-spacing:.06em;text-transform:uppercase;margin:14px 0 6px;">$1</div>')
+      .replace(/^#\s(.+)$/gm,  '<div style="font-size:13px;font-weight:700;color:var(--text);margin:12px 0 5px;">$1</div>')
+      .replace(/^\d\.\s(.+)$/gm, '<div style="margin:5px 0;padding-left:14px;border-left:2px solid rgba(0,200,150,0.3);color:var(--text2);">$1</div>')
+      .replace(/^-\s(.+)$/gm,   '<div style="margin:4px 0;padding-left:14px;border-left:2px solid rgba(0,200,150,0.3);color:var(--text2);">• $1</div>')
+      .replace(/\n/g, '<br>');
+
+    scriptBox.innerHTML = formatted;
+    document.getElementById('copy-btn').style.display = 'block';
+  } catch(e) {
+    scriptBox.innerHTML = '<span style="color:var(--red)">Could not reach Sage. Check your connection and try again.</span>';
+  }
+}
+
+function copyScript() {
+  const text = document.getElementById('script-box').innerText;
+  navigator.clipboard.writeText(text).then(() => showToast('Script copied to clipboard'));
+}
+
+// ── TOAST ──
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity .3s'; }, 2800);
+  setTimeout(() => t.remove(), 3200);
+}
+
+// ── START ──
+init();
+</script>
+</body>
+</html>
