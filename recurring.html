@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<title>Recurring Detector — ProFinanceCast</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg:#080C12;--bg2:#0D1320;--bg3:#111827;--card:#0F1923;
+    --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);
+    --teal:#00C896;--teal-dim:rgba(0,200,150,0.12);
+    --text:#F0F4F8;--text2:#8A9BB0;--text3:#4A5A6E;
+    --amber:#F5A623;--red:#E05252;--blue:#3B82F6;
+    --purple:#A78BFA;--green:#22C55E;--r:12px;--r-sm:8px;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;}
+  body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);display:flex;overflow:hidden;}
+
+  /* SIDEBAR */
+  .sidebar{width:240px;flex-shrink:0;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;height:100vh;overflow-y:auto;}
+  .sidebar-logo{display:flex;align-items:center;gap:10px;padding:22px 20px 18px;border-bottom:1px solid var(--border);font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:var(--text);text-decoration:none;}
+  .logo-mark{width:30px;height:30px;background:var(--teal);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#080C12;font-family:'Syne',sans-serif;flex-shrink:0;}
+  .sidebar-section{padding:18px 12px 8px;font-size:10px;font-weight:600;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--r-sm);margin:1px 8px;font-size:13.5px;color:var(--text2);cursor:pointer;transition:background .15s,color .15s;text-decoration:none;}
+  .nav-item:hover{background:rgba(255,255,255,0.05);color:var(--text);}
+  .nav-item.active{background:var(--teal-dim);color:var(--teal);}
+  .nav-item svg{flex-shrink:0;opacity:.8;}
+  .nav-item.active svg{opacity:1;}
+  .nav-badge{margin-left:auto;font-size:10px;background:rgba(245,166,35,0.12);color:var(--amber);padding:2px 7px;border-radius:6px;font-weight:600;}
+  .sidebar-footer{margin-top:auto;padding:16px 12px;border-top:1px solid var(--border);}
+  .user-pill{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:var(--r-sm);cursor:pointer;transition:background .15s;}
+  .user-pill:hover{background:rgba(255,255,255,0.05);}
+  .user-avatar{width:32px;height:32px;border-radius:50%;background:var(--teal);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#080C12;font-family:'Syne',sans-serif;flex-shrink:0;}
+  .user-name{font-size:13px;font-weight:500;}
+  .user-plan{font-size:11px;color:var(--text3);}
+
+  /* MAIN */
+  .main{flex:1;height:100vh;overflow-y:auto;display:flex;flex-direction:column;}
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:0 28px;height:64px;flex-shrink:0;border-bottom:1px solid var(--border);background:rgba(8,12,18,0.9);position:sticky;top:0;z-index:10;backdrop-filter:blur(12px);}
+  .topbar-left{display:flex;flex-direction:column;}
+  .topbar-title{font-family:'Syne',sans-serif;font-size:17px;font-weight:700;}
+  .topbar-sub{font-size:12px;color:var(--text3);margin-top:1px;}
+  .topbar-right{display:flex;align-items:center;gap:10px;}
+  .topbar-btn{display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--r-sm);font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;border:1px solid var(--border2);background:transparent;color:var(--text2);transition:all .15s;}
+  .topbar-btn:hover{color:var(--text);border-color:rgba(255,255,255,0.2);}
+  .topbar-btn.primary{background:var(--teal);color:#080C12;border-color:var(--teal);font-weight:600;}
+  .topbar-btn.primary:hover{opacity:.88;}
+  .topbar-btn.danger{background:rgba(224,82,82,0.1);color:var(--red);border-color:rgba(224,82,82,0.3);}
+  .topbar-btn.danger:hover{background:rgba(224,82,82,0.2);}
+
+  .content{padding:28px;flex:1;}
+
+  /* METRIC STRIP */
+  .metric-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px;}
+  .metric-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px 20px;position:relative;overflow:hidden;transition:border-color .2s;}
+  .metric-accent{position:absolute;bottom:0;left:0;right:0;height:2px;}
+  .metric-label{font-size:11px;color:var(--text3);margin-bottom:5px;font-weight:500;letter-spacing:.02em;}
+  .metric-val{font-family:'Syne',sans-serif;font-size:21px;font-weight:700;margin-bottom:2px;}
+  .metric-hint{font-size:11.5px;color:var(--text3);}
+
+  /* UPLOAD ZONE */
+  .upload-zone{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:48px 32px;text-align:center;margin-bottom:22px;}
+  .drop-area{background:var(--bg3);border:2px dashed var(--border2);border-radius:var(--r);padding:40px 24px;cursor:pointer;transition:all .2s;margin-bottom:16px;}
+  .drop-area:hover,.drop-area.drag{border-color:var(--teal);background:rgba(0,200,150,0.04);}
+
+  /* CARDS */
+  .card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);}
+  .card-inner{padding:20px 22px;}
+  .card-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;margin-bottom:3px;}
+  .card-sub{font-size:12px;color:var(--text3);}
+
+  /* FILTER TABS */
+  .filter-tabs{display:flex;gap:6px;margin-bottom:18px;flex-wrap:wrap;}
+  .filter-tab{padding:6px 14px;border-radius:20px;font-size:12.5px;cursor:pointer;border:1px solid var(--border2);background:transparent;color:var(--text2);transition:all .15s;font-family:'DM Sans',sans-serif;}
+  .filter-tab:hover{border-color:var(--border2);color:var(--text);}
+  .filter-tab.active{background:var(--teal-dim);border-color:rgba(0,200,150,0.4);color:var(--teal);font-weight:600;}
+  .filter-tab.danger-tab.active{background:rgba(224,82,82,0.1);border-color:rgba(224,82,82,0.3);color:var(--red);}
+  .filter-tab.amber-tab.active{background:rgba(245,166,35,0.1);border-color:rgba(245,166,35,0.3);color:var(--amber);}
+
+  /* RECURRING CARD */
+  .rec-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;transition:border-color .2s,transform .15s;animation:cardIn .3s ease both;}
+  .rec-card:hover{border-color:var(--border2);transform:translateY(-1px);}
+  .rec-card.flagged{border-color:rgba(224,82,82,0.3);}
+  .rec-card.price-up{border-color:rgba(245,166,35,0.3);}
+  .rec-card.cancelled{opacity:.5;}
+
+  @keyframes cardIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+
+  .rec-top{padding:14px 16px;display:flex;align-items:center;gap:12px;}
+  .rec-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+  .rec-info{flex:1;min-width:0;}
+  .rec-name{font-size:14px;font-weight:600;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .rec-meta{font-size:11.5px;color:var(--text3);}
+  .rec-amount{text-align:right;flex-shrink:0;}
+  .rec-monthly{font-family:'Syne',sans-serif;font-size:17px;font-weight:700;}
+  .rec-annual{font-size:11px;color:var(--text3);margin-top:1px;}
+
+  .rec-body{padding:0 16px 14px;border-top:1px solid var(--border);padding-top:12px;}
+  .rec-timeline{display:flex;gap:4px;margin-bottom:10px;align-items:flex-end;height:32px;}
+  .rec-tick{flex:1;border-radius:2px;transition:height .3s,background .2s;}
+  .rec-dates{display:flex;justify-content:space-between;font-size:10px;color:var(--text3);margin-bottom:10px;}
+
+  .rec-badges{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;}
+  .badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:3px 9px;border-radius:6px;}
+  .badge-green{background:rgba(34,197,94,0.1);color:var(--green);}
+  .badge-red{background:rgba(224,82,82,0.1);color:var(--red);}
+  .badge-amber{background:rgba(245,166,35,0.1);color:var(--amber);}
+  .badge-blue{background:rgba(59,130,246,0.1);color:var(--blue);}
+  .badge-teal{background:var(--teal-dim);color:var(--teal);}
+  .badge-grey{background:rgba(138,155,176,0.1);color:var(--text3);}
+
+  .rec-actions{display:flex;gap:6px;}
+  .rec-action-btn{flex:1;padding:6px;border-radius:var(--r-sm);font-size:11.5px;cursor:pointer;font-family:'DM Sans',sans-serif;border:1px solid var(--border2);background:transparent;color:var(--text2);transition:all .15s;text-align:center;}
+  .rec-action-btn:hover{border-color:var(--border2);color:var(--text);}
+  .rec-action-btn.cancel-btn{color:var(--red);border-color:rgba(224,82,82,0.2);}
+  .rec-action-btn.cancel-btn:hover{background:rgba(224,82,82,0.08);}
+
+  /* GRID LAYOUTS */
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px;}
+  .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+  .rec-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;}
+
+  /* ALERT BANNER */
+  .alert-banner{display:flex;align-items:flex-start;gap:12px;padding:14px 18px;border-radius:var(--r);margin-bottom:18px;animation:cardIn .3s ease;}
+  .alert-banner.red{background:rgba(224,82,82,0.08);border:1px solid rgba(224,82,82,0.2);}
+  .alert-banner.amber{background:rgba(245,166,35,0.08);border:1px solid rgba(245,166,35,0.2);}
+  .alert-icon{font-size:16px;flex-shrink:0;margin-top:1px;}
+  .alert-text{flex:1;font-size:13px;color:var(--text2);line-height:1.55;}
+  .alert-text strong{color:var(--text);}
+
+  /* CHART */
+  .chart-wrap{height:200px;position:relative;}
+
+  /* PROCESSING */
+  .processing-box{text-align:center;padding:48px 32px;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .spinner{width:44px;height:44px;border:3px solid var(--bg3);border-top-color:var(--teal);border-radius:50%;margin:0 auto 16px;animation:spin .7s linear infinite;}
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar{width:4px;}
+  ::-webkit-scrollbar-track{background:transparent;}
+  ::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:2px;}
+
+  /* TOAST */
+  .toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:var(--card);border:1px solid rgba(0,200,150,0.3);border-radius:10px;padding:12px 20px;font-size:13.5px;color:var(--text);z-index:200;white-space:nowrap;animation:toastIn .25s ease;pointer-events:none;}
+  @keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(8px);}to{opacity:1;transform:translateX(-50%) translateY(0);}}
+
+  /* SORT */
+  .sort-bar{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+  .sort-label{font-size:12px;color:var(--text3);}
+  select.sort-select{padding:5px 10px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:12px;color:var(--text2);font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;color-scheme:dark;}
+
+  /* MODAL */
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(4,6,10,0.85);backdrop-filter:blur(6px);z-index:100;align-items:center;justify-content:center;padding:20px;}
+  .modal-overlay.open{display:flex;}
+  .modal-box{background:var(--bg2);border:1px solid var(--border2);border-radius:16px;width:100%;max-width:440px;overflow:hidden;}
+  .modal-head{padding:18px 22px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+  .modal-title{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;}
+  .modal-close{width:28px;height:28px;border-radius:50%;background:var(--bg3);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2);}
+  .modal-body{padding:20px 22px;}
+  .field-label{font-size:12px;color:var(--text2);display:block;margin-bottom:5px;}
+  .field-input{width:100%;padding:10px 13px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;transition:border-color .15s;}
+  .field-input:focus{border-color:rgba(0,200,150,0.4);}
+  input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;}
+  input[type=number]{-moz-appearance:textfield;appearance:textfield;}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <a class="sidebar-logo" href="dashboard.html">
+    <div class="logo-mark">PF</div>
+    ProFinanceCast
+  </a>
+  <div class="sidebar-section">Overview</div>
+  <a class="nav-item" href="dashboard.html">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="5" height="5" rx="1.2" stroke="currentColor" stroke-width="1.3"/><rect x="9" y="2" width="5" height="5" rx="1.2" stroke="currentColor" stroke-width="1.3"/><rect x="2" y="9" width="5" height="5" rx="1.2" stroke="currentColor" stroke-width="1.3"/><rect x="9" y="9" width="5" height="5" rx="1.2" stroke="currentColor" stroke-width="1.3"/></svg>
+    Dashboard
+  </a>
+  <a class="nav-item" href="goals.html">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.3"/><circle cx="8" cy="8" r="2.5" stroke="currentColor" stroke-width="1.3"/><path d="M8 2v1.5M8 12.5V14M2 8h1.5M12.5 8H14" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+    Goals
+  </a>
+  <div class="sidebar-section">Planning</div>
+  <a class="nav-item" href="debt-optimizer.html">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 13V9m4 4V6m4 7V3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+    Debt planner
+  </a>
+  <a class="nav-item" href="salary-calculator.html">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="6" r="3" stroke="currentColor" stroke-width="1.3"/><path d="M3 14c0-2.5 2.5-4 5-4s5 1.5 5 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+    Salary sim
+  </a>
+  <a class="nav-item active" href="recurring.html">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 8a6 6 0 0 1 6-6 6 6 0 0 1 4.2 1.7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M14 8a6 6 0 0 1-6 6 6 6 0 0 1-4.2-1.7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M12 3l2.2-1-.2 2.2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 13l-2.2 1 .2-2.2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    Subscriptions
+  </a>
+  <a class="nav-item" href="dashboard.html">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 8h12M8 3l5 5-5 5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    Scenarios
+    <span class="nav-badge">Pro</span>
+  </a>
+  <div class="sidebar-section">AI & Insights</div>
+  <a class="nav-item" href="sage.html">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 4h10M3 8h7M3 12h5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+    Ask Sage
+  </a>
+  <a class="nav-item" href="dashboard.html">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="10" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M5 8l2 2 4-4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    Report card
+    <span class="nav-badge">Pro</span>
+  </a>
+  <div class="sidebar-section">Account</div>
+  <a class="nav-item" href="settings.html">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="6" r="2.5" stroke="currentColor" stroke-width="1.3"/><path d="M3 13.5c0-2.2 2.2-4 5-4s5 1.8 5 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+    Profile
+  </a>
+  <a class="nav-item" href="billing.html">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="4" width="12" height="9" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M2 7h12" stroke="currentColor" stroke-width="1.3"/></svg>
+    Billing
+  </a>
+  <div class="sidebar-footer">
+    <div class="user-pill" onclick="window.location='settings.html'">
+      <div class="user-avatar" id="sb-avatar">U</div>
+      <div>
+        <div class="user-name" id="sb-name">My Account</div>
+        <div class="user-plan">Pro plan</div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-title">Recurring & Subscription Detector</div>
+      <div class="topbar-sub" id="topbar-sub">Upload a bank CSV to detect all your recurring charges automatically</div>
+    </div>
+    <div class="topbar-right">
+      <button class="topbar-btn" id="btn-add-manual" onclick="openManualAdd()" style="display:none;">+ Add manually</button>
+      <button class="topbar-btn danger" id="btn-clear" onclick="clearAll()" style="display:none;">Clear & re-upload</button>
+      <button class="topbar-btn primary" onclick="document.getElementById('csv-file').click()">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1v8M3 6l3.5 3.5L10 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M1 11h11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        Upload CSV
+      </button>
+      <input type="file" id="csv-file" accept=".csv,.txt" style="display:none" onchange="handleFile(this)">
+    </div>
+  </div>
+
+  <div class="content" id="main-content">
+
+    <!-- UPLOAD STATE -->
+    <div id="state-upload">
+      <div class="upload-zone">
+        <div class="drop-area" id="drop-area"
+          ondragover="event.preventDefault();this.classList.add('drag')"
+          ondragleave="this.classList.remove('drag')"
+          ondrop="handleDrop(event)"
+          onclick="document.getElementById('csv-file').click()">
+          <svg width="44" height="44" viewBox="0 0 44 44" fill="none" style="margin:0 auto 14px;display:block;"><circle cx="22" cy="22" r="20" fill="rgba(0,200,150,0.08)" stroke="rgba(0,200,150,0.2)" stroke-width="1.5"/><path d="M22 14v12M16 20l6-6 6 6" stroke="#00C896" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M15 30h14" stroke="#4A5A6E" stroke-width="2" stroke-linecap="round"/></svg>
+          <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;margin-bottom:6px;">Drop your bank CSV here</div>
+          <div style="font-size:13px;color:var(--text3);">or click to browse · Works with any bank export</div>
+        </div>
+        <div style="font-size:13px;color:var(--text2);line-height:1.7;max-width:520px;margin:0 auto;">
+          The detector automatically finds <strong style="color:var(--text)">every recurring charge</strong> in your statement —
+          subscriptions, loan payments, insurance, utilities — and groups them by merchant.
+          It then flags any that have <strong style="color:var(--amber)">increased in price</strong> so you always know when a company quietly raised your rate.
+        </div>
+      </div>
+
+      <!-- Demo mode -->
+      <div style="text-align:center;margin-top:-10px;margin-bottom:22px;">
+        <span style="font-size:12px;color:var(--text3);">No CSV handy? </span>
+        <button onclick="loadDemo()" style="font-size:12px;color:var(--teal);background:none;border:none;cursor:pointer;text-decoration:underline;font-family:'DM Sans',sans-serif;">Load demo data</button>
+      </div>
+    </div>
+
+    <!-- PROCESSING STATE -->
+    <div id="state-processing" style="display:none;">
+      <div class="processing-box">
+        <div class="spinner"></div>
+        <div style="font-family:'Syne',sans-serif;font-size:17px;font-weight:700;margin-bottom:8px;" id="proc-title">Reading your statement…</div>
+        <div style="font-size:13px;color:var(--text3);" id="proc-sub">Finding recurring patterns</div>
+        <div style="height:4px;background:var(--bg3);border-radius:2px;overflow:hidden;max-width:300px;margin:16px auto 0;">
+          <div id="proc-bar" style="height:100%;background:var(--teal);border-radius:2px;width:0%;transition:width .4s ease;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RESULTS STATE -->
+    <div id="state-results" style="display:none;">
+
+      <!-- Metric strip -->
+      <div class="metric-strip">
+        <div class="metric-card">
+          <div class="metric-accent" style="background:var(--red);"></div>
+          <div class="metric-label">Total monthly recurring</div>
+          <div class="metric-val" id="m-monthly" style="color:var(--red);">—</div>
+          <div class="metric-hint" id="m-monthly-hint">across all subscriptions</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-accent" style="background:var(--amber);"></div>
+          <div class="metric-label">Annual recurring spend</div>
+          <div class="metric-val" id="m-annual" style="color:var(--amber);">—</div>
+          <div class="metric-hint" id="m-annual-hint">what you pay each year</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-accent" style="background:var(--blue);"></div>
+          <div class="metric-label">Subscriptions found</div>
+          <div class="metric-val" id="m-count" style="color:var(--blue);">—</div>
+          <div class="metric-hint" id="m-count-hint">unique recurring merchants</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-accent" style="background:var(--green);"></div>
+          <div class="metric-label">Potential savings</div>
+          <div class="metric-val" id="m-savings" style="color:var(--green);">—</div>
+          <div class="metric-hint">if you cancel flagged items</div>
+        </div>
+      </div>
+
+      <!-- Alert banners (price increases + unused) -->
+      <div id="alerts-wrap"></div>
+
+      <!-- Charts row -->
+      <div class="grid-2" style="margin-bottom:18px;">
+        <div class="card">
+          <div class="card-inner">
+            <div class="card-title" style="margin-bottom:3px;">Spend by category</div>
+            <div class="card-sub" style="margin-bottom:14px;">Monthly breakdown across subscription types</div>
+            <div class="chart-wrap"><canvas id="catChart"></canvas></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-inner">
+            <div class="card-title" style="margin-bottom:3px;">Monthly trend</div>
+            <div class="card-sub" style="margin-bottom:14px;">Total recurring spend over the statement period</div>
+            <div class="chart-wrap"><canvas id="trendChart"></canvas></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filters + sort -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:10px;">
+        <div class="filter-tabs" id="filter-tabs" style="margin-bottom:0;">
+          <button class="filter-tab active" data-filter="all" onclick="setFilter('all',this)">All</button>
+          <button class="filter-tab" data-filter="streaming" onclick="setFilter('streaming',this)">🎬 Streaming</button>
+          <button class="filter-tab" data-filter="software" onclick="setFilter('software',this)">💻 Software</button>
+          <button class="filter-tab" data-filter="utilities" onclick="setFilter('utilities',this)">⚡ Utilities</button>
+          <button class="filter-tab" data-filter="insurance" onclick="setFilter('insurance',this)">🛡️ Insurance</button>
+          <button class="filter-tab" data-filter="finance" onclick="setFilter('finance',this)">🏦 Finance</button>
+          <button class="filter-tab" data-filter="health" onclick="setFilter('health',this)">❤️ Health</button>
+          <button class="filter-tab danger-tab" data-filter="flagged" onclick="setFilter('flagged',this)">⚠️ Price increased</button>
+          <button class="filter-tab amber-tab" data-filter="cancelled" onclick="setFilter('cancelled',this)">✕ Cancelled</button>
+        </div>
+        <div class="sort-bar" style="margin-bottom:0;">
+          <span class="sort-label">Sort:</span>
+          <select class="sort-select" onchange="sortCards(this.value)">
+            <option value="amount-desc">Highest cost</option>
+            <option value="amount-asc">Lowest cost</option>
+            <option value="name">Name A–Z</option>
+            <option value="flagged">Flagged first</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Recurring cards grid -->
+      <div class="rec-grid" id="rec-grid"></div>
+
+    </div><!-- /state-results -->
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<!-- MANUAL ADD MODAL -->
+<div class="modal-overlay" id="manual-modal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <div class="modal-title">Add recurring manually</div>
+      <div class="modal-close" onclick="closeManual()">✕</div>
+    </div>
+    <div class="modal-body">
+      <div style="margin-bottom:13px;">
+        <label class="field-label">Merchant / Service name</label>
+        <input type="text" class="field-input" id="mm-name" placeholder="e.g. Netflix, Gym membership…">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:13px;">
+        <div>
+          <label class="field-label">Monthly amount</label>
+          <input type="number" class="field-input" id="mm-amount" placeholder="9.99" min="0.01" step="0.01">
+        </div>
+        <div>
+          <label class="field-label">Frequency</label>
+          <select class="field-input" id="mm-freq" style="cursor:pointer;color-scheme:dark;">
+            <option value="monthly">Monthly</option>
+            <option value="weekly">Weekly</option>
+            <option value="annual">Annual</option>
+          </select>
+        </div>
+      </div>
+      <div style="margin-bottom:16px;">
+        <label class="field-label">Category</label>
+        <select class="field-input" id="mm-cat" style="cursor:pointer;color-scheme:dark;">
+          <option value="streaming">🎬 Streaming</option>
+          <option value="software">💻 Software</option>
+          <option value="utilities">⚡ Utilities</option>
+          <option value="insurance">🛡️ Insurance</option>
+          <option value="finance">🏦 Finance</option>
+          <option value="health">❤️ Health</option>
+          <option value="other">📄 Other</option>
+        </select>
+      </div>
+      <div style="display:flex;gap:10px;">
+        <button onclick="saveManual()" style="flex:1;padding:11px;background:var(--teal);border:none;border-radius:var(--r-sm);font-size:14px;font-weight:700;color:#080C12;font-family:'DM Sans',sans-serif;cursor:pointer;">Save</button>
+        <button onclick="closeManual()" style="padding:11px 16px;background:transparent;border:1px solid var(--border2);border-radius:var(--r-sm);font-size:13px;color:var(--text2);font-family:'DM Sans',sans-serif;cursor:pointer;">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── STATE ──
+let USER = {};
+let RECURRINGS = [];   // detected recurring items
+let CANCELLED = new Set(); // indices of cancelled items
+let currentFilter = 'all';
+let catChart = null, trendChart = null;
+
+const CAT_META = {
+  streaming: { icon: '🎬', color: '#E05252', label: 'Streaming' },
+  software:  { icon: '💻', color: '#3B82F6', label: 'Software' },
+  utilities: { icon: '⚡', color: '#F5A623', label: 'Utilities' },
+  insurance: { icon: '🛡️', color: '#A78BFA', label: 'Insurance' },
+  finance:   { icon: '🏦', color: '#22C55E', label: 'Finance' },
+  health:    { icon: '❤️', color: '#F97316', label: 'Health' },
+  other:     { icon: '📄', color: '#8A9BB0', label: 'Other' },
+};
+
+// ── BRAND RECOGNITION ──
+const BRAND_DB = {
+  netflix:{cat:'streaming',icon:'🎬'}, 'netflix.com':{cat:'streaming',icon:'🎬'},
+  spotify:{cat:'streaming',icon:'🎵'}, deezer:{cat:'streaming',icon:'🎵'},
+  'apple music':{cat:'streaming',icon:'🎵'}, 'youtube premium':{cat:'streaming',icon:'🎬'},
+  'canal+':{cat:'streaming',icon:'🎬'}, 'canal plus':{cat:'streaming',icon:'🎬'},
+  showmax:{cat:'streaming',icon:'🎬'}, 'amazon prime':{cat:'streaming',icon:'🎬'},
+  'disney+':{cat:'streaming',icon:'🎬'}, hulu:{cat:'streaming',icon:'🎬'},
+  'apple tv':{cat:'streaming',icon:'🎬'}, 'bein':{cat:'streaming',icon:'📺'},
+  'microsoft 365':{cat:'software',icon:'💻'}, 'office 365':{cat:'software',icon:'💻'},
+  adobe:{cat:'software',icon:'🎨'}, dropbox:{cat:'software',icon:'☁️'},
+  'google one':{cat:'software',icon:'☁️'}, icloud:{cat:'software',icon:'☁️'},
+  notion:{cat:'software',icon:'📝'}, slack:{cat:'software',icon:'💬'},
+  zoom:{cat:'software',icon:'📹'}, github:{cat:'software',icon:'💻'},
+  canva:{cat:'software',icon:'🎨'}, chatgpt:{cat:'software',icon:'🤖'},
+  openai:{cat:'software',icon:'🤖'}, 'anthropic':{cat:'software',icon:'🤖'},
+  gym:{cat:'health',icon:'💪'}, fitness:{cat:'health',icon:'💪'},
+  'health ins':{cat:'insurance',icon:'🛡️'}, 'life ins':{cat:'insurance',icon:'🛡️'},
+  insurance:{cat:'insurance',icon:'🛡️'}, 'assurance':{cat:'insurance',icon:'🛡️'},
+  electricity:{cat:'utilities',icon:'⚡'}, electricite:{cat:'utilities',icon:'⚡'},
+  internet:{cat:'utilities',icon:'📡'}, 'my.t':{cat:'utilities',icon:'📡'},
+  airtel:{cat:'utilities',icon:'📱'}, emtel:{cat:'utilities',icon:'📱'},
+  'orange':{cat:'utilities',icon:'📱'}, water:{cat:'utilities',icon:'💧'},
+  cwma:{cat:'utilities',icon:'💧'}, cem:{cat:'utilities',icon:'⚡'},
+  loan:{cat:'finance',icon:'🏦'}, 'credit card':{cat:'finance',icon:'💳'},
+  mortgage:{cat:'finance',icon:'🏠'}, 'hire purchase':{cat:'finance',icon:'🏦'},
+};
+
+// ── INIT ──
+function init() {
+  try { USER = JSON.parse(localStorage.getItem('pfc_user')) || {}; } catch(e) {}
+  try {
+    const saved = localStorage.getItem('pfc_recurrings');
+    if (saved) { RECURRINGS = JSON.parse(saved); showResults(); }
+  } catch(e) {}
+  const name = (USER.name || '').trim();
+  if (name) {
+    document.getElementById('sb-name').textContent = name;
+    document.getElementById('sb-avatar').textContent = name.charAt(0).toUpperCase();
+  }
+}
+
+// ── FILE HANDLING ──
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('drop-area').classList.remove('drag');
+  if (e.dataTransfer.files[0]) startProcess(e.dataTransfer.files[0]);
+}
+function handleFile(input) {
+  if (input.files[0]) startProcess(input.files[0]);
+  input.value = '';
+}
+
+async function startProcess(file) {
+  setState('processing');
+  setProc('Reading your statement…', 'Parsing CSV rows', 10);
+  await sleep(200);
+
+  let text;
+  try { text = await file.text(); }
+  catch(e) { setState('upload'); alert('Could not read file.'); return; }
+
+  setProc('Detecting recurring patterns…', 'Grouping transactions by merchant', 40);
+  await sleep(300);
+
+  const txns = parseCSV(text);
+  if (!txns.length) { setState('upload'); alert('No transactions found. Check your CSV format.'); return; }
+
+  setProc('Analysing frequency…', 'Identifying subscriptions and bills', 65);
+  await sleep(300);
+
+  RECURRINGS = detectRecurrings(txns);
+
+  setProc('Checking for price changes…', 'Comparing charge amounts over time', 85);
+  await sleep(300);
+
+  RECURRINGS = flagPriceChanges(RECURRINGS);
+
+  setProc('Building your report…', `Found ${RECURRINGS.length} recurring items`, 100);
+  await sleep(250);
+
+  localStorage.setItem('pfc_recurrings', JSON.stringify(RECURRINGS));
+  showResults();
+}
+
+// ── CSV PARSER (same logic as dashboard, self-contained) ──
+const COL_SYN = {
+  date:   ['date','transaction date','trans date','value date','posting date','txn date'],
+  desc:   ['description','details','narrative','merchant','payee','reference','particulars','memo','libelle'],
+  debit:  ['debit','withdrawal','debit amount','paid out','dr','charges','amount debit'],
+  credit: ['credit','deposit','credit amount','paid in','cr','amount received'],
+  amount: ['amount','net amount','transaction amount','value','montant'],
+};
+function parseCSVRow(line) {
+  const r=[]; let c=''; let q=false;
+  for (let i=0;i<line.length;i++) {
+    const ch=line[i];
+    if(ch==='"'){q=!q;}
+    else if((ch===','||ch===';'||ch==='\t')&&!q){r.push(c);c='';}
+    else{c+=ch;}
+  }
+  r.push(c); return r;
+}
+function parseCSV(text) {
+  const lines = text.replace(/\r\n/g,'\n').replace(/\r/g,'\n').trim().split('\n');
+  if (lines.length < 2) return [];
+  let hIdx = 0;
+  for (let i=0;i<Math.min(5,lines.length);i++) {
+    const r=lines[i].toLowerCase();
+    if (COL_SYN.date.some(s=>r.includes(s))||COL_SYN.desc.some(s=>r.includes(s))){ hIdx=i; break; }
+  }
+  const headers = parseCSVRow(lines[hIdx]).map(h=>h.toLowerCase().trim().replace(/['"]/g,''));
+  const find = (syns) => headers.findIndex(h=>syns.some(s=>h.includes(s)));
+  const ci = { date:find(COL_SYN.date), desc:find(COL_SYN.desc), debit:find(COL_SYN.debit), credit:find(COL_SYN.credit), amount:find(COL_SYN.amount) };
+  if (ci.debit!==-1||ci.credit!==-1) ci.amount=-1;
+  if (ci.date===-1||ci.desc===-1) return [];
+  const txns=[];
+  for (let i=hIdx+1;i<lines.length;i++) {
+    const row=parseCSVRow(lines[i]);
+    if(!row.length||row.every(c=>!c.trim())) continue;
+    const rawDate=(row[ci.date]||'').trim().replace(/['"]/g,'');
+    const rawDesc=(row[ci.desc]||'').trim().replace(/['"]/g,'');
+    if(!rawDate&&!rawDesc) continue;
+    let amount=0,isDebit=false;
+    if(ci.amount!==-1){
+      const v=parseFloat((row[ci.amount]||'').replace(/['",$€£Rs\s]/g,''))||0;
+      amount=Math.abs(v); isDebit=v<0;
+    } else {
+      const d=parseFloat((row[ci.debit]||'').replace(/['",$€£Rs\s]/g,''))||0;
+      const c2=parseFloat((row[ci.credit]||'').replace(/['",$€£Rs\s]/g,''))||0;
+      if(d>0){amount=d;isDebit=true;} else if(c2>0){amount=c2;isDebit=false;} else continue;
+    }
+    if(!amount||!isDebit) continue; // only expenses
+    txns.push({ date:parseDate(rawDate), desc:rawDesc.replace(/\s+/g,' ').trim().slice(0,80), amount });
+  }
+  return txns;
+}
+function parseDate(s) {
+  s=s.replace(/['"]/g,'').trim();
+  if(/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0,10);
+  const m=s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
+  if(m){ const y=m[3].length===2?'20'+m[3]:m[3]; return `${y}-${m[1].padStart(2,'0')}-${m[2].padStart(2,'0')}`; }
+  return s;
+}
+
+// ── CORE: DETECT RECURRINGS ──
+function detectRecurrings(txns) {
+  // Group by normalised merchant name
+  const groups = {};
+  txns.forEach(t => {
+    const key = normaliseMerchant(t.desc);
+    if (!groups[key]) groups[key] = { name: key, raw: t.desc, occurrences: [] };
+    groups[key].occurrences.push({ date: t.date, amount: t.amount });
+  });
+
+  const recurring = [];
+  Object.values(groups).forEach(g => {
+    const occ = g.occurrences.sort((a,b) => a.date.localeCompare(b.date));
+    if (occ.length < 2) return; // need at least 2 to be recurring
+
+    // Check if spacing is roughly weekly/monthly/annual
+    const gaps = [];
+    for (let i = 1; i < occ.length; i++) {
+      const d1 = new Date(occ[i-1].date), d2 = new Date(occ[i].date);
+      gaps.push(Math.round((d2-d1)/(1000*60*60*24)));
+    }
+    const avgGap = gaps.reduce((s,g)=>s+g,0)/gaps.length;
+    let freq = null, freqLabel = '', monthlyAmount = 0;
+
+    if (avgGap <= 10)        { freq='weekly';  freqLabel='Weekly';  monthlyAmount=occ[occ.length-1].amount*4.33; }
+    else if (avgGap <= 40)   { freq='monthly'; freqLabel='Monthly'; monthlyAmount=occ[occ.length-1].amount; }
+    else if (avgGap <= 100)  { freq='quarterly'; freqLabel='Quarterly'; monthlyAmount=occ[occ.length-1].amount/3; }
+    else if (avgGap <= 400)  { freq='annual'; freqLabel='Annual'; monthlyAmount=occ[occ.length-1].amount/12; }
+    else return;
+
+    // Brand lookup
+    const brand = lookupBrand(g.raw);
+    const cat   = brand?.cat || guessCategory(g.raw);
+    const icon  = brand?.icon || CAT_META[cat]?.icon || '📄';
+
+    // All amounts seen
+    const amounts = occ.map(o => o.amount);
+
+    recurring.push({
+      name:          cleanName(g.name),
+      rawDesc:       g.raw,
+      cat,
+      icon,
+      freq,
+      freqLabel,
+      monthlyAmount: Math.round(monthlyAmount * 100) / 100,
+      annualAmount:  Math.round(monthlyAmount * 12 * 100) / 100,
+      occurrences:   occ,
+      amounts,
+      minAmount:     Math.min(...amounts),
+      maxAmount:     Math.max(...amounts),
+      lastCharge:    occ[occ.length-1].date,
+      firstCharge:   occ[0].date,
+      priceIncreased: false, // set later
+      priceDiff:     0,
+    });
+  });
+
+  return recurring.sort((a,b) => b.monthlyAmount - a.monthlyAmount);
+}
+
+function normaliseMerchant(desc) {
+  return desc.toLowerCase()
+    .replace(/[0-9]{4,}/g,'')         // remove long number sequences (ref numbers)
+    .replace(/\s+(ref|no|#|id)[\s\S]*/,'') // strip reference tails
+    .replace(/[^a-z\s]/g,' ')
+    .replace(/\s+/g,' ')
+    .trim()
+    .split(' ').slice(0,3).join(' '); // first 3 words
+}
+function cleanName(n) {
+  return n.split(' ').map(w=>w.charAt(0).toUpperCase()+w.slice(1)).join(' ');
+}
+function lookupBrand(desc) {
+  const lower = desc.toLowerCase();
+  for (const [key,val] of Object.entries(BRAND_DB)) {
+    if (lower.includes(key)) return val;
+  }
+  return null;
+}
+function guessCategory(desc) {
+  const d = desc.toLowerCase();
+  if (/netflix|spotify|deezer|canal|disney|hulu|showmax|bein|apple tv|youtube/.test(d)) return 'streaming';
+  if (/microsoft|adobe|google|icloud|dropbox|notion|slack|zoom|github|canva|openai/.test(d)) return 'software';
+  if (/electric|electricity|water|internet|fibre|fiber|airtel|emtel|orange|myt|cwma|cem/.test(d)) return 'utilities';
+  if (/insurance|assurance|insur|cover|protection|policy|premium/.test(d)) return 'insurance';
+  if (/loan|mortgage|credit|hire purchase|leasing|bank|finance|mbl|mcb|sbm/.test(d)) return 'finance';
+  if (/gym|fitness|health|clinic|doctor|medical|pharmacy|sport/.test(d)) return 'health';
+  return 'other';
+}
+
+// ── FLAG PRICE CHANGES ──
+function flagPriceChanges(recurrings) {
+  return recurrings.map(r => {
+    if (r.amounts.length < 2) return r;
+    // Compare first half avg to second half avg
+    const mid = Math.floor(r.amounts.length / 2);
+    const early = r.amounts.slice(0, mid).reduce((s,a)=>s+a,0)/mid;
+    const recent = r.amounts.slice(mid).reduce((s,a)=>s+a,0)/(r.amounts.length-mid);
+    const diff = recent - early;
+    const pct  = (diff / early) * 100;
+    if (pct > 5) { // >5% increase = flagged
+      return { ...r, priceIncreased: true, priceDiff: Math.round(diff * 100)/100, pricePct: Math.round(pct) };
+    }
+    return r;
+  });
+}
+
+// ── SHOW RESULTS ──
+function showResults() {
+  setState('results');
+  document.getElementById('btn-add-manual').style.display = 'flex';
+  document.getElementById('btn-clear').style.display = 'flex';
+  updateMetrics();
+  renderAlerts();
+  renderCharts();
+  renderCards();
+}
+
+function updateMetrics() {
+  const sym = USER.currency || '$';
+  const active = RECURRINGS.filter((_,i) => !CANCELLED.has(i));
+  const totalMonthly = active.reduce((s,r) => s + r.monthlyAmount, 0);
+  const totalAnnual  = active.reduce((s,r) => s + r.annualAmount, 0);
+  const flagged      = active.filter(r => r.priceIncreased);
+  const savings      = flagged.reduce((s,r) => s + r.annualAmount, 0);
+
+  document.getElementById('m-monthly').textContent = sym + totalMonthly.toFixed(2);
+  document.getElementById('m-monthly-hint').textContent = `across ${active.length} active subscriptions`;
+  document.getElementById('m-annual').textContent  = sym + Math.round(totalAnnual).toLocaleString();
+  document.getElementById('m-annual-hint').textContent = `${sym}${Math.round(totalMonthly).toLocaleString()} × 12 months`;
+  document.getElementById('m-count').textContent   = RECURRINGS.length;
+  document.getElementById('m-count-hint').textContent = `${flagged.length} with price increases`;
+  document.getElementById('m-savings').textContent = sym + Math.round(savings).toLocaleString();
+
+  document.getElementById('topbar-sub').textContent =
+    `${RECURRINGS.length} recurring charges detected · ${sym}${totalMonthly.toFixed(2)}/mo · ${sym}${Math.round(totalAnnual).toLocaleString()}/yr`;
+}
+
+function renderAlerts() {
+  const sym  = USER.currency || '$';
+  const wrap = document.getElementById('alerts-wrap');
+  wrap.innerHTML = '';
+
+  const increased = RECURRINGS.filter((r,i)=>!CANCELLED.has(i)&&r.priceIncreased);
+  if (increased.length) {
+    const names = increased.slice(0,3).map(r=>`<strong>${r.name}</strong>`).join(', ');
+    const extra = increased.reduce((s,r)=>s+r.priceDiff*12,0);
+    wrap.innerHTML += `<div class="alert-banner red">
+      <div class="alert-icon">⚠️</div>
+      <div class="alert-text">${increased.length} subscription${increased.length>1?'s have':' has'} quietly raised prices: ${names}${increased.length>3?' and more':''}. 
+      You're paying <strong>${sym}${Math.round(extra).toLocaleString()} more per year</strong> than when you first subscribed.</div>
+    </div>`;
+  }
+
+  // Check for potential duplicates (same category, close amounts)
+  const bycat = {};
+  RECURRINGS.filter((_,i)=>!CANCELLED.has(i)).forEach(r=>{ if(!bycat[r.cat]) bycat[r.cat]=[]; bycat[r.cat].push(r); });
+  const dupes = Object.entries(bycat).filter(([,v])=>v.length>=3 && v[0].cat==='streaming');
+  if (dupes.length) {
+    const streamTotal = (bycat['streaming']||[]).reduce((s,r)=>s+r.monthlyAmount,0);
+    wrap.innerHTML += `<div class="alert-banner amber">
+      <div class="alert-icon">💡</div>
+      <div class="alert-text">You have <strong>${bycat['streaming']?.length||0} streaming services</strong> costing <strong>${sym}${streamTotal.toFixed(2)}/mo</strong>. 
+      Consider whether you need all of them — cancelling even one could save ${sym}${Math.round(streamTotal/2*12).toLocaleString()}/yr.</div>
+    </div>`;
+  }
+}
+
+function renderCharts() {
+  const sym = USER.currency || '$';
+  const active = RECURRINGS.filter((_,i)=>!CANCELLED.has(i));
+
+  // Category donut
+  const catTotals = {};
+  active.forEach(r=>{ catTotals[r.cat]=(catTotals[r.cat]||0)+r.monthlyAmount; });
+  const catEntries = Object.entries(catTotals).sort((a,b)=>b[1]-a[1]);
+
+  if (catChart) { catChart.destroy(); catChart=null; }
+  catChart = new Chart(document.getElementById('catChart'), {
+    type:'doughnut',
+    data:{
+      labels: catEntries.map(([c])=>CAT_META[c]?.label||c),
+      datasets:[{
+        data: catEntries.map(([,v])=>Math.round(v*100)/100),
+        backgroundColor: catEntries.map(([c])=>CAT_META[c]?.color+'99'||'#8A9BB099'),
+        borderColor: catEntries.map(([c])=>CAT_META[c]?.color||'#8A9BB0'),
+        borderWidth:1.5,
+      }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false, cutout:'68%',
+      plugins:{
+        legend:{ position:'right', labels:{ color:'#8A9BB0', font:{size:11}, padding:10, boxWidth:10 } },
+        tooltip:{ backgroundColor:'#0F1923', borderColor:'rgba(255,255,255,0.1)', borderWidth:1,
+          callbacks:{ label: ctx=>' '+sym+ctx.parsed.toFixed(2)+'/mo' } }
+      }
+    }
+  });
+
+  // Monthly trend line
+  const monthMap = {};
+  active.forEach(r=>{
+    r.occurrences.forEach(o=>{
+      const key=o.date.slice(0,7);
+      monthMap[key]=(monthMap[key]||0)+o.amount;
+    });
+  });
+  const months=Object.keys(monthMap).sort();
+  const trendData=months.map(m=>Math.round(monthMap[m]*100)/100);
+
+  if (trendChart) { trendChart.destroy(); trendChart=null; }
+  trendChart = new Chart(document.getElementById('trendChart'), {
+    type:'bar',
+    data:{
+      labels: months.map(m=>{ const d=new Date(m+'-01'); return d.toLocaleDateString('en-GB',{month:'short',year:'2-digit'}); }),
+      datasets:[{
+        label:'Recurring spend',
+        data:trendData,
+        backgroundColor:'rgba(0,200,150,0.2)',
+        borderColor:'#00C896',
+        borderWidth:1.5,
+        borderRadius:4,
+      }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false}, tooltip:{ backgroundColor:'#0F1923', borderColor:'rgba(255,255,255,0.1)', borderWidth:1,
+        callbacks:{ label: ctx=>' '+sym+ctx.parsed.y.toLocaleString() } } },
+      scales:{
+        x:{ grid:{color:'rgba(255,255,255,0.04)'}, ticks:{color:'#4A5A6E',font:{size:10}} },
+        y:{ grid:{color:'rgba(255,255,255,0.04)'}, ticks:{color:'#4A5A6E',font:{size:10}, callback:v=>sym+(v>=1000?(v/1000).toFixed(0)+'k':v)} }
+      }
+    }
+  });
+}
+
+function renderCards() {
+  const sym  = USER.currency || '$';
+  const grid = document.getElementById('rec-grid');
+  const filtered = RECURRINGS.filter((r,i)=>{
+    if (currentFilter==='cancelled') return CANCELLED.has(i);
+    if (CANCELLED.has(i)) return false;
+    if (currentFilter==='all') return true;
+    if (currentFilter==='flagged') return r.priceIncreased;
+    return r.cat===currentFilter;
+  });
+
+  if (!filtered.length) {
+    grid.innerHTML=`<div style="grid-column:1/-1;text-align:center;padding:48px 24px;color:var(--text3);">No items match this filter.</div>`;
+    return;
+  }
+
+  grid.innerHTML = filtered.map((r,fi)=>{
+    const gi = RECURRINGS.indexOf(r); // global index
+    const isCancelled = CANCELLED.has(gi);
+    const meta = CAT_META[r.cat]||CAT_META.other;
+
+    // Mini bar chart — amounts over time (last 6)
+    const recent = r.amounts.slice(-6);
+    const maxA   = Math.max(...recent);
+    const bars   = recent.map(a=>{
+      const h = Math.max(4, Math.round(a/maxA*28));
+      const col = r.priceIncreased && a===r.maxAmount ? 'var(--red)' : meta.color+'99';
+      return `<div class="rec-tick" style="height:${h}px;background:${col};"></div>`;
+    }).join('');
+
+    const lastFmt = r.lastCharge ? new Date(r.lastCharge).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : '—';
+    const firstFmt= r.firstCharge? new Date(r.firstCharge).toLocaleDateString('en-GB',{month:'short',year:'numeric'}) : '—';
+
+    const badges = [];
+    if (r.priceIncreased) badges.push(`<span class="badge badge-red">↑ +${sym}${r.priceDiff.toFixed(2)}/mo price increase</span>`);
+    if (isCancelled)       badges.push(`<span class="badge badge-grey">✕ Marked cancelled</span>`);
+    badges.push(`<span class="badge" style="background:${meta.color}18;color:${meta.color};">${r.icon} ${meta.label}</span>`);
+    if (r.freqLabel!=='Monthly') badges.push(`<span class="badge badge-blue">${r.freqLabel}</span>`);
+
+    return `<div class="rec-card ${r.priceIncreased&&!isCancelled?'price-up':''} ${isCancelled?'cancelled':''}" style="animation-delay:${fi*0.04}s;">
+      <div class="rec-top">
+        <div class="rec-icon" style="background:${meta.color}18;">${r.icon}</div>
+        <div class="rec-info">
+          <div class="rec-name">${r.name}</div>
+          <div class="rec-meta">Since ${firstFmt} · ${r.occurrences.length} charges · last ${lastFmt}</div>
+        </div>
+        <div class="rec-amount">
+          <div class="rec-monthly" style="color:${meta.color};">${sym}${r.monthlyAmount.toFixed(2)}<span style="font-size:11px;color:var(--text3);font-family:'DM Sans',sans-serif;">/mo</span></div>
+          <div class="rec-annual">${sym}${Math.round(r.annualAmount).toLocaleString()}/yr</div>
+        </div>
+      </div>
+      <div class="rec-body">
+        <div class="rec-badges">${badges.join('')}</div>
+        ${recent.length>1?`<div class="rec-timeline">${bars}</div><div class="rec-dates"><span>${firstFmt}</span><span>Last 6 charges</span><span>${lastFmt}</span></div>`:''}
+        <div class="rec-actions">
+          ${!isCancelled?`<button class="rec-action-btn cancel-btn" onclick="toggleCancel(${gi})">Mark as cancelled</button>`
+                        :`<button class="rec-action-btn" onclick="toggleCancel(${gi})" style="color:var(--teal);border-color:rgba(0,200,150,0.2);">Restore</button>`}
+          ${!isCancelled?`<button class="rec-action-btn" onclick="askSage(${gi})">Ask Sage</button>`:''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── ACTIONS ──
+function toggleCancel(idx) {
+  if (CANCELLED.has(idx)) CANCELLED.delete(idx);
+  else CANCELLED.add(idx);
+  updateMetrics();
+  renderAlerts();
+  renderCharts();
+  renderCards();
+  const r = RECURRINGS[idx];
+  showToast(CANCELLED.has(idx) ? `${r.name} marked as cancelled` : `${r.name} restored`);
+}
+
+function setFilter(f, el) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-tab').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  renderCards();
+}
+
+function sortCards(val) {
+  if (val==='amount-desc') RECURRINGS.sort((a,b)=>b.monthlyAmount-a.monthlyAmount);
+  else if (val==='amount-asc') RECURRINGS.sort((a,b)=>a.monthlyAmount-b.monthlyAmount);
+  else if (val==='name') RECURRINGS.sort((a,b)=>a.name.localeCompare(b.name));
+  else if (val==='flagged') RECURRINGS.sort((a,b)=>(b.priceIncreased?1:0)-(a.priceIncreased?1:0));
+  renderCards();
+}
+
+async function askSage(idx) {
+  const r   = RECURRINGS[idx];
+  const sym = USER.currency || '$';
+  const prompt = `I'm paying ${sym}${r.monthlyAmount.toFixed(2)}/month (${sym}${Math.round(r.annualAmount)}/year) for ${r.name} (${CAT_META[r.cat]?.label} category).${r.priceIncreased?` The price has increased by ${sym}${r.priceDiff.toFixed(2)}/mo recently.`:''} Should I keep it, negotiate, or cancel? Give me a direct recommendation in 3-4 sentences.`;
+  showToast(`Asking Sage about ${r.name}…`);
+  try {
+    const res = await fetch('/api/sage', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({message:prompt, csvMode:true}) });
+    const data = await res.json();
+    alert(`Sage says about ${r.name}:\n\n${data.reply||'No response.'}`);
+  } catch(e) { alert('Could not reach Sage. Try again.'); }
+}
+
+// ── MANUAL ADD ──
+function openManualAdd() { document.getElementById('manual-modal').classList.add('open'); }
+function closeManual()   { document.getElementById('manual-modal').classList.remove('open'); }
+
+function saveManual() {
+  const name   = document.getElementById('mm-name').value.trim();
+  const amount = parseFloat(document.getElementById('mm-amount').value)||0;
+  const freq   = document.getElementById('mm-freq').value;
+  const cat    = document.getElementById('mm-cat').value;
+  if (!name||!amount) { alert('Enter name and amount.'); return; }
+
+  let monthly = amount;
+  if (freq==='weekly') monthly = amount * 4.33;
+  if (freq==='annual') monthly = amount / 12;
+
+  RECURRINGS.unshift({
+    name, rawDesc:name, cat, icon: CAT_META[cat]?.icon||'📄',
+    freq, freqLabel: freq.charAt(0).toUpperCase()+freq.slice(1),
+    monthlyAmount: Math.round(monthly*100)/100,
+    annualAmount:  Math.round(monthly*12*100)/100,
+    occurrences:[], amounts:[amount],
+    minAmount:amount, maxAmount:amount,
+    lastCharge:'', firstCharge:'',
+    priceIncreased:false, priceDiff:0,
+  });
+  localStorage.setItem('pfc_recurrings', JSON.stringify(RECURRINGS));
+  updateMetrics(); renderCards(); closeManual();
+  showToast(`Added ${name}`);
+}
+
+// ── DEMO DATA ──
+function loadDemo() {
+  RECURRINGS = [
+    { name:'Netflix', rawDesc:'NETFLIX.COM', cat:'streaming', icon:'🎬', freq:'monthly', freqLabel:'Monthly', monthlyAmount:15.99, annualAmount:191.88, occurrences:[{date:'2024-01-05',amount:13.99},{date:'2024-02-05',amount:13.99},{date:'2024-03-05',amount:15.99},{date:'2024-04-05',amount:15.99},{date:'2024-05-05',amount:15.99},{date:'2024-06-05',amount:15.99}], amounts:[13.99,13.99,15.99,15.99,15.99,15.99], minAmount:13.99, maxAmount:15.99, lastCharge:'2024-06-05', firstCharge:'2024-01-05', priceIncreased:true, priceDiff:2.00, pricePct:14 },
+    { name:'Spotify', rawDesc:'SPOTIFY', cat:'streaming', icon:'🎵', freq:'monthly', freqLabel:'Monthly', monthlyAmount:9.99, annualAmount:119.88, occurrences:[{date:'2024-01-12',amount:9.99},{date:'2024-02-12',amount:9.99},{date:'2024-03-12',amount:9.99},{date:'2024-04-12',amount:9.99},{date:'2024-05-12',amount:9.99},{date:'2024-06-12',amount:9.99}], amounts:[9.99,9.99,9.99,9.99,9.99,9.99], minAmount:9.99, maxAmount:9.99, lastCharge:'2024-06-12', firstCharge:'2024-01-12', priceIncreased:false, priceDiff:0 },
+    { name:'Microsoft 365', rawDesc:'MICROSOFT 365', cat:'software', icon:'💻', freq:'monthly', freqLabel:'Monthly', monthlyAmount:8.99, annualAmount:107.88, occurrences:[{date:'2024-01-18',amount:6.99},{date:'2024-02-18',amount:6.99},{date:'2024-03-18',amount:8.99},{date:'2024-04-18',amount:8.99},{date:'2024-05-18',amount:8.99},{date:'2024-06-18',amount:8.99}], amounts:[6.99,6.99,8.99,8.99,8.99,8.99], minAmount:6.99, maxAmount:8.99, lastCharge:'2024-06-18', firstCharge:'2024-01-18', priceIncreased:true, priceDiff:2.00, pricePct:29 },
+    { name:'Internet Airtel', rawDesc:'AIRTEL INTERNET', cat:'utilities', icon:'📡', freq:'monthly', freqLabel:'Monthly', monthlyAmount:49.99, annualAmount:599.88, occurrences:[{date:'2024-01-01',amount:49.99},{date:'2024-02-01',amount:49.99},{date:'2024-03-01',amount:49.99},{date:'2024-04-01',amount:49.99},{date:'2024-05-01',amount:49.99},{date:'2024-06-01',amount:49.99}], amounts:[49.99,49.99,49.99,49.99,49.99,49.99], minAmount:49.99, maxAmount:49.99, lastCharge:'2024-06-01', firstCharge:'2024-01-01', priceIncreased:false, priceDiff:0 },
+    { name:'Health Insurance', rawDesc:'HEALTH INSURANCE PREMIUM', cat:'insurance', icon:'🛡️', freq:'monthly', freqLabel:'Monthly', monthlyAmount:85.00, annualAmount:1020.00, occurrences:[{date:'2024-01-10',amount:75.00},{date:'2024-02-10',amount:75.00},{date:'2024-03-10',amount:85.00},{date:'2024-04-10',amount:85.00},{date:'2024-05-10',amount:85.00},{date:'2024-06-10',amount:85.00}], amounts:[75,75,85,85,85,85], minAmount:75, maxAmount:85, lastCharge:'2024-06-10', firstCharge:'2024-01-10', priceIncreased:true, priceDiff:10, pricePct:13 },
+    { name:'Canal Plus', rawDesc:'CANAL+ ABONNEMENT', cat:'streaming', icon:'📺', freq:'monthly', freqLabel:'Monthly', monthlyAmount:24.99, annualAmount:299.88, occurrences:[{date:'2024-01-20',amount:24.99},{date:'2024-02-20',amount:24.99},{date:'2024-03-20',amount:24.99},{date:'2024-04-20',amount:24.99},{date:'2024-05-20',amount:24.99},{date:'2024-06-20',amount:24.99}], amounts:[24.99,24.99,24.99,24.99,24.99,24.99], minAmount:24.99, maxAmount:24.99, lastCharge:'2024-06-20', firstCharge:'2024-01-20', priceIncreased:false, priceDiff:0 },
+    { name:'Loan Repayment', rawDesc:'MCB PERSONAL LOAN', cat:'finance', icon:'🏦', freq:'monthly', freqLabel:'Monthly', monthlyAmount:320.00, annualAmount:3840.00, occurrences:[{date:'2024-01-25',amount:320},{date:'2024-02-25',amount:320},{date:'2024-03-25',amount:320},{date:'2024-04-25',amount:320},{date:'2024-05-25',amount:320},{date:'2024-06-25',amount:320}], amounts:[320,320,320,320,320,320], minAmount:320, maxAmount:320, lastCharge:'2024-06-25', firstCharge:'2024-01-25', priceIncreased:false, priceDiff:0 },
+    { name:'Gym Membership', rawDesc:'ANYTIME FITNESS', cat:'health', icon:'💪', freq:'monthly', freqLabel:'Monthly', monthlyAmount:35.00, annualAmount:420.00, occurrences:[{date:'2024-01-03',amount:35},{date:'2024-02-03',amount:35},{date:'2024-03-03',amount:35},{date:'2024-04-03',amount:35},{date:'2024-05-03',amount:35},{date:'2024-06-03',amount:35}], amounts:[35,35,35,35,35,35], minAmount:35, maxAmount:35, lastCharge:'2024-06-03', firstCharge:'2024-01-03', priceIncreased:false, priceDiff:0 },
+    { name:'Adobe Creative', rawDesc:'ADOBE CREATIVE CLOUD', cat:'software', icon:'🎨', freq:'monthly', freqLabel:'Monthly', monthlyAmount:59.99, annualAmount:719.88, occurrences:[{date:'2024-01-22',amount:54.99},{date:'2024-02-22',amount:54.99},{date:'2024-03-22',amount:59.99},{date:'2024-04-22',amount:59.99},{date:'2024-05-22',amount:59.99},{date:'2024-06-22',amount:59.99}], amounts:[54.99,54.99,59.99,59.99,59.99,59.99], minAmount:54.99, maxAmount:59.99, lastCharge:'2024-06-22', firstCharge:'2024-01-22', priceIncreased:true, priceDiff:5.00, pricePct:9 },
+    { name:'Disney Plus', rawDesc:'DISNEY+', cat:'streaming', icon:'🎬', freq:'monthly', freqLabel:'Monthly', monthlyAmount:7.99, annualAmount:95.88, occurrences:[{date:'2024-01-08',amount:7.99},{date:'2024-02-08',amount:7.99},{date:'2024-03-08',amount:7.99},{date:'2024-04-08',amount:7.99},{date:'2024-05-08',amount:7.99},{date:'2024-06-08',amount:7.99}], amounts:[7.99,7.99,7.99,7.99,7.99,7.99], minAmount:7.99, maxAmount:7.99, lastCharge:'2024-06-08', firstCharge:'2024-01-08', priceIncreased:false, priceDiff:0 },
+  ];
+  localStorage.setItem('pfc_recurrings', JSON.stringify(RECURRINGS));
+  showResults();
+  showToast('Demo data loaded — 10 recurring items');
+}
+
+// ── UTILS ──
+function setState(s) {
+  ['upload','processing','results'].forEach(n=>{
+    document.getElementById('state-'+n).style.display = n===s ? 'block' : 'none';
+  });
+}
+function setProc(title,sub,pct) {
+  document.getElementById('proc-title').textContent=title;
+  document.getElementById('proc-sub').textContent=sub;
+  document.getElementById('proc-bar').style.width=pct+'%';
+}
+function clearAll() {
+  if (!confirm('Clear all recurring data and re-upload?')) return;
+  RECURRINGS=[]; CANCELLED=new Set();
+  localStorage.removeItem('pfc_recurrings');
+  document.getElementById('btn-add-manual').style.display='none';
+  document.getElementById('btn-clear').style.display='none';
+  setState('upload');
+}
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+function showToast(msg){
+  const t=document.createElement('div');
+  t.className='toast'; t.textContent=msg;
+  document.body.appendChild(t);
+  setTimeout(()=>{t.style.opacity='0';t.style.transition='opacity .3s';},2800);
+  setTimeout(()=>t.remove(),3200);
+}
+
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeManual();});
+init();
+</script>
+</body>
+</html>
