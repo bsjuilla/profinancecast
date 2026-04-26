@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<title>Net Worth Timeline — ProFinanceCast</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg:#080C12; --bg2:#0D1320; --bg3:#111827; --card:#0F1923;
+    --border:rgba(255,255,255,0.07); --border2:rgba(255,255,255,0.13);
+    --teal:#00C896; --teal-dim:rgba(0,200,150,0.12);
+    --text:#F0F4F8; --text2:#8A9BB0; --text3:#4A5A6E;
+    --amber:#F5A623; --red:#E05252; --blue:#3B82F6;
+    --purple:#A78BFA; --green:#22C55E; --r:12px; --r-sm:8px;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;}
+  body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);display:flex;overflow:hidden;}
+
+  /* SIDEBAR */
+  .sidebar{width:240px;flex-shrink:0;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;height:100vh;overflow-y:auto;}
+  .sidebar-logo{display:flex;align-items:center;gap:10px;padding:22px 20px 18px;border-bottom:1px solid var(--border);font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:var(--text);text-decoration:none;}
+  .logo-mark{width:30px;height:30px;background:var(--teal);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#080C12;font-family:'Syne',sans-serif;flex-shrink:0;}
+  .sidebar-section{padding:18px 12px 8px;font-size:10px;font-weight:600;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--r-sm);margin:1px 8px;font-size:13.5px;color:var(--text2);cursor:pointer;transition:background .15s,color .15s;text-decoration:none;}
+  .nav-item:hover{background:rgba(255,255,255,0.05);color:var(--text);}
+  .nav-item.active{background:var(--teal-dim);color:var(--teal);}
+  .nav-item svg{flex-shrink:0;opacity:.8;}
+  .nav-item.active svg{opacity:1;}
+  .nav-badge{margin-left:auto;font-size:10px;background:rgba(245,166,35,0.12);color:var(--amber);padding:2px 7px;border-radius:6px;font-weight:600;}
+  .sidebar-footer{margin-top:auto;padding:16px 12px;border-top:1px solid var(--border);}
+  .user-pill{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:var(--r-sm);cursor:pointer;transition:background .15s;}
+  .user-pill:hover{background:rgba(255,255,255,0.05);}
+  .user-avatar{width:32px;height:32px;border-radius:50%;background:var(--teal);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#080C12;font-family:'Syne',sans-serif;flex-shrink:0;}
+  .user-name{font-size:13px;font-weight:500;}
+  .user-plan{font-size:11px;color:var(--text3);}
+
+  /* MAIN */
+  .main{flex:1;height:100vh;overflow-y:auto;display:flex;flex-direction:column;}
+
+  /* TOPBAR */
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:0 28px;height:64px;flex-shrink:0;border-bottom:1px solid var(--border);background:rgba(8,12,18,0.9);position:sticky;top:0;z-index:10;backdrop-filter:blur(12px);}
+  .topbar-left{display:flex;flex-direction:column;}
+  .topbar-title{font-family:'Syne',sans-serif;font-size:17px;font-weight:700;}
+  .topbar-sub{font-size:12px;color:var(--text3);margin-top:1px;}
+  .topbar-right{display:flex;align-items:center;gap:12px;}
+  .btn{display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--r-sm);font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;border:1px solid var(--border2);background:transparent;color:var(--text2);transition:all .15s;}
+  .btn:hover{color:var(--text);border-color:rgba(255,255,255,0.2);}
+  .btn.primary{background:var(--teal);color:#080C12;border-color:var(--teal);font-weight:600;}
+  .btn.primary:hover{opacity:.88;}
+
+  /* CONTENT */
+  .content{padding:28px;flex:1;}
+
+  /* SUMMARY STRIP */
+  .strip{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px;}
+  .metric-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:18px 20px;position:relative;overflow:hidden;}
+  .metric-accent{position:absolute;bottom:0;left:0;right:0;height:2px;}
+  .metric-label{font-size:11px;color:var(--text3);margin-bottom:5px;font-weight:500;letter-spacing:.02em;}
+  .metric-val{font-family:'Syne',sans-serif;font-size:22px;font-weight:700;margin-bottom:3px;}
+  .metric-delta{font-size:12px;display:flex;align-items:center;gap:4px;}
+  .delta-up{color:var(--teal);}
+  .delta-down{color:var(--red);}
+  .delta-flat{color:var(--text3);}
+
+  /* CHART CARD */
+  .chart-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:20px 22px;margin-bottom:20px;}
+  .chart-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+  .chart-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;}
+  .chart-sub{font-size:12px;color:var(--text3);margin-top:2px;}
+  .period-tabs{display:flex;gap:4px;}
+  .period-tab{padding:5px 12px;border-radius:6px;font-size:12px;cursor:pointer;border:1px solid transparent;color:var(--text3);transition:all .15s;font-family:'DM Sans',sans-serif;background:transparent;}
+  .period-tab:hover{color:var(--text);}
+  .period-tab.active{background:var(--teal-dim);color:var(--teal);border-color:rgba(0,200,150,0.3);}
+  .chart-wrap{height:280px;position:relative;}
+
+  /* BREAKDOWN GRID */
+  .breakdown-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;}
+
+  /* CARD GENERIC */
+  .card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:20px 22px;}
+  .card-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;margin-bottom:4px;}
+  .card-sub{font-size:12px;color:var(--text3);}
+
+  /* COMPONENT BARS */
+  .comp-row{margin-bottom:14px;}
+  .comp-header{display:flex;justify-content:space-between;margin-bottom:5px;font-size:13px;}
+  .comp-label{font-weight:500;}
+  .comp-val{font-weight:600;}
+  .bar-track{height:6px;background:var(--bg3);border-radius:3px;overflow:hidden;}
+  .bar-fill{height:100%;border-radius:3px;transition:width .6s ease;}
+
+  /* MILESTONES */
+  .milestone-list{display:flex;flex-direction:column;gap:10px;}
+  .milestone-item{display:flex;align-items:center;gap:14px;padding:12px 14px;border-radius:var(--r-sm);border:1px solid var(--border);}
+  .milestone-item.reached{border-color:rgba(0,200,150,0.25);background:rgba(0,200,150,0.04);}
+  .milestone-item.next{border-color:rgba(59,130,246,0.25);background:rgba(59,130,246,0.04);}
+  .milestone-icon{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
+  .milestone-info{flex:1;}
+  .milestone-name{font-size:13px;font-weight:600;margin-bottom:2px;}
+  .milestone-hint{font-size:12px;color:var(--text3);}
+  .milestone-badge{font-size:11px;font-weight:600;padding:3px 10px;border-radius:6px;flex-shrink:0;}
+
+  /* DATA TABLE */
+  .data-table{width:100%;border-collapse:collapse;}
+  .data-table th{font-size:11px;color:var(--text3);text-align:left;padding:0 0 10px;font-weight:600;letter-spacing:.04em;border-bottom:1px solid var(--border);}
+  .data-table td{font-size:13px;padding:10px 0;border-bottom:1px solid var(--border);color:var(--text2);vertical-align:middle;}
+  .data-table tr:last-child td{border-bottom:none;}
+
+  /* EMPTY STATE */
+  .empty-state{text-align:center;padding:60px 24px;}
+  .empty-icon{width:72px;height:72px;background:var(--teal-dim);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 18px;}
+
+  /* MANUAL ENTRY MODAL */
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(4,6,10,0.85);backdrop-filter:blur(6px);z-index:100;align-items:center;justify-content:center;padding:20px;}
+  .modal-overlay.open{display:flex;}
+  .modal-box{background:var(--bg2);border:1px solid var(--border2);border-radius:16px;width:100%;max-width:440px;overflow:hidden;}
+  .modal-head{padding:18px 22px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+  .modal-title-el{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;}
+  .modal-close{width:28px;height:28px;border-radius:50%;background:var(--bg3);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2);}
+  .modal-body{padding:20px 22px;}
+  .field-label{font-size:12px;color:var(--text2);display:block;margin-bottom:5px;}
+  .field-input{width:100%;padding:10px 13px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;transition:border-color .15s;}
+  .field-input:focus{border-color:rgba(0,200,150,0.4);}
+  .field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;}
+
+  /* PROGRESS TO NEXT MILESTONE */
+  .milestone-progress-bar{height:4px;background:var(--bg3);border-radius:2px;overflow:hidden;margin-top:6px;}
+  .milestone-progress-fill{height:100%;border-radius:2px;background:var(--blue);transition:width .5s ease;}
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar{width:4px;}
+  ::-webkit-scrollbar-track{background:transparent;}
+  ::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:2px;}
+
+  /* TOAST */
+  .toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:var(--card);border:1px solid rgba(0,200,150,0.3);border-radius:10px;padding:12px 20px;font-size:13.5px;color:var(--text);z-index:200;white-space:nowrap;animation:toastIn .25s ease;pointer-events:none;}
+  @keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(8px);}to{opacity:1;transform:translateX(-50%) translateY(0);}}
+  @keyframes cardIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+
+  input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;}
+  input[type=number]{-moz-appearance:textfield;appearance:textfield;}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <a class="sidebar-logo" href="dashboard.html">
+    <div class="logo-mark">PF</div>
+    ProFinanceCast
+  </a>
+  <div class="sidebar-section">Overview</div>
+  <a class="nav-item" href="dashboard.html">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="5" height="5" rx="1.2" stroke="currentColor" stroke-width="1.3"/><rect x="9" y="2" width="5" height="5" rx="1.2" stroke="currentColor" stroke-width="1.3"/><rect x="2" y="9" width="5" height="5" rx="1.2" stroke="currentColor" stroke-width="1.3"/><rect x="9" y="9" width="5" height="5" rx="1.2" stroke="currentColor" stroke-width="1.3"/></svg>
+    Dashboard
+  </a>
+  <a class="nav-item active" href="net-worth.html">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 12l3-4 3 2 3-5 3 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    Net Worth
+  </a>
+  <a class="nav-item" href="goals.html">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.3"/><circle cx="8" cy="8" r="2.5" stroke="currentColor" stroke-width="1.3"/><path d="M8 2v1.5M8 12.5V14M2 8h1.5M12.5 8H14" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+    Goals
+  </a>
+  <div class="sidebar-section">Planning</div>
+  <a class="nav-item" href="debt-optimizer.html">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 13V9m4 4V6m4 7V3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+    Debt planner
+  </a>
+  <a class="nav-item" href="dashboard.html">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 8h12M8 3l5 5-5 5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    Scenarios <span class="nav-badge">Pro</span>
+  </a>
+  <a class="nav-item" href="salary-calculator.html">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="6" r="3" stroke="currentColor" stroke-width="1.3"/><path d="M3 14c0-2.5 2.5-4 5-4s5 1.5 5 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+    Salary sim <span class="nav-badge">Pro</span>
+  </a>
+  <div class="sidebar-section">AI & Insights</div>
+  <a class="nav-item" href="sage.html">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 4h10M3 8h7M3 12h5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+    Ask Sage
+  </a>
+  <a class="nav-item" href="dashboard.html">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="10" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M5 8l2 2 4-4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    Report card <span class="nav-badge">Pro</span>
+  </a>
+  <div class="sidebar-section">Account</div>
+  <a class="nav-item" href="settings.html">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="6" r="2.5" stroke="currentColor" stroke-width="1.3"/><path d="M3 13.5c0-2.2 2.2-4 5-4s5 1.8 5 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+    Profile
+  </a>
+  <a class="nav-item" href="billing.html">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="4" width="12" height="9" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M2 7h12" stroke="currentColor" stroke-width="1.3"/></svg>
+    Billing
+  </a>
+  <div class="sidebar-footer">
+    <div class="user-pill" onclick="window.location='settings.html'">
+      <div class="user-avatar" id="sb-avatar">U</div>
+      <div>
+        <div class="user-name" id="sb-name">My Account</div>
+        <div class="user-plan">Pro plan</div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-title">Net Worth Timeline</div>
+      <div class="topbar-sub" id="topbar-sub">Your personal wealth tracker</div>
+    </div>
+    <div class="topbar-right">
+      <button class="btn" onclick="openManualEntry()">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1v11M1 6.5h11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        Add entry
+      </button>
+      <button class="btn" onclick="exportCSV()">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 9V1M3 6l3.5 3.5L10 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M1 11h11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        Export
+      </button>
+      <a href="dashboard.html" class="btn">← Dashboard</a>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- SUMMARY STRIP -->
+    <div class="strip">
+      <div class="metric-card">
+        <div class="metric-accent" style="background:var(--teal);"></div>
+        <div class="metric-label">Current net worth</div>
+        <div class="metric-val" id="m-current" style="color:var(--teal);">—</div>
+        <div class="metric-delta" id="m-current-delta"><span class="delta-flat">—</span></div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-accent" style="background:var(--blue);"></div>
+        <div class="metric-label">Total assets</div>
+        <div class="metric-val" id="m-assets" style="color:var(--blue);">—</div>
+        <div class="metric-delta"><span style="font-size:12px;color:var(--text3);">savings + investments</span></div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-accent" style="background:var(--red);"></div>
+        <div class="metric-label">Total liabilities</div>
+        <div class="metric-val" id="m-liabilities" style="color:var(--red);">—</div>
+        <div class="metric-delta"><span style="font-size:12px;color:var(--text3);">all debts combined</span></div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-accent" style="background:var(--amber);"></div>
+        <div class="metric-label">All-time growth</div>
+        <div class="metric-val" id="m-growth" style="color:var(--amber);">—</div>
+        <div class="metric-delta" id="m-growth-sub"><span class="delta-flat">since first entry</span></div>
+      </div>
+    </div>
+
+    <!-- MAIN CHART -->
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Net Worth Over Time</div>
+          <div class="chart-sub" id="chart-sub">Automatically logged each time you visit the dashboard</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div class="period-tabs">
+            <button class="period-tab" onclick="setPeriod('1m',this)">1M</button>
+            <button class="period-tab" onclick="setPeriod('3m',this)">3M</button>
+            <button class="period-tab" onclick="setPeriod('6m',this)">6M</button>
+            <button class="period-tab active" onclick="setPeriod('all',this)">All</button>
+          </div>
+          <div style="display:flex;gap:8px;font-size:11px;">
+            <span style="display:flex;align-items:center;gap:4px;color:var(--text3);">
+              <span style="width:12px;height:2px;background:var(--teal);display:inline-block;border-radius:1px;"></span>Net worth
+            </span>
+            <span style="display:flex;align-items:center;gap:4px;color:var(--text3);">
+              <span style="width:12px;height:2px;background:var(--blue);display:inline-block;border-radius:1px;border-style:dashed;"></span>Assets
+            </span>
+            <span style="display:flex;align-items:center;gap:4px;color:var(--text3);">
+              <span style="width:12px;height:2px;background:var(--red);display:inline-block;border-radius:1px;border-style:dashed;"></span>Debt
+            </span>
+          </div>
+        </div>
+      </div>
+      <div class="chart-wrap" id="chart-wrap">
+        <canvas id="nwChart"></canvas>
+      </div>
+
+      <!-- Empty chart state -->
+      <div id="chart-empty" style="display:none;text-align:center;padding:48px 24px;">
+        <div style="font-size:32px;margin-bottom:12px;">📈</div>
+        <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;margin-bottom:6px;">Your chart is growing</div>
+        <div style="font-size:13px;color:var(--text3);margin-bottom:20px;max-width:360px;margin-inline:auto;">Each time you open your dashboard, a data point is automatically logged. Come back tomorrow and you'll see your first trend line.<br><br>Or add a manual entry now to seed your history.</div>
+        <button class="btn primary" onclick="openManualEntry()">Add manual entry</button>
+      </div>
+    </div>
+
+    <!-- BREAKDOWN + MILESTONES -->
+    <div class="breakdown-grid">
+
+      <!-- Asset breakdown -->
+      <div class="card">
+        <div class="card-title" style="margin-bottom:4px;">Current breakdown</div>
+        <div class="card-sub" style="margin-bottom:18px;">What makes up your net worth today</div>
+
+        <div class="comp-row">
+          <div class="comp-header">
+            <span class="comp-label" style="color:var(--blue);">💰 Cash & savings</span>
+            <span class="comp-val" id="b-savings">—</span>
+          </div>
+          <div class="bar-track"><div class="bar-fill" id="b-savings-bar" style="background:var(--blue);width:0%;"></div></div>
+        </div>
+
+        <div class="comp-row">
+          <div class="comp-header">
+            <span class="comp-label" style="color:var(--purple);">📈 Investments</span>
+            <span class="comp-val" id="b-invest">—</span>
+          </div>
+          <div class="bar-track"><div class="bar-fill" id="b-invest-bar" style="background:var(--purple);width:0%;"></div></div>
+        </div>
+
+        <div class="comp-row" style="margin-bottom:0;">
+          <div class="comp-header">
+            <span class="comp-label" style="color:var(--red);">🔴 Debt (liability)</span>
+            <span class="comp-val" id="b-debt">—</span>
+          </div>
+          <div class="bar-track"><div class="bar-fill" id="b-debt-bar" style="background:var(--red);width:0%;"></div></div>
+        </div>
+
+        <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border);">
+          <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;">
+            <span style="color:var(--text2);">Assets-to-debt ratio</span>
+            <span style="font-weight:600;" id="b-ratio">—</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:13px;">
+            <span style="color:var(--text2);">Monthly net worth change</span>
+            <span style="font-weight:600;" id="b-monthly-change">—</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Milestones -->
+      <div class="card">
+        <div class="card-title" style="margin-bottom:4px;">Net worth milestones</div>
+        <div class="card-sub" style="margin-bottom:16px;">Celebrate each one — they compound faster than you think</div>
+        <div class="milestone-list" id="milestone-list"></div>
+      </div>
+    </div>
+
+    <!-- MONTHLY CHANGE TABLE + PROJECTED GROWTH -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+
+      <!-- History table -->
+      <div class="card" style="padding:0;overflow:hidden;">
+        <div style="padding:18px 22px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+          <div>
+            <div class="card-title">Entry history</div>
+            <div class="card-sub">All logged data points</div>
+          </div>
+          <button onclick="clearHistory()" style="font-size:11px;color:var(--red);background:transparent;border:1px solid rgba(224,82,82,0.2);border-radius:var(--r-sm);padding:4px 10px;cursor:pointer;font-family:'DM Sans',sans-serif;">Clear all</button>
+        </div>
+        <div style="max-height:300px;overflow-y:auto;">
+          <table class="data-table" style="padding:0;">
+            <thead style="position:sticky;top:0;background:var(--card);z-index:1;">
+              <tr>
+                <th style="padding:10px 20px;">Date</th>
+                <th style="padding:10px 20px;">Net worth</th>
+                <th style="padding:10px 20px;">Change</th>
+                <th style="padding:10px 20px;">Source</th>
+              </tr>
+            </thead>
+            <tbody id="history-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Projected growth -->
+      <div class="card">
+        <div class="card-title" style="margin-bottom:4px;">Projected growth</div>
+        <div class="card-sub" style="margin-bottom:16px;">Based on your current monthly surplus</div>
+        <div id="projection-list" style="display:flex;flex-direction:column;gap:10px;"></div>
+        <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);">
+          <div style="font-size:12px;color:var(--text3);line-height:1.6;">
+            Projections assume your current surplus continues. Returns on investments are not modelled — actual growth may be higher. Use the debt optimizer to see how faster debt payoff accelerates this.
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<!-- MANUAL ENTRY MODAL -->
+<div class="modal-overlay" id="manual-modal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <div class="modal-title-el">Add manual entry</div>
+      <div class="modal-close" onclick="closeModal()">✕</div>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--text3);margin-bottom:16px;line-height:1.6;">
+        Enter your financial snapshot for a specific date. This is useful for adding historical data or recording an exact balance sheet.
+      </p>
+      <div style="margin-bottom:14px;">
+        <label class="field-label">Date</label>
+        <input type="date" class="field-input" id="m-date" style="color-scheme:dark;">
+      </div>
+      <div class="field-row">
+        <div>
+          <label class="field-label">Cash & savings</label>
+          <input type="number" class="field-input" id="m-savings" placeholder="0" min="0" oninput="modalCalcNW()">
+        </div>
+        <div>
+          <label class="field-label">Investments</label>
+          <input type="number" class="field-input" id="m-invest" placeholder="0" min="0" oninput="modalCalcNW()">
+        </div>
+      </div>
+      <div style="margin-bottom:14px;">
+        <label class="field-label">Total debt</label>
+        <input type="number" class="field-input" id="m-debt" placeholder="0" min="0" oninput="modalCalcNW()">
+      </div>
+
+      <!-- Live NW preview -->
+      <div id="m-preview" style="display:none;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px 14px;margin-bottom:16px;text-align:center;">
+        <div style="font-size:11px;color:var(--text3);margin-bottom:4px;">Net worth on this date</div>
+        <div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:700;" id="m-nw-preview">—</div>
+      </div>
+
+      <div style="display:flex;gap:10px;">
+        <button onclick="saveManualEntry()" style="flex:1;padding:11px;background:var(--teal);border:none;border-radius:var(--r-sm);font-size:14px;font-weight:700;color:#080C12;font-family:'DM Sans',sans-serif;cursor:pointer;">Save entry</button>
+        <button onclick="closeModal()" style="padding:11px 18px;background:transparent;border:1px solid var(--border2);border-radius:var(--r-sm);font-size:13px;color:var(--text2);font-family:'DM Sans',sans-serif;cursor:pointer;">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── STATE ──
+let USER = {};
+let HISTORY = []; // [{ date, netWorth, assets, savings, investments, debt, source }]
+let nwChart = null;
+let currentPeriod = 'all';
+
+const MILESTONES = [
+  { val: 0,      label: 'Break even',    emoji: '🎯', hint: 'Assets equal liabilities' },
+  { val: 1000,   label: '$1,000',        emoji: '🌱', hint: 'First thousand — the hardest one' },
+  { val: 5000,   label: '$5,000',        emoji: '⚡', hint: 'Building real momentum' },
+  { val: 10000,  label: '$10,000',       emoji: '🔥', hint: 'Five-figure net worth' },
+  { val: 25000,  label: '$25,000',       emoji: '💪', hint: 'Serious wealth foundation' },
+  { val: 50000,  label: '$50,000',       emoji: '🚀', hint: 'Half a century milestone' },
+  { val: 100000, label: '$100,000',      emoji: '💯', hint: 'Six-figure territory' },
+  { val: 250000, label: '$250,000',      emoji: '👑', hint: 'Financial independence zone begins' },
+  { val: 500000, label: '$500,000',      emoji: '🏆', hint: 'Half a million — elite tier' },
+  { val: 1000000,label: '$1,000,000',    emoji: '💎', hint: 'Millionaire status' },
+];
+
+// ── INIT ──
+function init() {
+  try { USER = JSON.parse(localStorage.getItem('pfc_user')) || {}; } catch(e) { USER = {}; }
+  try { HISTORY = JSON.parse(localStorage.getItem('pfc_nw_history')) || []; } catch(e) { HISTORY = []; }
+
+  const name = (USER.name || '').trim();
+  if (name) {
+    document.getElementById('sb-name').textContent = name;
+    document.getElementById('sb-avatar').textContent = name.charAt(0).toUpperCase();
+  }
+
+  // Auto-log today's snapshot from USER data (same as dashboard does)
+  logTodaySnapshot();
+
+  renderAll();
+}
+
+// ── LOG TODAY (called on page load — same function dashboard calls) ──
+function logTodaySnapshot() {
+  const savings     = USER.savings || 0;
+  const investments = USER.investments || 0;
+  const debt        = USER.debt || 0;
+  const assets      = savings + investments;
+  const netWorth    = assets - debt;
+
+  if (assets === 0 && debt === 0) return; // nothing to log yet
+
+  const today = new Date().toISOString().slice(0, 10);
+
+  // Only log once per day (replace same-day entry)
+  const idx = HISTORY.findIndex(h => h.date === today && h.source === 'auto');
+  const entry = { date: today, netWorth, assets, savings, investments, debt, source: 'auto' };
+
+  if (idx >= 0) HISTORY[idx] = entry;
+  else HISTORY.push(entry);
+
+  // Sort by date ascending
+  HISTORY.sort((a, b) => a.date.localeCompare(b.date));
+  localStorage.setItem('pfc_nw_history', JSON.stringify(HISTORY));
+}
+
+// ── RENDER ALL ──
+function renderAll() {
+  const sym = USER.currency || '$';
+  const fmt = v => (v < 0 ? '-' : '') + sym + Math.abs(Math.round(v)).toLocaleString();
+
+  const filtered = getPeriodData();
+  const latest = HISTORY.length ? HISTORY[HISTORY.length - 1] : null;
+  const prev    = HISTORY.length > 1 ? HISTORY[HISTORY.length - 2] : null;
+  const first   = HISTORY.length ? HISTORY[0] : null;
+
+  // Summary strip
+  if (latest) {
+    const nw = latest.netWorth;
+    document.getElementById('m-current').textContent = fmt(nw);
+    document.getElementById('m-current').style.color = nw >= 0 ? 'var(--teal)' : 'var(--red)';
+    document.getElementById('m-assets').textContent = fmt(latest.assets || 0);
+    document.getElementById('m-liabilities').textContent = fmt(latest.debt || 0);
+
+    const growth = first ? nw - first.netWorth : 0;
+    document.getElementById('m-growth').textContent = (growth >= 0 ? '+' : '') + fmt(growth);
+    document.getElementById('m-growth').style.color = growth >= 0 ? 'var(--amber)' : 'var(--red)';
+
+    if (prev) {
+      const delta = nw - prev.netWorth;
+      const deltaEl = document.getElementById('m-current-delta');
+      deltaEl.innerHTML = `<span class="${delta >= 0 ? 'delta-up' : 'delta-down'}">${delta >= 0 ? '↑' : '↓'} ${fmt(Math.abs(delta))} since last entry</span>`;
+    } else {
+      document.getElementById('m-current-delta').innerHTML = '<span class="delta-flat">First entry recorded</span>';
+    }
+
+    // Topbar
+    const since = first && first.date !== latest.date
+      ? ` · +${fmt(growth)} since ${formatDateShort(first.date)}`
+      : '';
+    document.getElementById('topbar-sub').textContent = `Current: ${fmt(nw)}${since}`;
+
+    // Breakdown
+    renderBreakdown(latest, sym, fmt, prev);
+  } else {
+    document.getElementById('topbar-sub').textContent = 'No entries yet — visit your dashboard to auto-log';
+    ['m-current','m-assets','m-liabilities','m-growth'].forEach(id => document.getElementById(id).textContent = '—');
+  }
+
+  // Chart
+  renderChart(filtered);
+
+  // Milestones
+  renderMilestones(latest?.netWorth ?? null, sym);
+
+  // History table
+  renderHistory(sym, fmt);
+
+  // Projections
+  renderProjections(latest, sym, fmt);
+}
+
+// ── BREAKDOWN ──
+function renderBreakdown(latest, sym, fmt, prev) {
+  const savings = latest.savings || 0;
+  const invest  = latest.investments || 0;
+  const debt    = latest.debt || 0;
+  const total   = Math.max(savings + invest + debt, 1);
+
+  document.getElementById('b-savings').textContent = fmt(savings);
+  document.getElementById('b-invest').textContent  = fmt(invest);
+  document.getElementById('b-debt').textContent    = fmt(debt);
+
+  document.getElementById('b-savings-bar').style.width = Math.round(savings / total * 100) + '%';
+  document.getElementById('b-invest-bar').style.width  = Math.round(invest  / total * 100) + '%';
+  document.getElementById('b-debt-bar').style.width    = Math.min(100, Math.round(debt / total * 100)) + '%';
+
+  const ratio = debt > 0 ? ((savings + invest) / debt).toFixed(2) + 'x' : '∞';
+  const ratioEl = document.getElementById('b-ratio');
+  ratioEl.textContent = ratio;
+  ratioEl.style.color = debt === 0 ? 'var(--teal)' : parseFloat(ratio) >= 1 ? 'var(--teal)' : 'var(--amber)';
+
+  const monthlyChange = prev ? latest.netWorth - prev.netWorth : null;
+  const mcEl = document.getElementById('b-monthly-change');
+  if (monthlyChange !== null) {
+    mcEl.textContent = (monthlyChange >= 0 ? '+' : '') + fmt(monthlyChange);
+    mcEl.style.color = monthlyChange >= 0 ? 'var(--teal)' : 'var(--red)';
+  } else {
+    mcEl.textContent = '—';
+    mcEl.style.color = 'var(--text3)';
+  }
+}
+
+// ── MILESTONES ──
+function renderMilestones(currentNW, sym) {
+  const el = document.getElementById('milestone-list');
+  if (currentNW === null) { el.innerHTML = '<div style="color:var(--text3);font-size:13px;">Add entries to track milestone progress</div>'; return; }
+
+  const reached = MILESTONES.filter(m => currentNW >= m.val);
+  const lastReached = reached[reached.length - 1];
+  const next = MILESTONES.find(m => currentNW < m.val);
+
+  const items = [];
+
+  // Show last 2 reached + next 3 upcoming
+  const show = [...reached.slice(-2), ...(next ? MILESTONES.filter(m => currentNW < m.val).slice(0, 3) : [])];
+
+  show.forEach(m => {
+    const isReached = currentNW >= m.val;
+    const isNext = m === next;
+    const pct = isNext && lastReached ? Math.min(100, Math.round((currentNW - lastReached.val) / (m.val - lastReached.val) * 100)) : 0;
+    const remaining = isNext ? m.val - currentNW : 0;
+
+    items.push(`<div class="milestone-item ${isReached ? 'reached' : isNext ? 'next' : ''}">
+      <div class="milestone-icon" style="background:${isReached ? 'rgba(0,200,150,0.12)' : isNext ? 'rgba(59,130,246,0.12)' : 'var(--bg3)'};">${m.emoji}</div>
+      <div class="milestone-info">
+        <div class="milestone-name">${m.label}</div>
+        <div class="milestone-hint">${isNext ? sym + Math.round(remaining).toLocaleString() + ' to go · ' : ''}${m.hint}</div>
+        ${isNext ? `<div class="milestone-progress-bar"><div class="milestone-progress-fill" style="width:${pct}%;"></div></div>` : ''}
+      </div>
+      <div class="milestone-badge" style="background:${isReached ? 'rgba(0,200,150,0.12)' : isNext ? 'rgba(59,130,246,0.12)' : 'var(--bg3)'};color:${isReached ? 'var(--teal)' : isNext ? 'var(--blue)' : 'var(--text3)'};">
+        ${isReached ? '✓ Reached' : isNext ? `${pct}%` : 'Upcoming'}
+      </div>
+    </div>`);
+  });
+
+  el.innerHTML = items.join('');
+}
+
+// ── HISTORY TABLE ──
+function renderHistory(sym, fmt) {
+  const tbody = document.getElementById('history-body');
+  if (!HISTORY.length) {
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text3);padding:24px 20px;">No entries yet</td></tr>';
+    return;
+  }
+
+  const rows = [...HISTORY].reverse().map((h, i) => {
+    const prev = HISTORY[HISTORY.length - 1 - i - 1];
+    const delta = prev ? h.netWorth - prev.netWorth : null;
+    const deltaStr = delta !== null
+      ? `<span style="color:${delta >= 0 ? 'var(--teal)' : 'var(--red)'};">${delta >= 0 ? '+' : ''}${fmt(delta)}</span>`
+      : '<span style="color:var(--text3);">—</span>';
+
+    return `<tr>
+      <td style="padding:9px 20px;color:var(--text3);">${formatDateShort(h.date)}</td>
+      <td style="padding:9px 20px;font-weight:600;color:${h.netWorth >= 0 ? 'var(--teal)' : 'var(--red)'};">${fmt(h.netWorth)}</td>
+      <td style="padding:9px 20px;">${deltaStr}</td>
+      <td style="padding:9px 20px;font-size:11px;color:var(--text3);">${h.source === 'auto' ? 'Auto' : 'Manual'}</td>
+    </tr>`;
+  });
+  tbody.innerHTML = rows.join('');
+}
+
+// ── PROJECTIONS ──
+function renderProjections(latest, sym, fmt) {
+  const el = document.getElementById('projection-list');
+  if (!latest) { el.innerHTML = '<div style="color:var(--text3);font-size:13px;">No data yet</div>'; return; }
+
+  const monthlyGain = ((USER.income || 0) + (USER.otherIncome || 0)) -
+    ((USER.housing || 0) + (USER.food || 0) + (USER.transport || 0) + (USER.otherExp || 0) + (USER.debtPay || 0));
+
+  const nw = latest.netWorth;
+  const milestones = [6, 12, 24, 36, 60];
+
+  el.innerHTML = milestones.map(months => {
+    const projected = nw + monthlyGain * months;
+    const date = new Date(); date.setMonth(date.getMonth() + months);
+    const dateStr = date.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' });
+    const change = projected - nw;
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--bg3);border-radius:var(--r-sm);">
+      <div>
+        <div style="font-size:13px;font-weight:600;">${dateStr}</div>
+        <div style="font-size:11px;color:var(--text3);">in ${months} month${months>1?'s':''}</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:${projected >= 0 ? 'var(--teal)' : 'var(--red)'};">${fmt(projected)}</div>
+        <div style="font-size:11px;color:${change >= 0 ? 'var(--teal)' : 'var(--red)'};">${change >= 0 ? '+' : ''}${fmt(change)}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── PERIOD FILTER ──
+function getPeriodData() {
+  if (currentPeriod === 'all' || !HISTORY.length) return HISTORY;
+  const now = new Date();
+  const cutoff = new Date();
+  if (currentPeriod === '1m') cutoff.setMonth(now.getMonth() - 1);
+  if (currentPeriod === '3m') cutoff.setMonth(now.getMonth() - 3);
+  if (currentPeriod === '6m') cutoff.setMonth(now.getMonth() - 6);
+  const cutStr = cutoff.toISOString().slice(0, 10);
+  return HISTORY.filter(h => h.date >= cutStr);
+}
+
+function setPeriod(p, btn) {
+  currentPeriod = p;
+  document.querySelectorAll('.period-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  renderChart(getPeriodData());
+}
+
+// ── CHART ──
+function renderChart(data) {
+  const canvas = document.getElementById('nwChart');
+  const emptyEl = document.getElementById('chart-empty');
+
+  if (nwChart) { nwChart.destroy(); nwChart = null; }
+
+  if (!data.length) {
+    canvas.style.display = 'none';
+    emptyEl.style.display = 'block';
+    return;
+  }
+
+  canvas.style.display = 'block';
+  emptyEl.style.display = 'none';
+
+  const labels = data.map(h => formatDateShort(h.date));
+  const nwData  = data.map(h => h.netWorth);
+  const assData = data.map(h => h.assets || (h.savings + h.investments));
+  const debtData = data.map(h => h.debt || 0);
+
+  const sym = USER.currency || '$';
+  const fmt = v => sym + Math.round(Math.abs(v)).toLocaleString();
+
+  nwChart = new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Net worth',
+          data: nwData,
+          borderColor: '#00C896',
+          backgroundColor: 'rgba(0,200,150,0.08)',
+          borderWidth: 2.5,
+          pointRadius: data.length < 20 ? 4 : 0,
+          pointHoverRadius: 6,
+          pointBackgroundColor: '#00C896',
+          pointBorderColor: '#080C12',
+          pointBorderWidth: 2,
+          tension: 0.35,
+          fill: true,
+          order: 1,
+        },
+        {
+          label: 'Assets',
+          data: assData,
+          borderColor: '#3B82F6',
+          backgroundColor: 'transparent',
+          borderWidth: 1.5,
+          borderDash: [4, 3],
+          pointRadius: 0,
+          tension: 0.35,
+          fill: false,
+          order: 2,
+        },
+        {
+          label: 'Debt',
+          data: debtData,
+          borderColor: '#E05252',
+          backgroundColor: 'transparent',
+          borderWidth: 1.5,
+          borderDash: [4, 3],
+          pointRadius: 0,
+          tension: 0.35,
+          fill: false,
+          order: 3,
+        },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { intersect: false, mode: 'index' },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#0F1923',
+          borderColor: 'rgba(255,255,255,0.1)',
+          borderWidth: 1,
+          titleColor: '#F0F4F8',
+          bodyColor: '#8A9BB0',
+          padding: 12,
+          callbacks: {
+            label: ctx => ' ' + ctx.dataset.label + ': ' + sym + Math.abs(Math.round(ctx.parsed.y)).toLocaleString(),
+          }
+        },
+        // Milestone annotations drawn as horizontal lines
+      },
+      scales: {
+        x: {
+          grid: { color: 'rgba(255,255,255,0.04)' },
+          ticks: { color: '#4A5A6E', font: { size: 10 }, maxTicksLimit: 10 }
+        },
+        y: {
+          grid: { color: 'rgba(255,255,255,0.04)' },
+          ticks: {
+            color: '#4A5A6E', font: { size: 10 },
+            callback: v => {
+              const abs = Math.abs(v);
+              const prefix = v < 0 ? '-' : '';
+              if (abs >= 1000000) return prefix + sym + (abs/1000000).toFixed(1) + 'M';
+              if (abs >= 1000)    return prefix + sym + (abs/1000).toFixed(0) + 'k';
+              return prefix + sym + abs;
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+// ── MANUAL ENTRY MODAL ──
+function openManualEntry() {
+  // Pre-fill with current USER data
+  const today = new Date().toISOString().slice(0, 10);
+  document.getElementById('m-date').value = today;
+  document.getElementById('m-savings').value = USER.savings || '';
+  document.getElementById('m-invest').value = USER.investments || '';
+  document.getElementById('m-debt').value = USER.debt || '';
+  modalCalcNW();
+  document.getElementById('manual-modal').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('manual-modal').classList.remove('open');
+}
+
+function modalCalcNW() {
+  const savings = parseFloat(document.getElementById('m-savings').value) || 0;
+  const invest  = parseFloat(document.getElementById('m-invest').value)  || 0;
+  const debt    = parseFloat(document.getElementById('m-debt').value)    || 0;
+  const nw = savings + invest - debt;
+  const sym = USER.currency || '$';
+  const previewEl = document.getElementById('m-nw-preview');
+  previewEl.textContent = (nw < 0 ? '-' : '') + sym + Math.abs(Math.round(nw)).toLocaleString();
+  previewEl.style.color = nw >= 0 ? 'var(--teal)' : 'var(--red)';
+  document.getElementById('m-preview').style.display = 'block';
+}
+
+function saveManualEntry() {
+  const date    = document.getElementById('m-date').value;
+  const savings = parseFloat(document.getElementById('m-savings').value) || 0;
+  const invest  = parseFloat(document.getElementById('m-invest').value)  || 0;
+  const debt    = parseFloat(document.getElementById('m-debt').value)    || 0;
+
+  if (!date) { document.getElementById('m-date').style.borderColor = 'rgba(224,82,82,.5)'; return; }
+
+  const entry = {
+    date,
+    netWorth: savings + invest - debt,
+    assets: savings + invest,
+    savings, investments: invest, debt,
+    source: 'manual'
+  };
+
+  const idx = HISTORY.findIndex(h => h.date === date && h.source === 'manual');
+  if (idx >= 0) HISTORY[idx] = entry;
+  else HISTORY.push(entry);
+
+  HISTORY.sort((a, b) => a.date.localeCompare(b.date));
+  localStorage.setItem('pfc_nw_history', JSON.stringify(HISTORY));
+
+  renderAll();
+  closeModal();
+  showToast('Entry saved — ' + formatDateShort(date));
+}
+
+// ── EXPORT CSV ──
+function exportCSV() {
+  if (!HISTORY.length) { showToast('No data to export'); return; }
+  const sym = USER.currency || '$';
+  const rows = [['Date','Net Worth','Assets','Savings','Investments','Debt','Source']];
+  HISTORY.forEach(h => rows.push([h.date, h.netWorth, h.assets, h.savings, h.investments, h.debt, h.source]));
+  const csv = rows.map(r => r.join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'net-worth-history.csv'; a.click();
+  URL.revokeObjectURL(url);
+  showToast('Exported net worth history');
+}
+
+// ── CLEAR ──
+function clearHistory() {
+  if (!confirm('Clear all net worth history? This cannot be undone.')) return;
+  HISTORY = [];
+  localStorage.removeItem('pfc_nw_history');
+  renderAll();
+  showToast('History cleared');
+}
+
+// ── HELPERS ──
+function formatDateShort(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso + 'T12:00:00');
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = '✓ ' + msg;
+  document.body.appendChild(t);
+  setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity .3s'; }, 2800);
+  setTimeout(() => t.remove(), 3200);
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+// ── START ──
+init();
+</script>
+</body>
+</html>

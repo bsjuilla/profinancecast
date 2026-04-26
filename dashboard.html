@@ -410,6 +410,10 @@
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.4"/><rect x="9" y="1" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.4"/><rect x="1" y="9" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.4"/><rect x="9" y="9" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.4"/></svg>
     Dashboard
   </a>
+  <a href="net-worth.html" class="nav-item">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 12l3-4 3 2 3-5 3 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    Net Worth
+  </a>
   <a href="dashboard.html" class="nav-item" onclick="navClick(event,this,'forecast')">
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 12L5.5 7l3 2.5L12 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
     Forecast
@@ -425,7 +429,7 @@
     Scenarios
     <span class="nav-badge">Pro</span>
   </a>
-  <a href="debt-optimizer.html" class="nav-item" onclick="">
+  <a href="dashboard.html" class="nav-item" onclick="navClick(event,this,'debts')">
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l2.5 2.5L13 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
     Debt planner
   </a>
@@ -2676,6 +2680,31 @@ initChart();
 updateAllCards();
 loadGoals();
 refreshInflBoxes();
+
+// ── NET WORTH AUTO-LOGGER ──
+// Silently logs today's snapshot so the Net Worth Timeline page has data.
+(function logNWSnapshot() {
+  try {
+    const savings     = USER.savings || 0;
+    const investments = USER.investments || 0;
+    const debt        = USER.debt || 0;
+    const assets      = savings + investments;
+    const netWorth    = assets - debt;
+    if (assets === 0 && debt === 0) return;
+
+    const today = new Date().toISOString().slice(0, 10);
+    let history = [];
+    try { history = JSON.parse(localStorage.getItem('pfc_nw_history')) || []; } catch(e) {}
+
+    const entry = { date: today, netWorth, assets, savings, investments, debt, source: 'auto' };
+    const idx = history.findIndex(h => h.date === today && h.source === 'auto');
+    if (idx >= 0) history[idx] = entry;
+    else history.push(entry);
+
+    history.sort((a, b) => a.date.localeCompare(b.date));
+    localStorage.setItem('pfc_nw_history', JSON.stringify(history));
+  } catch(e) {}
+})();
 </script>
 </body>
 </html>
