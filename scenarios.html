@@ -1,0 +1,1477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<meta name="theme-color" content="#00C896">
+<title>Scenarios — ProFinanceCast</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg:    #080C12;
+    --bg2:   #0D1320;
+    --bg3:   #111827;
+    --card:  #0F1923;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.13);
+    --teal:  #00C896;
+    --teal-dim: rgba(0,200,150,0.12);
+    --text:  #F0F4F8;
+    --text2: #8A9BB0;
+    --text3: #4A5A6E;
+    --amber: #F5A623;
+    --red:   #E05252;
+    --blue:  #3B82F6;
+    --purple:#A78BFA;
+    --green: #22C55E;
+    --r:     12px;
+    --r-sm:  8px;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    display: flex;
+    overflow: hidden;
+  }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    width: 240px; flex-shrink: 0;
+    background: var(--bg2);
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    height: 100vh; overflow-y: auto;
+  }
+  .sidebar-logo {
+    display: flex; align-items: center; gap: 10px;
+    padding: 22px 20px 18px;
+    border-bottom: 1px solid var(--border);
+    font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700;
+    color: var(--text); text-decoration: none;
+  }
+  .logo-mark {
+    width: 30px; height: 30px; background: var(--teal);
+    border-radius: 7px; display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 800; color: #080C12; font-family: 'Syne', sans-serif;
+    flex-shrink: 0;
+  }
+  .sidebar-section {
+    padding: 18px 12px 8px;
+    font-size: 10px; font-weight: 600; color: var(--text3);
+    letter-spacing: .1em; text-transform: uppercase;
+  }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 12px; border-radius: var(--r-sm); margin: 1px 8px;
+    font-size: 13.5px; color: var(--text2); cursor: pointer;
+    transition: background .15s, color .15s; text-decoration: none;
+  }
+  .nav-item:hover { background: rgba(255,255,255,0.05); color: var(--text); }
+  .nav-item.active { background: var(--teal-dim); color: var(--teal); }
+  .nav-item svg { flex-shrink: 0; opacity: .8; }
+  .nav-item.active svg { opacity: 1; }
+  .nav-badge {
+    margin-left: auto; font-size: 10px; background: rgba(0,200,150,0.15);
+    color: var(--teal); padding: 2px 7px; border-radius: 6px; font-weight: 600;
+  }
+  .sidebar-footer {
+    margin-top: auto; padding: 16px 12px;
+    border-top: 1px solid var(--border);
+  }
+  .user-pill {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 10px; border-radius: var(--r-sm);
+    cursor: pointer; transition: background .15s;
+  }
+  .user-pill:hover { background: rgba(255,255,255,0.05); }
+  .user-avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--teal); display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; color: #080C12; font-family: 'Syne', sans-serif;
+    flex-shrink: 0;
+  }
+  .user-name { font-size: 13px; font-weight: 500; }
+  .user-plan { font-size: 11px; color: var(--text3); }
+
+  /* ── MAIN ── */
+  .main {
+    flex: 1; height: 100vh; overflow-y: auto;
+    display: flex; flex-direction: column;
+  }
+
+  /* ── TOPBAR ── */
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 28px; height: 64px; flex-shrink: 0;
+    border-bottom: 1px solid var(--border);
+    background: rgba(8,12,18,0.9);
+    position: sticky; top: 0; z-index: 10;
+    backdrop-filter: blur(12px);
+  }
+  .topbar-left { display: flex; flex-direction: column; }
+  .topbar-title { font-family: 'Syne', sans-serif; font-size: 17px; font-weight: 700; }
+  .topbar-sub { font-size: 12px; color: var(--text3); margin-top: 1px; }
+  .topbar-right { display: flex; align-items: center; gap: 12px; }
+  .topbar-btn {
+    display: flex; align-items: center; gap: 6px;
+    padding: 7px 14px; border-radius: var(--r-sm);
+    font-size: 13px; font-family: 'DM Sans', sans-serif;
+    cursor: pointer; border: 1px solid var(--border2);
+    background: transparent; color: var(--text2);
+    transition: all .15s;
+  }
+  .topbar-btn:hover { color: var(--text); border-color: rgba(255,255,255,0.2); }
+  .topbar-btn.primary {
+    background: var(--teal); color: #080C12;
+    border-color: var(--teal); font-weight: 500;
+  }
+  .topbar-btn.primary:hover { opacity: .88; }
+
+  /* ── CONTENT ── */
+  .content { padding: 28px; flex: 1; }
+
+  /* ── CARD ── */
+  .card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--r); padding: 20px 22px;
+  }
+  .card-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .card-title { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; }
+  .card-sub { font-size: 12px; color: var(--text3); margin-top: 2px; }
+
+  /* ── PRO GATE ── */
+  .pro-gate {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 80px 28px; text-align: center; gap: 20px;
+  }
+  .pro-gate-icon {
+    width: 72px; height: 72px;
+    background: rgba(245,166,35,0.12); border: 1px solid rgba(245,166,35,0.25);
+    border-radius: 20px; display: flex; align-items: center; justify-content: center;
+    font-size: 32px;
+  }
+  .pro-gate h2 {
+    font-family: 'Syne', sans-serif; font-size: 24px; font-weight: 800;
+    line-height: 1.3;
+  }
+  .pro-gate p { font-size: 14px; color: var(--text2); max-width: 420px; line-height: 1.6; }
+  .pro-gate-btn {
+    background: var(--teal); color: #080C12;
+    padding: 12px 28px; border-radius: var(--r-sm);
+    font-size: 14px; font-weight: 600; font-family: 'DM Sans', sans-serif;
+    text-decoration: none; display: inline-block; transition: opacity .15s;
+  }
+  .pro-gate-btn:hover { opacity: .88; }
+  .pro-gate-features {
+    display: flex; flex-direction: column; gap: 8px;
+    margin-top: 8px;
+  }
+  .pro-gate-feat {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13px; color: var(--text2);
+  }
+  .pro-gate-feat svg { color: var(--teal); flex-shrink: 0; }
+
+  /* ── SUMMARY STRIP ── */
+  .summary-strip {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 14px; margin-bottom: 22px;
+  }
+  .summary-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--r); padding: 16px 18px;
+    position: relative; overflow: hidden;
+  }
+  .summary-card-label { font-size: 11px; color: var(--text3); margin-bottom: 4px; text-transform: uppercase; letter-spacing: .05em; }
+  .summary-card-val { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 700; line-height: 1.1; }
+  .summary-card-sub { font-size: 12px; color: var(--text2); margin-top: 3px; }
+  .summary-card-accent {
+    position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  }
+
+  /* ── SCENARIOS GRID ── */
+  .scenarios-layout {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 16px; margin-bottom: 16px;
+  }
+
+  /* ── SCENARIO CARDS ── */
+  .scenario-cards {
+    display: flex; flex-direction: column; gap: 12px;
+    margin-bottom: 16px;
+  }
+  .scenario-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--r); padding: 18px 20px;
+    display: grid; grid-template-columns: auto 1fr auto auto;
+    align-items: center; gap: 16px;
+    transition: border-color .2s;
+    cursor: pointer;
+  }
+  .scenario-card:hover { border-color: var(--border2); }
+  .scenario-card.active-scenario { border-color: rgba(0,200,150,0.4); }
+  .scenario-card.base-card { border-color: rgba(59,130,246,0.35); }
+  .scenario-color-dot {
+    width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0;
+  }
+  .scenario-card-info { min-width: 0; }
+  .scenario-card-name {
+    font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700;
+    margin-bottom: 3px; display: flex; align-items: center; gap: 8px;
+  }
+  .scenario-card-desc { font-size: 12px; color: var(--text3); }
+  .scenario-metrics {
+    display: flex; gap: 24px;
+  }
+  .sc-metric { text-align: right; }
+  .sc-metric-label { font-size: 11px; color: var(--text3); margin-bottom: 2px; }
+  .sc-metric-val { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; }
+  .sc-metric-val.up { color: var(--teal); }
+  .sc-metric-val.down { color: var(--red); }
+  .scenario-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .sc-btn {
+    background: none; border: 1px solid var(--border); border-radius: 6px;
+    padding: 5px 8px; cursor: pointer; color: var(--text3);
+    font-size: 12px; transition: all .15s; font-family: 'DM Sans', sans-serif;
+  }
+  .sc-btn:hover { border-color: var(--border2); color: var(--text); }
+  .sc-btn.danger:hover { border-color: var(--red); color: var(--red); }
+  .sc-btn.apply {
+    background: var(--teal-dim); border-color: rgba(0,200,150,0.3);
+    color: var(--teal); font-weight: 500;
+  }
+  .sc-btn.apply:hover { background: rgba(0,200,150,0.2); }
+
+  /* ── BADGE ── */
+  .badge {
+    font-size: 10px; padding: 2px 7px; border-radius: 5px; font-weight: 600;
+  }
+  .badge-blue { background: rgba(59,130,246,0.15); color: var(--blue); }
+  .badge-teal { background: rgba(0,200,150,0.15); color: var(--teal); }
+  .badge-amber { background: rgba(245,166,35,0.15); color: var(--amber); }
+  .badge-purple { background: rgba(167,139,250,0.15); color: var(--purple); }
+
+  /* ── ADD SCENARIO BUTTON ── */
+  .add-scenario-btn {
+    background: none; border: 1px dashed var(--border2);
+    border-radius: var(--r); padding: 14px 20px;
+    cursor: pointer; color: var(--text3);
+    font-size: 13px; font-family: 'DM Sans', sans-serif;
+    transition: all .2s; width: 100%;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .add-scenario-btn:hover {
+    border-color: var(--teal); color: var(--teal);
+    background: var(--teal-dim);
+  }
+
+  /* ── CHART CARD ── */
+  .chart-wrap { position: relative; height: 300px; }
+
+  /* ── COMPARISON TABLE ── */
+  .comparison-table {
+    width: 100%; border-collapse: collapse;
+    font-size: 13px;
+  }
+  .comparison-table th {
+    font-size: 11px; font-weight: 600; color: var(--text3);
+    text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border);
+    text-transform: uppercase; letter-spacing: .05em;
+  }
+  .comparison-table td {
+    padding: 10px 12px; border-bottom: 1px solid var(--border);
+    color: var(--text2);
+  }
+  .comparison-table tr:last-child td { border-bottom: none; }
+  .comparison-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .comparison-table td:first-child { color: var(--text3); font-size: 12px; }
+  .comparison-table td.best { color: var(--teal); font-weight: 600; }
+  .comparison-table td.worst { color: var(--red); }
+
+  /* ── RIGHT PANEL ── */
+  .right-panel { display: flex; flex-direction: column; gap: 16px; }
+
+  /* ── INSIGHTS ── */
+  .insight-item {
+    display: flex; gap: 10px; align-items: flex-start;
+    padding: 10px 0; border-bottom: 1px solid var(--border);
+  }
+  .insight-item:last-child { border-bottom: none; padding-bottom: 0; }
+  .insight-icon {
+    width: 28px; height: 28px; border-radius: 7px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; flex-shrink: 0; margin-top: 1px;
+  }
+  .insight-text { font-size: 13px; color: var(--text2); line-height: 1.5; }
+  .insight-text strong { color: var(--text); font-weight: 500; }
+
+  /* ── DIFF BARS ── */
+  .diff-row { margin-bottom: 12px; }
+  .diff-label {
+    display: flex; justify-content: space-between;
+    font-size: 12px; color: var(--text3); margin-bottom: 4px;
+  }
+  .diff-label span:last-child { color: var(--text2); }
+  .diff-bar-bg {
+    height: 6px; background: var(--bg3); border-radius: 3px; overflow: hidden;
+  }
+  .diff-bar-fill { height: 100%; border-radius: 3px; transition: width .4s ease; }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+    z-index: 100; display: none; align-items: center; justify-content: center;
+    padding: 20px;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--bg2); border: 1px solid var(--border2);
+    border-radius: 16px; width: 100%; max-width: 560px;
+    max-height: 90vh; overflow-y: auto;
+    animation: slideUp .2s ease;
+  }
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .modal-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 22px 24px 18px; border-bottom: 1px solid var(--border);
+  }
+  .modal-title { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700; }
+  .modal-close {
+    background: none; border: none; color: var(--text3);
+    cursor: pointer; font-size: 18px; padding: 2px 6px;
+    border-radius: 6px; transition: color .15s;
+  }
+  .modal-close:hover { color: var(--text); }
+  .modal-body { padding: 22px 24px; }
+  .modal-footer {
+    padding: 16px 24px 20px; border-top: 1px solid var(--border);
+    display: flex; gap: 10px; justify-content: flex-end;
+  }
+
+  /* ── FORM ── */
+  .form-row { margin-bottom: 16px; }
+  .form-row label {
+    display: block; font-size: 12px; font-weight: 500;
+    color: var(--text2); margin-bottom: 6px;
+  }
+  .form-row input, .form-row select, .form-row textarea {
+    width: 100%; background: var(--bg3); border: 1px solid var(--border2);
+    border-radius: var(--r-sm); padding: 9px 12px;
+    color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 13.5px;
+    outline: none; transition: border-color .15s;
+  }
+  .form-row input:focus, .form-row select:focus, .form-row textarea:focus {
+    border-color: var(--teal);
+  }
+  .form-row textarea { resize: vertical; min-height: 60px; }
+  .form-row select option { background: var(--bg3); }
+  .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .form-section-title {
+    font-size: 11px; font-weight: 600; color: var(--text3);
+    text-transform: uppercase; letter-spacing: .08em;
+    margin: 20px 0 12px;
+    padding-bottom: 6px; border-bottom: 1px solid var(--border);
+  }
+  .form-hint { font-size: 11px; color: var(--text3); margin-top: 4px; }
+
+  /* ── LIVE PREVIEW ── */
+  .live-preview {
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: var(--r-sm); padding: 12px 14px;
+    margin-bottom: 6px;
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+  }
+  .preview-item { text-align: center; }
+  .preview-label { font-size: 10px; color: var(--text3); margin-bottom: 2px; text-transform: uppercase; letter-spacing: .05em; }
+  .preview-val { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; }
+
+  /* ── COLOR PICKER ── */
+  .color-options {
+    display: flex; gap: 8px; flex-wrap: wrap;
+  }
+  .color-opt {
+    width: 28px; height: 28px; border-radius: 50%;
+    cursor: pointer; border: 2px solid transparent;
+    transition: border-color .15s, transform .15s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .color-opt:hover { transform: scale(1.15); }
+  .color-opt.selected { border-color: white; }
+  .color-opt svg { display: none; }
+  .color-opt.selected svg { display: block; }
+
+  /* ── BTN ── */
+  .btn {
+    padding: 9px 18px; border-radius: var(--r-sm);
+    font-size: 13.5px; font-weight: 500; font-family: 'DM Sans', sans-serif;
+    cursor: pointer; border: none; transition: all .15s;
+  }
+  .btn-teal { background: var(--teal); color: #080C12; }
+  .btn-teal:hover { opacity: .88; }
+  .btn-ghost {
+    background: none; border: 1px solid var(--border2); color: var(--text2);
+  }
+  .btn-ghost:hover { color: var(--text); border-color: rgba(255,255,255,.2); }
+
+  /* ── EMPTY STATE ── */
+  .empty-state {
+    text-align: center; padding: 60px 20px;
+    color: var(--text3);
+  }
+  .empty-state-icon { font-size: 40px; margin-bottom: 12px; }
+  .empty-state h3 {
+    font-family: 'Syne', sans-serif; font-size: 16px;
+    font-weight: 700; color: var(--text2); margin-bottom: 6px;
+  }
+  .empty-state p { font-size: 13px; line-height: 1.5; max-width: 300px; margin: 0 auto; }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
+    background: var(--bg3); border: 1px solid var(--border2);
+    border-radius: 10px; padding: 12px 20px;
+    font-size: 13.5px; color: var(--text2);
+    display: flex; align-items: center; gap: 10px;
+    z-index: 300; box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    animation: slideUp .2s ease;
+    white-space: nowrap;
+  }
+
+  /* ── DIFF INDICATOR ── */
+  .diff-pos { color: var(--teal); }
+  .diff-neg { color: var(--red); }
+  .diff-neu { color: var(--text3); }
+
+  /* ── SCENARIO DETAIL PANEL ── */
+  .scenario-detail {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--r); overflow: hidden;
+  }
+  .detail-header {
+    padding: 16px 20px 14px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .detail-title {
+    font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; flex: 1;
+  }
+  .detail-body { padding: 16px 20px; }
+  .detail-row {
+    display: flex; justify-content: space-between;
+    align-items: center; padding: 7px 0;
+    border-bottom: 1px solid var(--border); font-size: 13px;
+  }
+  .detail-row:last-child { border-bottom: none; }
+  .detail-row-label { color: var(--text3); }
+  .detail-row-val { color: var(--text2); font-weight: 500; }
+
+  /* ── MONTH PICKER ── */
+  .month-btns { display: flex; gap: 4px; }
+  .month-btn {
+    background: none; border: 1px solid var(--border);
+    border-radius: 6px; padding: 4px 10px;
+    font-size: 12px; cursor: pointer; color: var(--text3);
+    transition: all .15s; font-family: 'DM Sans', sans-serif;
+  }
+  .month-btn.active { background: var(--teal-dim); border-color: rgba(0,200,150,0.3); color: var(--teal); }
+
+  @media (max-width: 1100px) {
+    .scenarios-layout { grid-template-columns: 1fr; }
+    .summary-strip { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 700px) {
+    .sidebar { display: none; }
+    .content { padding: 16px; }
+    .summary-strip { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── SIDEBAR ── -->
+<aside class="sidebar">
+  <a href="dashboard.html" class="sidebar-logo">
+    <div class="logo-mark">PF</div>
+    ProFinanceCast
+  </a>
+
+  <div class="sidebar-section">Main</div>
+  <a href="dashboard.html" class="nav-item">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="5.5" height="5.5" rx="1.2" fill="currentColor" opacity=".3"/><rect x="8.5" y="2" width="5.5" height="5.5" rx="1.2" fill="currentColor" opacity=".6"/><rect x="2" y="8.5" width="5.5" height="5.5" rx="1.2" fill="currentColor" opacity=".6"/><rect x="8.5" y="8.5" width="5.5" height="5.5" rx="1.2" fill="currentColor"/></svg>
+    Dashboard
+  </a>
+  <a href="sage.html" class="nav-item">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2a5.5 5.5 0 0 1 5.5 5.5c0 2.5-1.67 4.62-4 5.27V14H6.5v-1.23C4.17 12.12 2.5 10 2.5 7.5A5.5 5.5 0 0 1 8 2Z" stroke="currentColor" stroke-width="1.3"/></svg>
+    Ask Sage
+  </a>
+
+  <div class="sidebar-section">Planning</div>
+  <a href="scenarios.html" class="nav-item active">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="5" height="5" rx="1.2" stroke="currentColor" stroke-width="1.3"/><rect x="9" y="2" width="5" height="5" rx="1.2" stroke="currentColor" stroke-width="1.3"/><rect x="2" y="9" width="5" height="5" rx="1.2" stroke="currentColor" stroke-width="1.3"/><rect x="9" y="9" width="5" height="5" rx="1.2" stroke="currentColor" stroke-width="1.3"/></svg>
+    Scenarios
+    <span class="nav-badge">Pro</span>
+  </a>
+  <a href="debt-optimizer.html" class="nav-item">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l2.5 2.5L13 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    Debt planner
+  </a>
+  <a href="goals.html" class="nav-item">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="5.5" stroke="currentColor" stroke-width="1.3"/><circle cx="8" cy="8" r="2.5" stroke="currentColor" stroke-width="1.3"/></svg>
+    Goals
+  </a>
+  <a href="net-worth.html" class="nav-item">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><polyline points="2,12 6,7 9,10 14,4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+    Net worth
+  </a>
+  <a href="salary-calculator.html" class="nav-item">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="4" width="12" height="8" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M5 4V3a3 3 0 0 1 6 0v1" stroke="currentColor" stroke-width="1.3"/></svg>
+    Salary sim
+    <span class="nav-badge">Pro</span>
+  </a>
+  <a href="dashboard.html" onclick="showNavToastExt('Report card — upgrade to Pro to generate your shareable financial grade.')" class="nav-item">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="3" y="2" width="10" height="12" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M5.5 6h5M5.5 8.5h5M5.5 11h3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+    Report card
+    <span class="nav-badge">Pro</span>
+  </a>
+
+  <div class="sidebar-section">Pages</div>
+  <a href="billing.html" class="nav-item">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="4" width="12" height="9" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M2 7h12" stroke="currentColor" stroke-width="1.3"/></svg>
+    Billing
+  </a>
+  <a href="settings.html" class="nav-item">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="2.2" stroke="currentColor" stroke-width="1.3"/><path d="M8 2v1.5M8 12.5V14M2 8h1.5M12.5 8H14M3.75 3.75l1.06 1.06M11.19 11.19l1.06 1.06M3.75 12.25l1.06-1.06M11.19 4.81l1.06-1.06" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+    Settings
+  </a>
+  <a href="blog.html" class="nav-item">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 4h10M3 7h8M3 10h6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+    Blog
+  </a>
+
+  <div class="sidebar-footer">
+    <div class="user-pill" onclick="window.location.href='settings.html'">
+      <div class="user-avatar" id="sidebar-avatar">D</div>
+      <div>
+        <div class="user-name" id="sidebar-name">User</div>
+        <div class="user-plan">Pro plan</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- ── MAIN ── -->
+<main class="main">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-title">Scenarios</div>
+      <div class="topbar-sub" id="today-date"></div>
+    </div>
+    <div class="topbar-right">
+      <button class="topbar-btn" onclick="openModal()">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2v10M2 7h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        New scenario
+      </button>
+      <button class="topbar-btn primary" onclick="window.location.href='dashboard.html'">
+        ← Dashboard
+      </button>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- SUMMARY STRIP -->
+    <div class="summary-strip" id="summary-strip">
+      <div class="summary-card">
+        <div class="summary-card-accent" style="background:var(--teal)"></div>
+        <div class="summary-card-label">Active scenarios</div>
+        <div class="summary-card-val" id="sum-count">0</div>
+        <div class="summary-card-sub">of 5 max (Pro)</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-card-accent" style="background:var(--blue)"></div>
+        <div class="summary-card-label">Best 12-mo net worth</div>
+        <div class="summary-card-val" id="sum-best">—</div>
+        <div class="summary-card-sub" id="sum-best-name">—</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-card-accent" style="background:var(--amber)"></div>
+        <div class="summary-card-label">Highest monthly surplus</div>
+        <div class="summary-card-val" id="sum-surplus">—</div>
+        <div class="summary-card-sub" id="sum-surplus-name">—</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-card-accent" style="background:var(--purple)"></div>
+        <div class="summary-card-label">Best health score</div>
+        <div class="summary-card-val" id="sum-score">—</div>
+        <div class="summary-card-sub" id="sum-score-name">—</div>
+      </div>
+    </div>
+
+    <!-- CHART + RIGHT PANEL -->
+    <div class="scenarios-layout">
+
+      <!-- LEFT: Chart -->
+      <div>
+        <div class="card" style="margin-bottom:16px;">
+          <div class="card-header">
+            <div>
+              <div class="card-title">12-Month Net Worth Forecast</div>
+              <div class="card-sub">Compare all scenarios side by side</div>
+            </div>
+            <div class="month-btns">
+              <button class="month-btn active" onclick="setChartRange(this,6)">6M</button>
+              <button class="month-btn" onclick="setChartRange(this,12)">12M</button>
+              <button class="month-btn" onclick="setChartRange(this,24)">24M</button>
+            </div>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="scenario-chart"></canvas>
+          </div>
+        </div>
+
+        <!-- SCENARIO CARDS LIST -->
+        <div id="scenario-cards-list" class="scenario-cards"></div>
+
+        <button class="add-scenario-btn" id="add-btn" onclick="openModal()">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2v10M2 7h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          Add new scenario
+        </button>
+      </div>
+
+      <!-- RIGHT PANEL -->
+      <div class="right-panel">
+
+        <!-- DETAIL PANEL -->
+        <div class="scenario-detail" id="detail-panel">
+          <div class="detail-header">
+            <div class="scenario-color-dot" id="detail-dot" style="background:var(--teal)"></div>
+            <div class="detail-title" id="detail-name">Select a scenario</div>
+            <span class="badge badge-teal" id="detail-badge"></span>
+          </div>
+          <div class="detail-body" id="detail-body">
+            <div style="color:var(--text3);font-size:13px;padding:20px 0;text-align:center;">
+              Click a scenario card to see its full breakdown
+            </div>
+          </div>
+        </div>
+
+        <!-- INSIGHTS -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Smart insights</div>
+          </div>
+          <div id="insights-list">
+            <div style="color:var(--text3);font-size:13px;padding:8px 0;">
+              Add at least 2 scenarios to see comparative insights.
+            </div>
+          </div>
+        </div>
+
+        <!-- COMPARISON TABLE -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Side-by-side comparison</div>
+          </div>
+          <div id="comparison-table-wrap">
+            <div style="color:var(--text3);font-size:13px;">Add scenarios above to compare.</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</main>
+
+<!-- ── MODAL ── -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModalIfBg(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-title">New scenario</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- Live preview -->
+      <div class="live-preview" id="modal-preview">
+        <div class="preview-item">
+          <div class="preview-label">Monthly surplus</div>
+          <div class="preview-val" id="prev-surplus" style="color:var(--teal)">$0</div>
+        </div>
+        <div class="preview-item">
+          <div class="preview-label">12-mo net worth</div>
+          <div class="preview-val" id="prev-nw">$0</div>
+        </div>
+        <div class="preview-item">
+          <div class="preview-label">Health score</div>
+          <div class="preview-val" id="prev-score">0</div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <label>Scenario name *</label>
+        <input type="text" id="sc-name" placeholder="e.g. If I get promoted, Move to London..." oninput="updatePreview()">
+      </div>
+
+      <div class="form-row">
+        <label>Description (optional)</label>
+        <textarea id="sc-desc" placeholder="What financial change does this scenario represent?"></textarea>
+      </div>
+
+      <div class="form-row">
+        <label>Colour</label>
+        <div class="color-options" id="color-picker">
+          <div class="color-opt selected" data-color="#00C896" style="background:#00C896" onclick="selectColor(this)"><svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>
+          <div class="color-opt" data-color="#3B82F6" style="background:#3B82F6" onclick="selectColor(this)"><svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>
+          <div class="color-opt" data-color="#A78BFA" style="background:#A78BFA" onclick="selectColor(this)"><svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>
+          <div class="color-opt" data-color="#F5A623" style="background:#F5A623" onclick="selectColor(this)"><svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>
+          <div class="color-opt" data-color="#E05252" style="background:#E05252" onclick="selectColor(this)"><svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>
+          <div class="color-opt" data-color="#F472B6" style="background:#F472B6" onclick="selectColor(this)"><svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>
+          <div class="color-opt" data-color="#34D399" style="background:#34D399" onclick="selectColor(this)"><svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>
+          <div class="color-opt" data-color="#FBBF24" style="background:#FBBF24" onclick="selectColor(this)"><svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>
+        </div>
+      </div>
+
+      <div class="form-section-title">Income</div>
+      <div class="form-grid-2">
+        <div class="form-row">
+          <label>Monthly take-home</label>
+          <input type="number" id="sc-income" placeholder="3000" oninput="updatePreview()">
+        </div>
+        <div class="form-row">
+          <label>Other income</label>
+          <input type="number" id="sc-other-income" placeholder="0" oninput="updatePreview()">
+        </div>
+      </div>
+
+      <div class="form-section-title">Monthly Expenses</div>
+      <div class="form-grid-2">
+        <div class="form-row">
+          <label>Housing / rent</label>
+          <input type="number" id="sc-housing" placeholder="1200" oninput="updatePreview()">
+        </div>
+        <div class="form-row">
+          <label>Food / groceries</label>
+          <input type="number" id="sc-food" placeholder="540" oninput="updatePreview()">
+        </div>
+        <div class="form-row">
+          <label>Transport</label>
+          <input type="number" id="sc-transport" placeholder="310" oninput="updatePreview()">
+        </div>
+        <div class="form-row">
+          <label>Other expenses</label>
+          <input type="number" id="sc-other-exp" placeholder="380" oninput="updatePreview()">
+        </div>
+      </div>
+
+      <div class="form-section-title">Assets &amp; Debt</div>
+      <div class="form-grid-2">
+        <div class="form-row">
+          <label>Current savings</label>
+          <input type="number" id="sc-savings" placeholder="11580" oninput="updatePreview()">
+        </div>
+        <div class="form-row">
+          <label>Investments</label>
+          <input type="number" id="sc-investments" placeholder="0" oninput="updatePreview()">
+        </div>
+        <div class="form-row">
+          <label>Total debt</label>
+          <input type="number" id="sc-debt" placeholder="8000" oninput="updatePreview()">
+        </div>
+        <div class="form-row">
+          <label>Monthly debt payment</label>
+          <input type="number" id="sc-debt-pay" placeholder="550" oninput="updatePreview()">
+        </div>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-teal" onclick="saveScenario()">Save scenario</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── DATA ──
+const DEFAULT_USER = {
+  income: 3000, otherIncome: 0,
+  housing: 1200, food: 540, transport: 310, otherExp: 380,
+  savings: 11580, investments: 0,
+  debt: 8000, debtPay: 550,
+  currency: '$', name: 'User'
+};
+
+function loadUser() {
+  try {
+    const s = localStorage.getItem('pfc_user');
+    return s ? { ...DEFAULT_USER, ...JSON.parse(s) } : { ...DEFAULT_USER };
+  } catch(e) { return { ...DEFAULT_USER }; }
+}
+
+let USER = loadUser();
+let SCENARIOS = [];
+let editingId = null;
+let selectedColor = '#00C896';
+let chartRange = 6;
+let chart = null;
+let selectedScenarioId = null;
+
+const CHART_MONTHS_LABELS = ['Now','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec','Jan'];
+
+function fmt(v) {
+  const c = USER.currency || '$';
+  return c + Math.abs(Math.round(v)).toLocaleString();
+}
+
+// ── LOAD / SAVE ──
+function loadScenarios() {
+  try {
+    const s = localStorage.getItem('pfc_scenarios');
+    return s ? JSON.parse(s) : [];
+  } catch(e) { return []; }
+}
+
+function saveScenarios() {
+  try { localStorage.setItem('pfc_scenarios', JSON.stringify(SCENARIOS)); } catch(e) {}
+}
+
+// ── CALCULATIONS ──
+function calcSurplus(sc) {
+  const income = (sc.income || 0) + (sc.otherIncome || 0);
+  const expenses = (sc.housing || 0) + (sc.food || 0) + (sc.transport || 0) + (sc.otherExp || 0) + (sc.debtPay || 0);
+  return income - expenses;
+}
+
+function calcNetWorth(sc) {
+  return (sc.savings || 0) + (sc.investments || 0) - (sc.debt || 0);
+}
+
+function calcNetWorthAt(sc, months) {
+  const surplus = calcSurplus(sc);
+  const nw0 = calcNetWorth(sc);
+  // Simple compound: savings grow, debt reduces by debtPay
+  let nw = nw0;
+  let debt = sc.debt || 0;
+  let savings = (sc.savings || 0) + (sc.investments || 0);
+  for (let m = 0; m < months; m++) {
+    const debtPay = Math.min(sc.debtPay || 0, debt);
+    debt = Math.max(0, debt - debtPay);
+    savings += surplus - (surplus < 0 ? 0 : 0); // surplus already excludes debtPay
+    nw = savings - debt;
+  }
+  return nw;
+}
+
+function buildForecastData(sc, months) {
+  const pts = [];
+  let savings = (sc.savings || 0) + (sc.investments || 0);
+  let debt = sc.debt || 0;
+  const income = (sc.income || 0) + (sc.otherIncome || 0);
+  const expenses = (sc.housing || 0) + (sc.food || 0) + (sc.transport || 0) + (sc.otherExp || 0);
+  const debtPay = sc.debtPay || 0;
+
+  for (let m = 0; m <= months; m++) {
+    pts.push(Math.round(savings - debt));
+    if (m < months) {
+      const surplus = income - expenses - Math.min(debtPay, debt);
+      savings += surplus > 0 ? surplus : surplus; // always track
+      debt = Math.max(0, debt - Math.min(debtPay, debt));
+    }
+  }
+  return pts;
+}
+
+function calcHealthScore(sc) {
+  const income = (sc.income || 0) + (sc.otherIncome || 0);
+  const expenses = (sc.housing || 0) + (sc.food || 0) + (sc.transport || 0) + (sc.otherExp || 0);
+  const surplus = income - expenses - (sc.debtPay || 0);
+  const savingsRate = income > 0 ? surplus / income : 0;
+  const debtRatio = income > 0 ? (sc.debtPay || 0) / income : 0;
+  const emergency = (sc.savings || 0) / Math.max(expenses, 1);
+
+  let score = 50;
+  score += Math.min(25, savingsRate * 100);
+  score -= Math.min(20, debtRatio * 60);
+  score += Math.min(20, emergency * 5);
+  if (surplus > 0) score += 5;
+  return Math.max(0, Math.min(100, Math.round(score)));
+}
+
+// ── CHART ──
+function buildChart() {
+  const ctx = document.getElementById('scenario-chart').getContext('2d');
+
+  const allScenarios = getAllScenariosForChart();
+  if (allScenarios.length === 0) {
+    if (chart) { chart.destroy(); chart = null; }
+    return;
+  }
+
+  const labels = CHART_MONTHS_LABELS.slice(0, chartRange + 1);
+
+  const datasets = allScenarios.map(sc => {
+    const data = buildForecastData(sc, chartRange);
+    const isBase = sc.id === 'base';
+    return {
+      label: sc.name,
+      data,
+      borderColor: sc.color,
+      backgroundColor: sc.color + '15',
+      borderWidth: isBase ? 2 : 2,
+      borderDash: isBase ? [5,3] : [],
+      pointRadius: 0,
+      pointHoverRadius: 5,
+      pointHoverBackgroundColor: sc.color,
+      tension: 0.4,
+      fill: false,
+    };
+  });
+
+  if (chart) chart.destroy();
+  chart = new Chart(ctx, {
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top',
+          align: 'end',
+          labels: {
+            color: '#8A9BB0',
+            font: { family: 'DM Sans', size: 11 },
+            boxWidth: 12, boxHeight: 2,
+            padding: 12,
+          }
+        },
+        tooltip: {
+          backgroundColor: '#0F1923',
+          borderColor: 'rgba(255,255,255,0.1)',
+          borderWidth: 1,
+          titleColor: '#F0F4F8',
+          bodyColor: '#8A9BB0',
+          padding: 12,
+          callbacks: {
+            label: ctx => ' ' + ctx.dataset.label + ': ' + (USER.currency||'$') + Math.round(ctx.parsed.y).toLocaleString()
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: 'rgba(255,255,255,0.04)' },
+          ticks: { color: '#4A5A6E', font: { size: 11 } },
+        },
+        y: {
+          grid: { color: 'rgba(255,255,255,0.04)' },
+          ticks: {
+            color: '#4A5A6E', font: { size: 11 },
+            callback: v => (USER.currency||'$') + (Math.abs(v) >= 1000 ? (v/1000).toFixed(0)+'k' : v)
+          }
+        }
+      }
+    }
+  });
+}
+
+function setChartRange(btn, months) {
+  chartRange = months;
+  document.querySelectorAll('.month-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  buildChart();
+}
+
+// ── GET ALL SCENARIOS INCLUDING BASE ──
+function getAllScenariosForChart() {
+  const base = {
+    id: 'base',
+    name: 'Current',
+    color: '#4A5A6E',
+    ...USER
+  };
+  return [base, ...SCENARIOS];
+}
+
+// ── RENDER SCENARIO CARDS ──
+function renderCards() {
+  const container = document.getElementById('scenario-cards-list');
+  const addBtn = document.getElementById('add-btn');
+
+  // Update add button
+  if (SCENARIOS.length >= 5) {
+    addBtn.disabled = true;
+    addBtn.style.opacity = '0.4';
+    addBtn.style.cursor = 'not-allowed';
+    addBtn.title = 'Maximum 5 scenarios reached';
+  } else {
+    addBtn.disabled = false;
+    addBtn.style.opacity = '1';
+    addBtn.style.cursor = 'pointer';
+    addBtn.title = '';
+  }
+
+  const allSc = getAllScenariosForChart();
+
+  container.innerHTML = allSc.map(sc => {
+    const surplus = calcSurplus(sc);
+    const nw12 = buildForecastData(sc, 12)[12];
+    const score = calcHealthScore(sc);
+    const isBase = sc.id === 'base';
+    const isSelected = sc.id === selectedScenarioId;
+
+    return `
+    <div class="scenario-card ${isBase ? 'base-card' : ''} ${isSelected ? 'active-scenario' : ''}"
+         onclick="selectScenario('${sc.id}')">
+      <div class="scenario-color-dot" style="background:${sc.color}"></div>
+      <div class="scenario-card-info">
+        <div class="scenario-card-name">
+          ${sc.name}
+          ${isBase ? '<span class="badge badge-blue">Current</span>' : ''}
+        </div>
+        <div class="scenario-card-desc">${sc.desc || (isBase ? 'Your current financial situation' : 'Custom scenario')}</div>
+      </div>
+      <div class="scenario-metrics">
+        <div class="sc-metric">
+          <div class="sc-metric-label">Surplus/mo</div>
+          <div class="sc-metric-val ${surplus >= 0 ? 'up' : 'down'}">${surplus >= 0 ? '+' : '-'}${fmt(surplus)}</div>
+        </div>
+        <div class="sc-metric">
+          <div class="sc-metric-label">12-mo NW</div>
+          <div class="sc-metric-val">${fmt(nw12)}</div>
+        </div>
+        <div class="sc-metric">
+          <div class="sc-metric-label">Score</div>
+          <div class="sc-metric-val">${score}</div>
+        </div>
+      </div>
+      <div class="scenario-actions">
+        ${!isBase ? `
+          <button class="sc-btn" onclick="event.stopPropagation();editScenario('${sc.id}')" title="Edit">✏</button>
+          <button class="sc-btn danger" onclick="event.stopPropagation();deleteScenario('${sc.id}')" title="Delete">✕</button>
+        ` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── RENDER DETAIL PANEL ──
+function selectScenario(id) {
+  selectedScenarioId = id;
+  renderCards();
+
+  const allSc = getAllScenariosForChart();
+  const sc = allSc.find(s => s.id === id);
+  if (!sc) return;
+
+  const surplus = calcSurplus(sc);
+  const nw = calcNetWorth(sc);
+  const nw12 = buildForecastData(sc, 12)[12];
+  const score = calcHealthScore(sc);
+  const income = (sc.income || 0) + (sc.otherIncome || 0);
+  const expenses = (sc.housing || 0) + (sc.food || 0) + (sc.transport || 0) + (sc.otherExp || 0);
+
+  document.getElementById('detail-dot').style.background = sc.color;
+  document.getElementById('detail-name').textContent = sc.name;
+
+  const badge = document.getElementById('detail-badge');
+  if (sc.id === 'base') {
+    badge.textContent = 'Current';
+    badge.className = 'badge badge-blue';
+  } else {
+    badge.textContent = 'Scenario';
+    badge.className = 'badge badge-teal';
+  }
+
+  document.getElementById('detail-body').innerHTML = `
+    <div class="detail-row"><span class="detail-row-label">Monthly income</span><span class="detail-row-val">${fmt(income)}</span></div>
+    <div class="detail-row"><span class="detail-row-label">Monthly expenses</span><span class="detail-row-val">${fmt(expenses)}</span></div>
+    <div class="detail-row"><span class="detail-row-label">Debt payment</span><span class="detail-row-val">${fmt(sc.debtPay || 0)}</span></div>
+    <div class="detail-row">
+      <span class="detail-row-label">Monthly surplus</span>
+      <span class="detail-row-val" style="color:${surplus >= 0 ? 'var(--teal)' : 'var(--red)'}">
+        ${surplus >= 0 ? '+' : ''}${fmt(surplus)}
+      </span>
+    </div>
+    <div class="detail-row"><span class="detail-row-label">Current net worth</span><span class="detail-row-val">${fmt(nw)}</span></div>
+    <div class="detail-row"><span class="detail-row-label">12-mo net worth</span><span class="detail-row-val" style="color:var(--teal)">${fmt(nw12)}</span></div>
+    <div class="detail-row"><span class="detail-row-label">Savings</span><span class="detail-row-val">${fmt(sc.savings || 0)}</span></div>
+    <div class="detail-row"><span class="detail-row-label">Total debt</span><span class="detail-row-val" style="color:${(sc.debt||0)>0?'var(--red)':'var(--teal)'}">${fmt(sc.debt || 0)}</span></div>
+    <div class="detail-row"><span class="detail-row-label">Health score</span><span class="detail-row-val" style="color:${score>=75?'var(--teal)':score>=50?'var(--amber)':'var(--red)'}">
+      ${score} / 100 ${score>=75?'🟢':score>=50?'🟡':'🔴'}
+    </span></div>
+    ${sc.desc ? `<div style="margin-top:12px;font-size:12px;color:var(--text3);line-height:1.5;font-style:italic;">${sc.desc}</div>` : ''}
+  `;
+}
+
+// ── RENDER INSIGHTS ──
+function renderInsights() {
+  const allSc = getAllScenariosForChart();
+  const container = document.getElementById('insights-list');
+
+  if (SCENARIOS.length === 0) {
+    container.innerHTML = `<div style="color:var(--text3);font-size:13px;padding:8px 0;">Add at least 1 custom scenario to see comparative insights.</div>`;
+    return;
+  }
+
+  const base = allSc[0]; // current
+  const insights = [];
+
+  // Best surplus
+  const bestSurplus = [...allSc].sort((a,b) => calcSurplus(b)-calcSurplus(a))[0];
+  const baseSurplus = calcSurplus(base);
+  if (bestSurplus.id !== 'base') {
+    const diff = calcSurplus(bestSurplus) - baseSurplus;
+    insights.push({
+      icon: '💡', bg: 'rgba(0,200,150,0.12)',
+      text: `<strong>${bestSurplus.name}</strong> gives you the highest monthly surplus — <strong>${fmt(calcSurplus(bestSurplus))}/mo</strong>, that's ${fmt(diff)} more than your current situation.`
+    });
+  }
+
+  // Biggest 12-mo NW gain
+  const best12 = [...allSc].sort((a,b) => buildForecastData(b,12)[12]-buildForecastData(a,12)[12])[0];
+  if (best12.id !== 'base') {
+    const baseNw12 = buildForecastData(base,12)[12];
+    const diff = buildForecastData(best12,12)[12] - baseNw12;
+    if (diff > 0) {
+      insights.push({
+        icon: '📈', bg: 'rgba(59,130,246,0.12)',
+        text: `<strong>${best12.name}</strong> builds <strong>${fmt(diff)} more net worth</strong> in 12 months compared to staying on your current path.`
+      });
+    }
+  }
+
+  // Health score
+  const bestScore = [...allSc].sort((a,b) => calcHealthScore(b)-calcHealthScore(a))[0];
+  if (bestScore.id !== 'base') {
+    const scoreDiff = calcHealthScore(bestScore) - calcHealthScore(base);
+    if (scoreDiff > 0) {
+      insights.push({
+        icon: '❤️', bg: 'rgba(224,82,82,0.1)',
+        text: `<strong>${bestScore.name}</strong> improves your financial health score by <strong>${scoreDiff} points</strong> to ${calcHealthScore(bestScore)}/100.`
+      });
+    }
+  }
+
+  // Warning: scenario with negative surplus
+  const negSurplus = SCENARIOS.filter(s => calcSurplus(s) < 0);
+  if (negSurplus.length > 0) {
+    insights.push({
+      icon: '⚠️', bg: 'rgba(245,166,35,0.1)',
+      text: `<strong>${negSurplus.map(s=>s.name).join(', ')}</strong> ${negSurplus.length > 1 ? 'result in' : 'results in'} a negative monthly surplus — you'd be spending more than you earn.`
+    });
+  }
+
+  // Scenarios all in positive surplus
+  const allPositive = SCENARIOS.every(s => calcSurplus(s) >= 0);
+  if (allPositive && SCENARIOS.length >= 2) {
+    insights.push({
+      icon: '✅', bg: 'rgba(34,197,94,0.1)',
+      text: `All your scenarios result in a positive monthly surplus. Any of these paths keeps you financially healthy.`
+    });
+  }
+
+  if (insights.length === 0) {
+    insights.push({
+      icon: '🔍', bg: 'rgba(255,255,255,0.05)',
+      text: 'Your scenarios look similar to your current situation. Try testing bigger financial changes — like a 30% raise or moving to a lower cost-of-living city.'
+    });
+  }
+
+  container.innerHTML = insights.map(ins => `
+    <div class="insight-item">
+      <div class="insight-icon" style="background:${ins.bg}">${ins.icon}</div>
+      <div class="insight-text">${ins.text}</div>
+    </div>
+  `).join('');
+}
+
+// ── RENDER COMPARISON TABLE ──
+function renderComparisonTable() {
+  const wrap = document.getElementById('comparison-table-wrap');
+  const allSc = getAllScenariosForChart();
+
+  if (allSc.length < 2) {
+    wrap.innerHTML = `<div style="color:var(--text3);font-size:13px;">Add a custom scenario to compare against your current situation.</div>`;
+    return;
+  }
+
+  // Find best per metric
+  const bestSurplusVal = Math.max(...allSc.map(s => calcSurplus(s)));
+  const bestNW12Val = Math.max(...allSc.map(s => buildForecastData(s,12)[12]));
+  const bestScoreVal = Math.max(...allSc.map(s => calcHealthScore(s)));
+  const lowestDebt = Math.min(...allSc.map(s => s.debt || 0));
+
+  const headers = ['Metric', ...allSc.map(s => s.name)];
+  const rows = [
+    {
+      label: 'Monthly surplus',
+      vals: allSc.map(s => { const v = calcSurplus(s); return { raw: v, display: (v>=0?'+':'')+fmt(v), best: v === bestSurplusVal, bad: v < 0 }; })
+    },
+    {
+      label: '12-mo net worth',
+      vals: allSc.map(s => { const v = buildForecastData(s,12)[12]; return { raw: v, display: fmt(v), best: v === bestNW12Val, bad: false }; })
+    },
+    {
+      label: 'Health score',
+      vals: allSc.map(s => { const v = calcHealthScore(s); return { raw: v, display: v + '/100', best: v === bestScoreVal, bad: v < 50 }; })
+    },
+    {
+      label: 'Monthly income',
+      vals: allSc.map(s => { const v = (s.income||0)+(s.otherIncome||0); return { raw: v, display: fmt(v), best: v === Math.max(...allSc.map(x=>(x.income||0)+(x.otherIncome||0))), bad: false }; })
+    },
+    {
+      label: 'Total expenses',
+      vals: allSc.map(s => { const v = (s.housing||0)+(s.food||0)+(s.transport||0)+(s.otherExp||0)+(s.debtPay||0); return { raw: v, display: fmt(v), best: v === Math.min(...allSc.map(x=>(x.housing||0)+(x.food||0)+(x.transport||0)+(x.otherExp||0)+(x.debtPay||0))), bad: false }; })
+    },
+    {
+      label: 'Total debt',
+      vals: allSc.map(s => { const v = s.debt||0; return { raw: v, display: fmt(v), best: v === lowestDebt, bad: v > 10000 }; })
+    },
+  ];
+
+  wrap.innerHTML = `
+    <div style="overflow-x:auto;">
+    <table class="comparison-table">
+      <thead>
+        <tr>
+          ${headers.map((h,i) => `<th style="${i>0?'text-align:right;':''}">${h}</th>`).join('')}
+        </tr>
+      </thead>
+      <tbody>
+        ${rows.map(row => `
+          <tr>
+            <td>${row.label}</td>
+            ${row.vals.map(v => `<td style="text-align:right;" class="${v.best?'best':v.bad?'worst':''}">${v.display}</td>`).join('')}
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+    </div>
+  `;
+}
+
+// ── RENDER SUMMARY STRIP ──
+function renderSummary() {
+  const allSc = getAllScenariosForChart();
+
+  document.getElementById('sum-count').textContent = SCENARIOS.length;
+
+  if (allSc.length === 0) return;
+
+  const bestNWSc = [...allSc].sort((a,b) => buildForecastData(b,12)[12]-buildForecastData(a,12)[12])[0];
+  document.getElementById('sum-best').textContent = fmt(buildForecastData(bestNWSc,12)[12]);
+  document.getElementById('sum-best-name').textContent = bestNWSc.name;
+
+  const bestSurplusSc = [...allSc].sort((a,b) => calcSurplus(b)-calcSurplus(a))[0];
+  const bsurp = calcSurplus(bestSurplusSc);
+  document.getElementById('sum-surplus').textContent = (bsurp>=0?'+':'')+fmt(bsurp)+'/mo';
+  document.getElementById('sum-surplus-name').textContent = bestSurplusSc.name;
+
+  const bestScoreSc = [...allSc].sort((a,b) => calcHealthScore(b)-calcHealthScore(a))[0];
+  document.getElementById('sum-score').textContent = calcHealthScore(bestScoreSc)+'/100';
+  document.getElementById('sum-score-name').textContent = bestScoreSc.name;
+}
+
+// ── FULL RENDER ──
+function renderAll() {
+  renderSummary();
+  renderCards();
+  renderInsights();
+  renderComparisonTable();
+  buildChart();
+}
+
+// ── MODAL ──
+let modalMode = 'new'; // 'new' | 'edit'
+
+function openModal(scId = null) {
+  editingId = scId;
+  modalMode = scId ? 'edit' : 'new';
+  document.getElementById('modal-title').textContent = scId ? 'Edit scenario' : 'New scenario';
+
+  // Pre-fill with USER data or scenario data
+  const sc = scId ? SCENARIOS.find(s => s.id === scId) : null;
+  const d = sc || USER;
+
+  document.getElementById('sc-name').value = sc ? sc.name : '';
+  document.getElementById('sc-desc').value = sc ? (sc.desc || '') : '';
+  document.getElementById('sc-income').value = d.income || '';
+  document.getElementById('sc-other-income').value = d.otherIncome || '';
+  document.getElementById('sc-housing').value = d.housing || '';
+  document.getElementById('sc-food').value = d.food || '';
+  document.getElementById('sc-transport').value = d.transport || '';
+  document.getElementById('sc-other-exp').value = d.otherExp || '';
+  document.getElementById('sc-savings').value = d.savings || '';
+  document.getElementById('sc-investments').value = d.investments || '';
+  document.getElementById('sc-debt').value = d.debt || '';
+  document.getElementById('sc-debt-pay').value = d.debtPay || '';
+
+  // Color
+  selectedColor = sc ? sc.color : pickNextColor();
+  document.querySelectorAll('.color-opt').forEach(opt => {
+    const isSelected = opt.dataset.color === selectedColor;
+    opt.classList.toggle('selected', isSelected);
+    opt.querySelector('svg').style.display = isSelected ? 'block' : 'none';
+  });
+
+  updatePreview();
+  document.getElementById('modal-overlay').classList.add('open');
+  document.getElementById('sc-name').focus();
+}
+
+function pickNextColor() {
+  const colors = ['#00C896','#3B82F6','#A78BFA','#F5A623','#E05252','#F472B6','#34D399','#FBBF24'];
+  const usedColors = SCENARIOS.map(s => s.color);
+  return colors.find(c => !usedColors.includes(c)) || colors[SCENARIOS.length % colors.length];
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+  editingId = null;
+}
+
+function closeModalIfBg(e) {
+  if (e.target === document.getElementById('modal-overlay')) closeModal();
+}
+
+function selectColor(el) {
+  selectedColor = el.dataset.color;
+  document.querySelectorAll('.color-opt').forEach(opt => {
+    const isSelected = opt.dataset.color === selectedColor;
+    opt.classList.toggle('selected', isSelected);
+    opt.querySelector('svg').style.display = isSelected ? 'block' : 'none';
+  });
+}
+
+function getModalData() {
+  return {
+    income:       parseFloat(document.getElementById('sc-income').value) || 0,
+    otherIncome:  parseFloat(document.getElementById('sc-other-income').value) || 0,
+    housing:      parseFloat(document.getElementById('sc-housing').value) || 0,
+    food:         parseFloat(document.getElementById('sc-food').value) || 0,
+    transport:    parseFloat(document.getElementById('sc-transport').value) || 0,
+    otherExp:     parseFloat(document.getElementById('sc-other-exp').value) || 0,
+    savings:      parseFloat(document.getElementById('sc-savings').value) || 0,
+    investments:  parseFloat(document.getElementById('sc-investments').value) || 0,
+    debt:         parseFloat(document.getElementById('sc-debt').value) || 0,
+    debtPay:      parseFloat(document.getElementById('sc-debt-pay').value) || 0,
+  };
+}
+
+function updatePreview() {
+  const d = getModalData();
+  const surplus = calcSurplus(d);
+  const nw12 = buildForecastData(d, 12)[12];
+  const score = calcHealthScore(d);
+
+  document.getElementById('prev-surplus').textContent = (surplus >= 0 ? '+' : '-') + fmt(surplus) + '/mo';
+  document.getElementById('prev-surplus').style.color = surplus >= 0 ? 'var(--teal)' : 'var(--red)';
+  document.getElementById('prev-nw').textContent = fmt(nw12);
+  document.getElementById('prev-score').textContent = score + '/100';
+  document.getElementById('prev-score').style.color = score >= 75 ? 'var(--teal)' : score >= 50 ? 'var(--amber)' : 'var(--red)';
+}
+
+function saveScenario() {
+  const name = document.getElementById('sc-name').value.trim();
+  if (!name) { showToast('⚠ Please enter a scenario name'); return; }
+
+  if (!editingId && SCENARIOS.length >= 5) {
+    showToast('⚠ Maximum 5 scenarios reached');
+    return;
+  }
+
+  const data = getModalData();
+
+  if (editingId) {
+    const idx = SCENARIOS.findIndex(s => s.id === editingId);
+    if (idx > -1) {
+      SCENARIOS[idx] = { ...SCENARIOS[idx], ...data, name, desc: document.getElementById('sc-desc').value.trim(), color: selectedColor };
+    }
+    showToast('✓ Scenario updated');
+  } else {
+    SCENARIOS.push({
+      id: 'sc_' + Date.now(),
+      name,
+      desc: document.getElementById('sc-desc').value.trim(),
+      color: selectedColor,
+      createdAt: new Date().toISOString(),
+      ...data
+    });
+    showToast('✓ Scenario added');
+  }
+
+  saveScenarios();
+  closeModal();
+  renderAll();
+}
+
+function editScenario(id) {
+  openModal(id);
+}
+
+function deleteScenario(id) {
+  if (!confirm('Delete this scenario?')) return;
+  SCENARIOS = SCENARIOS.filter(s => s.id !== id);
+  if (selectedScenarioId === id) selectedScenarioId = null;
+  saveScenarios();
+  renderAll();
+  showToast('Scenario deleted');
+}
+
+// ── TOAST ──
+function showToast(msg) {
+  const old = document.getElementById('sc-toast');
+  if (old) old.remove();
+  const t = document.createElement('div');
+  t.id = 'sc-toast';
+  t.className = 'toast';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.style.opacity = '0', 3000);
+  setTimeout(() => t.remove(), 3300);
+}
+
+function showNavToastExt(msg) {
+  showToast('★ Pro — ' + msg);
+}
+
+// ── INIT ──
+document.getElementById('today-date').textContent = new Date().toLocaleDateString('en-GB', {day:'numeric', month:'long', year:'numeric'});
+
+// Load user data for sidebar
+const sidebarName = document.getElementById('sidebar-name');
+const sidebarAvatar = document.getElementById('sidebar-avatar');
+if (USER.name) {
+  sidebarName.textContent = USER.name;
+  sidebarAvatar.textContent = USER.name.charAt(0).toUpperCase();
+}
+
+// Load scenarios
+SCENARIOS = loadScenarios();
+renderAll();
+
+// Select base by default
+selectScenario('base');
+</script>
+</body>
+</html>
