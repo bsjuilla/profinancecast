@@ -747,8 +747,8 @@ const CAT_ICONS = {
 
 // ── LOAD ──
 function load() {
-  try { USER = JSON.parse(localStorage.getItem('pfc_user')) || {}; } catch(e) { USER = {}; }
-  try { GOALS = JSON.parse(localStorage.getItem('pfc_goals')) || []; } catch(e) { GOALS = []; }
+  try { USER = PFCStorage.getJSON('user') || {}; } catch(e) { USER = {}; }
+  try { GOALS = PFCStorage.getJSON('goals') || []; } catch(e) { GOALS = []; }
 
   // Compute surplus
   USER.surplus = Math.max(0,
@@ -772,7 +772,7 @@ function load() {
 
 // ── SAVE ──
 function save() {
-  localStorage.setItem('pfc_goals', JSON.stringify(GOALS));
+  PFCStorage.setJSON('goals', GOALS);
 }
 
 // ── RENDER ──
@@ -1183,5 +1183,8 @@ function showToast(msg) {
 // ── INIT ──
 load();
 </script>
+  <!-- PFCAuth + PFCStorage: user-scoped data isolation -->
+  <script src="js/pfc-auth.js"></script>
+  <script src="js/pfc-storage.js"></script>
 </body>
 </html>

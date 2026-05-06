@@ -622,7 +622,7 @@ function getMarketRange(salary) {
 
 // ── INIT ──
 function init() {
-  try { USER = JSON.parse(localStorage.getItem('pfc_user')) || {}; } catch(e) { USER = {}; }
+  try { USER = PFCStorage.getJSON('user') || {}; } catch(e) { USER = {}; }
   const sym = USER.currency || '$';
   ['sym-label','sym-custom','sym-offer'].forEach(id => {
     const el = document.getElementById(id);
@@ -1006,5 +1006,8 @@ function showToast(msg) {
 // ── START ──
 init();
 </script>
+  <!-- PFCAuth + PFCStorage: user-scoped data isolation -->
+  <script src="js/pfc-auth.js"></script>
+  <script src="js/pfc-storage.js"></script>
 </body>
 </html>

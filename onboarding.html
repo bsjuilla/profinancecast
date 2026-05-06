@@ -707,7 +707,7 @@ function buildComplete() {
   };
 
   try {
-    localStorage.setItem('pfc_user', JSON.stringify(userData));
+    PFCStorage.setJSON('user', userData);
   } catch (e) {
     console.error('Could not save user data to localStorage:', e);
   }
@@ -747,5 +747,8 @@ function launchConfetti() {
 calcLive();
 calcDebt();
 </script>
+  <!-- PFCAuth + PFCStorage: user-scoped data isolation -->
+  <script src="js/pfc-auth.js"></script>
+  <script src="js/pfc-storage.js"></script>
 </body>
 </html>

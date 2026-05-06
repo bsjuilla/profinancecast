@@ -472,9 +472,9 @@ const BRAND_DB = {
 
 // ── INIT ──
 function init() {
-  try { USER = JSON.parse(localStorage.getItem('pfc_user')) || {}; } catch(e) {}
+  try { USER = PFCStorage.getJSON('user') || {}; } catch(e) {}
   try {
-    const saved = localStorage.getItem('pfc_recurrings');
+    const saved = PFCStorage.get('recurrings');
     if (saved) { RECURRINGS = JSON.parse(saved); showResults(); }
   } catch(e) {}
   const name = (USER.name || '').trim();
@@ -523,7 +523,7 @@ async function startProcess(file) {
   setProc('Building your report…', `Found ${RECURRINGS.length} recurring items`, 100);
   await sleep(250);
 
-  localStorage.setItem('pfc_recurrings', JSON.stringify(RECURRINGS));
+  PFCStorage.setJSON('recurrings', RECURRINGS);
   showResults();
 }
 
@@ -952,7 +952,7 @@ function saveManual() {
     lastCharge:'', firstCharge:'',
     priceIncreased:false, priceDiff:0,
   });
-  localStorage.setItem('pfc_recurrings', JSON.stringify(RECURRINGS));
+  PFCStorage.setJSON('recurrings', RECURRINGS);
   updateMetrics(); renderCards(); closeManual();
   showToast(`Added ${name}`);
 }
@@ -971,7 +971,7 @@ function loadDemo() {
     { name:'Adobe Creative', rawDesc:'ADOBE CREATIVE CLOUD', cat:'software', icon:'🎨', freq:'monthly', freqLabel:'Monthly', monthlyAmount:59.99, annualAmount:719.88, occurrences:[{date:'2024-01-22',amount:54.99},{date:'2024-02-22',amount:54.99},{date:'2024-03-22',amount:59.99},{date:'2024-04-22',amount:59.99},{date:'2024-05-22',amount:59.99},{date:'2024-06-22',amount:59.99}], amounts:[54.99,54.99,59.99,59.99,59.99,59.99], minAmount:54.99, maxAmount:59.99, lastCharge:'2024-06-22', firstCharge:'2024-01-22', priceIncreased:true, priceDiff:5.00, pricePct:9 },
     { name:'Disney Plus', rawDesc:'DISNEY+', cat:'streaming', icon:'🎬', freq:'monthly', freqLabel:'Monthly', monthlyAmount:7.99, annualAmount:95.88, occurrences:[{date:'2024-01-08',amount:7.99},{date:'2024-02-08',amount:7.99},{date:'2024-03-08',amount:7.99},{date:'2024-04-08',amount:7.99},{date:'2024-05-08',amount:7.99},{date:'2024-06-08',amount:7.99}], amounts:[7.99,7.99,7.99,7.99,7.99,7.99], minAmount:7.99, maxAmount:7.99, lastCharge:'2024-06-08', firstCharge:'2024-01-08', priceIncreased:false, priceDiff:0 },
   ];
-  localStorage.setItem('pfc_recurrings', JSON.stringify(RECURRINGS));
+  PFCStorage.setJSON('recurrings', RECURRINGS);
   showResults();
   showToast('Demo data loaded — 10 recurring items');
 }
@@ -990,7 +990,7 @@ function setProc(title,sub,pct) {
 function clearAll() {
   if (!confirm('Clear all recurring data and re-upload?')) return;
   RECURRINGS=[]; CANCELLED=new Set();
-  localStorage.removeItem('pfc_recurrings');
+  PFCStorage.remove('recurrings');
   document.getElementById('btn-add-manual').style.display='none';
   document.getElementById('btn-clear').style.display='none';
   setState('upload');
@@ -1007,5 +1007,8 @@ function showToast(msg){
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeManual();});
 init();
 </script>
+  <!-- PFCAuth + PFCStorage: user-scoped data isolation -->
+  <script src="js/pfc-auth.js"></script>
+  <script src="js/pfc-storage.js"></script>
 </body>
 </html>

@@ -514,9 +514,9 @@ const TYPE_COLORS = {
 
 // ── INIT ──
 function init() {
-  try { USER = JSON.parse(localStorage.getItem('pfc_user')) || {}; } catch(e) { USER = {}; }
-  try { DEBTS = JSON.parse(localStorage.getItem('pfc_debts')) || []; } catch(e) { DEBTS = []; }
-  try { STRATEGY = localStorage.getItem('pfc_debt_strategy') || 'avalanche'; } catch(e) {}
+  try { USER = PFCStorage.getJSON('user') || {}; } catch(e) { USER = {}; }
+  try { DEBTS = PFCStorage.getJSON('debts') || []; } catch(e) { DEBTS = []; }
+  try { STRATEGY = PFCStorage.get('debt_strategy') || 'avalanche'; } catch(e) {}
 
   // Load USER debts from dashboard if DEBTS is empty (one-time migration)
   if (!DEBTS.length && USER.debt > 0) {
@@ -551,13 +551,13 @@ function init() {
 }
 
 function saveDebts() {
-  localStorage.setItem('pfc_debts', JSON.stringify(DEBTS));
+  PFCStorage.setJSON('debts', DEBTS);
 }
 
 // ── STRATEGY ──
 function setStrategy(s, recalc = true) {
   STRATEGY = s;
-  localStorage.setItem('pfc_debt_strategy', s);
+  PFCStorage.set('debt_strategy', s);
   document.getElementById('strat-avalanche').classList.toggle('active', s === 'avalanche');
   document.getElementById('strat-snowball').classList.toggle('active', s === 'snowball');
   document.getElementById('debt-order-hint').textContent =
@@ -1081,5 +1081,8 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
 // ── START ──
 init();
 </script>
+  <!-- PFCAuth + PFCStorage: user-scoped data isolation -->
+  <script src="js/pfc-auth.js"></script>
+  <script src="js/pfc-storage.js"></script>
 </body>
 </html>

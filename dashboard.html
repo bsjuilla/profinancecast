@@ -1496,12 +1496,12 @@ const DEFAULT_USER = {
 
 function loadUser() {
   try {
-    const saved = localStorage.getItem('pfc_user');
+    const saved = PFCStorage.get('user');
     return saved ? { ...DEFAULT_USER, ...JSON.parse(saved) } : { ...DEFAULT_USER };
   } catch(e) { return { ...DEFAULT_USER }; }
 }
 function saveUser(u) {
-  try { localStorage.setItem('pfc_user', JSON.stringify(u)); } catch(e) {}
+  try { PFCStorage.setJSON('user', u); } catch(e) {}
 }
 
 let USER = loadUser();
@@ -1976,7 +1976,7 @@ let selectedGoalColor = 'var(--teal)';
 
 function loadGoals() {
   try {
-    const saved = localStorage.getItem('pfc_goals');
+    const saved = PFCStorage.get('goals');
     GOALS = saved ? JSON.parse(saved) : [
       { name:'Emergency fund', current:12600, target:15000, color:'var(--teal)' },
       { name:'Home deposit',   current:4200,  target:25000, color:'var(--blue)' },
@@ -1989,7 +1989,7 @@ function loadGoals() {
 }
 
 function saveGoals() {
-  try { localStorage.setItem('pfc_goals', JSON.stringify(GOALS)); } catch(e) {}
+  try { PFCStorage.setJSON('goals', GOALS); } catch(e) {}
 }
 
 function renderGoals() {
@@ -2631,7 +2631,7 @@ function applyToDashboard() {
   USER.otherExp      = (avgOf('subscriptions') + avgOf('entertainment') + avgOf('health') + avgOf('other')) || USER.otherExp;
 
   // Save to localStorage
-  localStorage.setItem('pfc_user', JSON.stringify(USER));
+  PFCStorage.setJSON('user', USER);
 
   // Update dashboard
   updateAllCards();
@@ -2885,7 +2885,7 @@ function renderNWTab() {
 
   // Load history
   let history = [];
-  try { history = JSON.parse(localStorage.getItem('pfc_nw_history') || '[]'); } catch(e) {}
+  try { history = JSON.parse(PFCStorage.get('nw_history') || '[]'); } catch(e) {}
 
   // ── SUMMARY CARDS ──
   const nwEl = document.getElementById('nw-tab-nw');
@@ -3061,7 +3061,7 @@ function renderNWTab() {
 
     const today = new Date().toISOString().slice(0, 10);
     let history = [];
-    try { history = JSON.parse(localStorage.getItem('pfc_nw_history')) || []; } catch(e) {}
+    try { history = PFCStorage.getJSON('nw_history') || []; } catch(e) {}
 
     const entry = { date: today, netWorth, assets, savings, investments, debt, source: 'auto' };
     const idx = history.findIndex(h => h.date === today && h.source === 'auto');
@@ -3069,9 +3069,12 @@ function renderNWTab() {
     else history.push(entry);
 
     history.sort((a, b) => a.date.localeCompare(b.date));
-    localStorage.setItem('pfc_nw_history', JSON.stringify(history));
+    PFCStorage.setJSON('nw_history', history);
   } catch(e) {}
 })();
 </script>
+  <!-- PFCAuth + PFCStorage: user-scoped data isolation -->
+  <script src="js/pfc-auth.js"></script>
+  <script src="js/pfc-storage.js"></script>
 </body>
 </html>

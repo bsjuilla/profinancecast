@@ -332,7 +332,7 @@
 
 <script>
 const DEF={income:3000,otherIncome:0,housing:1200,food:540,transport:310,otherExp:380,savings:11580,investments:0,debt:8000,debtPay:550,currency:'$',name:'User'};
-function loadUser(){try{const s=localStorage.getItem('pfc_user');return s?{...DEF,...JSON.parse(s)}:{...DEF}}catch(e){return{...DEF}}}
+function loadUser(){try{const s=PFCStorage.get('user');return s?{...DEF,...JSON.parse(s)}:{...DEF}}catch(e){return{...DEF}}}
 const U=loadUser();const C=U.currency||'$';
 function fmt(v){return C+Math.abs(Math.round(v)).toLocaleString()}
 
@@ -520,12 +520,12 @@ function renderNextGrade(d){
       </div>`).join('')}`;
 }
 
-function loadHistory(){try{return JSON.parse(localStorage.getItem('pfc_report_history')||'[]')}catch(e){return[]}}
+function loadHistory(){try{return JSON.parse(PFCStorage.get('report_history')||'[]')}catch(e){return[]}}
 function saveHistory(d){
   const h=loadHistory();const g=grade(d.total);
   h.unshift({date:new Date().toISOString(),score:d.total,grade:g.l,color:g.color,nw:d.nw,surplus:d.surplus});
   if(h.length>10)h.splice(10);
-  try{localStorage.setItem('pfc_report_history',JSON.stringify(h))}catch(e){}
+  try{PFCStorage.setJSON('report_history', h)}catch(e){}
 }
 function renderHistory(){
   const h=loadHistory();const el=document.getElementById('history-list');
@@ -545,7 +545,7 @@ function renderHistory(){
     </div>`;
   }).join('');
 }
-function clearHistory(){if(!confirm('Clear all report history?'))return;localStorage.removeItem('pfc_report_history');renderHistory()}
+function clearHistory(){if(!confirm('Clear all report history?'))return;PFCStorage.remove('report_history');renderHistory()}
 
 function downloadCard(){
   const card=document.getElementById('rc-canvas');
@@ -582,5 +582,8 @@ if(U.name){document.getElementById('sidebar-name').textContent=U.name;document.g
 const d=calc();
 renderCard(d);renderBreakdown(d);renderRecs(d);renderNextGrade(d);saveHistory(d);renderHistory();
 </script>
+  <!-- PFCAuth + PFCStorage: user-scoped data isolation -->
+  <script src="js/pfc-auth.js"></script>
+  <script src="js/pfc-storage.js"></script>
 </body>
 </html>

@@ -462,8 +462,8 @@ const MILESTONES = [
 
 // ── INIT ──
 function init() {
-  try { USER = JSON.parse(localStorage.getItem('pfc_user')) || {}; } catch(e) { USER = {}; }
-  try { HISTORY = JSON.parse(localStorage.getItem('pfc_nw_history')) || []; } catch(e) { HISTORY = []; }
+  try { USER = PFCStorage.getJSON('user') || {}; } catch(e) { USER = {}; }
+  try { HISTORY = PFCStorage.getJSON('nw_history') || []; } catch(e) { HISTORY = []; }
 
   const name = (USER.name || '').trim();
   if (name) {
@@ -501,7 +501,7 @@ function logTodaySnapshot() {
 
   // Sort by date ascending
   HISTORY.sort((a, b) => a.date.localeCompare(b.date));
-  localStorage.setItem('pfc_nw_history', JSON.stringify(HISTORY));
+  PFCStorage.setJSON('nw_history', HISTORY);
 }
 
 // ── RENDER ALL ──
@@ -860,7 +860,7 @@ function saveManualEntry() {
   else HISTORY.push(entry);
 
   HISTORY.sort((a, b) => a.date.localeCompare(b.date));
-  localStorage.setItem('pfc_nw_history', JSON.stringify(HISTORY));
+  PFCStorage.setJSON('nw_history', HISTORY);
 
   renderAll();
   closeModal();
@@ -885,7 +885,7 @@ function exportCSV() {
 function clearHistory() {
   if (!confirm('Clear all net worth history? This cannot be undone.')) return;
   HISTORY = [];
-  localStorage.removeItem('pfc_nw_history');
+  PFCStorage.remove('nw_history');
   renderAll();
   showToast('History cleared');
 }
@@ -911,5 +911,8 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
 // ── START ──
 init();
 </script>
+  <!-- PFCAuth + PFCStorage: user-scoped data isolation -->
+  <script src="js/pfc-auth.js"></script>
+  <script src="js/pfc-storage.js"></script>
 </body>
 </html>

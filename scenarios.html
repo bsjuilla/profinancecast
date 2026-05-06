@@ -821,7 +821,7 @@ const DEFAULT_USER = {
 
 function loadUser() {
   try {
-    const s = localStorage.getItem('pfc_user');
+    const s = PFCStorage.get('user');
     return s ? { ...DEFAULT_USER, ...JSON.parse(s) } : { ...DEFAULT_USER };
   } catch(e) { return { ...DEFAULT_USER }; }
 }
@@ -844,13 +844,13 @@ function fmt(v) {
 // ── LOAD / SAVE ──
 function loadScenarios() {
   try {
-    const s = localStorage.getItem('pfc_scenarios');
+    const s = PFCStorage.get('scenarios');
     return s ? JSON.parse(s) : [];
   } catch(e) { return []; }
 }
 
 function saveScenarios() {
-  try { localStorage.setItem('pfc_scenarios', JSON.stringify(SCENARIOS)); } catch(e) {}
+  try { PFCStorage.setJSON('scenarios', SCENARIOS); } catch(e) {}
 }
 
 // ── CALCULATIONS ──
@@ -1473,5 +1473,8 @@ renderAll();
 // Select base by default
 selectScenario('base');
 </script>
+  <!-- PFCAuth + PFCStorage: user-scoped data isolation -->
+  <script src="js/pfc-auth.js"></script>
+  <script src="js/pfc-storage.js"></script>
 </body>
 </html>
