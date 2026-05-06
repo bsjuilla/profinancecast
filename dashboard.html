@@ -1520,11 +1520,11 @@ function buildData() {
   const infl    = parseFloat(document.getElementById('sl-inflation').value) / 100;
   const intRate = parseFloat(document.getElementById('sl-interest').value)  / 100 / 12;
 
-  const income   = (USER.income + USER.otherIncome) * (1 + incChg);
-  const expenses = USER.housing + USER.food + USER.transport + USER.otherExp;
-  const savings  = USER.savings + USER.investments;
-  const debt     = USER.debt;
-  const debtPay  = USER.debtPay;
+  const income   = ((USER.income||0) + (USER.otherIncome||0)) * (1 + incChg);
+  const expenses = (USER.housing||0) + (USER.food||0) + (USER.transport||0) + (USER.otherExp||0);
+  const savings  = (USER.savings||0) + (USER.investments||0);
+  const debt     = USER.debt||0;
+  const debtPay  = USER.debtPay||0;
 
   const monthly = income - expenses + extra;
   let nw = savings - debt, nwO = nw, nwC = nw;
@@ -1560,9 +1560,9 @@ function recalcForecast() {
   // Apply scenario slider adjustments on top of USER base data
   const incChg  = parseFloat(document.getElementById('sl-income').value) / 100;
   const extra   = parseFloat(document.getElementById('sl-extra').value);
-  const income   = (USER.income + USER.otherIncome) * (1 + incChg) + extra;
-  const expenses = USER.housing + USER.food + USER.transport + USER.otherExp;
-  const assets   = USER.savings + USER.investments;
+  const income   = ((USER.income||0) + (USER.otherIncome||0)) * (1 + incChg) + extra;
+  const expenses = (USER.housing||0) + (USER.food||0) + (USER.transport||0) + (USER.otherExp||0);
+  const assets   = (USER.savings||0) + (USER.investments||0);
   const surplus  = income - expenses;
 
   // Metric cards
@@ -1892,9 +1892,9 @@ function resetFinances() {
 }
 function updateAllCards() {
   const sym      = USER.currency;
-  const income   = USER.income + USER.otherIncome;
-  const expenses = USER.housing + USER.food + USER.transport + USER.otherExp;
-  const assets   = USER.savings + USER.investments;
+  const income   = (USER.income||0) + (USER.otherIncome||0);
+  const expenses = (USER.housing||0) + (USER.food||0) + (USER.transport||0) + (USER.otherExp||0);
+  const assets   = (USER.savings||0) + (USER.investments||0);
   const surplus  = income - expenses;
   const nw       = assets - USER.debt;
   const nw12     = nw + surplus * 12 * 0.9;
@@ -1994,7 +1994,7 @@ function saveGoals() {
 
 function renderGoals() {
   const list    = document.getElementById('goals-list');
-  const surplus = Math.max(0, (USER.income + USER.otherIncome) - (USER.housing + USER.food + USER.transport + USER.otherExp));
+  const surplus = Math.max(0, ((USER.income||0) + (USER.otherIncome||0)) - ((USER.housing||0) + (USER.food||0) + (USER.transport||0) + (USER.otherExp||0)));
   const sym     = USER.currency;
   if (!list) return;
 
@@ -2042,7 +2042,7 @@ function renderGoals() {
 function renderGoalsPanel() {
   const list = document.getElementById('goals-panel-list');
   if (!list) return;
-  const surplus = Math.max(0, (USER.income + USER.otherIncome) - (USER.housing + USER.food + USER.transport + USER.otherExp + USER.debtPay));
+  const surplus = Math.max(0, ((USER.income||0) + (USER.otherIncome||0)) - ((USER.housing||0) + (USER.food||0) + (USER.transport||0) + (USER.otherExp||0) + (USER.debtPay||0)));
   const sym = USER.currency;
 
   // Update summary cards
@@ -2146,7 +2146,7 @@ function goalCalcPreview() {
   if (target <= 0) { document.getElementById('goal-preview').style.display = 'none'; return; }
 
   const pct      = Math.min(100, Math.round(current / target * 100));
-  const surplus  = Math.max(0, (USER.income + USER.otherIncome) - (USER.housing + USER.food + USER.transport + USER.otherExp));
+  const surplus  = Math.max(0, ((USER.income||0) + (USER.otherIncome||0)) - ((USER.housing||0) + (USER.food||0) + (USER.transport||0) + (USER.otherExp||0)));
   const remaining = Math.max(0, target - current);
   const months   = surplus > 0 ? Math.ceil(remaining / surplus) : null;
   const sym      = USER.currency;
