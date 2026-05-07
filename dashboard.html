@@ -1829,8 +1829,8 @@ function openEditFinances() {
   document.getElementById('ef-other-exp').value    = USER.otherExp;
   document.getElementById('ef-savings').value      = USER.savings;
   document.getElementById('ef-investments').value  = USER.investments;
-  document.getElementById('ef-debt').value         = USER.debt;
-  document.getElementById('ef-debtpay').value      = USER.debtPay;
+  document.getElementById('ef-debt').value         = USER.debt    || '';
+  document.getElementById('ef-debtpay').value      = USER.debtPay || '';
   const sel = document.getElementById('ef-currency');
   for (let i = 0; i < sel.options.length; i++) {
     if (sel.options[i].value === USER.currency) { sel.selectedIndex = i; break; }
@@ -1896,9 +1896,9 @@ function updateAllCards() {
   const expenses = (USER.housing||0) + (USER.food||0) + (USER.transport||0) + (USER.otherExp||0);
   const assets   = (USER.savings||0) + (USER.investments||0);
   const surplus  = income - expenses;
-  const nw       = assets - USER.debt;
+  const nw       = assets - (USER.debt||0);
   const nw12     = nw + surplus * 12 * 0.9;
-  const dMonths  = USER.debtPay > 0 && USER.debt > 0 ? Math.ceil(USER.debt / USER.debtPay) : 0;
+  const dMonths  = (USER.debtPay||0) > 0 && (USER.debt||0) > 0 ? Math.ceil((USER.debt||0) / (USER.debtPay||0)) : 0;
   const pct      = income > 0 ? Math.round((surplus/income)*100) : 0;
 
   // Health score
