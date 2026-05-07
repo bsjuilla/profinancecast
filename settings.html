@@ -485,17 +485,70 @@ function saveSettings() {
   }, 2500);
 }
 
-function changePassword() {
+async function changePassword() {
   const curr = document.getElementById('s-current-pw').value;
   const nw   = document.getElementById('s-new-pw').value;
   const conf = document.getElementById('s-confirm-pw').value;
+
   if (!curr || !nw) { showToast('Please fill in all password fields'); return; }
-  if (nw !== conf) { showToast('New passwords do not match'); return; }
-  if (nw.length < 8) { showToast('Password must be at least 8 characters'); return; }
-  showToast('Password updated successfully');
+  if (nw !== conf)  { showToast('New passwords do not match'); return; }
+  if (nw.length < 8){ showToast('Password must be at least 8 characters'); return; }
+
+  // Button loading state
+  const btn = document.querySelector('button[onclick="changePassword()"]');
+  const originalText = btn ? btn.textContent : '';
+  if (btn) { btn.disabled = true; btn.textContent = 'Updating…'; }
+
+  const supabase = (typeof PFCAuth !== 'undefined') ? PFCAuth.getClient() : null;
+
+  if (!supabase) {
+    // Demo / not connected — simulate success
+    if (btn) { btn.disabled = false; btn.textContent = originalText; }
+    showToast('Password updated (demo mode)');
+    document.getElementById('s-current-pw').value = '';
+    document.getElementById('s-new-pw').value = '';
+    document.getElementById('s-confirm-pw').value = '';
+    return;
+  }
+
+  // Supabase requires a fresh session to change passwords.
+  // Re-authenticate with current password first, then update.
+  const { data: sessionData } = await supabase.auth.getSession();
+  const email = sessionData?.session?.user?.email;
+
+  if (!email) {
+    if (btn) { btn.disabled = false; btn.textContent = originalText; }
+    showToast('Session expired — please log in again');
+    return;
+  }
+
+  // Step 1: verify current password by signing in again
+  const { error: signInError } = await supabase.auth.signInWithPassword({
+    email,
+    password: curr,
+  });
+
+  if (signInError) {
+    if (btn) { btn.disabled = false; btn.textContent = originalText; }
+    showToast('Current password is incorrect');
+    return;
+  }
+
+  // Step 2: update to the new password
+  const { error: updateError } = await supabase.auth.updateUser({ password: nw });
+
+  if (btn) { btn.disabled = false; btn.textContent = originalText; }
+
+  if (updateError) {
+    showToast('Error: ' + updateError.message);
+    return;
+  }
+
+  // Clear fields on success
   document.getElementById('s-current-pw').value = '';
   document.getElementById('s-new-pw').value = '';
   document.getElementById('s-confirm-pw').value = '';
+  showToast('Password updated successfully');
 }
 
 function handleAvatar(input) {
