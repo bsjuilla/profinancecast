@@ -5,590 +5,912 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="apple-touch-icon" href="/favicon.svg">
-<meta name="theme-color" content="#00D4A0">
-<title>ProFinanceCast — See your money 12 months ahead</title>
-<meta name="description" content="AI-powered personal finance forecasting. Watch your net worth, debt payoff date, and savings goals move month by month before they happen.">
-<meta property="og:title" content="ProFinanceCast — See your money 12 months ahead">
-<meta property="og:description" content="AI-powered personal finance forecasting. Free to start, no credit card.">
+<meta name="theme-color" content="#0A0E1A">
+<title>ProFinanceCast — The forecast your bank should give you.</title>
+<meta name="description" content="Drop in your numbers. See exactly when you'll be debt-free, what your net worth becomes, and which goals you'll actually hit. Updated month by month for the next 12.">
+<meta property="og:title" content="ProFinanceCast — The forecast your bank should give you.">
+<meta property="og:description" content="AI-powered personal finance forecasting that shows you the next 12 months — month by month.">
 <meta property="og:url" content="https://profinancecast.com">
 <meta property="og:type" content="website">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/pfc-tokens.css">
+<!-- Bricolage Grotesque (display) + Inter (body) + JetBrains Mono (numbers) — modern fintech stack -->
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700;12..96,800&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<!-- 3D + scroll motion -->
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js" defer></script>
 
 <style>
+  /* ════════════════════════════════════════════════════════════════════
+     DESIGN TOKENS — tighter, more confident than the previous palette.
+     Replaces pfc-tokens for this page only; deeper navy + cleaner accents.
+     ════════════════════════════════════════════════════════════════════ */
+  :root {
+    --bg:        #050810;
+    --bg-elev:   #0A0E1A;
+    --bg-card:   #0F1422;
+    --bg-card-2: #141A2B;
+    --line:      rgba(255,255,255,0.06);
+    --line-2:    rgba(255,255,255,0.10);
+    --line-3:    rgba(255,255,255,0.18);
+
+    --teal:      #00E5B0;
+    --teal-2:    #00B894;
+    --teal-glow: rgba(0,229,176,0.32);
+    --indigo:    #6366F1;
+    --violet:    #A78BFA;
+    --rose:      #FB7185;
+    --gold:      #F5C26B;
+
+    --ink:       #F4F7FB;
+    --ink-2:     #B0BCD0;
+    --ink-3:     #6A7891;
+    --ink-4:     #3F4A5C;
+
+    --display: 'Bricolage Grotesque', system-ui, sans-serif;
+    --body:    'Inter', system-ui, sans-serif;
+    --mono:    'JetBrains Mono', ui-monospace, monospace;
+
+    --ease:    cubic-bezier(0.22, 0.61, 0.36, 1);
+    --spring:  cubic-bezier(0.34, 1.4, 0.64, 1);
+  }
+
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  html { scroll-behavior: smooth; }
+  html {
+    scroll-behavior: smooth;
+    font-feature-settings: "ss01", "ss02", "cv11";
+  }
   body {
-    font-family: var(--font-body);
+    font-family: var(--body);
     background: var(--bg);
-    color: var(--text);
-    line-height: 1.6;
+    color: var(--ink);
+    line-height: 1.55;
     overflow-x: hidden;
     -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
   }
-  h1,h2,h3,h4,h5 { font-family: var(--font-display); letter-spacing: -0.01em; }
-  a { color: inherit; text-decoration: none; }
+  h1, h2, h3, h4 {
+    font-family: var(--display);
+    letter-spacing: -0.02em;
+    font-weight: 700;
+    line-height: 1.05;
+  }
+  ::selection { background: var(--teal); color: var(--bg); }
 
-  /* ── Atmospheric background ─────────────────────────────────────── */
-  .bg-fx {
-    position: fixed; inset: 0; z-index: -1; pointer-events: none; overflow: hidden;
+  /* ════════════════════════════════════════════════════════════════════
+     3D BACKGROUND CANVAS (Three.js mounts here)
+     ════════════════════════════════════════════════════════════════════ */
+  #scene {
+    position: fixed; inset: 0; z-index: 0;
+    pointer-events: none;
   }
-  .bg-grid {
-    position: absolute; inset: 0; opacity: .35;
-    background-image:
-      linear-gradient(rgba(0,212,160,0.08) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0,212,160,0.08) 1px, transparent 1px);
-    background-size: 56px 56px;
-    mask-image: radial-gradient(ellipse 80% 60% at 50% 30%, black 30%, transparent 80%);
+  /* Atmospheric overlay above the canvas */
+  .veil {
+    position: fixed; inset: 0; z-index: 1; pointer-events: none;
+    background:
+      radial-gradient(ellipse 60% 40% at 50% 0%, rgba(0,229,176,0.06), transparent 70%),
+      radial-gradient(ellipse 60% 40% at 50% 100%, rgba(99,102,241,0.05), transparent 70%),
+      linear-gradient(180deg, rgba(5,8,16,0.55) 0%, rgba(5,8,16,0.92) 100%);
   }
-  .bg-orb {
-    position: absolute; width: 720px; height: 720px; border-radius: 50%;
-    filter: blur(120px); opacity: .35;
+  /* Grain for depth */
+  .grain {
+    position: fixed; inset: 0; z-index: 2; pointer-events: none;
+    opacity: 0.05; mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' /%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' /%3E%3C/svg%3E");
   }
-  .bg-orb.a { top: -200px; left: -200px; background: radial-gradient(circle, var(--teal-glow), transparent 70%); }
-  .bg-orb.b { bottom: -300px; right: -200px; background: radial-gradient(circle, rgba(91,141,239,0.20), transparent 70%); }
 
-  /* ── NAV ───────────────────────────────────────────────────────── */
+  main { position: relative; z-index: 3; }
+
+  /* ════════════════════════════════════════════════════════════════════
+     NAV — refined, glass, with magnetic CTA
+     ════════════════════════════════════════════════════════════════════ */
   nav {
-    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
+    width: calc(100% - 48px); max-width: 1200px;
+    z-index: 50;
     display: flex; align-items: center; justify-content: space-between;
-    padding: 14px 5%; height: 68px;
-    background: rgba(7,9,15,0.72);
-    backdrop-filter: blur(18px) saturate(140%);
-    border-bottom: 1px solid var(--border);
+    padding: 12px 18px;
+    background: rgba(10, 14, 26, 0.65);
+    backdrop-filter: blur(24px) saturate(140%);
+    border: 1px solid var(--line-2);
+    border-radius: 999px;
+    transition: padding 200ms var(--ease), background 200ms var(--ease);
   }
-  .logo { display: flex; align-items: center; gap: 10px; font-family: var(--font-display); font-weight: 700; font-size: var(--t-16); }
+  nav.scrolled { background: rgba(10,14,26,0.85); }
+  .logo { display: flex; align-items: center; gap: 10px; font-family: var(--display); font-weight: 700; font-size: 16px; letter-spacing: -0.01em; }
   .logo-mark {
-    width: 32px; height: 32px; border-radius: var(--r-xs);
-    background: linear-gradient(135deg, var(--teal) 0%, var(--teal-2) 100%);
+    width: 30px; height: 30px; border-radius: 8px;
+    background: linear-gradient(135deg, var(--teal) 0%, var(--indigo) 100%);
     display: grid; place-items: center;
-    font-weight: 800; color: var(--bg); font-size: var(--t-13);
-    box-shadow: var(--glow-teal);
+    font-weight: 800; color: var(--bg); font-size: 11px; letter-spacing: 0;
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.08), 0 8px 30px rgba(0,229,176,0.20);
   }
-  .nav-links { display: flex; gap: 32px; align-items: center; }
-  .nav-links a { font-size: var(--t-14); color: var(--text-2); transition: color var(--t-fast) var(--ease-out); }
-  .nav-links a:hover { color: var(--text); }
-  .nav-cta { display: flex; gap: 12px; align-items: center; }
+  .nav-links { display: flex; gap: 28px; align-items: center; }
+  .nav-links a { font-size: 14px; color: var(--ink-2); transition: color 160ms var(--ease); text-decoration: none; }
+  .nav-links a:hover { color: var(--ink); }
+  .nav-cta { display: flex; gap: 10px; align-items: center; }
 
-  /* Buttons ─────────────────────────────────────────────────────── */
+  /* Buttons */
   .btn {
-    font-family: var(--font-body); font-size: var(--t-14); font-weight: 500;
-    padding: 10px 18px; border-radius: var(--r-sm); border: 1px solid transparent;
+    font-family: var(--body); font-size: 14px; font-weight: 500;
+    padding: 10px 18px; border-radius: 999px; border: 1px solid transparent;
     cursor: pointer; display: inline-flex; align-items: center; gap: 8px;
-    transition: all var(--t-base) var(--ease-out);
+    transition: transform 200ms var(--spring), background 200ms var(--ease), border-color 200ms var(--ease), box-shadow 240ms var(--ease);
+    text-decoration: none; color: inherit; position: relative;
+    will-change: transform;
   }
-  .btn-primary { background: var(--teal); color: var(--bg); box-shadow: var(--glow-teal); }
-  .btn-primary:hover { transform: translateY(-1px); box-shadow: var(--glow-teal), 0 8px 20px rgba(0,212,160,0.35); }
-  .btn-ghost { background: transparent; color: var(--text-2); }
-  .btn-ghost:hover { color: var(--text); }
-  .btn-outline {
-    background: transparent; color: var(--text);
-    border-color: var(--border-2);
+  .btn-primary {
+    background: var(--teal); color: var(--bg); font-weight: 600;
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.10) inset, 0 8px 30px var(--teal-glow);
   }
-  .btn-outline:hover { border-color: var(--teal); background: var(--teal-dim); }
-  .btn-lg { padding: 14px 26px; font-size: var(--t-15); }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 0 0 1px rgba(255,255,255,0.20) inset, 0 14px 50px var(--teal-glow); }
+  .btn-primary:active { transform: translateY(0); }
+  .btn-ghost { background: transparent; color: var(--ink-2); }
+  .btn-ghost:hover { color: var(--ink); }
+  .btn-outline { background: rgba(255,255,255,0.02); color: var(--ink); border-color: var(--line-2); }
+  .btn-outline:hover { border-color: var(--teal); background: rgba(0,229,176,0.06); }
+  .btn-lg { padding: 14px 26px; font-size: 15px; }
 
-  /* ── HERO ──────────────────────────────────────────────────────── */
+  /* ════════════════════════════════════════════════════════════════════
+     HERO
+     ════════════════════════════════════════════════════════════════════ */
   .hero {
-    min-height: 100vh; padding: 140px 5% 80px;
-    display: grid; place-items: center; text-align: center;
-    position: relative;
+    min-height: 100svh; display: grid; place-items: center;
+    padding: 140px 24px 80px;
+    text-align: center; position: relative;
   }
-  .hero-eyebrow {
-    display: inline-flex; align-items: center; gap: 8px;
-    font-size: var(--t-13); font-weight: 500; color: var(--teal);
-    background: var(--teal-dim); border: 1px solid rgba(0,212,160,0.25);
-    padding: 6px 14px; border-radius: var(--r-pill);
-    margin-bottom: 28px;
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 10px;
+    font-family: var(--mono); font-size: 12px; font-weight: 500;
+    color: var(--teal); letter-spacing: 0.04em; text-transform: uppercase;
+    background: rgba(0,229,176,0.08);
+    border: 1px solid rgba(0,229,176,0.20);
+    padding: 7px 14px 7px 10px; border-radius: 999px;
+    margin-bottom: 36px;
   }
-  .hero-eyebrow .dot {
-    width: 6px; height: 6px; border-radius: 50%; background: var(--teal);
-    box-shadow: 0 0 0 4px rgba(0,212,160,0.25);
-    animation: pulse 2s var(--ease-out) infinite;
+  .eyebrow .dot {
+    width: 7px; height: 7px; border-radius: 50%; background: var(--teal);
+    box-shadow: 0 0 0 4px rgba(0,229,176,0.20);
+    animation: pulse 2.4s var(--ease) infinite;
   }
   @keyframes pulse {
-    0%, 100% { box-shadow: 0 0 0 4px rgba(0,212,160,0.25); }
-    50%      { box-shadow: 0 0 0 8px rgba(0,212,160,0.06); }
+    0%,100% { box-shadow: 0 0 0 4px rgba(0,229,176,0.20); }
+    50%     { box-shadow: 0 0 0 9px rgba(0,229,176,0.04); }
   }
   .hero h1 {
-    font-size: clamp(var(--t-44), 7vw, var(--t-72));
-    font-weight: 800; line-height: 1.05; letter-spacing: -0.02em;
-    margin-bottom: 24px; max-width: 14ch;
+    font-size: clamp(48px, 7.6vw, 104px);
+    font-weight: 700; line-height: 0.98;
+    letter-spacing: -0.035em;
+    max-width: 14ch; margin: 0 auto 28px;
   }
   .hero h1 .grad {
-    background: linear-gradient(135deg, var(--teal) 0%, var(--blue) 60%, var(--purple) 100%);
+    background: linear-gradient(120deg, var(--teal) 0%, var(--violet) 70%, var(--rose) 100%);
     -webkit-background-clip: text; background-clip: text; color: transparent;
+    background-size: 200% 200%;
+    animation: shift 9s var(--ease) infinite;
+  }
+  @keyframes shift {
+    0%   { background-position: 0% 50%; }
+    50%  { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
   }
   .hero-sub {
-    font-size: clamp(var(--t-15), 1.3vw, var(--t-18));
-    color: var(--text-2); max-width: 56ch; margin: 0 auto 36px;
-    font-weight: 300;
+    font-size: clamp(16px, 1.3vw, 19px);
+    color: var(--ink-2); font-weight: 400;
+    max-width: 56ch; margin: 0 auto 40px;
   }
-  .hero-cta { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin-bottom: 28px; }
-  .hero-trust {
-    display: flex; gap: 24px; justify-content: center; flex-wrap: wrap;
-    font-size: var(--t-13); color: var(--text-3);
+  .hero-cta { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 36px; }
+  .trust-row {
+    display: flex; gap: 28px; justify-content: center; flex-wrap: wrap;
+    font-size: 13px; color: var(--ink-3); font-family: var(--mono);
   }
-  .hero-trust .item { display: flex; align-items: center; gap: 6px; }
+  .trust-row span { display: flex; align-items: center; gap: 6px; }
 
-  /* ── HERO MOCKUP ───────────────────────────────────────────────── */
-  .hero-mockup {
-    margin: 80px auto 0; max-width: 1080px; padding: 0 5%;
+  /* ════════════════════════════════════════════════════════════════════
+     INTERACTIVE FORECAST PREVIEW
+     A live mini-app: drag the slider, watch the chart update.
+     ════════════════════════════════════════════════════════════════════ */
+  .demo {
+    margin: 100px auto 0;
+    max-width: 1100px; padding: 0 24px;
     perspective: 1800px;
   }
-  .mockup-frame {
-    background: linear-gradient(180deg, var(--surface-2) 0%, var(--surface) 100%);
-    border: 1px solid var(--border-2);
-    border-radius: var(--r-lg);
-    box-shadow: var(--shadow-3), 0 0 80px rgba(0,212,160,0.08);
-    overflow: hidden;
-    transform: rotateX(6deg) translateZ(0);
-    transition: transform var(--t-slow) var(--ease-out);
+  .demo-frame {
+    background: linear-gradient(180deg, var(--bg-card-2) 0%, var(--bg-card) 100%);
+    border: 1px solid var(--line-2);
+    border-radius: 28px;
+    padding: 36px;
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.04) inset,
+      0 30px 80px rgba(0,0,0,0.5),
+      0 0 60px rgba(0,229,176,0.06);
+    transform-style: preserve-3d;
+    transform: rotateX(8deg);
+    transition: transform 600ms var(--ease);
   }
-  .mockup-frame:hover { transform: rotateX(0deg); }
-  .mockup-bar {
-    display: flex; gap: 6px; padding: 12px 16px; border-bottom: 1px solid var(--border);
-    background: var(--bg-2);
-  }
-  .mockup-bar .dot { width: 11px; height: 11px; border-radius: 50%; background: var(--bg-3); }
-  .mockup-body {
-    display: grid; grid-template-columns: 1.4fr 1fr; gap: 24px; padding: 28px;
-  }
-  .mock-card {
-    background: var(--surface-2); border: 1px solid var(--border);
-    border-radius: var(--r-md); padding: 20px;
-  }
-  .mock-card .label { font-size: var(--t-12); color: var(--text-3); text-transform: uppercase; letter-spacing: .12em; margin-bottom: 8px; }
-  .mock-card .value { font-family: var(--font-display); font-size: var(--t-32); font-weight: 700; }
-  .mock-card .delta { font-size: var(--t-13); color: var(--green); margin-top: 4px; }
-  .mock-chart {
-    background: var(--surface-2); border: 1px solid var(--border);
-    border-radius: var(--r-md); padding: 20px; min-height: 220px;
-    display: flex; flex-direction: column;
-  }
-  .mock-chart .label { font-size: var(--t-13); color: var(--text-3); margin-bottom: 14px; }
-  .mock-chart svg { width: 100%; flex: 1; }
+  .demo:hover .demo-frame { transform: rotateX(2deg); }
+  .demo-grid { display: grid; grid-template-columns: 1fr 1.4fr; gap: 32px; align-items: center; }
 
-  /* ── SECTION TEMPLATE ──────────────────────────────────────────── */
-  section { padding: 120px 5%; max-width: 1240px; margin: 0 auto; }
-  .section-eyebrow {
-    font-size: var(--t-12); font-weight: 600; color: var(--teal);
-    letter-spacing: .12em; text-transform: uppercase; margin-bottom: 14px;
+  .demo-controls h3 {
+    font-size: 22px; margin-bottom: 8px;
   }
+  .demo-controls .demo-sub {
+    color: var(--ink-3); font-size: 14px; margin-bottom: 28px;
+  }
+  .slider-row { margin-bottom: 22px; }
+  .slider-row label {
+    display: flex; justify-content: space-between; align-items: baseline;
+    font-size: 13px; color: var(--ink-2); margin-bottom: 8px;
+  }
+  .slider-row label .v {
+    font-family: var(--mono); font-size: 15px; font-weight: 600; color: var(--teal);
+  }
+  input[type=range] {
+    -webkit-appearance: none; appearance: none;
+    width: 100%; height: 6px; border-radius: 999px;
+    background: linear-gradient(90deg, var(--teal) var(--p,40%), var(--bg-card-2) var(--p,40%));
+    outline: none; cursor: pointer;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--ink); border: 4px solid var(--teal);
+    box-shadow: 0 4px 14px rgba(0,229,176,0.4);
+    cursor: grab;
+    transition: transform 120ms var(--ease);
+  }
+  input[type=range]::-webkit-slider-thumb:active { cursor: grabbing; transform: scale(1.15); }
+  input[type=range]::-moz-range-thumb {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--ink); border: 4px solid var(--teal);
+    box-shadow: 0 4px 14px rgba(0,229,176,0.4);
+    cursor: grab;
+  }
+
+  .demo-result {
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    padding: 24px;
+    min-height: 360px;
+    display: flex; flex-direction: column; gap: 16px;
+  }
+  .stat-row { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; }
+  .stat-row .lbl { font-family: var(--mono); font-size: 11px; color: var(--ink-3); letter-spacing: 0.06em; text-transform: uppercase; }
+  .stat-row .val { font-family: var(--display); font-size: 32px; font-weight: 700; letter-spacing: -0.02em; }
+  .stat-row .delta { font-size: 13px; color: var(--teal); font-family: var(--mono); }
+  .stat-row .delta.bad { color: var(--rose); }
+  #fc-chart { width: 100%; height: 200px; flex: 1; }
+
+  /* ════════════════════════════════════════════════════════════════════
+     SECTIONS
+     ════════════════════════════════════════════════════════════════════ */
+  section {
+    padding: 140px 24px;
+    max-width: 1240px;
+    margin: 0 auto;
+    position: relative;
+  }
+  .section-head { max-width: 720px; margin-bottom: 80px; }
+  .section-eyebrow {
+    display: inline-block;
+    font-family: var(--mono); font-size: 12px; font-weight: 500;
+    color: var(--teal); letter-spacing: 0.06em; text-transform: uppercase;
+    margin-bottom: 18px;
+  }
+  .section-eyebrow::before { content: '— '; color: var(--ink-4); }
   .section-title {
-    font-size: clamp(var(--t-32), 4vw, var(--t-56));
-    font-weight: 700; line-height: 1.1; letter-spacing: -0.015em;
-    margin-bottom: 16px; max-width: 22ch;
+    font-size: clamp(34px, 4.6vw, 64px);
+    line-height: 1.02;
+    margin-bottom: 18px;
+    letter-spacing: -0.025em;
   }
   .section-sub {
-    font-size: var(--t-16); color: var(--text-2); max-width: 60ch;
-    margin-bottom: 56px; font-weight: 300;
+    font-size: 17px; color: var(--ink-2); max-width: 60ch; font-weight: 400;
   }
 
-  /* ── FEATURE GRID ──────────────────────────────────────────────── */
-  .features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
-  .feature {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--r-md);
+  /* ── BENTO FEATURES ────────────────────────────────────────────── */
+  .bento {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    grid-auto-rows: 240px;
+    gap: 16px;
+  }
+  .bento-card {
+    background: linear-gradient(180deg, var(--bg-card-2) 0%, var(--bg-card) 100%);
+    border: 1px solid var(--line);
+    border-radius: 22px;
     padding: 28px;
-    transition: all var(--t-base) var(--ease-out);
-    position: relative; overflow: hidden;
+    overflow: hidden;
+    position: relative;
+    transition: border-color 240ms var(--ease), transform 240ms var(--ease);
+    display: flex; flex-direction: column; justify-content: space-between;
   }
-  .feature::before {
+  .bento-card:hover {
+    border-color: var(--line-3);
+    transform: translateY(-3px);
+  }
+  .bento-card::before {
     content: ''; position: absolute; inset: 0;
-    background: radial-gradient(circle at 30% 0%, var(--teal-glow), transparent 60%);
-    opacity: 0; transition: opacity var(--t-base) var(--ease-out);
+    background: radial-gradient(600px circle at var(--mx,50%) var(--my,50%), rgba(0,229,176,0.12), transparent 40%);
+    opacity: 0; transition: opacity 280ms var(--ease);
+    pointer-events: none;
   }
-  .feature:hover { border-color: rgba(0,212,160,0.35); transform: translateY(-2px); }
-  .feature:hover::before { opacity: 0.6; }
-  .feature > * { position: relative; z-index: 1; }
-  .feature-icon {
-    width: 44px; height: 44px; border-radius: var(--r-sm);
-    background: var(--teal-dim); border: 1px solid rgba(0,212,160,0.25);
-    display: grid; place-items: center; margin-bottom: 18px;
+  .bento-card:hover::before { opacity: 1; }
+  .bento-card .icon {
+    width: 44px; height: 44px; border-radius: 12px;
+    display: grid; place-items: center;
+    background: rgba(0,229,176,0.08);
+    border: 1px solid rgba(0,229,176,0.18);
     color: var(--teal);
+    margin-bottom: 16px;
   }
-  .feature h3 { font-size: var(--t-18); font-weight: 700; margin-bottom: 8px; }
-  .feature p { font-size: var(--t-14); color: var(--text-2); line-height: 1.6; }
+  .bento-card h3 { font-size: 20px; margin-bottom: 8px; }
+  .bento-card p { font-size: 14px; color: var(--ink-2); line-height: 1.55; }
+  /* Bento cell sizing */
+  .b-tall  { grid-row: span 2; }
+  .b-wide  { grid-column: span 2; }
+  .b-3     { grid-column: span 3; }
+  .b-4     { grid-column: span 4; }
 
-  /* ── PRICING ───────────────────────────────────────────────────── */
-  .pricing { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
-  .price-card {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--r-lg); padding: 32px 28px;
-    display: flex; flex-direction: column; position: relative;
-    transition: border-color var(--t-base) var(--ease-out);
+  .visual-orb {
+    position: absolute; right: -40px; bottom: -40px;
+    width: 220px; height: 220px; border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, var(--teal) 0%, transparent 60%);
+    filter: blur(40px); opacity: 0.4;
   }
-  .price-card:hover { border-color: var(--border-2); }
-  .price-card.featured {
+
+  /* ── PRICING ──────────────────────────────────────────────────── */
+  .pricing { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .price-card {
+    background: linear-gradient(180deg, var(--bg-card-2) 0%, var(--bg-card) 100%);
+    border: 1px solid var(--line);
+    border-radius: 22px;
+    padding: 36px 28px;
+    display: flex; flex-direction: column;
+    position: relative;
+    transition: border-color 240ms var(--ease), transform 240ms var(--ease);
+  }
+  .price-card:hover { border-color: var(--line-2); }
+  .price-card.hot {
     border: 1px solid var(--teal);
-    background: linear-gradient(180deg, rgba(0,212,160,0.06) 0%, var(--surface) 50%);
-    box-shadow: 0 -2px 0 var(--teal) inset;
+    background:
+      linear-gradient(180deg, rgba(0,229,176,0.08) 0%, var(--bg-card) 60%);
+    box-shadow: 0 30px 80px rgba(0,229,176,0.10), 0 0 0 1px rgba(0,229,176,0.30) inset;
+    transform: translateY(-4px);
   }
   .price-tag {
-    position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
-    font-size: var(--t-12); font-weight: 600; padding: 4px 14px; border-radius: var(--r-pill);
-    background: var(--teal); color: var(--bg);
+    position: absolute; top: -14px; left: 50%; transform: translateX(-50%);
+    font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: 0.08em;
+    text-transform: uppercase;
+    background: var(--teal); color: var(--bg); padding: 5px 14px; border-radius: 999px;
   }
-  .price-name { font-family: var(--font-display); font-size: var(--t-20); font-weight: 700; }
-  .price-amount { font-family: var(--font-display); font-size: var(--t-44); font-weight: 800; line-height: 1.1; margin: 16px 0 6px; }
-  .price-amount sub { font-size: var(--t-14); font-weight: 400; color: var(--text-2); vertical-align: baseline; }
-  .price-desc { font-size: var(--t-13); color: var(--text-2); margin-bottom: 24px; }
-  .price-features { list-style: none; flex: 1; display: flex; flex-direction: column; gap: 12px; margin-bottom: 28px; }
-  .price-features li { display: flex; gap: 10px; font-size: var(--t-14); color: var(--text-2); }
-  .price-features li svg { flex-shrink: 0; margin-top: 2px; }
+  .price-name { font-family: var(--display); font-size: 18px; font-weight: 600; color: var(--ink-2); }
+  .price-amount {
+    font-family: var(--display); font-size: 56px; font-weight: 700;
+    letter-spacing: -0.04em; line-height: 1; margin: 18px 0 4px;
+  }
+  .price-amount .currency { font-size: 26px; vertical-align: super; color: var(--ink-3); margin-right: 4px; }
+  .price-amount .period   { font-size: 16px; color: var(--ink-3); font-weight: 400; margin-left: 6px; vertical-align: middle; }
+  .price-pitch { font-size: 14px; color: var(--ink-2); margin-bottom: 28px; min-height: 2.5em; }
+  .price-feats { list-style: none; flex: 1; display: flex; flex-direction: column; gap: 12px; margin-bottom: 28px; }
+  .price-feats li { display: flex; gap: 10px; font-size: 14px; color: var(--ink-2); }
+  .price-feats svg { flex-shrink: 0; margin-top: 3px; }
 
-  /* ── FAQ ────────────────────────────────────────────────────────── */
-  .faq { display: flex; flex-direction: column; gap: 8px; max-width: 800px; margin: 0 auto; }
+  /* ── HOW IT WORKS — animated steps ─────────────────────────────── */
+  .steps { display: grid; gap: 80px; }
+  .step {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: center;
+  }
+  .step:nth-child(even) .step-visual { order: -1; }
+  .step-num {
+    font-family: var(--mono); font-size: 13px; color: var(--teal); letter-spacing: 0.1em; text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .step h3 { font-size: clamp(28px, 3vw, 44px); margin-bottom: 16px; line-height: 1.05; }
+  .step p { color: var(--ink-2); font-size: 16px; max-width: 48ch; }
+
+  .step-visual {
+    aspect-ratio: 4/3;
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    position: relative; overflow: hidden;
+    display: grid; place-items: center;
+  }
+  .step-visual::before {
+    content: ''; position: absolute; inset: 0;
+    background: radial-gradient(circle at 50% 50%, rgba(0,229,176,0.10), transparent 60%);
+  }
+
+  /* ── FAQ ──────────────────────────────────────────────────────── */
+  .faq { display: flex; flex-direction: column; gap: 12px; max-width: 800px; margin: 0 auto; }
   .faq details {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--r-md); padding: 20px 24px;
-    transition: border-color var(--t-base) var(--ease-out);
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 22px 26px;
+    transition: border-color 200ms var(--ease);
   }
-  .faq details[open] { border-color: var(--border-2); }
+  .faq details[open] { border-color: var(--line-2); }
   .faq summary {
-    cursor: pointer; font-weight: 500; font-size: var(--t-15);
-    list-style: none; display: flex; justify-content: space-between; align-items: center;
+    list-style: none; cursor: pointer; font-weight: 500; font-size: 16px;
+    display: flex; justify-content: space-between; align-items: center;
   }
+  .faq summary::-webkit-details-marker { display: none; }
   .faq summary::after {
-    content: '+'; font-size: var(--t-20); color: var(--text-3);
-    transition: transform var(--t-base) var(--ease-out);
+    content: '+'; font-family: var(--mono); font-size: 22px; color: var(--ink-3);
+    transition: transform 240ms var(--spring);
   }
-  .faq details[open] summary::after { transform: rotate(45deg); }
-  .faq p { color: var(--text-2); margin-top: 14px; line-height: 1.7; font-size: var(--t-14); }
+  .faq details[open] summary::after { transform: rotate(45deg); color: var(--teal); }
+  .faq p { color: var(--ink-2); margin-top: 14px; line-height: 1.7; font-size: 15px; }
 
   /* ── CTA STRIP ─────────────────────────────────────────────────── */
   .cta-strip {
-    background: linear-gradient(135deg, var(--surface-2) 0%, var(--surface) 100%);
-    border: 1px solid var(--border-2);
-    border-radius: var(--r-lg);
-    padding: 64px;
+    margin: 0 24px;
+    background:
+      radial-gradient(circle at 30% 30%, rgba(0,229,176,0.10), transparent 60%),
+      radial-gradient(circle at 70% 70%, rgba(99,102,241,0.10), transparent 60%),
+      linear-gradient(180deg, var(--bg-card-2) 0%, var(--bg-card) 100%);
+    border: 1px solid var(--line-2);
+    border-radius: 32px;
+    padding: 80px 32px;
     text-align: center;
     position: relative; overflow: hidden;
+    max-width: 1200px; margin-left: auto; margin-right: auto;
   }
   .cta-strip::before {
     content: ''; position: absolute; inset: 0;
-    background: radial-gradient(ellipse at 50% 100%, var(--teal-glow), transparent 60%);
-    opacity: 0.7;
+    background: radial-gradient(ellipse at center bottom, rgba(0,229,176,0.16), transparent 60%);
   }
   .cta-strip > * { position: relative; z-index: 1; }
-  .cta-strip h2 { font-size: var(--t-44); margin-bottom: 16px; font-weight: 700; }
-  .cta-strip p { color: var(--text-2); margin-bottom: 28px; font-size: var(--t-16); max-width: 60ch; margin-left: auto; margin-right: auto; }
+  .cta-strip h2 { font-size: clamp(36px, 5vw, 60px); margin-bottom: 16px; line-height: 1.05; }
+  .cta-strip p { color: var(--ink-2); margin-bottom: 32px; font-size: 17px; max-width: 56ch; margin-left: auto; margin-right: auto; }
 
   /* ── FOOTER ────────────────────────────────────────────────────── */
   footer {
-    border-top: 1px solid var(--border);
-    padding: 56px 5% 40px; max-width: 1240px; margin: 0 auto;
+    border-top: 1px solid var(--line);
+    padding: 64px 24px 36px;
+    max-width: 1240px; margin: 80px auto 0;
     display: grid; grid-template-columns: 2fr repeat(3, 1fr); gap: 48px;
   }
-  footer .col h4 { font-family: var(--font-body); font-size: var(--t-12); color: var(--text-3); text-transform: uppercase; letter-spacing: .14em; margin-bottom: 14px; font-weight: 600; }
-  footer .col a { display: block; color: var(--text-2); font-size: var(--t-14); padding: 6px 0; transition: color var(--t-fast) var(--ease-out); }
-  footer .col a:hover { color: var(--text); }
-  footer .brand-col p { font-size: var(--t-13); color: var(--text-3); margin-top: 12px; max-width: 32ch; }
+  footer .col h4 { font-family: var(--mono); font-size: 11px; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.14em; margin-bottom: 14px; font-weight: 500; }
+  footer .col a { display: block; color: var(--ink-2); font-size: 14px; padding: 6px 0; transition: color 160ms var(--ease); text-decoration: none; }
+  footer .col a:hover { color: var(--ink); }
+  footer .brand-col p { font-size: 13px; color: var(--ink-3); margin-top: 12px; max-width: 36ch; }
   .footer-bottom {
-    grid-column: 1/-1; padding-top: 32px; margin-top: 24px;
-    border-top: 1px solid var(--border);
+    grid-column: 1/-1; padding-top: 28px; margin-top: 32px;
+    border-top: 1px solid var(--line);
     display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px;
-    font-size: var(--t-12); color: var(--text-3);
+    font-size: 12px; color: var(--ink-3); font-family: var(--mono);
   }
 
-  /* ── RESPONSIVE ────────────────────────────────────────────────── */
-  @media (max-width: 880px) {
+  /* ── REVEAL ANIMATIONS (used by GSAP) ─────────────────────────── */
+  .reveal { opacity: 0; transform: translateY(30px); }
+  .reveal-stagger > * { opacity: 0; transform: translateY(20px); }
+
+  /* ── RESPONSIVE ───────────────────────────────────────────────── */
+  @media (max-width: 980px) {
+    nav { width: calc(100% - 24px); padding: 10px 14px; }
     .nav-links { display: none; }
-    .features, .pricing { grid-template-columns: 1fr; }
-    .mockup-body { grid-template-columns: 1fr; }
-    section { padding: 80px 5%; }
-    .cta-strip { padding: 40px 24px; }
-    footer { grid-template-columns: 1fr 1fr; }
+    .demo-grid { grid-template-columns: 1fr; }
+    .demo-frame { transform: none; padding: 24px; }
+    .step { grid-template-columns: 1fr; gap: 24px; }
+    .step:nth-child(even) .step-visual { order: 0; }
+    .bento { grid-template-columns: 1fr 1fr; grid-auto-rows: auto; }
+    .b-tall, .b-wide, .b-3, .b-4 { grid-column: span 1; grid-row: auto; }
+    .pricing { grid-template-columns: 1fr; }
+    section { padding: 80px 20px; }
+    .cta-strip { padding: 48px 24px; }
+    footer { grid-template-columns: 1fr 1fr; gap: 32px; }
   }
   @media (max-width: 540px) {
+    .hero { padding-top: 110px; }
+    .hero h1 { font-size: clamp(40px, 12vw, 60px); }
     footer { grid-template-columns: 1fr; }
     .hero-cta { flex-direction: column; align-items: stretch; }
     .hero-cta .btn { justify-content: center; }
+    .bento { grid-template-columns: 1fr; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+    .demo-frame { transform: none; }
   }
 </style>
 </head>
 <body>
 
-<div class="bg-fx" aria-hidden="true">
-  <div class="bg-orb a"></div>
-  <div class="bg-orb b"></div>
-  <div class="bg-grid"></div>
-</div>
+<canvas id="scene" aria-hidden="true"></canvas>
+<div class="veil" aria-hidden="true"></div>
+<div class="grain" aria-hidden="true"></div>
 
-<!-- ── NAV ───────────────────────────────────────────────────────── -->
-<nav>
+<nav id="nav">
   <a class="logo" href="/">
     <div class="logo-mark">PF</div>
     ProFinanceCast
   </a>
   <div class="nav-links">
+    <a href="#how">How it works</a>
     <a href="#features">Features</a>
     <a href="#pricing">Pricing</a>
     <a href="blog.html">Blog</a>
-    <a href="sage.html">Sage AI</a>
   </div>
   <div class="nav-cta">
     <a href="auth.html" class="btn btn-ghost">Sign in</a>
-    <a href="auth.html" class="btn btn-primary">Start free →</a>
+    <a href="auth.html" class="btn btn-primary" data-magnet>
+      Start free
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7h8m-3-3l3 3-3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </a>
   </div>
 </nav>
 
-<!-- ── HERO ──────────────────────────────────────────────────────── -->
-<header class="hero">
-  <div class="hero-eyebrow" data-anim="rise">
-    <span class="dot"></span> Live forecast updated each session · v2.0
+<main>
+
+<!-- ════════════════════════════════════════════════════════════════════
+     HERO
+     ════════════════════════════════════════════════════════════════════ -->
+<section class="hero">
+  <div class="eyebrow reveal">
+    <span class="dot"></span> Live forecast · v2.0 just shipped
   </div>
-  <h1 data-anim="rise" data-delay="1">
-    See your money <span class="grad">12 months ahead.</span>
+  <h1 class="reveal">
+    The forecast<br>your bank<br><span class="grad">should give you.</span>
   </h1>
-  <p class="hero-sub" data-anim="rise" data-delay="2">
-    ProFinanceCast forecasts your net worth, debt-free date, and savings goals month by month —
-    so you stop guessing and start planning. Powered by Sage, your AI financial advisor.
+  <p class="hero-sub reveal">
+    Drop in your numbers. We project the next 12 months — month by month.
+    See the exact day you're debt-free, what your net worth becomes, and which
+    goals you'll actually hit. No bank connection. No spreadsheets. No guessing.
   </p>
-  <div class="hero-cta" data-anim="rise" data-delay="3">
-    <a href="auth.html" class="btn btn-primary btn-lg">
+  <div class="hero-cta reveal">
+    <a href="auth.html" class="btn btn-primary btn-lg" data-magnet>
       Start free — no card
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7h8m-3-3l3 3-3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7h8m-3-3l3 3-3 3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </a>
-    <a href="#features" class="btn btn-outline btn-lg">See how it works</a>
+    <a href="#demo" class="btn btn-outline btn-lg">Try it without signing up ↓</a>
   </div>
-  <div class="hero-trust" data-anim="rise" data-delay="4">
-    <span class="item">
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7l3.5 3.5L12 3" stroke="var(--teal)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      Free forever plan
-    </span>
-    <span class="item">
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7l3.5 3.5L12 3" stroke="var(--teal)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      Bank-grade encryption
-    </span>
-    <span class="item">
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7l3.5 3.5L12 3" stroke="var(--teal)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      We never sell your data
-    </span>
+  <div class="trust-row reveal">
+    <span><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3 3 6-6" stroke="var(--teal)" stroke-width="1.6" stroke-linecap="round"/></svg> Free forever</span>
+    <span><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3 3 6-6" stroke="var(--teal)" stroke-width="1.6" stroke-linecap="round"/></svg> No bank login</span>
+    <span><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3 3 6-6" stroke="var(--teal)" stroke-width="1.6" stroke-linecap="round"/></svg> AES-256 encrypted</span>
   </div>
 
-  <div class="hero-mockup" data-anim="rise" data-delay="5">
-    <div class="mockup-frame">
-      <div class="mockup-bar">
-        <span class="dot"></span><span class="dot"></span><span class="dot"></span>
-      </div>
-      <div class="mockup-body">
-        <div>
-          <div class="mock-card" style="margin-bottom:16px;">
-            <div class="label">Projected net worth · Apr 2027</div>
-            <div class="value">$48,210</div>
-            <div class="delta">↑ $14,820 vs today</div>
+  <!-- ── INTERACTIVE FORECAST WIDGET ─────────────────────────────── -->
+  <div class="demo reveal" id="demo">
+    <div class="demo-frame">
+      <div class="demo-grid">
+        <div class="demo-controls">
+          <h3>Try a live forecast →</h3>
+          <p class="demo-sub">Adjust the sliders. The chart on the right re-projects in real time.</p>
+
+          <div class="slider-row">
+            <label>Monthly take-home <span class="v" id="v-income">$5,000</span></label>
+            <input type="range" id="s-income" min="1000" max="20000" step="100" value="5000">
           </div>
-          <div class="mock-card">
-            <div class="label">Debt-free in</div>
-            <div class="value">11 months</div>
-            <div class="delta" style="color: var(--amber);">8 months earlier with avalanche</div>
+          <div class="slider-row">
+            <label>Savings rate <span class="v" id="v-rate">20%</span></label>
+            <input type="range" id="s-rate" min="0" max="60" step="1" value="20">
+          </div>
+          <div class="slider-row">
+            <label>Debt balance <span class="v" id="v-debt">$8,000</span></label>
+            <input type="range" id="s-debt" min="0" max="100000" step="500" value="8000">
+          </div>
+          <div class="slider-row">
+            <label>Starting net worth <span class="v" id="v-nw">$5,000</span></label>
+            <input type="range" id="s-nw" min="-50000" max="200000" step="1000" value="5000">
           </div>
         </div>
-        <div class="mock-chart">
-          <div class="label">12-month forecast</div>
-          <svg viewBox="0 0 280 160" preserveAspectRatio="none">
+
+        <div class="demo-result">
+          <div class="stat-row">
+            <div>
+              <div class="lbl">Net worth · 12 months</div>
+              <div class="val" id="r-nw">$17,000</div>
+              <div class="delta" id="r-delta">+$12,000</div>
+            </div>
+            <div style="text-align:right;">
+              <div class="lbl">Debt-free in</div>
+              <div class="val" id="r-debt-free">7<span style="font-size:18px;color:var(--ink-3);font-weight:400;"> months</span></div>
+              <div class="delta" id="r-debt-delta">on schedule</div>
+            </div>
+          </div>
+          <svg id="fc-chart" viewBox="0 0 600 200" preserveAspectRatio="none">
             <defs>
-              <linearGradient id="lg" x1="0" x2="0" y1="0" y2="1">
-                <stop offset="0%"  stop-color="#00D4A0" stop-opacity="0.35"/>
-                <stop offset="100%" stop-color="#00D4A0" stop-opacity="0"/>
+              <linearGradient id="cg" x1="0" x2="0" y1="0" y2="1">
+                <stop offset="0%"  stop-color="#00E5B0" stop-opacity="0.45"/>
+                <stop offset="100%" stop-color="#00E5B0" stop-opacity="0"/>
               </linearGradient>
+              <filter id="glow"><feGaussianBlur stdDeviation="3"/></filter>
             </defs>
-            <path d="M0,120 L20,108 L40,112 L60,98 L80,90 L100,84 L120,72 L140,70 L160,58 L180,50 L200,38 L220,30 L240,24 L280,18 L280,160 L0,160 Z"
-                  fill="url(#lg)"/>
-            <path d="M0,120 L20,108 L40,112 L60,98 L80,90 L100,84 L120,72 L140,70 L160,58 L180,50 L200,38 L220,30 L240,24 L280,18"
-                  fill="none" stroke="#00D4A0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            <circle cx="280" cy="18" r="5" fill="#00D4A0"/>
-            <circle cx="280" cy="18" r="10" fill="#00D4A0" opacity="0.25"/>
+            <!-- gridlines -->
+            <line x1="0" y1="50"  x2="600" y2="50"  stroke="rgba(255,255,255,0.04)"/>
+            <line x1="0" y1="100" x2="600" y2="100" stroke="rgba(255,255,255,0.04)"/>
+            <line x1="0" y1="150" x2="600" y2="150" stroke="rgba(255,255,255,0.04)"/>
+            <path id="fc-area" d="" fill="url(#cg)"/>
+            <path id="fc-line" d="" fill="none" stroke="#00E5B0" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/>
+            <path id="fc-line2" d="" fill="none" stroke="#00E5B0" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle id="fc-end" cx="600" cy="20" r="5" fill="#00E5B0"/>
+            <circle id="fc-end-glow" cx="600" cy="20" r="11" fill="#00E5B0" opacity="0.25"/>
           </svg>
         </div>
       </div>
     </div>
   </div>
-</header>
+</section>
 
-<!-- ── FEATURES ──────────────────────────────────────────────────── -->
+<!-- ════════════════════════════════════════════════════════════════════
+     HOW IT WORKS — three animated steps
+     ════════════════════════════════════════════════════════════════════ -->
+<section id="how">
+  <div class="section-head reveal">
+    <div class="section-eyebrow">How it works</div>
+    <h2 class="section-title">Five minutes of input. Twelve months of clarity.</h2>
+    <p class="section-sub">No bank login, no broker, no spreadsheets. You give us your numbers — we give you the future.</p>
+  </div>
+
+  <div class="steps">
+    <div class="step reveal">
+      <div>
+        <div class="step-num">Step 01</div>
+        <h3>Drop in your numbers</h3>
+        <p>Income, debts, recurring bills, savings goals, target country. Type them once or paste a CSV. Everything stays in your browser, encrypted.</p>
+      </div>
+      <div class="step-visual">
+        <svg width="60%" viewBox="0 0 200 150" fill="none">
+          <rect x="10" y="20" width="180" height="20" rx="6" fill="var(--bg-card-2)"/>
+          <rect x="14" y="26" width="80" height="8" rx="3" fill="var(--ink-3)"/>
+          <rect x="10" y="50" width="180" height="20" rx="6" fill="var(--bg-card-2)"/>
+          <rect x="14" y="56" width="120" height="8" rx="3" fill="var(--teal)"/>
+          <rect x="10" y="80" width="180" height="20" rx="6" fill="var(--bg-card-2)"/>
+          <rect x="14" y="86" width="60" height="8" rx="3" fill="var(--ink-3)"/>
+          <rect x="10" y="110" width="180" height="24" rx="6" fill="var(--teal)"/>
+          <rect x="80" y="118" width="40" height="8" rx="3" fill="var(--bg)"/>
+        </svg>
+      </div>
+    </div>
+
+    <div class="step reveal">
+      <div>
+        <div class="step-num">Step 02</div>
+        <h3>We forecast forward — to the day</h3>
+        <p>Our model compounds your inputs month by month. Real inflation pulled from World Bank data for your country. Real interest on every debt. Goals projected to the exact month you'll hit them.</p>
+      </div>
+      <div class="step-visual">
+        <svg width="80%" viewBox="0 0 280 160" fill="none">
+          <defs>
+            <linearGradient id="sg" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0%" stop-color="#00E5B0" stop-opacity="0.45"/>
+              <stop offset="100%" stop-color="#00E5B0" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          <path d="M0,140 L20,135 L40,128 L60,118 L80,108 L100,96 L120,82 L140,74 L160,62 L180,50 L200,40 L220,28 L240,22 L260,18 L260,160 L0,160 Z" fill="url(#sg)"/>
+          <path d="M0,140 L20,135 L40,128 L60,118 L80,108 L100,96 L120,82 L140,74 L160,62 L180,50 L200,40 L220,28 L240,22 L260,18" stroke="var(--teal)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="260" cy="18" r="4" fill="var(--teal)"/>
+        </svg>
+      </div>
+    </div>
+
+    <div class="step reveal">
+      <div>
+        <div class="step-num">Step 03</div>
+        <h3>Course-correct in real time</h3>
+        <p>Try a scenario: pay $200 more each month on the highest-rate debt. Save 5% extra. Cancel one subscription. Watch your debt-free date jump 3 months earlier — instantly.</p>
+      </div>
+      <div class="step-visual">
+        <div style="position:relative;width:80%;height:120px;">
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;gap:12px;">
+            <div style="background:var(--bg-card-2);border-radius:8px;padding:10px;display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-family:var(--mono);font-size:12px;color:var(--ink-3);">Pay extra $200/mo</span>
+              <span style="font-family:var(--mono);font-size:13px;color:var(--teal);">−3 months</span>
+            </div>
+            <div style="background:var(--bg-card-2);border-radius:8px;padding:10px;display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-family:var(--mono);font-size:12px;color:var(--ink-3);">Save 5% extra</span>
+              <span style="font-family:var(--mono);font-size:13px;color:var(--teal);">+$3,420</span>
+            </div>
+            <div style="background:var(--bg-card-2);border-radius:8px;padding:10px;display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-family:var(--mono);font-size:12px;color:var(--ink-3);">Cut Netflix</span>
+              <span style="font-family:var(--mono);font-size:13px;color:var(--teal);">+$192/yr</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════════════
+     FEATURES — bento grid
+     ════════════════════════════════════════════════════════════════════ -->
 <section id="features">
-  <div class="section-eyebrow">What it does</div>
-  <h2 class="section-title">Forecast first. Then act with confidence.</h2>
-  <p class="section-sub">Six tools that turn your bank balance into a 12-month plan you can actually execute on.</p>
+  <div class="section-head reveal">
+    <div class="section-eyebrow">Built for clarity</div>
+    <h2 class="section-title">Six tools, working in concert.</h2>
+    <p class="section-sub">Not another budgeting app. A forecasting cockpit for your finances.</p>
+  </div>
 
-  <div class="features">
-    <article class="feature">
-      <div class="feature-icon">
-        <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M3 17l5-5 4 3 7-9" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  <div class="bento reveal-stagger">
+    <div class="bento-card b-3 b-tall" data-bento>
+      <div>
+        <div class="icon">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M3 17l5-5 4 3 7-9" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <h3>Net worth forecast</h3>
+        <p>The headline number. Where will you be in 3, 6, 12 months? We show you — month by month, accounting for compounding, inflation, and your real spending.</p>
       </div>
-      <h3>Net worth forecast</h3>
-      <p>See where you land in 3, 6, 12 months — based on your actual income, spending and savings rate.</p>
-    </article>
-    <article class="feature">
-      <div class="feature-icon">
-        <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="7.5" stroke="currentColor" stroke-width="1.7"/><path d="M11 6.5v5l3 2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+      <div class="visual-orb" style="background: radial-gradient(circle, rgba(0,229,176,0.6) 0%, transparent 60%);"></div>
+    </div>
+
+    <div class="bento-card b-3" data-bento>
+      <div>
+        <div class="icon">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="7.5" stroke="currentColor" stroke-width="1.7"/><path d="M11 6.5v5l3 2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        </div>
+        <h3>Debt-free date</h3>
+        <p>To the month. Avalanche or snowball — whichever frees you faster.</p>
       </div>
-      <h3>Debt payoff timeline</h3>
-      <p>Compare avalanche vs snowball strategies and watch your debt-free date move forward as you adjust.</p>
-    </article>
-    <article class="feature">
-      <div class="feature-icon">
-        <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M5 18V8m6 10V4m6 14v-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </div>
+
+    <div class="bento-card b-3" data-bento>
+      <div>
+        <div class="icon" style="background: rgba(167,139,250,0.10); border-color: rgba(167,139,250,0.25); color: var(--violet);">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M5 18V8m6 10V4m6 14v-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </div>
+        <h3>Goal projector</h3>
+        <p>Target $20k by August? We show you exactly when you'll hit it at your current rate — and what to change to get there sooner.</p>
       </div>
-      <h3>Goal tracking</h3>
-      <p>Set savings or spending goals — we project the exact month you'll hit each one based on your current trajectory.</p>
-    </article>
-    <article class="feature">
-      <div class="feature-icon">
-        <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M5 11a6 6 0 0112 0v3l1.5 3h-15L5 14v-3z" stroke="currentColor" stroke-width="1.6"/><path d="M9 18a2 2 0 004 0" stroke="currentColor" stroke-width="1.6"/></svg>
+    </div>
+
+    <div class="bento-card b-3" data-bento>
+      <div>
+        <div class="icon" style="background: rgba(245,194,107,0.10); border-color: rgba(245,194,107,0.25); color: var(--gold);">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M5 11a6 6 0 0112 0v3l1.5 3h-15L5 14v-3z" stroke="currentColor" stroke-width="1.6"/><path d="M9 18a2 2 0 004 0" stroke="currentColor" stroke-width="1.6"/></svg>
+        </div>
+        <h3>Recurring radar</h3>
+        <p>Catches every subscription before it auto-renews. Never get blindsided by a $14.99 charge again.</p>
       </div>
-      <h3>Recurring tracker</h3>
-      <p>Catches every subscription before it auto-renews. Never get blindsided by a charge again.</p>
-    </article>
-    <article class="feature">
-      <div class="feature-icon">
-        <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="7.5" stroke="currentColor" stroke-width="1.6"/><path d="M11 6v5l4 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M3 11h2M17 11h2M11 3v2M11 17v2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+    </div>
+
+    <div class="bento-card b-2 b-3" data-bento>
+      <div>
+        <div class="icon" style="background: rgba(99,102,241,0.10); border-color: rgba(99,102,241,0.25); color: var(--indigo);">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="7.5" stroke="currentColor" stroke-width="1.6"/><path d="M11 6v5l4 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        </div>
+        <h3>Sage AI · your personal advisor</h3>
+        <p>An AI that knows your full financial picture. Ask anything — "Should I pay off the car or invest?" — get a real answer in plain English. No upselling, no hedging, no boilerplate.</p>
       </div>
-      <h3>Sage AI advisor</h3>
-      <p>A personal finance advisor that knows your full picture. Ask anything, get an answer in plain English.</p>
-    </article>
-    <article class="feature">
-      <div class="feature-icon">
-        <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="4" y="6" width="14" height="12" rx="1.6" stroke="currentColor" stroke-width="1.6"/><path d="M8 6V4a3 3 0 016 0v2" stroke="currentColor" stroke-width="1.6"/></svg>
+    </div>
+
+    <div class="bento-card b-3" data-bento>
+      <div>
+        <div class="icon" style="background: rgba(251,113,133,0.10); border-color: rgba(251,113,133,0.25); color: var(--rose);">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="4" y="6" width="14" height="12" rx="1.6" stroke="currentColor" stroke-width="1.6"/><path d="M8 6V4a3 3 0 016 0v2" stroke="currentColor" stroke-width="1.6"/></svg>
+        </div>
+        <h3>Encrypted by default</h3>
+        <p>AES-256 in your browser. No bank credentials. Never sold. Delete everything in one click.</p>
       </div>
-      <h3>Bank-grade encryption</h3>
-      <p>Data stored encrypted, isolated per account, never sold, never seen by humans on our team.</p>
-    </article>
+    </div>
   </div>
 </section>
 
-<!-- ── HOW IT WORKS ─────────────────────────────────────────────── -->
-<section style="background: linear-gradient(180deg, transparent 0%, var(--surface) 100%); border-radius: var(--r-xl);">
-  <div class="section-eyebrow">How it works</div>
-  <h2 class="section-title">Three steps. Five minutes. Twelve months of clarity.</h2>
-
-  <div class="features" style="margin-top: 56px;">
-    <article class="feature pfc-card-hover">
-      <div class="feature-icon" style="background:rgba(91,141,239,0.10); border-color:rgba(91,141,239,0.25); color:var(--blue);">01</div>
-      <h3>Drop in your numbers</h3>
-      <p>Income, debts, recurring bills, savings goals. Type them in once or paste a CSV. We don't connect to your bank — your data stays in your browser.</p>
-    </article>
-    <article class="feature pfc-card-hover">
-      <div class="feature-icon" style="background:rgba(180,158,255,0.10); border-color:rgba(180,158,255,0.25); color:var(--purple);">02</div>
-      <h3>We forecast forward</h3>
-      <p>Our model projects every month for the next year — net worth, debt balance, savings progress — accounting for inflation in your country.</p>
-    </article>
-    <article class="feature pfc-card-hover">
-      <div class="feature-icon" style="background:rgba(255,184,92,0.10); border-color:rgba(255,184,92,0.25); color:var(--amber);">03</div>
-      <h3>Course-correct in real time</h3>
-      <p>Try a scenario: pay $200 more on debt. Save 5% more. See the impact on your timeline instantly.</p>
-    </article>
-  </div>
-</section>
-
-<!-- ── PRICING ───────────────────────────────────────────────────── -->
+<!-- ════════════════════════════════════════════════════════════════════
+     PRICING
+     ════════════════════════════════════════════════════════════════════ -->
 <section id="pricing">
-  <div class="section-eyebrow">Pricing</div>
-  <h2 class="section-title">Free forever. Pro for power users.</h2>
-  <p class="section-sub">Start with the free tier. Upgrade only when you need scenario modeling and unlimited Sage queries.</p>
+  <div class="section-head reveal">
+    <div class="section-eyebrow">Pricing</div>
+    <h2 class="section-title">Free covers most of you. Pro covers the rest.</h2>
+    <p class="section-sub">No credit card to start. Upgrade only when you need scenario modelling and unlimited Sage queries.</p>
+  </div>
 
   <div class="pricing">
     <div class="price-card">
       <div class="price-name">Free</div>
-      <div class="price-amount">$0<sub> / month</sub></div>
-      <div class="price-desc">Everything you need to start.</div>
-      <ul class="price-features">
+      <div class="price-amount"><span class="currency">$</span>0<span class="period">/mo</span></div>
+      <div class="price-pitch">Everything to actually use the product.</div>
+      <ul class="price-feats">
         <li><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="var(--teal)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg> 12-month net worth forecast</li>
-        <li><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="var(--teal)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg> Debt payoff timeline</li>
-        <li><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="var(--teal)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg> Goals tracker</li>
+        <li><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="var(--teal)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg> Debt-free date calculator</li>
+        <li><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="var(--teal)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg> Goal tracker · Recurring radar</li>
         <li><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="var(--teal)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg> 5 Sage AI queries / month</li>
       </ul>
-      <a href="auth.html" class="btn btn-outline" style="justify-content: center;">Start free</a>
+      <a href="auth.html" class="btn btn-outline" style="justify-content: center;" data-magnet>Start free</a>
     </div>
 
-    <div class="price-card featured">
+    <div class="price-card hot">
       <div class="price-tag">Most popular</div>
       <div class="price-name">Pro</div>
-      <div class="price-amount">$9.99<sub> / month</sub></div>
-      <div class="price-desc">For people serious about hitting their goals.</div>
-      <ul class="price-features">
+      <div class="price-amount"><span class="currency">$</span>9<span style="font-size:36px;">.99</span><span class="period">/mo</span></div>
+      <div class="price-pitch">For people serious about hitting their goals.</div>
+      <ul class="price-feats">
         <li><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="var(--teal)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg> Everything in Free</li>
-        <li><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="var(--teal)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg> Unlimited scenarios (what-ifs)</li>
+        <li><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="var(--teal)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg> Unlimited what-if scenarios</li>
         <li><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="var(--teal)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg> Salary calculator + tax</li>
         <li><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="var(--teal)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg> Monthly report card</li>
         <li><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="var(--teal)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg> 60 Sage AI queries / month</li>
       </ul>
-      <a href="auth.html?next=/billing.html" class="btn btn-primary" style="justify-content: center;">Get Pro</a>
+      <a href="auth.html?next=/billing.html" class="btn btn-primary" style="justify-content: center;" data-magnet>Get Pro</a>
     </div>
 
     <div class="price-card">
       <div class="price-name">Premium</div>
-      <div class="price-amount">$19.99<sub> / month</sub></div>
-      <div class="price-desc">Power users and small advisors.</div>
-      <ul class="price-features">
+      <div class="price-amount"><span class="currency">$</span>19<span style="font-size:36px;">.99</span><span class="period">/mo</span></div>
+      <div class="price-pitch">Power users + small advisors.</div>
+      <ul class="price-feats">
         <li><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="var(--teal)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg> Everything in Pro</li>
         <li><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="var(--teal)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg> 150 Sage AI queries / month</li>
         <li><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="var(--teal)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg> CSV import / export</li>
-        <li><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="var(--teal)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg> Priority support</li>
+        <li><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="var(--teal)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg> Priority email support</li>
       </ul>
-      <a href="auth.html?next=/billing.html" class="btn btn-outline" style="justify-content: center;">Get Premium</a>
+      <a href="auth.html?next=/billing.html" class="btn btn-outline" style="justify-content: center;" data-magnet>Get Premium</a>
     </div>
   </div>
 </section>
 
-<!-- ── FAQ ──────────────────────────────────────────────────────── -->
-<section>
-  <div class="section-eyebrow">FAQ</div>
-  <h2 class="section-title">Common questions, plain answers.</h2>
-  <div class="faq" style="margin-top: 32px;">
+<!-- ════════════════════════════════════════════════════════════════════
+     FAQ
+     ════════════════════════════════════════════════════════════════════ -->
+<section id="faq">
+  <div class="section-head reveal">
+    <div class="section-eyebrow">Common questions</div>
+    <h2 class="section-title">Plain answers, no fine print.</h2>
+  </div>
+  <div class="faq reveal">
     <details>
       <summary>Do you connect to my bank account?</summary>
-      <p>No. ProFinanceCast is intentionally bank-decoupled. You enter your numbers manually (or paste a CSV) and they live in your browser, encrypted. We never see, store, or sell your bank credentials.</p>
+      <p>No, by design. Most "personal finance" apps lure you in, sell your spending data, then go bankrupt with your bank credentials sitting in their database. We don't connect to anything — you enter your numbers manually (or paste a CSV) and they live in your browser, encrypted. We never see, store, or sell your bank credentials. We never could.</p>
     </details>
     <details>
       <summary>How accurate is the forecast?</summary>
-      <p>It's a deterministic projection from your inputs — same inputs always give the same forecast. We layer on inflation data from the World Bank for your country and let you tweak assumptions in scenarios.</p>
+      <p>It's deterministic — same inputs always give the same forecast. We're not predicting the stock market. We're compounding what you tell us about your income, debts, and savings rate, and layering on real inflation data from the World Bank for your country. The accuracy is a function of how honest you are with your inputs.</p>
     </details>
     <details>
-      <summary>What happens to my data if I cancel?</summary>
-      <p>Your data stays in your browser locally even after you cancel a paid plan — only the Pro features get gated. You can export or wipe everything any time from Settings.</p>
-    </details>
-    <details>
-      <summary>Can I switch from Pro to Premium later?</summary>
-      <p>Yes. Upgrade from your billing page any time — the price is prorated by PayPal automatically.</p>
+      <summary>What happens to my data if I cancel Pro?</summary>
+      <p>Your data stays in your browser locally — only the Pro features (scenarios, salary calc, report card) get gated again. Free features keep working. You can export everything to CSV/JSON or wipe it all in one click from Settings.</p>
     </details>
     <details>
       <summary>Is there a free trial of Pro?</summary>
-      <p>Free forever covers the core forecast. We don't do limited trials — if you want Pro for one month, subscribe and cancel before renewal.</p>
+      <p>The Free plan covers the core forecast forever — no time limit. We don't run "trials" because most trials are confusing dark patterns. If you want Pro for a month, subscribe and cancel before renewal. Cancellation takes 5 seconds.</p>
+    </details>
+    <details>
+      <summary>Who built this?</summary>
+      <p>One developer (the reason it's still cheap). Built because every personal finance tool either connects to your bank (creepy) or only shows you the past (useless). I wanted to see the future.</p>
     </details>
   </div>
 </section>
 
-<!-- ── CTA ──────────────────────────────────────────────────────── -->
-<section>
-  <div class="cta-strip">
+<!-- ════════════════════════════════════════════════════════════════════
+     FINAL CTA
+     ════════════════════════════════════════════════════════════════════ -->
+<section style="padding: 60px 0 120px;">
+  <div class="cta-strip reveal">
     <h2>Stop guessing about your money.</h2>
-    <p>Five minutes of setup, twelve months of clarity. Free forever.</p>
-    <a href="auth.html" class="btn btn-primary btn-lg">
+    <p>Five minutes to drop in your numbers. Twelve months of clarity. Free, forever.</p>
+    <a href="auth.html" class="btn btn-primary btn-lg" data-magnet>
       Start your free forecast
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7h8m-3-3l3 3-3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7h8m-3-3l3 3-3 3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </a>
   </div>
 </section>
 
-<!-- ── FOOTER ───────────────────────────────────────────────────── -->
+</main>
+
 <footer>
   <div class="col brand-col">
     <a class="logo" href="/">
       <div class="logo-mark">PF</div>
       ProFinanceCast
     </a>
-    <p>Forecast your financial future with confidence. Free forever, encrypted by default.</p>
+    <p>The forecast your bank should give you. Free, encrypted, bank-decoupled.</p>
   </div>
   <div class="col">
     <h4>Product</h4>
+    <a href="#how">How it works</a>
     <a href="#features">Features</a>
     <a href="#pricing">Pricing</a>
     <a href="sage.html">Sage AI</a>
@@ -608,28 +930,296 @@
     <a href="billing.html">Billing</a>
   </div>
   <div class="footer-bottom">
-    <span>© 2026 ProFinanceCast. All rights reserved.</span>
-    <span>Built with care · Forecasts are projections, not guarantees.</span>
+    <span>© 2026 ProFinanceCast — All forecasts are projections, not guarantees.</span>
+    <span>v2.0 · Made with care</span>
   </div>
 </footer>
 
+<!-- ══════════════════════════════════════════════════════════════════════
+     SCRIPTS — 3D scene, scroll motion, magnetic CTAs, live forecast widget
+     ══════════════════════════════════════════════════════════════════════ -->
 <script>
-  // Lightweight reveal-on-scroll for sections (no library)
-  const io = new IntersectionObserver((entries) => {
-    entries.forEach(e => {
-      if (e.isIntersecting) {
-        e.target.style.opacity = 1;
-        e.target.style.transform = 'translateY(0)';
-        io.unobserve(e.target);
-      }
+(function () {
+  // ── 1. THREE.JS WIRE-MESH FORECAST WAVE (background) ────────────────
+  function initThree() {
+    if (!window.THREE) return;
+    const canvas = document.getElementById('scene');
+    if (!canvas) return;
+
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.Fog(0x050810, 1, 5);
+
+    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
+    camera.position.set(0, 0.6, 2.2);
+    camera.lookAt(0, 0, 0);
+
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setClearColor(0x000000, 0);
+
+    // Animated wave plane in wireframe — feels like a forecast surface
+    const geom = new THREE.PlaneGeometry(8, 8, 80, 80);
+    const mat = new THREE.MeshBasicMaterial({
+      color: 0x00E5B0,
+      wireframe: true,
+      transparent: true,
+      opacity: 0.18,
     });
-  }, { threshold: 0.12 });
-  document.querySelectorAll('section').forEach(s => {
-    s.style.opacity = 0;
-    s.style.transform = 'translateY(24px)';
-    s.style.transition = 'opacity 600ms var(--ease-out), transform 600ms var(--ease-out)';
-    io.observe(s);
-  });
+    const plane = new THREE.Mesh(geom, mat);
+    plane.rotation.x = -Math.PI * 0.5;
+    plane.position.y = -0.4;
+    scene.add(plane);
+
+    // Particle field — subtle dots floating
+    const pgeom = new THREE.BufferGeometry();
+    const N = 220;
+    const positions = new Float32Array(N * 3);
+    for (let i = 0; i < N; i++) {
+      positions[i*3]   = (Math.random() - 0.5) * 8;
+      positions[i*3+1] = (Math.random() - 0.5) * 4;
+      positions[i*3+2] = (Math.random() - 0.5) * 6;
+    }
+    pgeom.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    const pmat = new THREE.PointsMaterial({ color: 0xA78BFA, size: 0.012, transparent: true, opacity: 0.6, sizeAttenuation: true });
+    const points = new THREE.Points(pgeom, pmat);
+    scene.add(points);
+
+    let mx = 0, my = 0, tmx = 0, tmy = 0;
+    window.addEventListener('mousemove', (e) => {
+      tmx = (e.clientX / window.innerWidth)  * 2 - 1;
+      tmy = (e.clientY / window.innerHeight) * 2 - 1;
+    });
+
+    const pos = geom.attributes.position;
+    let t = 0;
+    function tick() {
+      t += 0.008;
+      // wave motion driven by sin combo + mouse offset
+      mx += (tmx - mx) * 0.04;
+      my += (tmy - my) * 0.04;
+      for (let i = 0; i < pos.count; i++) {
+        const x = pos.getX(i), y = pos.getY(i);
+        const z = Math.sin(x * 1.2 + t) * 0.18 + Math.cos(y * 1.0 + t * 0.8) * 0.12 + mx * 0.04;
+        pos.setZ(i, z);
+      }
+      pos.needsUpdate = true;
+      points.rotation.y = mx * 0.1 + t * 0.04;
+      points.rotation.x = my * 0.05;
+      camera.position.x += (mx * 0.1 - camera.position.x) * 0.04;
+      camera.position.y += (0.6 - my * 0.1 - camera.position.y) * 0.04;
+      camera.lookAt(0, 0, 0);
+      renderer.render(scene, camera);
+      requestAnimationFrame(tick);
+    }
+    tick();
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  }
+
+  // ── 2. GSAP REVEALS + SCROLL CHOREOGRAPHY ──────────────────────────
+  function initMotion() {
+    if (!window.gsap) return;
+    if (window.ScrollTrigger) gsap.registerPlugin(ScrollTrigger);
+
+    // Hero rise on load
+    gsap.from('.hero .reveal', {
+      y: 32, opacity: 0, duration: 0.9, stagger: 0.08, ease: 'power3.out', delay: 0.1,
+    });
+
+    // Section reveals on scroll
+    document.querySelectorAll('section .reveal').forEach((el) => {
+      if (el.closest('.hero')) return;
+      gsap.fromTo(el,
+        { y: 30, opacity: 0 },
+        {
+          y: 0, opacity: 1, duration: 0.9, ease: 'power3.out',
+          scrollTrigger: { trigger: el, start: 'top 85%', toggleActions: 'play none none reverse' },
+        }
+      );
+    });
+
+    // Stagger inside bento
+    document.querySelectorAll('.reveal-stagger').forEach((row) => {
+      gsap.fromTo(row.children,
+        { y: 24, opacity: 0 },
+        {
+          y: 0, opacity: 1, duration: 0.7, stagger: 0.06, ease: 'power3.out',
+          scrollTrigger: { trigger: row, start: 'top 85%', toggleActions: 'play none none reverse' },
+        }
+      );
+    });
+
+    // Steps slide in alternating direction
+    document.querySelectorAll('.step').forEach((step, i) => {
+      gsap.fromTo(step.children,
+        { x: i % 2 === 0 ? -40 : 40, opacity: 0 },
+        {
+          x: 0, opacity: 1, duration: 0.9, ease: 'power3.out',
+          scrollTrigger: { trigger: step, start: 'top 80%', toggleActions: 'play none none reverse' },
+        }
+      );
+    });
+
+    // Nav scrolled state
+    const nav = document.getElementById('nav');
+    ScrollTrigger.create({
+      start: 'top -10', end: 99999,
+      onUpdate: (s) => nav.classList.toggle('scrolled', s.scroll() > 20),
+    });
+  }
+
+  // ── 3. MAGNETIC CTAs ───────────────────────────────────────────────
+  function initMagnet() {
+    document.querySelectorAll('[data-magnet]').forEach(btn => {
+      btn.addEventListener('mousemove', (e) => {
+        const r = btn.getBoundingClientRect();
+        const x = e.clientX - (r.left + r.width / 2);
+        const y = e.clientY - (r.top  + r.height / 2);
+        btn.style.transform = `translate(${x * 0.18}px, ${y * 0.22}px)`;
+      });
+      btn.addEventListener('mouseleave', () => { btn.style.transform = ''; });
+    });
+  }
+
+  // ── 4. BENTO HOVER GLOW THAT FOLLOWS CURSOR ────────────────────────
+  function initBentoCursor() {
+    document.querySelectorAll('[data-bento]').forEach(card => {
+      card.addEventListener('mousemove', (e) => {
+        const r = card.getBoundingClientRect();
+        card.style.setProperty('--mx', ((e.clientX - r.left) / r.width  * 100) + '%');
+        card.style.setProperty('--my', ((e.clientY - r.top)  / r.height * 100) + '%');
+      });
+    });
+  }
+
+  // ── 5. LIVE FORECAST WIDGET ────────────────────────────────────────
+  function initForecast() {
+    const sIn   = document.getElementById('s-income');
+    const sRate = document.getElementById('s-rate');
+    const sDeb  = document.getElementById('s-debt');
+    const sNw   = document.getElementById('s-nw');
+
+    const vIn   = document.getElementById('v-income');
+    const vRate = document.getElementById('v-rate');
+    const vDeb  = document.getElementById('v-debt');
+    const vNw   = document.getElementById('v-nw');
+
+    const rNw      = document.getElementById('r-nw');
+    const rDelta   = document.getElementById('r-delta');
+    const rDebt    = document.getElementById('r-debt-free');
+    const rDebtDel = document.getElementById('r-debt-delta');
+    const fcLine   = document.getElementById('fc-line');
+    const fcArea   = document.getElementById('fc-area');
+    const fcEnd    = document.getElementById('fc-end');
+    const fcGlow   = document.getElementById('fc-end-glow');
+
+    const fmt = n => {
+      if (n >= 1e6) return '$' + (n/1e6).toFixed(1) + 'M';
+      if (Math.abs(n) >= 1e3) return '$' + Math.round(n/1e3) + 'k';
+      return '$' + Math.round(n).toLocaleString();
+    };
+
+    function updatePct(input) {
+      const min = +input.min, max = +input.max, val = +input.value;
+      input.style.setProperty('--p', ((val - min) / (max - min) * 100) + '%');
+    }
+
+    function recompute() {
+      const income = +sIn.value;
+      const rate   = +sRate.value / 100;
+      let debt     = +sDeb.value;
+      let nw       = +sNw.value;
+      const W = 600, H = 200;
+
+      // Project 12 months
+      const monthlySave = income * rate;
+      const debtPay = Math.min(debt, Math.max(150, monthlySave * 0.5));
+      const monthlyNwAdd = monthlySave - debtPay + (debt > 0 ? 0 : monthlySave); // when debt-free, all savings to nw
+
+      const points = [];
+      let curNw = nw, curDebt = debt;
+      let debtFreeMonth = -1;
+      for (let m = 0; m <= 12; m++) {
+        if (curDebt > 0) {
+          const interest = curDebt * 0.012;     // assume 14.4% APR / 12
+          curDebt = Math.max(0, curDebt + interest - debtPay);
+          curNw += monthlySave - debtPay;
+          if (curDebt === 0 && debtFreeMonth === -1) debtFreeMonth = m;
+        } else {
+          curNw += monthlySave;
+        }
+        points.push(curNw);
+      }
+
+      // Render chart
+      const min = Math.min(...points), max = Math.max(...points);
+      const range = Math.max(1, max - min);
+      const pad = 16;
+      const xStep = (W - 2 * pad) / 12;
+      const yScale = (v) => H - pad - ((v - min) / range) * (H - 2 * pad);
+      let d = '';
+      points.forEach((p, i) => {
+        const x = pad + i * xStep;
+        const y = yScale(p);
+        d += (i === 0 ? 'M' : 'L') + x.toFixed(1) + ',' + y.toFixed(1) + ' ';
+      });
+      const last = points[points.length - 1];
+      const lastX = pad + 12 * xStep;
+      const lastY = yScale(last);
+      fcLine.setAttribute('d', d);
+      fcArea.setAttribute('d', d + 'L' + lastX + ',' + (H - pad) + ' L' + pad + ',' + (H - pad) + ' Z');
+      fcEnd.setAttribute('cx', lastX); fcEnd.setAttribute('cy', lastY);
+      fcGlow.setAttribute('cx', lastX); fcGlow.setAttribute('cy', lastY);
+
+      // Update stats
+      vIn.textContent   = fmt(income);
+      vRate.textContent = (rate * 100).toFixed(0) + '%';
+      vDeb.textContent  = fmt(+sDeb.value);
+      vNw.textContent   = fmt(+sNw.value);
+
+      rNw.textContent = fmt(last);
+      const delta = last - nw;
+      rDelta.textContent = (delta >= 0 ? '+' : '') + fmt(delta);
+      rDelta.classList.toggle('bad', delta < 0);
+
+      if (debt === 0) {
+        rDebt.innerHTML = 'Already';
+        rDebtDel.textContent = 'no debt 🎉';
+      } else if (debtFreeMonth > 0 && debtFreeMonth <= 12) {
+        rDebt.innerHTML = debtFreeMonth + '<span style="font-size:18px;color:var(--ink-3);font-weight:400;"> months</span>';
+        rDebtDel.textContent = 'on plan';
+      } else {
+        rDebt.innerHTML = '12+<span style="font-size:18px;color:var(--ink-3);font-weight:400;"> months</span>';
+        rDebtDel.textContent = 'increase savings';
+      }
+
+      [sIn, sRate, sDeb, sNw].forEach(updatePct);
+    }
+
+    [sIn, sRate, sDeb, sNw].forEach(s => s.addEventListener('input', recompute));
+    recompute();
+  }
+
+  // Boot when DOM and libs are ready
+  function ready() {
+    initThree();
+    initMotion();
+    initMagnet();
+    initBentoCursor();
+    initForecast();
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => setTimeout(ready, 50));
+  } else {
+    setTimeout(ready, 50);
+  }
+})();
 </script>
+
 </body>
 </html>

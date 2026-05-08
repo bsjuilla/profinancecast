@@ -631,14 +631,42 @@ async function handleLogin() {
     return;
   }
 
-  const { error } = await supabaseClient.auth.signInWithPassword({ email, password: pw });
+  const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password: pw });
   setLoading('login-btn', 'login-spinner', false);
 
   if (error) {
+    console.error('[auth] signInWithPassword error:', error);
     showAlert('login-error');
-    document.getElementById('login-error').textContent = error.message;
+    let msg = error.message || 'Could not sign in.';
+    // Translate cryptic Supabase errors into something a human can act on
+    if (/email not confirmed/i.test(msg)) {
+      msg = 'You haven’t confirmed your email yet. Check your inbox (and spam) for the link — or click "Resend" below.';
+      // Show a resend button
+      const errEl = document.getElementById('login-error');
+      errEl.innerHTML = msg + ' <a onclick="resendConfirmation(\'' + email + '\')" style="color:var(--teal);cursor:pointer;text-decoration:underline;">Resend</a>';
+      return;
+    }
+    if (/invalid login credentials/i.test(msg)) {
+      msg = 'Wrong email or password. Try again, or reset your password.';
+    }
+    document.getElementById('login-error').textContent = msg;
+    return;
+  }
+  // Session was written to localStorage by the SDK — navigate to the destination
+  console.log('[auth] sign-in OK, session user:', data?.user?.id);
+  window.location.href = _nextDestination();
+}
+
+// Triggered by the inline "Resend" link inside the error banner
+async function resendConfirmation(email) {
+  if (!supabaseClient || !email) return;
+  const { error } = await supabaseClient.auth.resend({ type: 'signup', email });
+  const errEl = document.getElementById('login-error');
+  if (error) {
+    errEl.textContent = 'Could not resend: ' + error.message;
   } else {
-    window.location.href = _nextDestination();
+    errEl.style.color = 'var(--teal)';
+    errEl.textContent = 'Confirmation email resent. Check your inbox in 1–2 minutes.';
   }
 }
 
