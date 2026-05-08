@@ -9,7 +9,20 @@ const PAYPAL_BASE = (process.env.PAYPAL_ENV === 'sandbox')
   ? 'https://api-m.sandbox.paypal.com'
   : 'https://api-m.paypal.com';
 
-const PLAN_PRICES = { pro: 9.99, premium: 19.99 };
+// SKU prices — billing.html (post pricing-report-07 rewrite) uses these codes.
+// `pro_monthly` and `pro_annual` are the same Pro entitlement at different
+// billing intervals; `founders` is a one-time lifetime SKU (capped at 500
+// seats — counter logic lives in a follow-up commit).
+const PLAN_PRICES = {
+  pro_monthly: 9,
+  pro_annual:  69,
+  founders:    149,
+};
+const PLAN_DESCRIPTIONS = {
+  pro_monthly: 'ProFinanceCast Pro — Monthly',
+  pro_annual:  'ProFinanceCast Pro — Annual',
+  founders:    'ProFinanceCast Founders Lifetime',
+};
 const APP_ORIGIN  = process.env.APP_ORIGIN || 'https://profinancecast.com';
 
 async function _verifyUser(req) {
@@ -69,7 +82,7 @@ export default async function handler(req, res) {
           custom_id: user.id,                          // ties the order back to a real user
           reference_id: `${user.id}:${plan}`,
           amount: { currency_code: 'USD', value: amount.toFixed(2) },
-          description: `ProFinanceCast ${plan.charAt(0).toUpperCase() + plan.slice(1)} Plan — Monthly`,
+          description: PLAN_DESCRIPTIONS[plan] || 'ProFinanceCast Pro',
           soft_descriptor: 'PROFINANCECAST',
         }],
         application_context: {

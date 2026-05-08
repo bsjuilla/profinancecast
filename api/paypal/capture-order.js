@@ -18,8 +18,26 @@ const PAYPAL_BASE = (process.env.PAYPAL_ENV === 'sandbox')
   ? 'https://api-m.sandbox.paypal.com'
   : 'https://api-m.paypal.com';
 
-const PLAN_PRICES = { pro: 9.99, premium: 19.99 };
-const PLAN_QUERIES = { pro: 60, premium: 150 };
+// SKU prices — must match create-order.js. The post-rewrite billing.html
+// posts one of these three SKU strings.
+const PLAN_PRICES  = { pro_monthly: 9, pro_annual: 69, founders: 149 };
+
+// All SKUs grant the same Pro entitlement; the difference is billing interval.
+// 'pro' is the canonical plan string written to the subscriptions table — this
+// keeps PFCPlan.requirePlan(['pro','premium']) consumer code unchanged.
+const SKU_TO_PLAN  = { pro_monthly: 'pro', pro_annual: 'pro', founders: 'pro' };
+
+// Sage AI message quota per Pro user/month (pricing report 07).
+const PLAN_QUERIES = { pro: 200, premium: 150 };
+
+// How long the subscription period runs from capture time, per SKU.
+// Founders is one-time; we set a 100-year period_end so status.js never
+// expires it via the !expired check. Cancellation still works the same way.
+const PLAN_PERIOD_DAYS = {
+  pro_monthly: 30,
+  pro_annual:  365,
+  founders:    365 * 100,
+};
 
 function _supabaseAdmin() {
   return createClient(
@@ -94,13 +112,19 @@ export default async function handler(req, res) {
       return res.status(409).json({ error: 'Payment amount mismatch — please contact support.' });
     }
 
-    // 4. Upsert the subscription row (server is source of truth)
-    const periodEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    // 4. Upsert the subscription row (server is source of truth).
+    // The SKU determines billing interval; the *plan* column on subscriptions
+    // is normalized to 'pro' so all entitlement code (status.js, PFCPlan,
+    // requirePlan) stays SKU-agnostic.
+    const sku = plan;
+    const dbPlan = SKU_TO_PLAN[sku];
+    const periodDays = PLAN_PERIOD_DAYS[sku];
+    const periodEnd = new Date(Date.now() + periodDays * 24 * 60 * 60 * 1000).toISOString();
     const { error: upsertErr } = await supabase
       .from('subscriptions')
       .upsert({
         user_id: user.id,
-        plan,
+        plan: dbPlan,
         status: 'active',
         provider: 'paypal',
         provider_order_id: orderID,
@@ -118,7 +142,7 @@ export default async function handler(req, res) {
       // captureID is logged loudly for support reconciliation via the PayPal
       // dashboard until the webhook fallback ships in Phase B.
       console.error('[capture-order] CAPTURED-BUT-NOT-UPGRADED', {
-        userId: user.id, plan, orderID,
+        userId: user.id, sku, dbPlan, orderID,
         captureId: capture?.id,
         amountPaid, currencyPaid,
         upsertErr: { message: upsertErr.message, details: upsertErr.details, code: upsertErr.code },
@@ -132,13 +156,13 @@ export default async function handler(req, res) {
 
     // 5. Reset query counters on the profile (best-effort; ignore if column missing)
     await supabase.from('profiles').update({
-      plan, ai_queries_used: 0, ai_queries_limit: PLAN_QUERIES[plan],
+      plan: dbPlan, ai_queries_used: 0, ai_queries_limit: PLAN_QUERIES[dbPlan],
       ai_queries_reset_at: periodEnd,
     }).eq('id', user.id);
 
-    console.log(`UPGRADED: user=${user.id} plan=${plan} order=${orderID} amount=${amountPaid}`);
+    console.log(`UPGRADED: user=${user.id} sku=${sku} plan=${dbPlan} order=${orderID} amount=${amountPaid}`);
     return res.status(200).json({
-      status: 'COMPLETED', plan, orderID,
+      status: 'COMPLETED', plan: dbPlan, sku, orderID,
       captureID: capture?.id,
       currentPeriodEnd: periodEnd,
     });
