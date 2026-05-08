@@ -160,6 +160,22 @@
   --pfc-line-strong: rgba(244, 239, 229, 0.18);
   --pfc-gold-soft: rgba(212, 175, 106, 0.18);
 
+  /* `pfc-` prefixed aliases for the brand palette and font stacks. The
+     core vars above are unprefixed (--canvas, --money, --gold, etc.) for
+     historical reasons; new pages tend to reach for the `pfc-` namespace
+     by symmetry with `--pfc-ink-*`. These aliases make either form work
+     so we don't get silently-undefined `var(--pfc-canvas)` failures. */
+  --pfc-canvas:     var(--canvas);
+  --pfc-surface:    var(--surface);
+  --pfc-ivory:      var(--paper);
+  --pfc-paper:      var(--paper);
+  --pfc-emerald:    var(--money);
+  --pfc-gold:       var(--gold);
+  --pfc-terracotta: var(--warning);
+  --pfc-display:    var(--font-display);
+  --pfc-body:       var(--font-body);
+  --pfc-mono:       var(--font-mono);
+
   /* Container widths */
   --container-narrow: 720px;
   --container: 1080px;
@@ -202,6 +218,7 @@
   --pfc-ink-faint: rgba(26, 37, 32, 0.38);
   --pfc-line: rgba(26, 37, 32, 0.10);
   --pfc-line-strong: rgba(26, 37, 32, 0.18);
+  --pfc-canvas: var(--paper);    /* on ivory paper, canvas = paper */
 }
 
 /* ── Reduced motion: kill animations cleanly ───────────────────────────── */
