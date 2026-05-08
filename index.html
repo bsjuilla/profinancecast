@@ -1,71 +1,127 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="apple-touch-icon" href="/favicon.svg">
-<meta name="theme-color" content="#0A0E1A">
-<title>ProFinanceCast — The forecast your bank should give you.</title>
-<meta name="description" content="Drop in your numbers. See exactly when you'll be debt-free, what your net worth becomes, and which goals you'll actually hit. Updated month by month for the next 12.">
-<meta property="og:title" content="ProFinanceCast — The forecast your bank should give you.">
-<meta property="og:description" content="AI-powered personal finance forecasting that shows you the next 12 months — month by month.">
+<meta name="theme-color" content="#0B1410">
+<title>ProFinanceCast — Watch your money compound, month by month.</title>
+<meta name="description" content="Drop in your numbers. See exactly when you'll be debt-free, what your net worth becomes 12 months from now, and which goals you'll hit. No bank login, no spreadsheets.">
+<meta property="og:title" content="ProFinanceCast — Watch your money compound, month by month.">
+<meta property="og:description" content="The forecast your bank should give you. Free forever, encrypted, bank-decoupled.">
 <meta property="og:url" content="https://profinancecast.com">
 <meta property="og:type" content="website">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<!-- Bricolage Grotesque (display) + Inter (body) + JetBrains Mono (numbers) — modern fintech stack -->
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700;12..96,800&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<!-- Cormorant Garamond (display, old-money editorial) + Inter (body) + JetBrains Mono (numerical) -->
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 
-<!-- 3D + scroll motion -->
-<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js" defer></script>
+<link rel="stylesheet" href="css/pfc-tokens.css">
+
+<!-- GSAP for scroll choreography (defer = doesn't block paint) -->
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js" defer></script>
 
+<!-- PFC modules (must load before page logic that uses them) -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/pfc-config.js"></script>
+<script src="js/pfc-auth.js"></script>
+<script src="js/pfc-storage.js"></script>
+<script src="js/pfc-entitlements.js"></script>
+<script src="js/pfc-motion.js"></script>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     OAuth CALLBACK HANDLER (preserved from Wave 1 fix)
+     Supabase / Google bring users back here with #access_token=…&… in the
+     URL hash. We detect the callback, hide the page, route to dashboard or
+     onboarding once the session resolves.
+     ════════════════════════════════════════════════════════════════════════ -->
+<script>
+(function () {
+  const hash = window.location.hash || '';
+  const search = window.location.search || '';
+  const isCallback =
+    hash.includes('access_token=') ||
+    hash.includes('error_description=') ||
+    /[?&]code=/.test(search);
+  if (!isCallback) return;
+
+  document.documentElement.style.visibility = 'hidden';
+  document.addEventListener('DOMContentLoaded', () => {
+    const splash = document.createElement('div');
+    splash.style.cssText =
+      'position:fixed;inset:0;z-index:9999;display:grid;place-items:center;' +
+      'background:#0B1410;color:#F0EDE2;font-family:Inter,system-ui,sans-serif;' +
+      'visibility:visible;';
+    splash.innerHTML =
+      '<div style="text-align:center;">' +
+        '<div style="width:42px;height:42px;border:3px solid rgba(43,182,125,0.18);' +
+          'border-top-color:#2BB67D;border-radius:50%;margin:0 auto 18px;' +
+          'animation:pfc-spin .8s linear infinite;"></div>' +
+        '<div style="font-size:14px;color:#B8C2BC;letter-spacing:.04em;">Signing you in…</div>' +
+      '</div>' +
+      '<style>@keyframes pfc-spin{to{transform:rotate(360deg)}}</style>';
+    document.body.appendChild(splash);
+    document.documentElement.style.visibility = '';
+  });
+
+  function decideDestination() {
+    try {
+      const u = new URL(window.location.href);
+      const next = u.searchParams.get('next');
+      if (next && /^\/[a-zA-Z0-9_\-/.?=&]*$/.test(next)) return next;
+    } catch (_) {}
+    try {
+      if (typeof PFCStorage !== 'undefined' && !PFCStorage.get('user')) return 'onboarding.html';
+    } catch (_) {}
+    return 'dashboard.html';
+  }
+
+  if (hash.includes('error_description=')) {
+    const params = new URLSearchParams(hash.replace(/^#/, ''));
+    const msg = decodeURIComponent(params.get('error_description') || 'Sign-in failed');
+    console.error('[oauth] error:', msg);
+    window.location.replace('auth.html?error=' + encodeURIComponent(msg));
+    return;
+  }
+
+  let done = false;
+  const timeout = setTimeout(() => {
+    if (done) return; done = true;
+    console.warn('[oauth] timed out');
+    window.location.replace('auth.html?error=timeout');
+  }, 5000);
+
+  function tryComplete() {
+    if (done) return;
+    if (typeof PFCAuth === 'undefined') { setTimeout(tryComplete, 50); return; }
+    PFCAuth.onReady(uid => {
+      if (done) return; done = true; clearTimeout(timeout);
+      if (uid && uid !== 'guest') {
+        try {
+          const cleanUrl = window.location.origin + window.location.pathname;
+          window.history.replaceState({}, document.title, cleanUrl);
+        } catch (_) {}
+        window.location.replace(decideDestination());
+      } else {
+        console.error('[oauth] hash present but no session');
+        window.location.replace('auth.html?error=no_session');
+      }
+    });
+  }
+  tryComplete();
+})();
+</script>
+
 <style>
-  /* ════════════════════════════════════════════════════════════════════
-     DESIGN TOKENS — tighter, more confident than the previous palette.
-     Replaces pfc-tokens for this page only; deeper navy + cleaner accents.
-     ════════════════════════════════════════════════════════════════════ */
-  :root {
-    --bg:        #050810;
-    --bg-elev:   #0A0E1A;
-    --bg-card:   #0F1422;
-    --bg-card-2: #141A2B;
-    --line:      rgba(255,255,255,0.06);
-    --line-2:    rgba(255,255,255,0.10);
-    --line-3:    rgba(255,255,255,0.18);
-
-    --teal:      #00E5B0;
-    --teal-2:    #00B894;
-    --teal-glow: rgba(0,229,176,0.32);
-    --indigo:    #6366F1;
-    --violet:    #A78BFA;
-    --rose:      #FB7185;
-    --gold:      #F5C26B;
-
-    --ink:       #F4F7FB;
-    --ink-2:     #B0BCD0;
-    --ink-3:     #6A7891;
-    --ink-4:     #3F4A5C;
-
-    --display: 'Bricolage Grotesque', system-ui, sans-serif;
-    --body:    'Inter', system-ui, sans-serif;
-    --mono:    'JetBrains Mono', ui-monospace, monospace;
-
-    --ease:    cubic-bezier(0.22, 0.61, 0.36, 1);
-    --spring:  cubic-bezier(0.34, 1.4, 0.64, 1);
-  }
-
+  /* ── Page-local styles, layered on top of pfc-tokens ─────────────── */
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  html {
-    scroll-behavior: smooth;
-    font-feature-settings: "ss01", "ss02", "cv11";
-  }
+  html { scroll-behavior: smooth; }
   body {
-    font-family: var(--body);
-    background: var(--bg);
+    font-family: var(--font-body);
+    background: var(--canvas);
     color: var(--ink);
     line-height: 1.55;
     overflow-x: hidden;
@@ -73,246 +129,281 @@
     text-rendering: optimizeLegibility;
   }
   h1, h2, h3, h4 {
-    font-family: var(--display);
-    letter-spacing: -0.02em;
-    font-weight: 700;
+    font-family: var(--font-display);
+    font-weight: 500;          /* Cormorant carries weight at 500–600 */
+    letter-spacing: -0.015em;
     line-height: 1.05;
   }
-  ::selection { background: var(--teal); color: var(--bg); }
+  ::selection { background: var(--gold); color: var(--canvas); }
+  a { color: inherit; text-decoration: none; }
+  img, svg { display: block; max-width: 100%; }
 
-  /* ════════════════════════════════════════════════════════════════════
-     3D BACKGROUND CANVAS (Three.js mounts here)
-     ════════════════════════════════════════════════════════════════════ */
-  #scene {
+  /* Atmospheric backdrop — subtle radial vignettes, no 3D ─────────── */
+  .bg-fx {
     position: fixed; inset: 0; z-index: 0;
     pointer-events: none;
-  }
-  /* Atmospheric overlay above the canvas */
-  .veil {
-    position: fixed; inset: 0; z-index: 1; pointer-events: none;
     background:
-      radial-gradient(ellipse 60% 40% at 50% 0%, rgba(0,229,176,0.06), transparent 70%),
-      radial-gradient(ellipse 60% 40% at 50% 100%, rgba(99,102,241,0.05), transparent 70%),
-      linear-gradient(180deg, rgba(5,8,16,0.55) 0%, rgba(5,8,16,0.92) 100%);
+      radial-gradient(ellipse 60% 50% at 80% 0%, rgba(43,182,125,0.06), transparent 70%),
+      radial-gradient(ellipse 60% 50% at 20% 100%, rgba(212,175,106,0.04), transparent 70%);
   }
-  /* Grain for depth */
+  .bg-grid {
+    position: fixed; inset: 0; z-index: 0;
+    pointer-events: none; opacity: 0.20;
+    background-image:
+      linear-gradient(rgba(43,182,125,0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(43,182,125,0.06) 1px, transparent 1px);
+    background-size: 64px 64px;
+    mask-image: radial-gradient(ellipse 80% 60% at 50% 30%, black 30%, transparent 80%);
+  }
   .grain {
-    position: fixed; inset: 0; z-index: 2; pointer-events: none;
-    opacity: 0.05; mix-blend-mode: overlay;
+    position: fixed; inset: 0; z-index: 1;
+    pointer-events: none; opacity: 0.04; mix-blend-mode: overlay;
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' /%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' /%3E%3C/svg%3E");
   }
+  main { position: relative; z-index: 2; }
 
-  main { position: relative; z-index: 3; }
-
-  /* ════════════════════════════════════════════════════════════════════
-     NAV — refined, glass, with magnetic CTA
-     ════════════════════════════════════════════════════════════════════ */
+  /* ── NAV ─────────────────────────────────────────────────────────── */
   nav {
     position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
     width: calc(100% - 48px); max-width: 1200px;
     z-index: 50;
     display: flex; align-items: center; justify-content: space-between;
-    padding: 12px 18px;
-    background: rgba(10, 14, 26, 0.65);
-    backdrop-filter: blur(24px) saturate(140%);
+    padding: 11px 18px;
+    background: rgba(11, 20, 16, 0.65);
+    backdrop-filter: blur(20px) saturate(140%);
     border: 1px solid var(--line-2);
     border-radius: 999px;
-    transition: padding 200ms var(--ease), background 200ms var(--ease);
+    transition: padding var(--t-base) var(--ease-out), background var(--t-base) var(--ease-out);
   }
-  nav.scrolled { background: rgba(10,14,26,0.85); }
-  .logo { display: flex; align-items: center; gap: 10px; font-family: var(--display); font-weight: 700; font-size: 16px; letter-spacing: -0.01em; }
+  nav.scrolled { background: rgba(11, 20, 16, 0.88); }
+  .logo {
+    display: flex; align-items: center; gap: 10px;
+    font-family: var(--font-display); font-weight: 600; font-size: var(--t-18);
+    letter-spacing: -0.01em;
+  }
   .logo-mark {
-    width: 30px; height: 30px; border-radius: 8px;
-    background: linear-gradient(135deg, var(--teal) 0%, var(--indigo) 100%);
-    display: grid; place-items: center;
-    font-weight: 800; color: var(--bg); font-size: 11px; letter-spacing: 0;
-    box-shadow: 0 0 0 1px rgba(255,255,255,0.08), 0 8px 30px rgba(0,229,176,0.20);
+    width: 30px; height: 30px;
+    border-radius: var(--r-xs);
+    background: linear-gradient(135deg, #0B1410 0%, #143524 100%);
+    border: 1px solid rgba(212,175,106,0.35);
+    position: relative;
+    overflow: hidden;
+    flex-shrink: 0;
   }
-  .nav-links { display: flex; gap: 28px; align-items: center; }
-  .nav-links a { font-size: 14px; color: var(--ink-2); transition: color 160ms var(--ease); text-decoration: none; }
+  .logo-mark svg { position: absolute; inset: 0; }
+  .nav-links {
+    display: flex; gap: 28px; align-items: center;
+    font-family: var(--font-body);
+  }
+  .nav-links a {
+    font-size: var(--t-14); color: var(--ink-2);
+    transition: color var(--t-fast) var(--ease-out);
+  }
   .nav-links a:hover { color: var(--ink); }
   .nav-cta { display: flex; gap: 10px; align-items: center; }
 
   /* Buttons */
   .btn {
-    font-family: var(--body); font-size: 14px; font-weight: 500;
+    font-family: var(--font-body); font-size: var(--t-14); font-weight: 500;
     padding: 10px 18px; border-radius: 999px; border: 1px solid transparent;
     cursor: pointer; display: inline-flex; align-items: center; gap: 8px;
-    transition: transform 200ms var(--spring), background 200ms var(--ease), border-color 200ms var(--ease), box-shadow 240ms var(--ease);
+    transition: transform var(--t-base) var(--ease-spring), background var(--t-base) var(--ease-out), border-color var(--t-base) var(--ease-out), box-shadow var(--t-slow) var(--ease-out);
     text-decoration: none; color: inherit; position: relative;
-    will-change: transform;
   }
   .btn-primary {
-    background: var(--teal); color: var(--bg); font-weight: 600;
-    box-shadow: 0 0 0 1px rgba(255,255,255,0.10) inset, 0 8px 30px var(--teal-glow);
+    background: var(--money); color: var(--canvas); font-weight: 600;
+    box-shadow: var(--glow-money);
   }
-  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 0 0 1px rgba(255,255,255,0.20) inset, 0 14px 50px var(--teal-glow); }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 0 0 1px rgba(255,255,255,0.20) inset, 0 14px 50px var(--money-glow); }
   .btn-primary:active { transform: translateY(0); }
   .btn-ghost { background: transparent; color: var(--ink-2); }
   .btn-ghost:hover { color: var(--ink); }
   .btn-outline { background: rgba(255,255,255,0.02); color: var(--ink); border-color: var(--line-2); }
-  .btn-outline:hover { border-color: var(--teal); background: rgba(0,229,176,0.06); }
-  .btn-lg { padding: 14px 26px; font-size: 15px; }
+  .btn-outline:hover { border-color: var(--money); background: var(--money-soft); }
+  .btn-lg { padding: 14px 26px; font-size: var(--t-15); }
 
-  /* ════════════════════════════════════════════════════════════════════
-     HERO
-     ════════════════════════════════════════════════════════════════════ */
+  /* ── HERO ────────────────────────────────────────────────────────── */
   .hero {
-    min-height: 100svh; display: grid; place-items: center;
+    min-height: 100svh;
+    display: grid; place-items: center;
     padding: 140px 24px 80px;
-    text-align: center; position: relative;
+    text-align: center;
+    position: relative;
   }
   .eyebrow {
     display: inline-flex; align-items: center; gap: 10px;
-    font-family: var(--mono); font-size: 12px; font-weight: 500;
-    color: var(--teal); letter-spacing: 0.04em; text-transform: uppercase;
-    background: rgba(0,229,176,0.08);
-    border: 1px solid rgba(0,229,176,0.20);
-    padding: 7px 14px 7px 10px; border-radius: 999px;
+    font-family: var(--font-mono); font-size: var(--t-12); font-weight: 500;
+    color: var(--money); letter-spacing: 0.06em; text-transform: uppercase;
+    background: var(--money-soft);
+    border: 1px solid rgba(43,182,125,0.22);
+    padding: 7px 14px 7px 10px;
+    border-radius: 999px;
     margin-bottom: 36px;
   }
   .eyebrow .dot {
-    width: 7px; height: 7px; border-radius: 50%; background: var(--teal);
-    box-shadow: 0 0 0 4px rgba(0,229,176,0.20);
-    animation: pulse 2.4s var(--ease) infinite;
+    width: 7px; height: 7px; border-radius: 50%; background: var(--money);
+    box-shadow: 0 0 0 4px rgba(43,182,125,0.20);
+    animation: pulse 2.4s var(--ease-out) infinite;
   }
   @keyframes pulse {
-    0%,100% { box-shadow: 0 0 0 4px rgba(0,229,176,0.20); }
-    50%     { box-shadow: 0 0 0 9px rgba(0,229,176,0.04); }
+    0%,100% { box-shadow: 0 0 0 4px rgba(43,182,125,0.20); }
+    50%     { box-shadow: 0 0 0 9px rgba(43,182,125,0.04); }
   }
   .hero h1 {
     font-size: clamp(48px, 7.6vw, 104px);
-    font-weight: 700; line-height: 0.98;
-    letter-spacing: -0.035em;
-    max-width: 14ch; margin: 0 auto 28px;
+    font-weight: 500;            /* Cormorant looks best at this weight */
+    line-height: 0.96;
+    letter-spacing: -0.025em;
+    max-width: 16ch;
+    margin: 0 auto 28px;
+  }
+  .hero h1 em {
+    font-style: italic;
+    color: var(--gold);
+    font-weight: 400;
   }
   .hero h1 .grad {
-    background: linear-gradient(120deg, var(--teal) 0%, var(--violet) 70%, var(--rose) 100%);
+    background: linear-gradient(120deg, var(--money) 0%, var(--gold) 100%);
     -webkit-background-clip: text; background-clip: text; color: transparent;
-    background-size: 200% 200%;
-    animation: shift 9s var(--ease) infinite;
+    background-size: 200% 100%;
+    animation: shift 8s var(--ease-out) infinite;
+    font-style: italic;
+    font-weight: 500;
   }
-  @keyframes shift {
-    0%   { background-position: 0% 50%; }
-    50%  { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
-  }
+  @keyframes shift { 0%,100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
   .hero-sub {
     font-size: clamp(16px, 1.3vw, 19px);
-    color: var(--ink-2); font-weight: 400;
+    color: var(--ink-2); font-weight: 300;
     max-width: 56ch; margin: 0 auto 40px;
   }
   .hero-cta { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 36px; }
   .trust-row {
     display: flex; gap: 28px; justify-content: center; flex-wrap: wrap;
-    font-size: 13px; color: var(--ink-3); font-family: var(--mono);
+    font-family: var(--font-mono); font-size: var(--t-13); color: var(--ink-3);
   }
   .trust-row span { display: flex; align-items: center; gap: 6px; }
 
-  /* ════════════════════════════════════════════════════════════════════
-     INTERACTIVE FORECAST PREVIEW
-     A live mini-app: drag the slider, watch the chart update.
-     ════════════════════════════════════════════════════════════════════ */
-  .demo {
-    margin: 100px auto 0;
-    max-width: 1100px; padding: 0 24px;
+  /* ── HERO CHART (compound curve) ────────────────────────────────── */
+  .hero-chart {
+    margin: 80px auto 0;
+    max-width: 1080px;
+    padding: 0 24px;
     perspective: 1800px;
   }
-  .demo-frame {
-    background: linear-gradient(180deg, var(--bg-card-2) 0%, var(--bg-card) 100%);
+  .chart-frame {
+    background: linear-gradient(180deg, var(--surface-2) 0%, var(--surface) 100%);
     border: 1px solid var(--line-2);
-    border-radius: 28px;
+    border-radius: var(--r-xl);
     padding: 36px;
     box-shadow:
       0 1px 0 rgba(255,255,255,0.04) inset,
       0 30px 80px rgba(0,0,0,0.5),
-      0 0 60px rgba(0,229,176,0.06);
-    transform-style: preserve-3d;
-    transform: rotateX(8deg);
-    transition: transform 600ms var(--ease);
+      0 0 60px rgba(43,182,125,0.05);
+    transform: rotateX(6deg) translateZ(0);
+    transition: transform var(--t-stately) var(--ease-out);
   }
-  .demo:hover .demo-frame { transform: rotateX(2deg); }
-  .demo-grid { display: grid; grid-template-columns: 1fr 1.4fr; gap: 32px; align-items: center; }
+  .hero-chart:hover .chart-frame { transform: rotateX(1deg); }
+  .chart-grid { display: grid; grid-template-columns: 1fr 1.4fr; gap: 32px; align-items: center; }
 
-  .demo-controls h3 {
-    font-size: 22px; margin-bottom: 8px;
+  .chart-controls h3 {
+    font-family: var(--font-display);
+    font-size: var(--t-24);
+    font-weight: 600;
+    margin-bottom: 8px;
   }
-  .demo-controls .demo-sub {
-    color: var(--ink-3); font-size: 14px; margin-bottom: 28px;
+  .chart-controls p {
+    color: var(--ink-3); font-size: var(--t-14);
+    margin-bottom: 24px;
   }
-  .slider-row { margin-bottom: 22px; }
+  .slider-row { margin-bottom: 18px; }
   .slider-row label {
     display: flex; justify-content: space-between; align-items: baseline;
-    font-size: 13px; color: var(--ink-2); margin-bottom: 8px;
+    font-size: var(--t-13); color: var(--ink-2); margin-bottom: 8px;
   }
   .slider-row label .v {
-    font-family: var(--mono); font-size: 15px; font-weight: 600; color: var(--teal);
+    font-family: var(--font-mono);
+    font-size: var(--t-15);
+    font-weight: 600;
+    color: var(--money);
   }
   input[type=range] {
     -webkit-appearance: none; appearance: none;
-    width: 100%; height: 6px; border-radius: 999px;
-    background: linear-gradient(90deg, var(--teal) var(--p,40%), var(--bg-card-2) var(--p,40%));
+    width: 100%; height: 4px; border-radius: 999px;
+    background: linear-gradient(90deg, var(--money) var(--p,40%), var(--surface-3) var(--p,40%));
     outline: none; cursor: pointer;
   }
   input[type=range]::-webkit-slider-thumb {
     -webkit-appearance: none;
     width: 22px; height: 22px; border-radius: 50%;
-    background: var(--ink); border: 4px solid var(--teal);
-    box-shadow: 0 4px 14px rgba(0,229,176,0.4);
+    background: var(--ink); border: 4px solid var(--money);
+    box-shadow: 0 4px 14px rgba(43,182,125,0.4);
     cursor: grab;
-    transition: transform 120ms var(--ease);
+    transition: transform var(--t-fast) var(--ease-out);
   }
   input[type=range]::-webkit-slider-thumb:active { cursor: grabbing; transform: scale(1.15); }
   input[type=range]::-moz-range-thumb {
     width: 22px; height: 22px; border-radius: 50%;
-    background: var(--ink); border: 4px solid var(--teal);
-    box-shadow: 0 4px 14px rgba(0,229,176,0.4);
+    background: var(--ink); border: 4px solid var(--money);
     cursor: grab;
   }
 
-  .demo-result {
-    background: var(--bg);
+  .chart-result {
+    background: var(--canvas);
     border: 1px solid var(--line);
-    border-radius: 20px;
+    border-radius: var(--r-lg);
     padding: 24px;
     min-height: 360px;
     display: flex; flex-direction: column; gap: 16px;
   }
-  .stat-row { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; }
-  .stat-row .lbl { font-family: var(--mono); font-size: 11px; color: var(--ink-3); letter-spacing: 0.06em; text-transform: uppercase; }
-  .stat-row .val { font-family: var(--display); font-size: 32px; font-weight: 700; letter-spacing: -0.02em; }
-  .stat-row .delta { font-size: 13px; color: var(--teal); font-family: var(--mono); }
-  .stat-row .delta.bad { color: var(--rose); }
-  #fc-chart { width: 100%; height: 200px; flex: 1; }
+  .chart-stats { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; }
+  .chart-stats .lbl {
+    font-family: var(--font-mono); font-size: var(--t-11);
+    color: var(--ink-3); letter-spacing: 0.10em; text-transform: uppercase;
+  }
+  .chart-stats .val {
+    font-family: var(--font-display); font-size: var(--t-32);
+    font-weight: 600; letter-spacing: -0.02em;
+    font-feature-settings: "tnum" 1, "lnum" 1;
+  }
+  .chart-stats .delta {
+    font-family: var(--font-mono); font-size: var(--t-13);
+    color: var(--money);
+  }
+  .chart-stats .delta.bad { color: var(--warning); }
+  #fc-svg { width: 100%; flex: 1; min-height: 200px; }
 
-  /* ════════════════════════════════════════════════════════════════════
-     SECTIONS
-     ════════════════════════════════════════════════════════════════════ */
+  /* ── SECTION TEMPLATE ───────────────────────────────────────────── */
   section {
     padding: 140px 24px;
     max-width: 1240px;
     margin: 0 auto;
     position: relative;
   }
-  .section-head { max-width: 720px; margin-bottom: 80px; }
+  .section-head { max-width: 720px; margin-bottom: 72px; }
   .section-eyebrow {
     display: inline-block;
-    font-family: var(--mono); font-size: 12px; font-weight: 500;
-    color: var(--teal); letter-spacing: 0.06em; text-transform: uppercase;
+    font-family: var(--font-mono); font-size: var(--t-12); font-weight: 500;
+    color: var(--money); letter-spacing: 0.10em; text-transform: uppercase;
     margin-bottom: 18px;
   }
   .section-eyebrow::before { content: '— '; color: var(--ink-4); }
   .section-title {
+    font-family: var(--font-display);
     font-size: clamp(34px, 4.6vw, 64px);
+    font-weight: 500;
     line-height: 1.02;
     margin-bottom: 18px;
-    letter-spacing: -0.025em;
+    letter-spacing: -0.02em;
   }
+  .section-title em { font-style: italic; color: var(--gold); }
   .section-sub {
-    font-size: 17px; color: var(--ink-2); max-width: 60ch; font-weight: 400;
+    font-size: var(--t-16);
+    color: var(--ink-2);
+    max-width: 60ch;
+    font-weight: 300;
   }
 
-  /* ── BENTO FEATURES ────────────────────────────────────────────── */
+  /* ── BENTO FEATURES ─────────────────────────────────────────────── */
   .bento {
     display: grid;
     grid-template-columns: repeat(6, 1fr);
@@ -320,143 +411,154 @@
     gap: 16px;
   }
   .bento-card {
-    background: linear-gradient(180deg, var(--bg-card-2) 0%, var(--bg-card) 100%);
+    background: linear-gradient(180deg, var(--surface-2) 0%, var(--surface) 100%);
     border: 1px solid var(--line);
-    border-radius: 22px;
+    border-radius: var(--r-lg);
     padding: 28px;
     overflow: hidden;
     position: relative;
-    transition: border-color 240ms var(--ease), transform 240ms var(--ease);
+    transition: border-color var(--t-base) var(--ease-out), transform var(--t-base) var(--ease-out);
     display: flex; flex-direction: column; justify-content: space-between;
   }
-  .bento-card:hover {
-    border-color: var(--line-3);
-    transform: translateY(-3px);
-  }
+  .bento-card:hover { border-color: var(--line-3); transform: translateY(-3px); }
   .bento-card::before {
     content: ''; position: absolute; inset: 0;
-    background: radial-gradient(600px circle at var(--mx,50%) var(--my,50%), rgba(0,229,176,0.12), transparent 40%);
-    opacity: 0; transition: opacity 280ms var(--ease);
+    background: radial-gradient(600px circle at var(--mx,50%) var(--my,50%), rgba(43,182,125,0.12), transparent 40%);
+    opacity: 0;
+    transition: opacity var(--t-base) var(--ease-out);
     pointer-events: none;
   }
   .bento-card:hover::before { opacity: 1; }
   .bento-card .icon {
-    width: 44px; height: 44px; border-radius: 12px;
+    width: 44px; height: 44px;
+    border-radius: var(--r-sm);
     display: grid; place-items: center;
-    background: rgba(0,229,176,0.08);
-    border: 1px solid rgba(0,229,176,0.18);
-    color: var(--teal);
+    background: var(--money-soft);
+    border: 1px solid rgba(43,182,125,0.18);
+    color: var(--money);
     margin-bottom: 16px;
   }
-  .bento-card h3 { font-size: 20px; margin-bottom: 8px; }
-  .bento-card p { font-size: 14px; color: var(--ink-2); line-height: 1.55; }
-  /* Bento cell sizing */
-  .b-tall  { grid-row: span 2; }
-  .b-wide  { grid-column: span 2; }
-  .b-3     { grid-column: span 3; }
-  .b-4     { grid-column: span 4; }
+  .bento-card h3 {
+    font-family: var(--font-display);
+    font-size: var(--t-20);
+    font-weight: 600;
+    margin-bottom: 8px;
+    letter-spacing: -0.01em;
+  }
+  .bento-card p { font-size: var(--t-14); color: var(--ink-2); line-height: 1.55; }
+  .b-tall { grid-row: span 2; }
+  .b-wide { grid-column: span 2; }
+  .b-3 { grid-column: span 3; }
+  .b-4 { grid-column: span 4; }
 
   .visual-orb {
     position: absolute; right: -40px; bottom: -40px;
     width: 220px; height: 220px; border-radius: 50%;
-    background: radial-gradient(circle at 30% 30%, var(--teal) 0%, transparent 60%);
-    filter: blur(40px); opacity: 0.4;
+    background: radial-gradient(circle at 30% 30%, var(--money) 0%, transparent 60%);
+    filter: blur(40px); opacity: 0.30;
   }
 
-  /* ── PRICING ──────────────────────────────────────────────────── */
+  /* ── HOW IT WORKS ───────────────────────────────────────────────── */
+  .steps { display: grid; gap: 80px; }
+  .step { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: center; }
+  .step:nth-child(even) .step-visual { order: -1; }
+  .step-num {
+    font-family: var(--font-mono); font-size: var(--t-13);
+    color: var(--gold); letter-spacing: 0.10em; text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .step h3 {
+    font-family: var(--font-display);
+    font-size: clamp(28px, 3vw, 44px);
+    font-weight: 500;
+    margin-bottom: 16px;
+    line-height: 1.05;
+  }
+  .step p { color: var(--ink-2); font-size: var(--t-16); max-width: 48ch; font-weight: 300; }
+  .step-visual {
+    aspect-ratio: 4/3;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    position: relative;
+    overflow: hidden;
+    display: grid; place-items: center;
+  }
+
+  /* ── PRICING ────────────────────────────────────────────────────── */
   .pricing { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
   .price-card {
-    background: linear-gradient(180deg, var(--bg-card-2) 0%, var(--bg-card) 100%);
+    background: linear-gradient(180deg, var(--surface-2) 0%, var(--surface) 100%);
     border: 1px solid var(--line);
-    border-radius: 22px;
+    border-radius: var(--r-lg);
     padding: 36px 28px;
     display: flex; flex-direction: column;
     position: relative;
-    transition: border-color 240ms var(--ease), transform 240ms var(--ease);
+    transition: border-color var(--t-base) var(--ease-out), transform var(--t-base) var(--ease-out);
   }
   .price-card:hover { border-color: var(--line-2); }
   .price-card.hot {
-    border: 1px solid var(--teal);
-    background:
-      linear-gradient(180deg, rgba(0,229,176,0.08) 0%, var(--bg-card) 60%);
-    box-shadow: 0 30px 80px rgba(0,229,176,0.10), 0 0 0 1px rgba(0,229,176,0.30) inset;
+    border: 1px solid var(--gold);
+    background: linear-gradient(180deg, rgba(212,175,106,0.06) 0%, var(--surface) 60%);
+    box-shadow: 0 30px 80px rgba(212,175,106,0.10), 0 0 0 1px rgba(212,175,106,0.30) inset;
     transform: translateY(-4px);
   }
   .price-tag {
     position: absolute; top: -14px; left: 50%; transform: translateX(-50%);
-    font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: 0.08em;
-    text-transform: uppercase;
-    background: var(--teal); color: var(--bg); padding: 5px 14px; border-radius: 999px;
+    font-family: var(--font-mono); font-size: var(--t-11); font-weight: 600;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    background: var(--gold); color: var(--canvas);
+    padding: 5px 14px; border-radius: 999px;
   }
-  .price-name { font-family: var(--display); font-size: 18px; font-weight: 600; color: var(--ink-2); }
+  .price-name {
+    font-family: var(--font-display); font-size: var(--t-20);
+    font-weight: 600; color: var(--ink-2);
+  }
   .price-amount {
-    font-family: var(--display); font-size: 56px; font-weight: 700;
-    letter-spacing: -0.04em; line-height: 1; margin: 18px 0 4px;
+    font-family: var(--font-display); font-size: var(--t-60);
+    font-weight: 500;
+    letter-spacing: -0.03em; line-height: 1;
+    margin: 18px 0 4px;
+    font-feature-settings: "tnum" 1, "lnum" 1;
   }
   .price-amount .currency { font-size: 26px; vertical-align: super; color: var(--ink-3); margin-right: 4px; }
-  .price-amount .period   { font-size: 16px; color: var(--ink-3); font-weight: 400; margin-left: 6px; vertical-align: middle; }
-  .price-pitch { font-size: 14px; color: var(--ink-2); margin-bottom: 28px; min-height: 2.5em; }
+  .price-amount .period { font-family: var(--font-body); font-size: 16px; color: var(--ink-3); font-weight: 400; margin-left: 6px; vertical-align: middle; }
+  .price-pitch { font-size: var(--t-14); color: var(--ink-2); margin-bottom: 28px; min-height: 2.5em; }
   .price-feats { list-style: none; flex: 1; display: flex; flex-direction: column; gap: 12px; margin-bottom: 28px; }
-  .price-feats li { display: flex; gap: 10px; font-size: 14px; color: var(--ink-2); }
+  .price-feats li { display: flex; gap: 10px; font-size: var(--t-14); color: var(--ink-2); }
   .price-feats svg { flex-shrink: 0; margin-top: 3px; }
 
-  /* ── HOW IT WORKS — animated steps ─────────────────────────────── */
-  .steps { display: grid; gap: 80px; }
-  .step {
-    display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: center;
-  }
-  .step:nth-child(even) .step-visual { order: -1; }
-  .step-num {
-    font-family: var(--mono); font-size: 13px; color: var(--teal); letter-spacing: 0.1em; text-transform: uppercase;
-    margin-bottom: 12px;
-  }
-  .step h3 { font-size: clamp(28px, 3vw, 44px); margin-bottom: 16px; line-height: 1.05; }
-  .step p { color: var(--ink-2); font-size: 16px; max-width: 48ch; }
-
-  .step-visual {
-    aspect-ratio: 4/3;
-    background: var(--bg-card);
-    border: 1px solid var(--line);
-    border-radius: 20px;
-    position: relative; overflow: hidden;
-    display: grid; place-items: center;
-  }
-  .step-visual::before {
-    content: ''; position: absolute; inset: 0;
-    background: radial-gradient(circle at 50% 50%, rgba(0,229,176,0.10), transparent 60%);
-  }
-
-  /* ── FAQ ──────────────────────────────────────────────────────── */
+  /* ── FAQ ────────────────────────────────────────────────────────── */
   .faq { display: flex; flex-direction: column; gap: 12px; max-width: 800px; margin: 0 auto; }
   .faq details {
-    background: var(--bg-card);
+    background: var(--surface);
     border: 1px solid var(--line);
-    border-radius: 16px;
+    border-radius: var(--r-md);
     padding: 22px 26px;
-    transition: border-color 200ms var(--ease);
+    transition: border-color var(--t-base) var(--ease-out);
   }
   .faq details[open] { border-color: var(--line-2); }
   .faq summary {
-    list-style: none; cursor: pointer; font-weight: 500; font-size: 16px;
+    list-style: none; cursor: pointer; font-weight: 500; font-size: var(--t-16);
     display: flex; justify-content: space-between; align-items: center;
   }
   .faq summary::-webkit-details-marker { display: none; }
   .faq summary::after {
-    content: '+'; font-family: var(--mono); font-size: 22px; color: var(--ink-3);
-    transition: transform 240ms var(--spring);
+    content: '+'; font-family: var(--font-mono); font-size: var(--t-20); color: var(--ink-3);
+    transition: transform var(--t-base) var(--ease-spring);
   }
-  .faq details[open] summary::after { transform: rotate(45deg); color: var(--teal); }
-  .faq p { color: var(--ink-2); margin-top: 14px; line-height: 1.7; font-size: 15px; }
+  .faq details[open] summary::after { transform: rotate(45deg); color: var(--money); }
+  .faq p { color: var(--ink-2); margin-top: 14px; line-height: 1.7; font-size: var(--t-15); font-weight: 300; }
 
-  /* ── CTA STRIP ─────────────────────────────────────────────────── */
+  /* ── CTA STRIP ──────────────────────────────────────────────────── */
   .cta-strip {
     margin: 0 24px;
     background:
-      radial-gradient(circle at 30% 30%, rgba(0,229,176,0.10), transparent 60%),
-      radial-gradient(circle at 70% 70%, rgba(99,102,241,0.10), transparent 60%),
-      linear-gradient(180deg, var(--bg-card-2) 0%, var(--bg-card) 100%);
+      radial-gradient(circle at 30% 30%, rgba(43,182,125,0.10), transparent 60%),
+      radial-gradient(circle at 70% 70%, rgba(212,175,106,0.08), transparent 60%),
+      linear-gradient(180deg, var(--surface-2) 0%, var(--surface) 100%);
     border: 1px solid var(--line-2);
-    border-radius: 32px;
+    border-radius: var(--r-xl);
     padding: 80px 32px;
     text-align: center;
     position: relative; overflow: hidden;
@@ -464,40 +566,50 @@
   }
   .cta-strip::before {
     content: ''; position: absolute; inset: 0;
-    background: radial-gradient(ellipse at center bottom, rgba(0,229,176,0.16), transparent 60%);
+    background: radial-gradient(ellipse at center bottom, rgba(43,182,125,0.18), transparent 60%);
   }
   .cta-strip > * { position: relative; z-index: 1; }
-  .cta-strip h2 { font-size: clamp(36px, 5vw, 60px); margin-bottom: 16px; line-height: 1.05; }
-  .cta-strip p { color: var(--ink-2); margin-bottom: 32px; font-size: 17px; max-width: 56ch; margin-left: auto; margin-right: auto; }
+  .cta-strip h2 {
+    font-family: var(--font-display);
+    font-size: clamp(36px, 5vw, 60px);
+    font-weight: 500;
+    margin-bottom: 16px; line-height: 1.05;
+  }
+  .cta-strip h2 em { color: var(--gold); }
+  .cta-strip p { color: var(--ink-2); margin-bottom: 32px; font-size: var(--t-16); max-width: 56ch; margin-left: auto; margin-right: auto; font-weight: 300; }
 
-  /* ── FOOTER ────────────────────────────────────────────────────── */
+  /* ── FOOTER ─────────────────────────────────────────────────────── */
   footer {
     border-top: 1px solid var(--line);
     padding: 64px 24px 36px;
     max-width: 1240px; margin: 80px auto 0;
     display: grid; grid-template-columns: 2fr repeat(3, 1fr); gap: 48px;
   }
-  footer .col h4 { font-family: var(--mono); font-size: 11px; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.14em; margin-bottom: 14px; font-weight: 500; }
-  footer .col a { display: block; color: var(--ink-2); font-size: 14px; padding: 6px 0; transition: color 160ms var(--ease); text-decoration: none; }
+  footer .col h4 {
+    font-family: var(--font-mono); font-size: var(--t-11);
+    color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.14em;
+    margin-bottom: 14px; font-weight: 500;
+  }
+  footer .col a { display: block; color: var(--ink-2); font-size: var(--t-14); padding: 6px 0; transition: color var(--t-fast) var(--ease-out); }
   footer .col a:hover { color: var(--ink); }
-  footer .brand-col p { font-size: 13px; color: var(--ink-3); margin-top: 12px; max-width: 36ch; }
+  footer .brand-col p { font-size: var(--t-13); color: var(--ink-3); margin-top: 12px; max-width: 32ch; font-weight: 300; }
   .footer-bottom {
     grid-column: 1/-1; padding-top: 28px; margin-top: 32px;
     border-top: 1px solid var(--line);
     display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px;
-    font-size: 12px; color: var(--ink-3); font-family: var(--mono);
+    font-family: var(--font-mono); font-size: var(--t-12); color: var(--ink-3);
   }
 
-  /* ── REVEAL ANIMATIONS (used by GSAP) ─────────────────────────── */
+  /* ── REVEAL ──────────────────────────────────────────────────────── */
   .reveal { opacity: 0; transform: translateY(30px); }
   .reveal-stagger > * { opacity: 0; transform: translateY(20px); }
 
-  /* ── RESPONSIVE ───────────────────────────────────────────────── */
+  /* ── RESPONSIVE ──────────────────────────────────────────────────── */
   @media (max-width: 980px) {
-    nav { width: calc(100% - 24px); padding: 10px 14px; }
+    nav { width: calc(100% - 24px); padding: 9px 14px; }
     .nav-links { display: none; }
-    .demo-grid { grid-template-columns: 1fr; }
-    .demo-frame { transform: none; padding: 24px; }
+    .chart-grid { grid-template-columns: 1fr; }
+    .chart-frame { transform: none; padding: 24px; }
     .step { grid-template-columns: 1fr; gap: 24px; }
     .step:nth-child(even) .step-visual { order: 0; }
     .bento { grid-template-columns: 1fr 1fr; grid-auto-rows: auto; }
@@ -515,130 +627,24 @@
     .hero-cta .btn { justify-content: center; }
     .bento { grid-template-columns: 1fr; }
   }
-
-  @media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after {
-      animation-duration: 0.01ms !important;
-      transition-duration: 0.01ms !important;
-    }
-    .demo-frame { transform: none; }
-  }
 </style>
-  <!-- Supabase SDK + auth/storage/entitlements (must load before any inline script that uses them) -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/pfc-config.js"></script>
-  <script src="js/pfc-auth.js"></script>
-  <script src="js/pfc-storage.js"></script>
-  <script src="js/pfc-entitlements.js"></script>
-
-  <!-- ════════════════════════════════════════════════════════════════════
-       OAuth CALLBACK HANDLER
-       Supabase / Google redirect users back here with #access_token=…&… in
-       the URL hash. The Supabase SDK's `detectSessionInUrl: true` (set in
-       pfc-auth.js) reads the hash, writes the session to localStorage, then
-       fires the SIGNED_IN auth event. We listen for that, then route the
-       user to dashboard.html (or onboarding if they're brand new).
-       ════════════════════════════════════════════════════════════════════ -->
-  <script>
-  (function () {
-    const hash = window.location.hash || '';
-    const search = window.location.search || '';
-    const isCallback =
-      hash.includes('access_token=') ||
-      hash.includes('error_description=') ||
-      /[?&]code=/.test(search);
-
-    if (!isCallback) return;
-
-    // Hide the landing page until we know where to send the user
-    document.documentElement.style.visibility = 'hidden';
-
-    document.addEventListener('DOMContentLoaded', () => {
-      const splash = document.createElement('div');
-      splash.id = 'oauth-splash';
-      splash.style.cssText =
-        'position:fixed;inset:0;z-index:9999;display:grid;place-items:center;' +
-        'background:#050810;color:#F4F7FB;font-family:Inter,system-ui,sans-serif;' +
-        'visibility:visible;';
-      splash.innerHTML =
-        '<div style="text-align:center;">' +
-          '<div style="width:42px;height:42px;border:3px solid rgba(0,229,176,0.18);' +
-            'border-top-color:#00E5B0;border-radius:50%;margin:0 auto 18px;' +
-            'animation:pfc-spin .8s linear infinite;"></div>' +
-          '<div style="font-size:14px;color:#A1AFC2;letter-spacing:.04em;">Signing you in…</div>' +
-        '</div>' +
-        '<style>@keyframes pfc-spin{to{transform:rotate(360deg)}}</style>';
-      document.body.appendChild(splash);
-      document.documentElement.style.visibility = '';
-    });
-
-    function decideDestination(userId) {
-      try {
-        const u = new URL(window.location.href);
-        const next = u.searchParams.get('next');
-        if (next && /^\/[a-zA-Z0-9_\-/.?=&]*$/.test(next)) return next;
-      } catch (_) {}
-      try {
-        if (typeof PFCStorage !== 'undefined' && !PFCStorage.get('user')) {
-          return 'onboarding.html';
-        }
-      } catch (_) {}
-      return 'dashboard.html';
-    }
-
-    function complete(userId) {
-      try {
-        const cleanUrl = window.location.origin + window.location.pathname;
-        window.history.replaceState({}, document.title, cleanUrl);
-      } catch (_) {}
-      window.location.replace(decideDestination(userId));
-    }
-
-    if (hash.includes('error_description=')) {
-      const params = new URLSearchParams(hash.replace(/^#/, ''));
-      const msg = decodeURIComponent(params.get('error_description') || 'Sign-in failed');
-      console.error('[oauth] error:', msg);
-      window.location.replace('auth.html?error=' + encodeURIComponent(msg));
-      return;
-    }
-
-    let done = false;
-    const timeout = setTimeout(() => {
-      if (done) return;
-      done = true;
-      console.warn('[oauth] timed out waiting for session — falling back to auth.html');
-      window.location.replace('auth.html?error=timeout');
-    }, 5000);
-
-    function tryComplete() {
-      if (done) return;
-      if (typeof PFCAuth === 'undefined') { setTimeout(tryComplete, 50); return; }
-      PFCAuth.onReady((uid) => {
-        if (done) return;
-        done = true;
-        clearTimeout(timeout);
-        if (uid && uid !== 'guest') {
-          complete(uid);
-        } else {
-          console.error('[oauth] hash present but no session resolved');
-          window.location.replace('auth.html?error=no_session');
-        }
-      });
-    }
-    tryComplete();
-  })();
-  </script>
-
 </head>
 <body>
 
-<canvas id="scene" aria-hidden="true"></canvas>
-<div class="veil" aria-hidden="true"></div>
+<div class="bg-fx" aria-hidden="true"></div>
+<div class="bg-grid" aria-hidden="true"></div>
 <div class="grain" aria-hidden="true"></div>
 
+<!-- ─────────── NAV ─────────── -->
 <nav id="nav">
   <a class="logo" href="/">
-    <div class="logo-mark">PF</div>
+    <span class="logo-mark">
+      <svg viewBox="0 0 32 32" width="30" height="30">
+        <path d="M5 22 L11 19.5 L17 14.5 L23 7" fill="none" stroke="#D4AF6A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="23" cy="7" r="3" fill="#D4AF6A" fill-opacity="0.22"/>
+        <circle cx="23" cy="7" r="1.8" fill="#D4AF6A"/>
+      </svg>
+    </span>
     ProFinanceCast
   </a>
   <div class="nav-links">
@@ -649,7 +655,7 @@
   </div>
   <div class="nav-cta">
     <a href="auth.html" class="btn btn-ghost">Sign in</a>
-    <a href="auth.html" class="btn btn-primary" data-magnet>
+    <a href="auth.html" class="btn btn-primary">
       Start free
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7h8m-3-3l3 3-3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </a>
@@ -658,41 +664,40 @@
 
 <main>
 
-<!-- ════════════════════════════════════════════════════════════════════
-     HERO
-     ════════════════════════════════════════════════════════════════════ -->
+<!-- ─────────── HERO ─────────── -->
 <section class="hero">
   <div class="eyebrow reveal">
-    <span class="dot"></span> Live forecast · v2.0 just shipped
+    <span class="dot"></span> v2 · The forecasting cockpit
   </div>
   <h1 class="reveal">
-    The forecast<br>your bank<br><span class="grad">should give you.</span>
+    Watch your money<br>
+    <em>compound,</em> <span class="grad">month by month.</span>
   </h1>
   <p class="hero-sub reveal">
-    Drop in your numbers. We project the next 12 months — month by month.
-    See the exact day you're debt-free, what your net worth becomes, and which
-    goals you'll actually hit. No bank connection. No spreadsheets. No guessing.
+    Drop in your numbers. We project the next twelve months — to the exact day you'll be debt-free,
+    what your net worth becomes, and which goals you'll actually hit. No bank login, no spreadsheets,
+    no guessing.
   </p>
   <div class="hero-cta reveal">
-    <a href="auth.html" class="btn btn-primary btn-lg" data-magnet>
+    <a href="auth.html" class="btn btn-primary btn-lg">
       Start free — no card
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7h8m-3-3l3 3-3 3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </a>
     <a href="#demo" class="btn btn-outline btn-lg">Try it without signing up ↓</a>
   </div>
   <div class="trust-row reveal">
-    <span><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3 3 6-6" stroke="var(--teal)" stroke-width="1.6" stroke-linecap="round"/></svg> Free forever</span>
-    <span><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3 3 6-6" stroke="var(--teal)" stroke-width="1.6" stroke-linecap="round"/></svg> No bank login</span>
-    <span><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3 3 6-6" stroke="var(--teal)" stroke-width="1.6" stroke-linecap="round"/></svg> AES-256 encrypted</span>
+    <span><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3 3 6-6" stroke="var(--money)" stroke-width="1.6" stroke-linecap="round"/></svg> Free forever</span>
+    <span><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3 3 6-6" stroke="var(--money)" stroke-width="1.6" stroke-linecap="round"/></svg> No bank login</span>
+    <span><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3 3 6-6" stroke="var(--money)" stroke-width="1.6" stroke-linecap="round"/></svg> AES-256 encrypted</span>
   </div>
 
-  <!-- ── INTERACTIVE FORECAST WIDGET ─────────────────────────────── -->
-  <div class="demo reveal" id="demo">
-    <div class="demo-frame">
-      <div class="demo-grid">
-        <div class="demo-controls">
-          <h3>Try a live forecast →</h3>
-          <p class="demo-sub">Adjust the sliders. The chart on the right re-projects in real time.</p>
+  <!-- ── INTERACTIVE FORECAST WIDGET ── -->
+  <div class="hero-chart reveal" id="demo">
+    <div class="chart-frame">
+      <div class="chart-grid">
+        <div class="chart-controls">
+          <h3>Try a live forecast</h3>
+          <p>Drag the sliders. The compound-growth curve on the right re-projects in real time.</p>
 
           <div class="slider-row">
             <label>Monthly take-home <span class="v" id="v-income">$5,000</span></label>
@@ -712,8 +717,8 @@
           </div>
         </div>
 
-        <div class="demo-result">
-          <div class="stat-row">
+        <div class="chart-result">
+          <div class="chart-stats">
             <div>
               <div class="lbl">Net worth · 12 months</div>
               <div class="val" id="r-nw">$17,000</div>
@@ -721,27 +726,26 @@
             </div>
             <div style="text-align:right;">
               <div class="lbl">Debt-free in</div>
-              <div class="val" id="r-debt-free">7<span style="font-size:18px;color:var(--ink-3);font-weight:400;"> months</span></div>
-              <div class="delta" id="r-debt-delta">on schedule</div>
+              <div class="val" id="r-debt-free">7<span style="font-family:var(--font-body);font-size:18px;color:var(--ink-3);font-weight:400;"> months</span></div>
+              <div class="delta" id="r-debt-delta">on plan</div>
             </div>
           </div>
-          <svg id="fc-chart" viewBox="0 0 600 200" preserveAspectRatio="none">
+          <svg id="fc-svg" viewBox="0 0 600 200" preserveAspectRatio="none">
             <defs>
               <linearGradient id="cg" x1="0" x2="0" y1="0" y2="1">
-                <stop offset="0%"  stop-color="#00E5B0" stop-opacity="0.45"/>
-                <stop offset="100%" stop-color="#00E5B0" stop-opacity="0"/>
+                <stop offset="0%"  stop-color="var(--money)" stop-opacity="0.45"/>
+                <stop offset="100%" stop-color="var(--money)" stop-opacity="0"/>
               </linearGradient>
               <filter id="glow"><feGaussianBlur stdDeviation="3"/></filter>
             </defs>
-            <!-- gridlines -->
             <line x1="0" y1="50"  x2="600" y2="50"  stroke="rgba(255,255,255,0.04)"/>
             <line x1="0" y1="100" x2="600" y2="100" stroke="rgba(255,255,255,0.04)"/>
             <line x1="0" y1="150" x2="600" y2="150" stroke="rgba(255,255,255,0.04)"/>
             <path id="fc-area" d="" fill="url(#cg)"/>
-            <path id="fc-line" d="" fill="none" stroke="#00E5B0" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/>
-            <path id="fc-line2" d="" fill="none" stroke="#00E5B0" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-            <circle id="fc-end" cx="600" cy="20" r="5" fill="#00E5B0"/>
-            <circle id="fc-end-glow" cx="600" cy="20" r="11" fill="#00E5B0" opacity="0.25"/>
+            <path id="fc-line" d="" fill="none" stroke="var(--money)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/>
+            <path id="fc-line2" d="" fill="none" stroke="var(--money)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle id="fc-end" cx="600" cy="20" r="5" fill="var(--gold)"/>
+            <circle id="fc-end-glow" cx="600" cy="20" r="11" fill="var(--gold)" opacity="0.30"/>
           </svg>
         </div>
       </div>
@@ -749,13 +753,11 @@
   </div>
 </section>
 
-<!-- ════════════════════════════════════════════════════════════════════
-     HOW IT WORKS — three animated steps
-     ════════════════════════════════════════════════════════════════════ -->
+<!-- ─────────── HOW IT WORKS ─────────── -->
 <section id="how">
   <div class="section-head reveal">
     <div class="section-eyebrow">How it works</div>
-    <h2 class="section-title">Five minutes of input. Twelve months of clarity.</h2>
+    <h2 class="section-title">Five minutes of input. <em>Twelve months of clarity.</em></h2>
     <p class="section-sub">No bank login, no broker, no spreadsheets. You give us your numbers — we give you the future.</p>
   </div>
 
@@ -767,15 +769,15 @@
         <p>Income, debts, recurring bills, savings goals, target country. Type them once or paste a CSV. Everything stays in your browser, encrypted.</p>
       </div>
       <div class="step-visual">
-        <svg width="60%" viewBox="0 0 200 150" fill="none">
-          <rect x="10" y="20" width="180" height="20" rx="6" fill="var(--bg-card-2)"/>
+        <svg width="68%" viewBox="0 0 200 150" fill="none">
+          <rect x="10" y="20" width="180" height="20" rx="6" fill="var(--surface-3)"/>
           <rect x="14" y="26" width="80" height="8" rx="3" fill="var(--ink-3)"/>
-          <rect x="10" y="50" width="180" height="20" rx="6" fill="var(--bg-card-2)"/>
-          <rect x="14" y="56" width="120" height="8" rx="3" fill="var(--teal)"/>
-          <rect x="10" y="80" width="180" height="20" rx="6" fill="var(--bg-card-2)"/>
+          <rect x="10" y="50" width="180" height="20" rx="6" fill="var(--surface-3)"/>
+          <rect x="14" y="56" width="120" height="8" rx="3" fill="var(--money)"/>
+          <rect x="10" y="80" width="180" height="20" rx="6" fill="var(--surface-3)"/>
           <rect x="14" y="86" width="60" height="8" rx="3" fill="var(--ink-3)"/>
-          <rect x="10" y="110" width="180" height="24" rx="6" fill="var(--teal)"/>
-          <rect x="80" y="118" width="40" height="8" rx="3" fill="var(--bg)"/>
+          <rect x="10" y="110" width="180" height="24" rx="6" fill="var(--money)"/>
+          <rect x="80" y="118" width="40" height="8" rx="3" fill="var(--canvas)"/>
         </svg>
       </div>
     </div>
@@ -783,20 +785,20 @@
     <div class="step reveal">
       <div>
         <div class="step-num">Step 02</div>
-        <h3>We forecast forward — to the day</h3>
-        <p>Our model compounds your inputs month by month. Real inflation pulled from World Bank data for your country. Real interest on every debt. Goals projected to the exact month you'll hit them.</p>
+        <h3>We compound forward — to the day</h3>
+        <p>Our model projects every month for the next year. Real inflation pulled from the World Bank for your country. Real interest on every debt. Goals projected to the exact month you'll hit them.</p>
       </div>
       <div class="step-visual">
-        <svg width="80%" viewBox="0 0 280 160" fill="none">
+        <svg width="80%" viewBox="0 0 280 160" fill="none" id="step2-svg">
           <defs>
             <linearGradient id="sg" x1="0" x2="0" y1="0" y2="1">
-              <stop offset="0%" stop-color="#00E5B0" stop-opacity="0.45"/>
-              <stop offset="100%" stop-color="#00E5B0" stop-opacity="0"/>
+              <stop offset="0%" stop-color="var(--money)" stop-opacity="0.45"/>
+              <stop offset="100%" stop-color="var(--money)" stop-opacity="0"/>
             </linearGradient>
           </defs>
           <path d="M0,140 L20,135 L40,128 L60,118 L80,108 L100,96 L120,82 L140,74 L160,62 L180,50 L200,40 L220,28 L240,22 L260,18 L260,160 L0,160 Z" fill="url(#sg)"/>
-          <path d="M0,140 L20,135 L40,128 L60,118 L80,108 L100,96 L120,82 L140,74 L160,62 L180,50 L200,40 L220,28 L240,22 L260,18" stroke="var(--teal)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-          <circle cx="260" cy="18" r="4" fill="var(--teal)"/>
+          <path d="M0,140 L20,135 L40,128 L60,118 L80,108 L100,96 L120,82 L140,74 L160,62 L180,50 L200,40 L220,28 L240,22 L260,18" stroke="var(--money)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="260" cy="18" r="4" fill="var(--gold)"/>
         </svg>
       </div>
     </div>
@@ -805,23 +807,21 @@
       <div>
         <div class="step-num">Step 03</div>
         <h3>Course-correct in real time</h3>
-        <p>Try a scenario: pay $200 more each month on the highest-rate debt. Save 5% extra. Cancel one subscription. Watch your debt-free date jump 3 months earlier — instantly.</p>
+        <p>Try a scenario: pay $200 more each month on the highest-rate debt. Save 5% extra. Cancel one subscription. Watch your debt-free date jump three months earlier — instantly.</p>
       </div>
       <div class="step-visual">
-        <div style="position:relative;width:80%;height:120px;">
-          <div style="position:absolute;inset:0;display:flex;flex-direction:column;gap:12px;">
-            <div style="background:var(--bg-card-2);border-radius:8px;padding:10px;display:flex;justify-content:space-between;align-items:center;">
-              <span style="font-family:var(--mono);font-size:12px;color:var(--ink-3);">Pay extra $200/mo</span>
-              <span style="font-family:var(--mono);font-size:13px;color:var(--teal);">−3 months</span>
-            </div>
-            <div style="background:var(--bg-card-2);border-radius:8px;padding:10px;display:flex;justify-content:space-between;align-items:center;">
-              <span style="font-family:var(--mono);font-size:12px;color:var(--ink-3);">Save 5% extra</span>
-              <span style="font-family:var(--mono);font-size:13px;color:var(--teal);">+$3,420</span>
-            </div>
-            <div style="background:var(--bg-card-2);border-radius:8px;padding:10px;display:flex;justify-content:space-between;align-items:center;">
-              <span style="font-family:var(--mono);font-size:12px;color:var(--ink-3);">Cut Netflix</span>
-              <span style="font-family:var(--mono);font-size:13px;color:var(--teal);">+$192/yr</span>
-            </div>
+        <div style="position:relative;width:78%;display:flex;flex-direction:column;gap:10px;">
+          <div style="background:var(--surface-3);border-radius:8px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-family:var(--font-mono);font-size:12px;color:var(--ink-3);">Pay extra $200/mo</span>
+            <span style="font-family:var(--font-mono);font-size:13px;color:var(--money);">−3 months</span>
+          </div>
+          <div style="background:var(--surface-3);border-radius:8px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-family:var(--font-mono);font-size:12px;color:var(--ink-3);">Save 5% extra</span>
+            <span style="font-family:var(--font-mono);font-size:13px;color:var(--money);">+$3,420</span>
+          </div>
+          <div style="background:var(--surface-3);border-radius:8px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-family:var(--font-mono);font-size:12px;color:var(--ink-3);">Cut Netflix</span>
+            <span style="font-family:var(--font-mono);font-size:13px;color:var(--money);">+$192/yr</span>
           </div>
         </div>
       </div>
@@ -829,13 +829,11 @@
   </div>
 </section>
 
-<!-- ════════════════════════════════════════════════════════════════════
-     FEATURES — bento grid
-     ════════════════════════════════════════════════════════════════════ -->
+<!-- ─────────── FEATURES ─────────── -->
 <section id="features">
   <div class="section-head reveal">
     <div class="section-eyebrow">Built for clarity</div>
-    <h2 class="section-title">Six tools, working in concert.</h2>
+    <h2 class="section-title">Six tools, <em>working in concert.</em></h2>
     <p class="section-sub">Not another budgeting app. A forecasting cockpit for your finances.</p>
   </div>
 
@@ -848,7 +846,7 @@
         <h3>Net worth forecast</h3>
         <p>The headline number. Where will you be in 3, 6, 12 months? We show you — month by month, accounting for compounding, inflation, and your real spending.</p>
       </div>
-      <div class="visual-orb" style="background: radial-gradient(circle, rgba(0,229,176,0.6) 0%, transparent 60%);"></div>
+      <div class="visual-orb"></div>
     </div>
 
     <div class="bento-card b-3" data-bento>
@@ -863,17 +861,17 @@
 
     <div class="bento-card b-3" data-bento>
       <div>
-        <div class="icon" style="background: rgba(167,139,250,0.10); border-color: rgba(167,139,250,0.25); color: var(--violet);">
+        <div class="icon" style="background: rgba(212,175,106,0.10); border-color: rgba(212,175,106,0.25); color: var(--gold);">
           <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M5 18V8m6 10V4m6 14v-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
         </div>
         <h3>Goal projector</h3>
-        <p>Target $20k by August? We show you exactly when you'll hit it at your current rate — and what to change to get there sooner.</p>
+        <p>Target $20k by August? We show you the exact month you'll hit it at your current rate — and what to change to get there sooner.</p>
       </div>
     </div>
 
     <div class="bento-card b-3" data-bento>
       <div>
-        <div class="icon" style="background: rgba(245,194,107,0.10); border-color: rgba(245,194,107,0.25); color: var(--gold);">
+        <div class="icon" style="background: rgba(230,110,92,0.10); border-color: rgba(230,110,92,0.25); color: var(--warning);">
           <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M5 11a6 6 0 0112 0v3l1.5 3h-15L5 14v-3z" stroke="currentColor" stroke-width="1.6"/><path d="M9 18a2 2 0 004 0" stroke="currentColor" stroke-width="1.6"/></svg>
         </div>
         <h3>Recurring radar</h3>
@@ -883,17 +881,17 @@
 
     <div class="bento-card b-2 b-3" data-bento>
       <div>
-        <div class="icon" style="background: rgba(99,102,241,0.10); border-color: rgba(99,102,241,0.25); color: var(--indigo);">
+        <div class="icon" style="background: rgba(143,160,146,0.10); border-color: rgba(143,160,146,0.25); color: var(--sage);">
           <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="7.5" stroke="currentColor" stroke-width="1.6"/><path d="M11 6v5l4 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
         </div>
         <h3>Sage AI · your personal advisor</h3>
-        <p>An AI that knows your full financial picture. Ask anything — "Should I pay off the car or invest?" — get a real answer in plain English. No upselling, no hedging, no boilerplate.</p>
+        <p>An AI that knows your full financial picture. Ask anything — "Should I pay off the car or invest?" — get a real answer in plain English. No upselling, no hedging.</p>
       </div>
     </div>
 
     <div class="bento-card b-3" data-bento>
       <div>
-        <div class="icon" style="background: rgba(251,113,133,0.10); border-color: rgba(251,113,133,0.25); color: var(--rose);">
+        <div class="icon" style="background: rgba(212,175,106,0.10); border-color: rgba(212,175,106,0.25); color: var(--gold);">
           <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="4" y="6" width="14" height="12" rx="1.6" stroke="currentColor" stroke-width="1.6"/><path d="M8 6V4a3 3 0 016 0v2" stroke="currentColor" stroke-width="1.6"/></svg>
         </div>
         <h3>Encrypted by default</h3>
@@ -903,13 +901,11 @@
   </div>
 </section>
 
-<!-- ════════════════════════════════════════════════════════════════════
-     PRICING
-     ════════════════════════════════════════════════════════════════════ -->
+<!-- ─────────── PRICING ─────────── -->
 <section id="pricing">
   <div class="section-head reveal">
     <div class="section-eyebrow">Pricing</div>
-    <h2 class="section-title">Free covers most of you. Pro covers the rest.</h2>
+    <h2 class="section-title">Free covers most of you. <em>Pro covers the rest.</em></h2>
     <p class="section-sub">No credit card to start. Upgrade only when you need scenario modelling and unlimited Sage queries.</p>
   </div>
 
@@ -917,14 +913,14 @@
     <div class="price-card">
       <div class="price-name">Free</div>
       <div class="price-amount"><span class="currency">$</span>0<span class="period">/mo</span></div>
-      <div class="price-pitch">Everything to actually use the product.</div>
+      <div class="price-pitch">Everything you need to actually use the product.</div>
       <ul class="price-feats">
-        <li><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="var(--teal)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg> 12-month net worth forecast</li>
-        <li><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="var(--teal)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg> Debt-free date calculator</li>
-        <li><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="var(--teal)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg> Goal tracker · Recurring radar</li>
-        <li><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="var(--teal)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg> 5 Sage AI queries / month</li>
+        <li><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="var(--money)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg> 12-month net worth forecast</li>
+        <li><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="var(--money)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg> Debt-free date calculator</li>
+        <li><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="var(--money)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg> Goal tracker · Recurring radar</li>
+        <li><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="var(--money)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg> 5 Sage AI queries / month</li>
       </ul>
-      <a href="auth.html" class="btn btn-outline" style="justify-content: center;" data-magnet>Start free</a>
+      <a href="auth.html" class="btn btn-outline" style="justify-content: center;">Start free</a>
     </div>
 
     <div class="price-card hot">
@@ -933,13 +929,13 @@
       <div class="price-amount"><span class="currency">$</span>9<span style="font-size:36px;">.99</span><span class="period">/mo</span></div>
       <div class="price-pitch">For people serious about hitting their goals.</div>
       <ul class="price-feats">
-        <li><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="var(--teal)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg> Everything in Free</li>
-        <li><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="var(--teal)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg> Unlimited what-if scenarios</li>
-        <li><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="var(--teal)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg> Salary calculator + tax</li>
-        <li><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="var(--teal)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg> Monthly report card</li>
-        <li><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="var(--teal)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg> 60 Sage AI queries / month</li>
+        <li><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="var(--money)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg> Everything in Free</li>
+        <li><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="var(--money)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg> Unlimited what-if scenarios</li>
+        <li><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="var(--money)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg> Salary calculator + tax</li>
+        <li><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="var(--money)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg> Monthly report card</li>
+        <li><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="var(--money)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg> 60 Sage AI queries / month</li>
       </ul>
-      <a href="auth.html?next=/billing.html" class="btn btn-primary" style="justify-content: center;" data-magnet>Get Pro</a>
+      <a href="auth.html?next=/billing.html" class="btn btn-primary" style="justify-content: center;">Get Pro</a>
     </div>
 
     <div class="price-card">
@@ -947,23 +943,21 @@
       <div class="price-amount"><span class="currency">$</span>19<span style="font-size:36px;">.99</span><span class="period">/mo</span></div>
       <div class="price-pitch">Power users + small advisors.</div>
       <ul class="price-feats">
-        <li><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="var(--teal)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg> Everything in Pro</li>
-        <li><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="var(--teal)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg> 150 Sage AI queries / month</li>
-        <li><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="var(--teal)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg> CSV import / export</li>
-        <li><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="var(--teal)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg> Priority email support</li>
+        <li><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="var(--money)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg> Everything in Pro</li>
+        <li><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="var(--money)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg> 150 Sage AI queries / month</li>
+        <li><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="var(--money)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg> CSV import / export</li>
+        <li><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="var(--money)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg> Priority email support</li>
       </ul>
-      <a href="auth.html?next=/billing.html" class="btn btn-outline" style="justify-content: center;" data-magnet>Get Premium</a>
+      <a href="auth.html?next=/billing.html" class="btn btn-outline" style="justify-content: center;">Get Premium</a>
     </div>
   </div>
 </section>
 
-<!-- ════════════════════════════════════════════════════════════════════
-     FAQ
-     ════════════════════════════════════════════════════════════════════ -->
+<!-- ─────────── FAQ ─────────── -->
 <section id="faq">
   <div class="section-head reveal">
     <div class="section-eyebrow">Common questions</div>
-    <h2 class="section-title">Plain answers, no fine print.</h2>
+    <h2 class="section-title">Plain answers, <em>no fine print.</em></h2>
   </div>
   <div class="faq reveal">
     <details>
@@ -989,14 +983,12 @@
   </div>
 </section>
 
-<!-- ════════════════════════════════════════════════════════════════════
-     FINAL CTA
-     ════════════════════════════════════════════════════════════════════ -->
+<!-- ─────────── CTA ─────────── -->
 <section style="padding: 60px 0 120px;">
   <div class="cta-strip reveal">
-    <h2>Stop guessing about your money.</h2>
+    <h2>Stop guessing about <em>your money.</em></h2>
     <p>Five minutes to drop in your numbers. Twelve months of clarity. Free, forever.</p>
-    <a href="auth.html" class="btn btn-primary btn-lg" data-magnet>
+    <a href="auth.html" class="btn btn-primary btn-lg">
       Start your free forecast
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7h8m-3-3l3 3-3 3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </a>
@@ -1008,7 +1000,12 @@
 <footer>
   <div class="col brand-col">
     <a class="logo" href="/">
-      <div class="logo-mark">PF</div>
+      <span class="logo-mark">
+        <svg viewBox="0 0 32 32" width="30" height="30">
+          <path d="M5 22 L11 19.5 L17 14.5 L23 7" fill="none" stroke="#D4AF6A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="23" cy="7" r="1.8" fill="#D4AF6A"/>
+        </svg>
+      </span>
       ProFinanceCast
     </a>
     <p>The forecast your bank should give you. Free, encrypted, bank-decoupled.</p>
@@ -1040,158 +1037,45 @@
   </div>
 </footer>
 
-<!-- ══════════════════════════════════════════════════════════════════════
-     SCRIPTS — 3D scene, scroll motion, magnetic CTAs, live forecast widget
-     ══════════════════════════════════════════════════════════════════════ -->
+<!-- ═══════════════════════════════════════════════════════════════
+     SCRIPTS — scroll choreography, magnetic CTAs, live forecast
+     ═══════════════════════════════════════════════════════════════ -->
 <script>
 (function () {
-  // ── 1. THREE.JS WIRE-MESH FORECAST WAVE (background) ────────────────
-  function initThree() {
-    if (!window.THREE) return;
-    const canvas = document.getElementById('scene');
-    if (!canvas) return;
-
-    const scene = new THREE.Scene();
-    scene.fog = new THREE.Fog(0x050810, 1, 5);
-
-    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
-    camera.position.set(0, 0.6, 2.2);
-    camera.lookAt(0, 0, 0);
-
-    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setClearColor(0x000000, 0);
-
-    // Animated wave plane in wireframe — feels like a forecast surface
-    const geom = new THREE.PlaneGeometry(8, 8, 80, 80);
-    const mat = new THREE.MeshBasicMaterial({
-      color: 0x00E5B0,
-      wireframe: true,
-      transparent: true,
-      opacity: 0.18,
-    });
-    const plane = new THREE.Mesh(geom, mat);
-    plane.rotation.x = -Math.PI * 0.5;
-    plane.position.y = -0.4;
-    scene.add(plane);
-
-    // Particle field — subtle dots floating
-    const pgeom = new THREE.BufferGeometry();
-    const N = 220;
-    const positions = new Float32Array(N * 3);
-    for (let i = 0; i < N; i++) {
-      positions[i*3]   = (Math.random() - 0.5) * 8;
-      positions[i*3+1] = (Math.random() - 0.5) * 4;
-      positions[i*3+2] = (Math.random() - 0.5) * 6;
-    }
-    pgeom.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    const pmat = new THREE.PointsMaterial({ color: 0xA78BFA, size: 0.012, transparent: true, opacity: 0.6, sizeAttenuation: true });
-    const points = new THREE.Points(pgeom, pmat);
-    scene.add(points);
-
-    let mx = 0, my = 0, tmx = 0, tmy = 0;
-    window.addEventListener('mousemove', (e) => {
-      tmx = (e.clientX / window.innerWidth)  * 2 - 1;
-      tmy = (e.clientY / window.innerHeight) * 2 - 1;
-    });
-
-    const pos = geom.attributes.position;
-    let t = 0;
-    function tick() {
-      t += 0.008;
-      // wave motion driven by sin combo + mouse offset
-      mx += (tmx - mx) * 0.04;
-      my += (tmy - my) * 0.04;
-      for (let i = 0; i < pos.count; i++) {
-        const x = pos.getX(i), y = pos.getY(i);
-        const z = Math.sin(x * 1.2 + t) * 0.18 + Math.cos(y * 1.0 + t * 0.8) * 0.12 + mx * 0.04;
-        pos.setZ(i, z);
-      }
-      pos.needsUpdate = true;
-      points.rotation.y = mx * 0.1 + t * 0.04;
-      points.rotation.x = my * 0.05;
-      camera.position.x += (mx * 0.1 - camera.position.x) * 0.04;
-      camera.position.y += (0.6 - my * 0.1 - camera.position.y) * 0.04;
-      camera.lookAt(0, 0, 0);
-      renderer.render(scene, camera);
-      requestAnimationFrame(tick);
-    }
-    tick();
-
-    window.addEventListener('resize', () => {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
-    });
-  }
-
-  // ── 2. GSAP REVEALS + SCROLL CHOREOGRAPHY ──────────────────────────
+  // ── 1. GSAP REVEALS ──
   function initMotion() {
-    if (!window.gsap) return;
+    if (!window.gsap) { setTimeout(initMotion, 100); return; }
     if (window.ScrollTrigger) gsap.registerPlugin(ScrollTrigger);
 
-    // Hero rise on load
-    gsap.from('.hero .reveal', {
-      y: 32, opacity: 0, duration: 0.9, stagger: 0.08, ease: 'power3.out', delay: 0.1,
-    });
+    gsap.from('.hero .reveal', { y: 32, opacity: 0, duration: 0.9, stagger: 0.08, ease: 'power3.out', delay: 0.1 });
 
-    // Section reveals on scroll
     document.querySelectorAll('section .reveal').forEach((el) => {
       if (el.closest('.hero')) return;
-      gsap.fromTo(el,
-        { y: 30, opacity: 0 },
-        {
-          y: 0, opacity: 1, duration: 0.9, ease: 'power3.out',
-          scrollTrigger: { trigger: el, start: 'top 85%', toggleActions: 'play none none reverse' },
-        }
-      );
-    });
-
-    // Stagger inside bento
-    document.querySelectorAll('.reveal-stagger').forEach((row) => {
-      gsap.fromTo(row.children,
-        { y: 24, opacity: 0 },
-        {
-          y: 0, opacity: 1, duration: 0.7, stagger: 0.06, ease: 'power3.out',
-          scrollTrigger: { trigger: row, start: 'top 85%', toggleActions: 'play none none reverse' },
-        }
-      );
-    });
-
-    // Steps slide in alternating direction
-    document.querySelectorAll('.step').forEach((step, i) => {
-      gsap.fromTo(step.children,
-        { x: i % 2 === 0 ? -40 : 40, opacity: 0 },
-        {
-          x: 0, opacity: 1, duration: 0.9, ease: 'power3.out',
-          scrollTrigger: { trigger: step, start: 'top 80%', toggleActions: 'play none none reverse' },
-        }
-      );
-    });
-
-    // Nav scrolled state
-    const nav = document.getElementById('nav');
-    ScrollTrigger.create({
-      start: 'top -10', end: 99999,
-      onUpdate: (s) => nav.classList.toggle('scrolled', s.scroll() > 20),
-    });
-  }
-
-  // ── 3. MAGNETIC CTAs ───────────────────────────────────────────────
-  function initMagnet() {
-    document.querySelectorAll('[data-magnet]').forEach(btn => {
-      btn.addEventListener('mousemove', (e) => {
-        const r = btn.getBoundingClientRect();
-        const x = e.clientX - (r.left + r.width / 2);
-        const y = e.clientY - (r.top  + r.height / 2);
-        btn.style.transform = `translate(${x * 0.18}px, ${y * 0.22}px)`;
+      gsap.fromTo(el, { y: 30, opacity: 0 }, {
+        y: 0, opacity: 1, duration: 0.9, ease: 'power3.out',
+        scrollTrigger: { trigger: el, start: 'top 85%', toggleActions: 'play none none reverse' },
       });
-      btn.addEventListener('mouseleave', () => { btn.style.transform = ''; });
     });
+
+    document.querySelectorAll('.reveal-stagger').forEach((row) => {
+      gsap.fromTo(row.children, { y: 24, opacity: 0 }, {
+        y: 0, opacity: 1, duration: 0.7, stagger: 0.06, ease: 'power3.out',
+        scrollTrigger: { trigger: row, start: 'top 85%', toggleActions: 'play none none reverse' },
+      });
+    });
+
+    document.querySelectorAll('.step').forEach((step, i) => {
+      gsap.fromTo(step.children, { x: i % 2 === 0 ? -40 : 40, opacity: 0 }, {
+        x: 0, opacity: 1, duration: 0.9, ease: 'power3.out',
+        scrollTrigger: { trigger: step, start: 'top 80%', toggleActions: 'play none none reverse' },
+      });
+    });
+
+    const nav = document.getElementById('nav');
+    ScrollTrigger.create({ start: 'top -10', end: 99999, onUpdate: (s) => nav.classList.toggle('scrolled', s.scroll() > 20) });
   }
 
-  // ── 4. BENTO HOVER GLOW THAT FOLLOWS CURSOR ────────────────────────
+  // ── 2. BENTO HOVER GLOW THAT FOLLOWS CURSOR ──
   function initBentoCursor() {
     document.querySelectorAll('[data-bento]').forEach(card => {
       card.addEventListener('mousemove', (e) => {
@@ -1202,18 +1086,16 @@
     });
   }
 
-  // ── 5. LIVE FORECAST WIDGET ────────────────────────────────────────
+  // ── 3. LIVE FORECAST WIDGET ──
   function initForecast() {
     const sIn   = document.getElementById('s-income');
     const sRate = document.getElementById('s-rate');
     const sDeb  = document.getElementById('s-debt');
     const sNw   = document.getElementById('s-nw');
-
     const vIn   = document.getElementById('v-income');
     const vRate = document.getElementById('v-rate');
     const vDeb  = document.getElementById('v-debt');
     const vNw   = document.getElementById('v-nw');
-
     const rNw      = document.getElementById('r-nw');
     const rDelta   = document.getElementById('r-delta');
     const rDebt    = document.getElementById('r-debt-free');
@@ -1223,35 +1105,31 @@
     const fcEnd    = document.getElementById('fc-end');
     const fcGlow   = document.getElementById('fc-end-glow');
 
+    if (!sIn) return;
+
     const fmt = n => {
       if (n >= 1e6) return '$' + (n/1e6).toFixed(1) + 'M';
       if (Math.abs(n) >= 1e3) return '$' + Math.round(n/1e3) + 'k';
       return '$' + Math.round(n).toLocaleString();
     };
-
     function updatePct(input) {
       const min = +input.min, max = +input.max, val = +input.value;
       input.style.setProperty('--p', ((val - min) / (max - min) * 100) + '%');
     }
-
     function recompute() {
       const income = +sIn.value;
       const rate   = +sRate.value / 100;
       let debt     = +sDeb.value;
       let nw       = +sNw.value;
       const W = 600, H = 200;
-
-      // Project 12 months
       const monthlySave = income * rate;
       const debtPay = Math.min(debt, Math.max(150, monthlySave * 0.5));
-      const monthlyNwAdd = monthlySave - debtPay + (debt > 0 ? 0 : monthlySave); // when debt-free, all savings to nw
-
       const points = [];
       let curNw = nw, curDebt = debt;
       let debtFreeMonth = -1;
       for (let m = 0; m <= 12; m++) {
         if (curDebt > 0) {
-          const interest = curDebt * 0.012;     // assume 14.4% APR / 12
+          const interest = curDebt * 0.012;
           curDebt = Math.max(0, curDebt + interest - debtPay);
           curNw += monthlySave - debtPay;
           if (curDebt === 0 && debtFreeMonth === -1) debtFreeMonth = m;
@@ -1260,8 +1138,6 @@
         }
         points.push(curNw);
       }
-
-      // Render chart
       const min = Math.min(...points), max = Math.max(...points);
       const range = Math.max(1, max - min);
       const pad = 16;
@@ -1281,48 +1157,37 @@
       fcEnd.setAttribute('cx', lastX); fcEnd.setAttribute('cy', lastY);
       fcGlow.setAttribute('cx', lastX); fcGlow.setAttribute('cy', lastY);
 
-      // Update stats
-      vIn.textContent   = fmt(income);
+      vIn.textContent = fmt(income);
       vRate.textContent = (rate * 100).toFixed(0) + '%';
       vDeb.textContent  = fmt(+sDeb.value);
       vNw.textContent   = fmt(+sNw.value);
-
       rNw.textContent = fmt(last);
       const delta = last - nw;
       rDelta.textContent = (delta >= 0 ? '+' : '') + fmt(delta);
       rDelta.classList.toggle('bad', delta < 0);
-
       if (debt === 0) {
         rDebt.innerHTML = 'Already';
         rDebtDel.textContent = 'no debt 🎉';
       } else if (debtFreeMonth > 0 && debtFreeMonth <= 12) {
-        rDebt.innerHTML = debtFreeMonth + '<span style="font-size:18px;color:var(--ink-3);font-weight:400;"> months</span>';
+        rDebt.innerHTML = debtFreeMonth + '<span style="font-family:var(--font-body);font-size:18px;color:var(--ink-3);font-weight:400;"> months</span>';
         rDebtDel.textContent = 'on plan';
       } else {
-        rDebt.innerHTML = '12+<span style="font-size:18px;color:var(--ink-3);font-weight:400;"> months</span>';
+        rDebt.innerHTML = '12+<span style="font-family:var(--font-body);font-size:18px;color:var(--ink-3);font-weight:400;"> months</span>';
         rDebtDel.textContent = 'increase savings';
       }
-
       [sIn, sRate, sDeb, sNw].forEach(updatePct);
     }
-
     [sIn, sRate, sDeb, sNw].forEach(s => s.addEventListener('input', recompute));
     recompute();
   }
 
-  // Boot when DOM and libs are ready
   function ready() {
-    initThree();
     initMotion();
-    initMagnet();
     initBentoCursor();
     initForecast();
   }
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => setTimeout(ready, 50));
-  } else {
-    setTimeout(ready, 50);
-  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => setTimeout(ready, 50));
+  else setTimeout(ready, 50);
 })();
 </script>
 

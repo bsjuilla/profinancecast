@@ -1,58 +1,71 @@
-/* ========================================================================
-   ProFinanceCast — Design Tokens
-   Single source of truth for color, type, spacing, motion.
-   Loaded after the page-local <style> so it can override stale variables.
-   ======================================================================== */
+/* ════════════════════════════════════════════════════════════════════════
+   ProFinanceCast — Design Tokens · v3 "Modern Fintech"
+   Deep emerald-black + ivory + champagne gold + vivid emerald.
+   Old-money editorial confidence × Linear-grade software discipline.
+
+   ⚠ This file IS the brand. Every page imports it. Don't override here —
+   override on a single page using @media or a parent class.
+   ════════════════════════════════════════════════════════════════════════ */
+
 :root {
-  /* ── Surface ─────────────────────────────────────────────────────────── */
-  --bg:        #07090F;
-  --bg-2:      #0B1018;
-  --bg-3:      #111827;
-  --surface:   #0F1620;
-  --surface-2: #141C28;
-  --border:    rgba(255,255,255,0.06);
-  --border-2:  rgba(255,255,255,0.10);
-  --border-3:  rgba(255,255,255,0.18);
 
-  /* ── Brand ───────────────────────────────────────────────────────────── */
-  --teal:      #00D4A0;     /* slightly brighter than the original #00C896 — feels more confident */
-  --teal-2:    #00B388;
-  --teal-dim:  rgba(0,212,160,0.10);
-  --teal-glow: rgba(0,212,160,0.28);
+  /* ── Money palette ────────────────────────────────────────────────────── */
+  /* Dark surfaces (the app/dashboard side of the product) */
+  --canvas:        #0B1410;   /* deep emerald-black, the floor of every dark page */
+  --surface:       #111E18;   /* one step up — main cards/panels */
+  --surface-2:     #16271F;   /* two steps up — modals, hover states, toolbars */
+  --surface-3:     #1C3328;   /* three steps up — pressed buttons, popovers */
 
-  /* ── Accent palette ──────────────────────────────────────────────────── */
-  --amber:     #FFB85C;
-  --red:       #F26B6B;
-  --blue:      #5B8DEF;
-  --purple:    #B49EFF;
-  --green:     #34D399;
+  /* Light surfaces (marketing / report card / printable) */
+  --paper:         #F4EFE5;   /* ivory paper — landing, reports, blog */
+  --paper-2:       #ECE5D6;   /* one shade darker — section bands */
+  --paper-ink:     #14201A;   /* near-black emerald for text on paper */
 
-  /* ── Text ────────────────────────────────────────────────────────────── */
-  --text:      #F5F8FB;
-  --text-2:    #A1AFC2;
-  --text-3:    #5A6B82;
-  --text-4:    #3A4858;
+  /* The four meaningful colors */
+  --money:         #2BB67D;   /* vivid emerald — gains, growth, positive deltas */
+  --money-soft:    rgba(43,182,125,0.12);
+  --money-glow:    rgba(43,182,125,0.30);
+  --gold:          #D4AF6A;   /* champagne — the only accent. Use ≤ 5% surface. */
+  --gold-soft:     rgba(212,175,106,0.10);
+  --warning:       #E66E5C;   /* terracotta — losses, warnings, debt */
+  --warning-soft:  rgba(230,110,92,0.10);
+  --sage:          #8FA092;   /* muted green-gray for body text on dark */
 
-  /* ── Type ────────────────────────────────────────────────────────────── */
-  --font-display: 'Syne', system-ui, sans-serif;
-  --font-body:    'DM Sans', system-ui, sans-serif;
-  --font-mono:    'JetBrains Mono', ui-monospace, monospace;
+  /* Text on dark surfaces */
+  --ink:           #F0EDE2;   /* off-white with a warm bias — never pure white */
+  --ink-2:         #B8C2BC;   /* secondary */
+  --ink-3:         #6F7C75;   /* tertiary, captions */
+  --ink-4:         #3F4A44;   /* almost-disabled */
 
-  /* Modular type scale (1.250 ratio, 16px base) */
-  --t-12: 0.750rem;
-  --t-13: 0.812rem;
+  /* Lines */
+  --line:          rgba(240,237,226,0.06);
+  --line-2:        rgba(240,237,226,0.10);
+  --line-3:        rgba(240,237,226,0.18);
+
+  /* ── Typography ───────────────────────────────────────────────────────── */
+  /* Fonts loaded by each page from Google Fonts — see Wave 3 boilerplate */
+  --font-display:  'Cormorant Garamond', 'Playfair Display', Georgia, serif;
+  --font-body:     'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-mono:     'JetBrains Mono', 'SF Mono', ui-monospace, monospace;
+
+  /* Type scale — modular 1.25 ratio, 16px base */
+  --t-11: 0.6875rem;   /* meta, eyebrows */
+  --t-12: 0.75rem;
+  --t-13: 0.8125rem;
   --t-14: 0.875rem;
-  --t-15: 0.937rem;
-  --t-16: 1.000rem;
+  --t-15: 0.9375rem;
+  --t-16: 1rem;
   --t-18: 1.125rem;
-  --t-20: 1.250rem;
-  --t-24: 1.500rem;
-  --t-32: 2.000rem;
-  --t-44: 2.750rem;
-  --t-56: 3.500rem;
-  --t-72: 4.500rem;
+  --t-20: 1.25rem;
+  --t-24: 1.5rem;
+  --t-30: 1.875rem;
+  --t-36: 2.25rem;
+  --t-48: 3rem;
+  --t-60: 3.75rem;
+  --t-80: 5rem;
+  --t-96: 6rem;
 
-  /* ── Spacing (8pt grid) ──────────────────────────────────────────────── */
+  /* ── Spacing (8pt grid) ───────────────────────────────────────────────── */
   --s-1: 4px;
   --s-2: 8px;
   --s-3: 12px;
@@ -62,8 +75,9 @@
   --s-7: 48px;
   --s-8: 64px;
   --s-9: 96px;
+  --s-10: 128px;
 
-  /* ── Radius ──────────────────────────────────────────────────────────── */
+  /* ── Radius ───────────────────────────────────────────────────────────── */
   --r-xs: 6px;
   --r-sm: 10px;
   --r-md: 14px;
@@ -71,20 +85,48 @@
   --r-xl: 28px;
   --r-pill: 999px;
 
-  /* ── Shadow / Elevation ──────────────────────────────────────────────── */
+  /* ── Shadow / Glow ────────────────────────────────────────────────────── */
   --shadow-1: 0 1px 0 rgba(255,255,255,0.04) inset, 0 1px 2px rgba(0,0,0,0.4);
-  --shadow-2: 0 4px 20px rgba(0,0,0,0.35);
-  --shadow-3: 0 18px 60px rgba(0,0,0,0.45);
-  --glow-teal: 0 0 0 1px rgba(0,212,160,0.30), 0 12px 40px rgba(0,212,160,0.18);
+  --shadow-2: 0 4px 20px rgba(0,0,0,0.32);
+  --shadow-3: 0 18px 60px rgba(0,0,0,0.50);
+  --glow-money: 0 0 0 1px rgba(43,182,125,0.30), 0 12px 40px rgba(43,182,125,0.18);
+  --glow-gold:  0 0 0 1px rgba(212,175,106,0.30), 0 12px 40px rgba(212,175,106,0.16);
 
-  /* ── Motion ──────────────────────────────────────────────────────────── */
-  --ease-out:  cubic-bezier(0.22, 0.61, 0.36, 1);
-  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-  --t-fast: 120ms;
-  --t-base: 200ms;
-  --t-slow: 360ms;
+  /* ── Motion ───────────────────────────────────────────────────────────── */
+  --ease-out:    cubic-bezier(0.22, 0.61, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-spring: cubic-bezier(0.34, 1.5, 0.64, 1);
+  --t-fast:      120ms;
+  --t-base:      220ms;
+  --t-slow:      420ms;
+  --t-stately:   700ms;        /* for compound-curve drawing, gauge needles */
+
+  /* ── Legacy mapping ────────────────────────────────────────────────────
+     Old pages used --bg, --text, --teal, --card etc. We map those to new
+     tokens so the existing inline CSS still renders, but in the new palette.
+     ────────────────────────────────────────────────────────────────────── */
+  --bg:        var(--canvas);
+  --bg2:       var(--surface);
+  --bg3:       var(--surface-2);
+  --card:      var(--surface);
+  --border:    var(--line);
+  --border2:   var(--line-2);
+  --teal:      var(--money);
+  --teal-dim:  var(--money-soft);
+  --teal-glow: var(--money-glow);
+  --text:      var(--ink);
+  --text2:     var(--ink-2);
+  --text3:     var(--ink-3);
+  --amber:     var(--gold);
+  --red:       var(--warning);
+  --blue:      #6B9CB7;
+  --purple:    #9F8FB7;
+  --green:     var(--money);
+  --r:         var(--r-md);
+  --r-sm:      var(--r-sm);
 }
 
+/* ── Reduced motion: kill animations cleanly ───────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
@@ -94,26 +136,46 @@
   }
 }
 
-/* ── Reusable atoms ───────────────────────────────────────────────────── */
-.pfc-glow-teal { box-shadow: var(--glow-teal); }
+/* ════════════════════════════════════════════════════════════════════════
+   Reusable atoms
+   ════════════════════════════════════════════════════════════════════════ */
+
+/* Cards */
 .pfc-card {
   background: var(--surface);
-  border: 1px solid var(--border);
+  border: 1px solid var(--line);
   border-radius: var(--r-md);
   box-shadow: var(--shadow-1);
 }
 .pfc-card-hover {
   transition: border-color var(--t-base) var(--ease-out),
-              transform var(--t-base) var(--ease-out),
-              box-shadow var(--t-base) var(--ease-out);
+              transform   var(--t-base) var(--ease-out),
+              box-shadow  var(--t-base) var(--ease-out);
+  will-change: transform;
 }
 .pfc-card-hover:hover {
-  border-color: var(--border-2);
+  border-color: var(--line-3);
   transform: translateY(-2px);
   box-shadow: var(--shadow-2);
 }
 
-/* Plan-gated locks */
+/* Numerical values — always use mono with tabular figures */
+.pfc-num,
+[data-num] {
+  font-family: var(--font-mono);
+  font-feature-settings: "tnum" 1, "lnum" 1;
+  font-variant-numeric: tabular-nums lining-nums;
+  letter-spacing: -0.01em;
+}
+
+/* Subtle focus ring */
+:where(button, a, input, select, textarea):focus-visible {
+  outline: 2px solid var(--money);
+  outline-offset: 2px;
+  border-radius: var(--r-xs);
+}
+
+/* Pro-locked elements (used by pfc-entitlements.js) */
 [data-pro-only].is-locked,
 [data-pro-action].is-locked {
   position: relative;
@@ -121,53 +183,41 @@
 [data-pro-only].is-locked::after,
 [data-pro-action].is-locked::after {
   content: '';
-  position: absolute;
-  inset: 0;
+  position: absolute; inset: 0;
   border-radius: inherit;
   background:
     linear-gradient(135deg, rgba(0,0,0,0.22) 0%, rgba(0,0,0,0) 50%),
-    repeating-linear-gradient(
-      45deg,
-      rgba(255,255,255,0.02) 0,
-      rgba(255,255,255,0.02) 10px,
-      transparent 10px,
-      transparent 20px
-    );
+    repeating-linear-gradient(45deg,
+      rgba(255,255,255,0.02) 0, rgba(255,255,255,0.02) 10px,
+      transparent 10px, transparent 20px);
   pointer-events: none;
-  border-radius: inherit;
 }
 [data-pro-only].is-locked::before,
 [data-pro-action].is-locked::before {
-  content: '🔒 Pro';
+  content: '✦ Pro';
   position: absolute;
-  top: 8px;
-  right: 8px;
-  font-family: var(--font-body);
-  font-size: var(--t-12);
-  background: var(--surface-2);
-  color: var(--text-2);
-  border: 1px solid var(--border-2);
+  top: 8px; right: 8px;
+  font-family: var(--font-mono);
+  font-size: var(--t-11);
+  background: var(--gold-soft);
+  color: var(--gold);
+  border: 1px solid rgba(212,175,106,0.25);
   padding: 2px 8px;
   border-radius: var(--r-pill);
   pointer-events: none;
   z-index: 2;
 }
 
-/* Smooth focus ring instead of the harsh default outline */
-:where(button, a, input, select, textarea):focus-visible {
-  outline: 2px solid var(--teal);
-  outline-offset: 2px;
-  border-radius: var(--r-xs);
-}
-
-/* Page entry animation — eligible elements opt in via [data-anim] */
+/* Reveal-on-scroll utility (paired with pfc-motion or any IO) */
 @keyframes pfc-rise {
-  from { opacity: 0; transform: translateY(12px); }
+  from { opacity: 0; transform: translateY(14px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-[data-anim="rise"]      { animation: pfc-rise var(--t-slow) var(--ease-out) both; }
-[data-anim="rise"][data-delay="1"] { animation-delay: 80ms; }
-[data-anim="rise"][data-delay="2"] { animation-delay: 160ms; }
-[data-anim="rise"][data-delay="3"] { animation-delay: 240ms; }
-[data-anim="rise"][data-delay="4"] { animation-delay: 320ms; }
-[data-anim="rise"][data-delay="5"] { animation-delay: 400ms; }
+[data-anim="rise"] { animation: pfc-rise var(--t-stately) var(--ease-out) both; }
+
+/* The "tick" of an animated counter cell */
+@keyframes pfc-pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(43,182,125,0.35); }
+  100% { box-shadow: 0 0 0 14px rgba(43,182,125,0); }
+}
+.pfc-pulse { animation: pfc-pulse 1.4s var(--ease-out) infinite; }

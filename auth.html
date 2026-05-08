@@ -5,11 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="apple-touch-icon" href="/favicon.svg">
-  <meta name="theme-color" content="#00C896">
+  <meta name="theme-color" content="#0B1410">
 <title>Sign in — ProFinanceCast</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<!-- Cormorant Garamond + Inter + JetBrains Mono — fintech editorial stack -->
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,400;1,500&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/pfc-tokens.css">
 <style>
   :root {
     --bg:    #080C12;
@@ -264,7 +266,301 @@
     .right { padding: 32px 24px; }
   }
 </style>
-  <link rel="stylesheet" href="css/pfc-tokens.css">
+
+<!-- ════════════════════════════════════════════════════════════════════
+     v3 RESKIN — Modern Fintech (deep emerald + ivory + champagne)
+     Wholly overrides the v1 styles above. Form HTML / IDs / JS unchanged.
+     ════════════════════════════════════════════════════════════════════ -->
+<style>
+  body {
+    font-family: var(--font-body);
+    background: var(--canvas);
+    color: var(--ink);
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 1.05fr 0.95fr;
+  }
+  body, .auth-heading, .left-heading, .left-eyebrow,
+  .field input, .field label, .auth-sub, .field-hint,
+  .check-label, .forgot-link, .btn-full, .divider,
+  .social-btn, .alert, .left-footer, .feature-item, .pw-label, .left-logo {
+    font-family: var(--font-body);
+  }
+
+  /* ── LEFT — ivory paper, the brand story ─────────────────────────── */
+  .left {
+    background: linear-gradient(180deg, #F4EFE5 0%, #ECE5D6 100%);
+    border-right: 1px solid rgba(20,32,26,0.08);
+    color: #14201A;
+    padding: 56px;
+    position: relative; overflow: hidden;
+    display: flex; flex-direction: column;
+  }
+  .left-grid {
+    position: absolute; inset: 0; opacity: 0.35;
+    background-image:
+      linear-gradient(rgba(43,182,125,0.10) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(43,182,125,0.10) 1px, transparent 1px);
+    background-size: 56px 56px;
+    mask-image: radial-gradient(ellipse 80% 80% at 30% 50%, black 30%, transparent 100%);
+  }
+  .left-glow {
+    position: absolute; top: 18%; left: 0%;
+    width: 520px; height: 520px;
+    background: radial-gradient(ellipse, rgba(43,182,125,0.10) 0%, transparent 65%);
+    pointer-events: none;
+  }
+  .left-logo {
+    display: flex; align-items: center; gap: 11px;
+    font-family: var(--font-display); font-size: 18px; font-weight: 600;
+    color: #14201A; text-decoration: none;
+    position: relative; z-index: 1;
+    letter-spacing: -0.01em;
+  }
+  .logo-mark {
+    width: 32px; height: 32px;
+    background: linear-gradient(135deg, #0B1410 0%, #143524 100%);
+    border-radius: 8px;
+    display: grid; place-items: center;
+    flex-shrink: 0;
+    color: transparent;
+    position: relative;
+    border: 1px solid rgba(212,175,106,0.35);
+  }
+  .logo-mark::after {
+    content: ''; position: absolute; inset: 0;
+    background-image:
+      radial-gradient(circle at 75% 22%, #D4AF6A 0 1.5px, transparent 2px);
+    border-radius: 8px;
+  }
+  .logo-mark::before {
+    content: ''; position: absolute; inset: 0;
+    background:
+      linear-gradient(115deg, transparent 30%, #D4AF6A 30%, #D4AF6A 32%, transparent 32% 100%);
+    border-radius: 8px;
+  }
+
+  .left-content {
+    flex: 1;
+    display: flex; flex-direction: column;
+    justify-content: center;
+    position: relative; z-index: 1;
+    max-width: 480px;
+  }
+  .left-eyebrow {
+    font-family: var(--font-mono);
+    font-size: 12px; font-weight: 500;
+    color: var(--money);
+    letter-spacing: 0.10em; text-transform: uppercase;
+    margin-bottom: 18px;
+  }
+  .left-heading {
+    font-family: var(--font-display);
+    font-size: 48px; font-weight: 500;
+    line-height: 1.04;
+    letter-spacing: -0.025em;
+    margin-bottom: 18px;
+    color: #14201A;
+  }
+  .left-heading em { font-style: italic; color: #B89149; }
+  .left-sub {
+    font-size: 16px; color: rgba(20,32,26,0.65);
+    line-height: 1.65; font-weight: 300;
+    margin-bottom: 36px; max-width: 420px;
+  }
+  .feature-list { display: flex; flex-direction: column; gap: 14px; }
+  .feature-item {
+    display: flex; align-items: center; gap: 12px;
+    font-size: 14px; color: rgba(20,32,26,0.78);
+  }
+  .feature-icon {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: rgba(43,182,125,0.10);
+    border: 1px solid rgba(43,182,125,0.22);
+    display: grid; place-items: center;
+    flex-shrink: 0;
+  }
+  .feature-icon svg path,
+  .feature-icon svg circle { stroke: var(--money) !important; }
+  .left-footer {
+    position: relative; z-index: 1;
+    font-size: 12px; color: rgba(20,32,26,0.5);
+    font-family: var(--font-mono); letter-spacing: 0.02em;
+  }
+  .left-footer a { color: rgba(20,32,26,0.7); text-decoration: underline; }
+
+  /* ── RIGHT — dark, the form ─────────────────────────────────────── */
+  .right {
+    background: var(--canvas);
+    display: flex; align-items: center; justify-content: center;
+    padding: 56px 48px;
+    position: relative;
+  }
+  .right::before {
+    content: ''; position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse 60% 40% at 50% 0%, rgba(43,182,125,0.05), transparent 70%),
+      radial-gradient(ellipse 60% 40% at 50% 100%, rgba(212,175,106,0.04), transparent 70%);
+    pointer-events: none;
+  }
+  .auth-box { width: 100%; max-width: 420px; position: relative; z-index: 1; }
+
+  .auth-heading {
+    font-family: var(--font-display); font-size: 32px; font-weight: 600;
+    margin-bottom: 8px; letter-spacing: -0.02em;
+    color: var(--ink);
+  }
+  .auth-heading em { font-style: italic; color: var(--gold); }
+  .auth-sub {
+    font-size: 14px; color: var(--ink-2); margin-bottom: 32px; line-height: 1.5;
+    font-weight: 300;
+  }
+  .auth-sub a { color: var(--money); text-decoration: none; cursor: pointer; }
+  .auth-sub a:hover { text-decoration: underline; }
+
+  .field { margin-bottom: 16px; }
+  .field label {
+    display: block; font-size: 13px; color: var(--ink-2);
+    margin-bottom: 6px; font-weight: 500;
+  }
+  .field input {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--line-2);
+    border-radius: var(--r-sm);
+    padding: 12px 14px;
+    font-size: 14px; color: var(--ink);
+    font-family: var(--font-body);
+    outline: none;
+    transition: border-color var(--t-fast) var(--ease-out), background var(--t-fast) var(--ease-out);
+  }
+  .field input:focus { border-color: var(--money); background: var(--surface-2); }
+  .field input::placeholder { color: var(--ink-3); }
+  .field input.error { border-color: var(--warning); }
+  .field input.success { border-color: var(--money); }
+
+  .field-icon { color: var(--ink-3); }
+  .field-icon:hover { color: var(--ink-2); }
+  .field-hint { font-size: 12px; }
+  .hint-error { color: var(--warning); }
+  .hint-ok { color: var(--money); }
+
+  .pw-bar { background: var(--surface-2); }
+  .pw-label { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.06em; }
+
+  .check-row { margin-bottom: 24px; }
+  .check-row input[type="checkbox"] { accent-color: var(--money); }
+  .check-label { font-size: 13px; color: var(--ink-2); line-height: 1.5; }
+  .check-label a { color: var(--money); text-decoration: none; }
+  .check-label a:hover { text-decoration: underline; }
+
+  .forgot-link {
+    font-family: var(--font-mono); font-size: 12px;
+    color: var(--ink-3); letter-spacing: 0.04em;
+  }
+  .forgot-link:hover { color: var(--money); }
+
+  /* Buttons */
+  .btn-full {
+    width: 100%; padding: 13px;
+    border-radius: var(--r-sm);
+    font-size: 15px; font-weight: 600;
+    font-family: var(--font-body);
+    cursor: pointer; border: none;
+    transition: transform var(--t-fast) var(--ease-out), box-shadow var(--t-base) var(--ease-out), opacity var(--t-fast);
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .btn-primary-full {
+    background: var(--money); color: var(--canvas);
+    box-shadow: var(--glow-money);
+  }
+  .btn-primary-full:hover { transform: translateY(-1px); box-shadow: 0 0 0 1px rgba(255,255,255,0.20) inset, 0 14px 50px var(--money-glow); }
+  .btn-outline-full {
+    background: transparent; color: var(--ink-2);
+    border: 1px solid var(--line-2) !important;
+    font-weight: 400;
+  }
+  .btn-outline-full:hover { border-color: var(--line-3) !important; color: var(--ink); }
+
+  /* Divider */
+  .divider {
+    color: var(--ink-3);
+    font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.10em; text-transform: uppercase;
+    margin: 22px 0;
+  }
+  .divider::before, .divider::after { background: var(--line); }
+
+  /* Social */
+  .social-btn {
+    background: var(--surface);
+    border: 1px solid var(--line-2);
+    color: var(--ink-2);
+    font-family: var(--font-body); font-size: 14px;
+    padding: 11px;
+    border-radius: var(--r-sm);
+    transition: border-color var(--t-fast) var(--ease-out), color var(--t-fast) var(--ease-out), background var(--t-fast);
+  }
+  .social-btn:hover { border-color: var(--line-3); color: var(--ink); background: var(--surface-2); }
+
+  /* Spinner */
+  .spinner {
+    border: 2px solid rgba(11,20,16,0.30);
+    border-top-color: var(--canvas);
+  }
+
+  /* Alert */
+  .alert {
+    border-radius: var(--r-sm); padding: 12px 14px;
+    font-size: 13px; line-height: 1.5; margin-bottom: 18px;
+    font-family: var(--font-body);
+  }
+  .alert-error {
+    background: rgba(230,110,92,0.08);
+    border: 1px solid rgba(230,110,92,0.24);
+    color: #F2A296;
+  }
+  .alert-success {
+    background: rgba(43,182,125,0.08);
+    border: 1px solid rgba(43,182,125,0.24);
+    color: #82DCB0;
+  }
+
+  /* Back link */
+  .back-link {
+    display: flex; align-items: center; gap: 6px;
+    font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.04em;
+    color: var(--ink-3); cursor: pointer;
+    margin-bottom: 24px; width: fit-content;
+    transition: color var(--t-fast) var(--ease-out);
+  }
+  .back-link:hover { color: var(--money); }
+
+  /* Success state */
+  .success-icon {
+    width: 60px; height: 60px; border-radius: 50%;
+    background: rgba(43,182,125,0.10);
+    border: 1px solid rgba(43,182,125,0.30);
+    display: grid; place-items: center;
+    margin-bottom: 24px;
+  }
+
+  /* Responsive */
+  @media (max-width: 880px) {
+    body { grid-template-columns: 1fr; }
+    .left {
+      padding: 36px 24px;
+      min-height: auto;
+      max-height: 280px;
+    }
+    .left-content { justify-content: flex-start; padding-top: 16px; }
+    .left-heading { font-size: 28px; }
+    .left-sub { font-size: 14px; margin-bottom: 18px; }
+    .feature-list { display: none; }
+    .right { padding: 32px 24px; }
+  }
+</style>
+
   <script src="js/pfc-export.js" defer></script>
 
 </head>
@@ -281,9 +577,9 @@
   </a>
 
   <div class="left-content">
-    <div class="left-eyebrow">Free forever plan</div>
-    <h1 class="left-heading">Your financial future starts here</h1>
-    <p class="left-sub">Join thousands of people who stopped guessing and started knowing exactly where their money is going — and where it's heading.</p>
+    <div class="left-eyebrow">— Free forecast, forever</div>
+    <h1 class="left-heading">Your financial future, <em>forecast.</em></h1>
+    <p class="left-sub">Drop in your numbers. See exactly when you'll be debt-free, what your net worth becomes, and which goals you'll actually hit. Twelve months ahead — to the day.</p>
     <div class="feature-list">
       <div class="feature-item">
         <div class="feature-icon">
