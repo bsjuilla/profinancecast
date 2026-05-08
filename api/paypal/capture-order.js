@@ -111,12 +111,22 @@ export default async function handler(req, res) {
       }, { onConflict: 'user_id' });
 
     if (upsertErr) {
-      console.error('Supabase upsert error:', upsertErr);
-      // Payment captured but DB write failed — flag for manual reconciliation.
-      // We still return 200 so the user sees success; the webhook will retry.
-      return res.status(200).json({
-        status: 'COMPLETED', plan, orderID,
-        warning: 'Payment recorded — plan activation may take a few minutes.',
+      // Audit H2 fix: payment captured but DB write failed.
+      // Previously we returned 200 + warning, leaving paid users on Free with
+      // NO recovery path (the configured webhook list doesn't include
+      // PAYMENT.CAPTURE.COMPLETED). Now: 5xx so the client retries, and the
+      // captureID is logged loudly for support reconciliation via the PayPal
+      // dashboard until the webhook fallback ships in Phase B.
+      console.error('[capture-order] CAPTURED-BUT-NOT-UPGRADED', {
+        userId: user.id, plan, orderID,
+        captureId: capture?.id,
+        amountPaid, currencyPaid,
+        upsertErr: { message: upsertErr.message, details: upsertErr.details, code: upsertErr.code },
+      });
+      return res.status(500).json({
+        error: 'Payment captured but account upgrade failed. Our team has been notified — please refresh in a moment, or contact support if your plan still shows Free.',
+        captureID: capture?.id,
+        retryable: true,
       });
     }
 

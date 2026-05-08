@@ -12,15 +12,23 @@
 
 import { createClient } from '@supabase/supabase-js';
 
-// ── In-memory IP throttle (resets per cold start; good enough as a floor) ─
+// ── In-memory throttle (resets per cold start; good enough as a floor).
+// Audit M4: keyed by userId after auth (primary) and IP (pre-auth backstop).
 const _rateBuckets = new Map();
-function _rateLimit(ip, max = 5, windowMs = 10_000) {
+function _rateLimit(key, max = 5, windowMs = 10_000) {
+  if (!key) return true;
   const now = Date.now();
-  const bucket = _rateBuckets.get(ip) || [];
+  const bucket = _rateBuckets.get(key) || [];
   const recent = bucket.filter(t => now - t < windowMs);
   if (recent.length >= max) return false;
   recent.push(now);
-  _rateBuckets.set(ip, recent);
+  _rateBuckets.set(key, recent);
+  // Best-effort GC so map doesn't grow unboundedly.
+  if (_rateBuckets.size > 5000) {
+    for (const [k, v] of _rateBuckets) {
+      if (!v.length || (now - v[v.length - 1]) > 60_000) _rateBuckets.delete(k);
+    }
+  }
   return true;
 }
 
@@ -29,8 +37,9 @@ const PLAN_LIMITS = { free: 5, pro: 60, premium: 150 };
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
+  // Pre-auth IP backstop (M4: secondary).
   const ip = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.socket?.remoteAddress || 'unknown';
-  if (!_rateLimit(ip)) return res.status(429).json({ error: 'Too many requests — slow down a moment.' });
+  if (!_rateLimit('ip:' + ip, 30, 60_000)) return res.status(429).json({ error: 'Too many requests — slow down a moment.' });
 
   const GEMINI_KEY = process.env.GEMINI_API_KEY;
   if (!GEMINI_KEY) {
@@ -49,6 +58,11 @@ export default async function handler(req, res) {
   const { data: userData, error: userErr } = await supabase.auth.getUser(token);
   if (userErr || !userData?.user) return res.status(401).json({ error: 'Session expired — please sign in again.' });
   const userId = userData.user.id;
+
+  // Per-user rate limit (audit M4 primary): 20 req/min/user, well above interactive use.
+  if (!_rateLimit('user:' + userId, 20, 60_000)) {
+    return res.status(429).json({ error: 'Too many requests — slow down a moment.' });
+  }
 
   const { message, history = [], systemPrompt, csvMode = false } = req.body || {};
   if (!message || typeof message !== 'string') return res.status(400).json({ error: 'Missing message' });
@@ -143,17 +157,13 @@ export default async function handler(req, res) {
     const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text;
     if (!reply) return res.status(502).json({ error: 'No response from AI. Please try again.' });
 
-    // Increment usage counter (best-effort; failure shouldn't break the response)
-    supabase.rpc('increment_ai_queries', { p_user_id: userId }).then(({ error }) => {
-      if (error) {
-        // Fallback: read-modify-write if the RPC doesn't exist yet
-        supabase.from('profiles').select('ai_queries_used').eq('id', userId).maybeSingle()
-          .then(({ data }) => {
-            const used = (data?.ai_queries_used || 0) + 1;
-            return supabase.from('profiles').update({ ai_queries_used: used }).eq('id', userId);
-          });
-      }
-    }).catch(() => {});
+    // Increment usage counter atomically via RPC (audit M5).
+    // Fallback removed — the RPC is created in 20260508_subscriptions_fixup.sql
+    // and the SELECT-then-UPDATE fallback raced under concurrent calls,
+    // letting Free users exceed their monthly cap.
+    supabase.rpc('increment_ai_queries', { p_user_id: userId })
+      .then(({ error }) => { if (error) console.error('[sage] increment_ai_queries:', error); })
+      .catch(e => console.error('[sage] increment_ai_queries threw:', e));
 
     return res.status(200).json({ reply });
 
