@@ -1,0 +1,5 @@
+graphify-out/.graphify_*
+graphify-out/cache/
+
+# Graphify output (regenerated locally)
+graphify-out/
