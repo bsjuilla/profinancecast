@@ -1,0 +1,262 @@
+/* ════════════════════════════════════════════════════════════════════════
+   pfc-reskin.css — Type + surface overrides for pages with legacy inline CSS
+   Loaded AFTER each page's inline <style> so it wins by source order.
+
+   Goal: drag every authed page (dashboard, goals, debts, etc.) into the
+   new "modern fintech · deep green + ivory + champagne" identity without
+   rewriting their layout HTML/JS. Targeting the most visible surfaces:
+   typography, buttons, cards, sidebars, inputs.
+   ════════════════════════════════════════════════════════════════════════ */
+
+/* ── Type overrides — beats inline font-family declarations ────────── */
+html body,
+html body button,
+html body input,
+html body select,
+html body textarea {
+  font-family: var(--font-body) !important;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+html body h1, html body h2, html body h3, html body h4, html body h5 {
+  font-family: var(--font-display) !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.018em;
+  line-height: 1.05;
+}
+html body h1 { font-weight: 500 !important; }    /* Cormorant is heaviest at 500-600 */
+
+/* Numbers — anywhere we use mono, keep it mono and tabular */
+html body .pfc-num,
+html body [data-num],
+html body code,
+html body .num {
+  font-family: var(--font-mono) !important;
+  font-feature-settings: "tnum" 1, "lnum" 1;
+}
+
+/* ── Sidebars / topbars on legacy pages ────────────────────────────── */
+html body .sidebar,
+html body .topbar {
+  background: var(--surface) !important;
+  border-color: var(--line) !important;
+}
+html body .topbar {
+  background: rgba(11, 20, 16, 0.85) !important;
+  backdrop-filter: blur(14px) saturate(140%);
+}
+html body .sidebar-logo,
+html body .nav-logo {
+  font-family: var(--font-display) !important;
+  font-weight: 600 !important;
+}
+html body .sidebar-section {
+  font-family: var(--font-mono) !important;
+  letter-spacing: 0.10em;
+  color: var(--ink-3) !important;
+}
+html body .nav-item.active,
+html body .nav-item:where([aria-current], .is-active) {
+  background: var(--money-soft) !important;
+  color: var(--money) !important;
+}
+html body .nav-badge {
+  font-family: var(--font-mono) !important;
+  background: var(--gold-soft) !important;
+  color: var(--gold) !important;
+  border: 1px solid rgba(212,175,106,0.22);
+}
+
+/* Logo squares: convert the solid teal box into the gradient mark */
+html body .logo-mark,
+html body .nav-logo-mark {
+  background: linear-gradient(135deg, #0B1410 0%, #143524 100%) !important;
+  border: 1px solid rgba(212,175,106,0.30) !important;
+  color: transparent !important;
+  position: relative !important;
+  overflow: hidden;
+}
+html body .logo-mark::before,
+html body .nav-logo-mark::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(115deg, transparent 30%, #D4AF6A 30%, #D4AF6A 33%, transparent 33% 100%);
+  border-radius: inherit;
+}
+html body .logo-mark::after,
+html body .nav-logo-mark::after {
+  content: '';
+  position: absolute; inset: 0;
+  background-image: radial-gradient(circle at 75% 22%, #D4AF6A 0 1.5px, transparent 2px);
+  border-radius: inherit;
+}
+
+/* User avatar pill — emerald gradient instead of solid teal */
+html body .user-avatar {
+  background: linear-gradient(135deg, var(--money) 0%, #1B7B57 100%) !important;
+  color: var(--canvas) !important;
+}
+
+/* ── Cards / banners ───────────────────────────────────────────────── */
+html body .card,
+html body .plan-banner,
+html body .nw-card,
+html body .stat-card,
+html body .panel,
+html body .modal {
+  background: var(--surface) !important;
+  border-color: var(--line) !important;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.04) inset, 0 1px 2px rgba(0,0,0,0.4);
+}
+
+/* Big numerical values */
+html body .stat-value,
+html body .nw-value,
+html body .plan-price,
+html body .balance,
+html body .big-number,
+html body .summary-value {
+  font-family: var(--font-display) !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.02em !important;
+  font-feature-settings: "tnum" 1, "lnum" 1;
+}
+
+/* ── Buttons ───────────────────────────────────────────────────────── */
+html body .btn-primary,
+html body .plan-btn-teal,
+html body .pay-now-btn {
+  background: var(--money) !important;
+  color: var(--canvas) !important;
+  font-weight: 600;
+  border-radius: var(--r-sm);
+  box-shadow: var(--glow-money);
+  transition: transform var(--t-base) var(--ease-spring), box-shadow var(--t-slow) var(--ease-out);
+}
+html body .btn-primary:hover,
+html body .plan-btn-teal:hover,
+html body .pay-now-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.20) inset, 0 14px 50px var(--money-glow);
+}
+
+html body .btn-outline,
+html body .plan-btn-outline {
+  background: transparent !important;
+  color: var(--ink) !important;
+  border: 1px solid var(--line-2) !important;
+}
+html body .btn-outline:hover,
+html body .plan-btn-outline:hover {
+  border-color: var(--money) !important;
+  background: var(--money-soft) !important;
+}
+
+html body .btn-ghost { color: var(--ink-2) !important; }
+html body .btn-ghost:hover { color: var(--ink) !important; }
+
+/* ── Form inputs ───────────────────────────────────────────────────── */
+html body input[type=text],
+html body input[type=email],
+html body input[type=password],
+html body input[type=number],
+html body input[type=tel],
+html body input[type=url],
+html body input[type=search],
+html body input[type=date],
+html body select,
+html body textarea {
+  background: var(--surface-2);
+  border: 1px solid var(--line-2);
+  color: var(--ink);
+  border-radius: var(--r-sm);
+}
+html body input:focus,
+html body select:focus,
+html body textarea:focus {
+  border-color: var(--money);
+  background: var(--surface-3);
+  outline: none;
+}
+
+/* Range sliders — emerald track */
+html body input[type=range] {
+  -webkit-appearance: none; appearance: none;
+  height: 4px; background: var(--surface-3); border-radius: 999px;
+  outline: none; cursor: pointer;
+}
+html body input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--ink); border: 4px solid var(--money);
+  cursor: grab;
+}
+
+/* ── Tags / pills / badges ─────────────────────────────────────────── */
+html body .tag,
+html body .pill,
+html body .status-pill,
+html body .pop-badge,
+html body .chip {
+  font-family: var(--font-mono) !important;
+  letter-spacing: 0.04em;
+  border-radius: var(--r-pill);
+}
+html body .pop-badge,
+html body .featured-badge {
+  background: var(--gold) !important;
+  color: var(--canvas) !important;
+  font-weight: 600;
+}
+
+/* Plan card "featured" lift */
+html body .plan-card.featured,
+html body .plan-card.hot {
+  border: 1px solid var(--gold) !important;
+  background: linear-gradient(180deg, rgba(212,175,106,0.06) 0%, var(--surface) 60%) !important;
+  box-shadow: 0 30px 80px rgba(212,175,106,0.10), 0 0 0 1px rgba(212,175,106,0.30) inset;
+}
+
+/* ── Tables ────────────────────────────────────────────────────────── */
+html body table th {
+  font-family: var(--font-mono) !important;
+  font-size: 11px !important;
+  color: var(--ink-3) !important;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+}
+html body table td.amount,
+html body table td.value,
+html body table .num {
+  font-family: var(--font-mono) !important;
+  font-feature-settings: "tnum" 1, "lnum" 1;
+}
+
+/* ── Money up / down semantics ─────────────────────────────────────── */
+html body .delta-up,
+html body .pos,
+html body .gain,
+html body .up { color: var(--money) !important; }
+html body .delta-down,
+html body .neg,
+html body .loss,
+html body .down { color: var(--warning) !important; }
+
+/* ── Subtle motion on cards ────────────────────────────────────────── */
+html body .card,
+html body .stat-card,
+html body .plan-card,
+html body .nw-card {
+  transition: border-color var(--t-base) var(--ease-out),
+              transform var(--t-base) var(--ease-out),
+              box-shadow var(--t-base) var(--ease-out);
+}
+html body .card:hover,
+html body .stat-card:hover {
+  border-color: var(--line-2) !important;
+}
+
+/* ── Scrollbars (minimal) ──────────────────────────────────────────── */
+html body ::-webkit-scrollbar { width: 6px; height: 6px; }
+html body ::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: 3px; }
+html body ::-webkit-scrollbar-track { background: transparent; }
