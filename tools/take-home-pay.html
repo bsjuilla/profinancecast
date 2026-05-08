@@ -1,0 +1,392 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Take-Home Pay Calculator (US + UK) | ProFinanceCast</title>
+  <meta name="description" content="See your real take-home pay after federal, state, and FICA taxes (US) or income tax and National Insurance (UK). Free, no signup, no tracking. 2026 tax year.">
+  <link rel="canonical" href="https://profinancecast.com/tools/take-home-pay.html">
+  <meta name="robots" content="index,follow">
+
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Take-Home Pay Calculator (US + UK) — ProFinanceCast">
+  <meta property="og:description" content="What you actually keep after tax. Free calculator for US (federal + state + FICA) and UK (income tax + NI). 2026 brackets. No signup.">
+  <meta property="og:url" content="https://profinancecast.com/tools/take-home-pay.html">
+  <meta property="og:site_name" content="ProFinanceCast">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Take-Home Pay Calculator (US + UK)">
+  <meta name="twitter:description" content="What you actually keep after tax. Free, no signup. 2026 brackets.">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400;1,600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../css/pfc-tokens.css">
+  <link rel="stylesheet" href="../css/pfc-app.css">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebApplication",
+        "name": "ProFinanceCast Take-Home Pay Calculator",
+        "url": "https://profinancecast.com/tools/take-home-pay.html",
+        "applicationCategory": "FinanceApplication",
+        "operatingSystem": "Web",
+        "browserRequirements": "Requires JavaScript",
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+        "description": "Calculate after-tax take-home pay for US (federal, state, FICA) and UK (income tax, National Insurance) using 2026 brackets. Free and runs entirely in the browser."
+      },
+      {
+        "@type": "HowTo",
+        "name": "How to calculate your take-home pay",
+        "step": [
+          { "@type": "HowToStep", "name": "Pick your country", "text": "Select the US or UK tab depending on where you pay tax." },
+          { "@type": "HowToStep", "name": "Enter your gross salary", "text": "Type the annual salary your employer pays you before any deductions." },
+          { "@type": "HowToStep", "name": "Pick state and filing status (US)", "text": "US users pick a state and filing status. UK has a single tax regime." },
+          { "@type": "HowToStep", "name": "Read the breakdown", "text": "The calculator shows your annual, monthly, and hourly take-home with a full tax breakdown." }
+        ]
+      },
+      {
+        "@type": "FAQPage",
+        "mainEntity": [
+          { "@type": "Question", "name": "How accurate is this calculator?", "acceptedAnswer": { "@type": "Answer", "text": "It uses the projected 2026 US federal tax schedule and the 2026/27 UK rates and thresholds, with the standard deduction and personal allowance built in. State tax is a flat-rate approximation for the five states modelled. For tax filing use a qualified accountant; for forecasting, the result is within a few percent of payroll." } },
+          { "@type": "Question", "name": "Why isn't my state listed?", "acceptedAnswer": { "@type": "Answer", "text": "The first release covers California, New York, Texas, Florida, Illinois. We are adding the remaining states as part of our cost-of-living programme — file a request via support if you need a specific one prioritised." } },
+          { "@type": "Question", "name": "Does this account for 401(k), HSA, or pension contributions?", "acceptedAnswer": { "@type": "Answer", "text": "Not in this version. The calculator assumes no pre-tax deductions so the gross figure is what you and your employer agreed. To model 401(k) or pension contributions across a full forecast, use the Pro scenarios planner." } },
+          { "@type": "Question", "name": "How is this different from Salary.com or Bankrate's calculator?", "acceptedAnswer": { "@type": "Answer", "text": "The math runs in your browser so we never see your salary. There is no signup, no email gate, and no advertising network. The upsell is a forecast that projects this take-home over the next ten years with raises and life events modelled in." } },
+          { "@type": "Question", "name": "Is my salary data shared anywhere?", "acceptedAnswer": { "@type": "Answer", "text": "No. The calculation is pure JavaScript that runs on your device. We log a single page-view through Plausible. Your salary never leaves the browser." } }
+        ]
+      }
+    ]
+  }
+  </script>
+
+  <style>
+    body { background: var(--canvas, #0B1410); color: var(--ink, #F0EDE2); font-family: var(--font-body, 'Inter', system-ui, sans-serif); margin: 0; line-height: 1.55; -webkit-font-smoothing: antialiased; }
+    .pfc-container { max-width: var(--container, 1080px); margin: 0 auto; padding: 0 var(--space-5, 24px); }
+    header.pfc-header { display: flex; align-items: center; justify-content: space-between; padding: var(--space-5, 24px) 0; border-bottom: 1px solid var(--line, rgba(244,239,229,0.10)); }
+    .pfc-logo { font-family: var(--font-display, 'Cormorant Garamond', serif); font-style: italic; font-size: 22px; color: var(--ink, #F0EDE2); text-decoration: none; }
+    .pfc-header nav a { color: var(--ink-2, rgba(244,239,229,0.62)); text-decoration: none; margin-left: var(--space-5, 24px); font-size: 14px; }
+    .pfc-header nav a:hover { color: var(--ink, #F0EDE2); }
+
+    .pfc-hero { padding: var(--space-9, 96px) 0 var(--space-7, 48px); max-width: var(--container-narrow, 720px); }
+    .pfc-hero h1 { font-family: var(--font-display, 'Cormorant Garamond', serif); font-style: italic; font-weight: 400; font-size: var(--type-display-lg, clamp(36px, 5vw, 64px)); line-height: 1.05; margin: 0 0 var(--space-4, 16px); color: var(--ink, #F0EDE2); letter-spacing: -0.01em; }
+    .pfc-hero p.lede { font-size: var(--type-body-lg, 18px); color: var(--ink-2, rgba(244,239,229,0.62)); margin: 0 0 var(--space-4, 16px); max-width: 56ch; }
+    .pfc-callout { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink-2, rgba(244,239,229,0.62)); padding: 6px 12px; border: 1px solid var(--pfc-line-strong, rgba(244,239,229,0.18)); border-radius: var(--radius-pill, 999px); }
+    .pfc-callout::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--money, #2BB67D); }
+
+    .pfc-tool { display: grid; grid-template-columns: 1fr 1.1fr; gap: var(--space-7, 48px); padding: var(--space-7, 48px) 0; }
+    @media (max-width: 880px) { .pfc-tool { grid-template-columns: 1fr; } }
+
+    .pfc-tabs { display: flex; gap: 0; margin-bottom: var(--space-5, 24px); border-bottom: 1px solid var(--line, rgba(244,239,229,0.10)); }
+    .pfc-tab { background: transparent; border: 0; color: var(--ink-2, rgba(244,239,229,0.62)); font-family: inherit; font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase; padding: var(--space-3, 12px) var(--space-4, 16px); cursor: pointer; border-bottom: 2px solid transparent; transition: color var(--dur-fast, 160ms) var(--ease-out, ease), border-color var(--dur-fast, 160ms) var(--ease-out, ease); }
+    .pfc-tab[aria-selected="true"] { color: var(--ink, #F0EDE2); border-bottom-color: var(--gold, #D4AF6A); }
+
+    .pfc-field { margin-bottom: var(--space-5, 24px); }
+    .pfc-field label { display: block; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-2, rgba(244,239,229,0.62)); margin-bottom: var(--space-2, 8px); }
+    .pfc-input--bottom { width: 100%; background: transparent; border: 0; border-bottom: 1px solid var(--pfc-line-strong, rgba(244,239,229,0.18)); padding: var(--space-3, 12px) 0; font-family: var(--font-mono, 'JetBrains Mono', monospace); font-size: 22px; color: var(--ink, #F0EDE2); font-feature-settings: var(--feat-numeric, "tnum" 1); transition: border-color var(--dur-fast, 160ms) var(--ease-out, ease); }
+    .pfc-input--bottom:focus { outline: none; border-bottom-color: var(--money, #2BB67D); }
+    select.pfc-input--bottom { font-family: inherit; font-size: 16px; appearance: none; }
+
+    .pfc-result { background: rgba(244,239,229,0.03); border-radius: var(--radius-md, 14px); padding: var(--space-6, 32px); box-shadow: var(--elev-2, 0 0 0 1px rgba(244,239,229,0.10) inset, 0 1px 0 rgba(212,175,106,0.18) inset); }
+    .pfc-result__meta { font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-2, rgba(244,239,229,0.62)); margin-bottom: var(--space-2, 8px); }
+    .pfc-result .num.hero { display: block; font-family: var(--font-mono, 'JetBrains Mono', monospace); font-size: var(--type-numeric-xl, 56px); font-weight: 500; color: var(--ink, #F0EDE2); font-feature-settings: var(--feat-numeric, "tnum" 1); font-variant-numeric: tabular-nums; line-height: 1.05; margin: 0 0 var(--space-2, 8px); }
+    .pfc-result__sub { display: flex; gap: var(--space-6, 32px); flex-wrap: wrap; margin-bottom: var(--space-6, 32px); }
+    .pfc-result__sub > div { display: flex; flex-direction: column; }
+    .pfc-result__sub .num { font-family: var(--font-mono, 'JetBrains Mono', monospace); font-size: var(--type-numeric, 18px); font-feature-settings: var(--feat-numeric, "tnum" 1); }
+
+    .pfc-gauge { display: flex; align-items: center; gap: var(--space-5, 24px); margin: var(--space-5, 24px) 0; }
+    .pfc-gauge svg { width: 200px; height: 120px; }
+    .pfc-gauge__label { font-family: var(--font-display, 'Cormorant Garamond', serif); font-style: italic; font-size: 20px; color: var(--ink, #F0EDE2); max-width: 28ch; }
+
+    .pfc-pull { font-family: var(--font-display, 'Cormorant Garamond', serif); font-style: italic; font-size: 22px; color: var(--ink, #F0EDE2); border-left: 2px solid var(--gold, #D4AF6A); padding: var(--space-2, 8px) 0 var(--space-2, 8px) var(--space-4, 16px); margin: var(--space-5, 24px) 0; }
+
+    table.pfc-breakdown { width: 100%; border-collapse: collapse; margin-top: var(--space-3, 12px); }
+    table.pfc-breakdown th, table.pfc-breakdown td { padding: var(--space-3, 12px) 0; border-bottom: 1px solid var(--line, rgba(244,239,229,0.10)); font-size: 14px; }
+    table.pfc-breakdown th { text-align: left; font-weight: 500; color: var(--ink-2, rgba(244,239,229,0.62)); }
+    table.pfc-breakdown td.num { text-align: right; font-family: var(--font-mono, 'JetBrains Mono', monospace); font-feature-settings: var(--feat-numeric, "tnum" 1); font-variant-numeric: tabular-nums; color: var(--ink, #F0EDE2); }
+    table.pfc-breakdown tr.total td { font-weight: 600; border-bottom: 0; padding-top: var(--space-4, 16px); }
+
+    .pfc-upsell { margin: var(--space-7, 48px) 0; padding: var(--space-6, 32px); border-radius: var(--radius-md, 14px); background: rgba(244,239,229,0.03); box-shadow: var(--elev-2, 0 0 0 1px rgba(244,239,229,0.10) inset), 0 0 0 1px var(--gold, #D4AF6A) inset; display: flex; justify-content: space-between; align-items: center; gap: var(--space-5, 24px); flex-wrap: wrap; }
+    .pfc-upsell h3 { font-family: var(--font-display, 'Cormorant Garamond', serif); font-style: italic; font-weight: 400; font-size: 28px; margin: 0 0 var(--space-2, 8px); color: var(--ink, #F0EDE2); }
+    .pfc-upsell p { margin: 0; color: var(--ink-2, rgba(244,239,229,0.62)); font-size: 15px; max-width: 50ch; }
+    .pfc-btn--primary { display: inline-flex; align-items: center; gap: 8px; padding: var(--space-3, 12px) var(--space-5, 24px); background: var(--money, #2BB67D); color: var(--canvas, #0B1410); border: 0; border-radius: var(--radius-sm, 8px); font-family: inherit; font-size: 14px; font-weight: 600; text-decoration: none; cursor: pointer; transition: box-shadow var(--dur-fast, 160ms) var(--ease-out, ease); }
+    .pfc-btn--primary:hover { box-shadow: var(--elev-hover, 0 0 0 1px rgba(212,175,106,0.45) inset); }
+
+    .pfc-faq { padding: var(--space-7, 48px) 0; }
+    .pfc-faq h2 { font-family: var(--font-display, 'Cormorant Garamond', serif); font-style: italic; font-weight: 400; font-size: var(--type-display-md, 36px); margin: 0 0 var(--space-5, 24px); color: var(--ink, #F0EDE2); }
+    .pfc-faq details { padding: var(--space-4, 16px) 0; border-bottom: 1px solid var(--line, rgba(244,239,229,0.10)); }
+    .pfc-faq summary { cursor: pointer; font-size: 16px; color: var(--ink, #F0EDE2); list-style: none; }
+    .pfc-faq summary::-webkit-details-marker { display: none; }
+    .pfc-faq details[open] summary { color: var(--gold, #D4AF6A); }
+    .pfc-faq p { margin: var(--space-3, 12px) 0 0; color: var(--ink-2, rgba(244,239,229,0.62)); font-size: 15px; max-width: 60ch; }
+
+    footer.pfc-footer { padding: var(--space-7, 48px) 0; margin-top: var(--space-7, 48px); border-top: 1px solid var(--line, rgba(244,239,229,0.10)); display: flex; justify-content: space-between; gap: var(--space-5, 24px); flex-wrap: wrap; font-size: 13px; color: var(--ink-2, rgba(244,239,229,0.62)); }
+    footer.pfc-footer a { color: inherit; text-decoration: none; margin-left: var(--space-4, 16px); }
+    footer.pfc-footer a:hover { color: var(--ink, #F0EDE2); }
+  </style>
+</head>
+<body>
+
+<div class="pfc-container">
+  <header class="pfc-header">
+    <a href="/" class="pfc-logo">ProFinanceCast</a>
+    <nav>
+      <a href="/">Home</a>
+      <a href="/blog.html">Blog</a>
+      <a href="/billing.html">Pricing</a>
+    </nav>
+  </header>
+
+  <section class="pfc-hero">
+    <h1>See your real take-home pay.</h1>
+    <p class="lede">Drop in a salary. Pick your country, state, and filing status. We project federal, state, and FICA (US) or income tax and National Insurance (UK) using 2026 brackets — and tell you what you actually keep.</p>
+    <span class="pfc-callout">Free. No login. Nothing tracked except a single page-view.</span>
+  </section>
+
+  <section class="pfc-tool" aria-labelledby="calc-heading">
+    <h2 id="calc-heading" style="position:absolute;left:-9999px;">Calculator</h2>
+
+    <div class="pfc-form">
+      <div class="pfc-tabs" role="tablist" aria-label="Country">
+        <button class="pfc-tab" role="tab" id="tab-us" aria-selected="true" aria-controls="panel-us" data-country="US">United States</button>
+        <button class="pfc-tab" role="tab" id="tab-uk" aria-selected="false" aria-controls="panel-uk" data-country="UK">United Kingdom</button>
+      </div>
+
+      <div role="tabpanel" id="panel-us" aria-labelledby="tab-us">
+        <div class="pfc-field">
+          <label for="us-gross">Gross annual salary (USD)</label>
+          <input class="pfc-input--bottom" type="number" id="us-gross" inputmode="decimal" min="0" step="1000" value="85000">
+        </div>
+        <div class="pfc-field">
+          <label for="us-state">State</label>
+          <select class="pfc-input--bottom" id="us-state">
+            <option value="CA">California</option>
+            <option value="NY">New York</option>
+            <option value="TX">Texas (no state tax)</option>
+            <option value="FL">Florida (no state tax)</option>
+            <option value="IL">Illinois</option>
+          </select>
+        </div>
+        <div class="pfc-field">
+          <label for="us-status">Filing status</label>
+          <select class="pfc-input--bottom" id="us-status">
+            <option value="single">Single</option>
+            <option value="mfj">Married filing jointly</option>
+          </select>
+        </div>
+      </div>
+
+      <div role="tabpanel" id="panel-uk" aria-labelledby="tab-uk" hidden>
+        <div class="pfc-field">
+          <label for="uk-gross">Gross annual salary (GBP)</label>
+          <input class="pfc-input--bottom" type="number" id="uk-gross" inputmode="decimal" min="0" step="1000" value="45000">
+        </div>
+        <p style="color: var(--ink-2, rgba(244,239,229,0.62)); font-size: 13px;">UK calculations use 2026/27 personal allowance, basic, higher, and additional rates plus Class-1 employee NI.</p>
+      </div>
+    </div>
+
+    <div class="pfc-result" aria-live="polite">
+      <span class="pfc-result__meta">Annual take-home</span>
+      <span class="num hero" id="r-takehome">$0</span>
+      <div class="pfc-result__sub">
+        <div><span class="pfc-result__meta">Per month</span><span class="num" id="r-monthly">$0</span></div>
+        <div><span class="pfc-result__meta">Per hour (2080 h)</span><span class="num" id="r-hourly">$0</span></div>
+        <div><span class="pfc-result__meta">Effective rate</span><span class="num" id="r-effective">0%</span></div>
+      </div>
+
+      <div class="pfc-gauge">
+        <svg id="gauge" viewBox="0 0 200 120" aria-hidden="true">
+          <path d="M 20 110 A 80 80 0 0 1 180 110" fill="none" stroke="rgba(244,239,229,0.10)" stroke-width="10" stroke-linecap="round"/>
+          <path id="gauge-fill" d="M 20 110 A 80 80 0 0 1 180 110" fill="none" stroke="#2BB67D" stroke-width="10" stroke-linecap="round" stroke-dasharray="251.3" stroke-dashoffset="251.3" style="transition: stroke-dashoffset 480ms cubic-bezier(0.16,1,0.3,1);"/>
+          <line id="gauge-needle" x1="100" y1="110" x2="100" y2="40" stroke="#D4AF6A" stroke-width="2" stroke-linecap="round" style="transform-origin: 100px 110px; transform: rotate(-90deg); transition: transform 480ms cubic-bezier(0.16,1,0.3,1);"/>
+          <circle cx="100" cy="110" r="4" fill="#D4AF6A"/>
+        </svg>
+        <p class="pfc-gauge__label" id="r-gauge-label">You keep 0% of every dollar earned.</p>
+      </div>
+
+      <p class="pfc-pull" id="r-pull">After tax, you keep $0 for every $0 earned.</p>
+
+      <table class="pfc-breakdown">
+        <thead><tr><th>Line</th><th style="text-align:right">Annual</th></tr></thead>
+        <tbody id="breakdown-body">
+          <tr><td>Gross income</td><td class="num" id="b-gross">$0</td></tr>
+          <tr id="b-row-fed"><td>Federal income tax</td><td class="num" id="b-fed">$0</td></tr>
+          <tr id="b-row-fica"><td>FICA (Social Security + Medicare)</td><td class="num" id="b-fica">$0</td></tr>
+          <tr id="b-row-state"><td>State tax</td><td class="num" id="b-state">$0</td></tr>
+          <tr id="b-row-uk-inc" hidden><td>UK income tax</td><td class="num" id="b-uk-inc">£0</td></tr>
+          <tr id="b-row-uk-ni" hidden><td>National Insurance</td><td class="num" id="b-uk-ni">£0</td></tr>
+          <tr class="total"><td>Take-home</td><td class="num" id="b-takehome">$0</td></tr>
+        </tbody>
+      </table>
+      <p style="font-size: 12px; color: var(--ink-3, rgba(244,239,229,0.38)); margin-top: var(--space-4, 16px);">All math runs in your browser. Numbers are estimates for planning, not tax advice. State tax for CA and NY is a flat-rate approximation.</p>
+    </div>
+  </section>
+
+  <section class="pfc-upsell" role="complementary">
+    <div>
+      <h3>Compare multiple offers across ten years.</h3>
+      <p>Layer two or three salary scenarios with raise schedules, 401(k) contributions, and life events. Save them, share them, and watch your forecast shift in real time.</p>
+    </div>
+    <a href="/scenarios.html" class="pfc-btn--primary">Compare multiple offers — Pro</a>
+  </section>
+
+  <section class="pfc-faq">
+    <h2>Questions</h2>
+    <details>
+      <summary>How accurate is this?</summary>
+      <p>It uses projected 2026 US federal brackets and the 2026/27 UK rates with standard deduction and personal allowance baked in. State tax for CA, NY, and IL is a flat approximation of the typical middle bracket. For tax filing use a qualified accountant; for forecasting it sits within a few percent of payroll.</p>
+    </details>
+    <details>
+      <summary>Why isn't my state listed?</summary>
+      <p>This first release covers California, New York, Texas, Florida, and Illinois. The full 50-state plus 12 UK region build is on the next sprint, paired with city-level cost-of-living pages.</p>
+    </details>
+    <details>
+      <summary>Does this account for 401(k), HSA, or pension contributions?</summary>
+      <p>Not in this version. The calculator assumes no pre-tax deductions so the gross figure is what you and your employer agreed. To model 401(k) or pension across a full forecast, use the Pro scenarios planner.</p>
+    </details>
+    <details>
+      <summary>How is this different from Salary.com or Bankrate?</summary>
+      <p>The math runs in your browser so we never see your salary. There is no signup, no email gate, and no advertising network. The upsell is a forecast that projects this take-home over the next ten years with raises and life events modelled in.</p>
+    </details>
+    <details>
+      <summary>Is my salary data shared anywhere?</summary>
+      <p>No. The calculation is pure JavaScript that runs on your device. Your salary never leaves the browser.</p>
+    </details>
+  </section>
+
+  <footer class="pfc-footer">
+    <span>&copy; 2026 ProFinanceCast.</span>
+    <nav>
+      <a href="/privacy.html">Privacy</a>
+      <a href="/help.html">Help</a>
+      <a href="/billing.html">Pricing</a>
+      <a href="mailto:support@profinancecast.com">support@profinancecast.com</a>
+    </nav>
+  </footer>
+</div>
+
+<script src="../js/pfc-tax-engine.js"></script>
+<script src="../js/pfc-motion.js" onerror="this.dataset.failed=1"></script>
+<script>
+(function () {
+  'use strict';
+  var Engine = window.PFCTaxEngine;
+  if (!Engine) { console.error('PFCTaxEngine not loaded'); return; }
+
+  var country = 'US';
+  var debounceTimer = null;
+
+  var els = {
+    tabs: document.querySelectorAll('.pfc-tab'),
+    panelUS: document.getElementById('panel-us'),
+    panelUK: document.getElementById('panel-uk'),
+    usGross: document.getElementById('us-gross'),
+    usState: document.getElementById('us-state'),
+    usStatus: document.getElementById('us-status'),
+    ukGross: document.getElementById('uk-gross'),
+    takeHome: document.getElementById('r-takehome'),
+    monthly: document.getElementById('r-monthly'),
+    hourly: document.getElementById('r-hourly'),
+    effective: document.getElementById('r-effective'),
+    gaugeFill: document.getElementById('gauge-fill'),
+    gaugeNeedle: document.getElementById('gauge-needle'),
+    gaugeLabel: document.getElementById('r-gauge-label'),
+    pull: document.getElementById('r-pull'),
+    bGross: document.getElementById('b-gross'),
+    bFed: document.getElementById('b-fed'),
+    bFica: document.getElementById('b-fica'),
+    bState: document.getElementById('b-state'),
+    bUkInc: document.getElementById('b-uk-inc'),
+    bUkNi: document.getElementById('b-uk-ni'),
+    bTakeHome: document.getElementById('b-takehome'),
+    rowFed: document.getElementById('b-row-fed'),
+    rowFica: document.getElementById('b-row-fica'),
+    rowState: document.getElementById('b-row-state'),
+    rowUkInc: document.getElementById('b-row-uk-inc'),
+    rowUkNi: document.getElementById('b-row-uk-ni')
+  };
+
+  function fmt(n, currency) {
+    var sym = currency === 'GBP' ? '£' : '$';
+    var v = Math.round(Number(n) || 0);
+    return sym + v.toLocaleString('en-US');
+  }
+  function pct(r) { return (Math.round(Number(r) * 1000) / 10).toFixed(1) + '%'; }
+
+  function setGauge(ratio) {
+    ratio = Math.max(0, Math.min(1, Number(ratio) || 0));
+    var fillCirc = 251.3;
+    if (els.gaugeFill) els.gaugeFill.setAttribute('stroke-dashoffset', String(fillCirc - fillCirc * ratio));
+    if (els.gaugeNeedle) {
+      var deg = -90 + (180 * ratio);
+      els.gaugeNeedle.style.transform = 'rotate(' + deg + 'deg)';
+    }
+  }
+
+  function setUSRows(show) {
+    els.rowFed.hidden = !show; els.rowFica.hidden = !show; els.rowState.hidden = !show;
+    els.rowUkInc.hidden = show; els.rowUkNi.hidden = show;
+  }
+
+  function recompute() {
+    if (country === 'US') {
+      var gross = Number(els.usGross.value) || 0;
+      var state = els.usState.value;
+      var status = els.usStatus.value;
+      var r = Engine.calculateUS({ grossAnnual: gross, state: state, filingStatus: status });
+      setUSRows(true);
+      els.takeHome.textContent = fmt(r.takeHome, 'USD');
+      els.monthly.textContent = fmt(r.takeHomeMonthly, 'USD');
+      els.hourly.textContent = fmt(r.takeHomePerHour, 'USD');
+      els.effective.textContent = pct(r.effectiveRate);
+      els.bGross.textContent = fmt(r.gross, 'USD');
+      els.bFed.textContent = '−' + fmt(r.federal.tax, 'USD');
+      els.bFica.textContent = '−' + fmt(r.fica.total, 'USD');
+      els.bState.textContent = '−' + fmt(r.state.tax, 'USD');
+      els.bTakeHome.textContent = fmt(r.takeHome, 'USD');
+      els.gaugeLabel.textContent = 'You keep ' + pct(r.takeHomeRatio) + ' of every dollar earned.';
+      els.pull.textContent = 'After tax, you keep ' + fmt(r.takeHome, 'USD') + ' for every ' + fmt(r.gross, 'USD') + ' earned.';
+      setGauge(r.takeHomeRatio);
+    } else {
+      var ukGross = Number(els.ukGross.value) || 0;
+      var u = Engine.calculateUK({ grossAnnual: ukGross });
+      setUSRows(false);
+      els.takeHome.textContent = fmt(u.takeHome, 'GBP');
+      els.monthly.textContent = fmt(u.takeHomeMonthly, 'GBP');
+      els.hourly.textContent = fmt(u.takeHomePerHour, 'GBP');
+      els.effective.textContent = pct(u.effectiveRate);
+      els.bGross.textContent = fmt(u.gross, 'GBP');
+      els.bUkInc.textContent = '−' + fmt(u.incomeTax.tax, 'GBP');
+      els.bUkNi.textContent = '−' + fmt(u.ni.ni, 'GBP');
+      els.bTakeHome.textContent = fmt(u.takeHome, 'GBP');
+      els.gaugeLabel.textContent = 'You keep ' + pct(u.takeHomeRatio) + ' of every pound earned.';
+      els.pull.textContent = 'After tax, you keep ' + fmt(u.takeHome, 'GBP') + ' for every ' + fmt(u.gross, 'GBP') + ' earned.';
+      setGauge(u.takeHomeRatio);
+    }
+  }
+
+  function debounce() { clearTimeout(debounceTimer); debounceTimer = setTimeout(recompute, 200); }
+
+  els.tabs.forEach(function (tab) {
+    tab.addEventListener('click', function () {
+      els.tabs.forEach(function (t) { t.setAttribute('aria-selected', t === tab ? 'true' : 'false'); });
+      country = tab.dataset.country;
+      els.panelUS.hidden = country !== 'US';
+      els.panelUK.hidden = country !== 'UK';
+      recompute();
+    });
+  });
+
+  ['input', 'change'].forEach(function (evt) {
+    [els.usGross, els.usState, els.usStatus, els.ukGross].forEach(function (el) {
+      el.addEventListener(evt, debounce);
+    });
+  });
+
+  recompute();
+})();
+</script>
+</body>
+</html>
