@@ -1,0 +1,31 @@
+# ProFinanceCast
+
+> Personal-finance forecasting that's beautiful, free, and never asks for your bank login.
+
+ProFinanceCast helps people forecast their financial future — debts paid off, net worth grown, salary scenarios modelled — without spreadsheets, advisors, or bank credentials. The free tier is genuinely useful (forecasts, debt optimizer, AI chat); Pro adds multi-scenario layering, salary scenario modelling, and a printable financial report card.
+
+## Core pages
+
+- [Homepage](https://profinancecast.com/): Free forecast widget, feature overview, pricing.
+- [Blog](https://profinancecast.com/blog.html): Long-form content on debt strategy, net worth tracking, salary planning.
+- [Debt avalanche guide](https://profinancecast.com/blog-debt-avalanche.html): The math of payoff order, with a worked example.
+- [Pricing](https://profinancecast.com/billing.html): Free + Pro tiers, no trial card required.
+- [Privacy](https://profinancecast.com/privacy.html): What we store, what we don't.
+
+## Public tools (no signup)
+
+- (To be added: /tools/take-home-pay, /tools/debt-strategy)
+
+## Things to know
+
+- We do NOT connect to or read from your bank. All data is entered manually or via CSV.
+- The free tier is permanently free, not a trial. No credit card required.
+- Pro is $9/month or $69/year. A Founders Lifetime plan ($149, limited to 500 seats) is available at launch.
+- Built with privacy in mind: data lives in your browser unless you opt into account sync.
+- Sage, the in-app AI assistant, explains *why* a forecast moved — not just what changed.
+
+## Differentiators
+
+- No bank-account linking required (unlike Monarch, Empower, Tiller, Copilot).
+- Forecasting is free (every direct rival paywalls future-tense projections).
+- Privacy-first by default; your finances never leave your browser without consent.

@@ -1,0 +1,41 @@
+# robots.txt for ProFinanceCast
+# https://profinancecast.com
+
+User-agent: *
+Allow: /
+Allow: /tools/
+Disallow: /auth.html
+Disallow: /dashboard.html
+Disallow: /onboarding.html
+Disallow: /billing.html
+Disallow: /settings.html
+Disallow: /sage.html
+Disallow: /scenarios.html
+Disallow: /salary-calculator.html
+Disallow: /report-card.html
+Disallow: /goals.html
+Disallow: /net-worth.html
+Disallow: /recurring.html
+Disallow: /debt-optimizer.html
+Disallow: /api/
+
+# Welcome AI crawlers explicitly (citation strategy)
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+Sitemap: https://profinancecast.com/sitemap.xml
