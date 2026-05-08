@@ -809,20 +809,20 @@
 -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/pfc-config.js"></script>
+<script src="js/pfc-auth.js"></script>
 <script>
 // Auth config now comes from pfc-config.js (single source of truth).
 // We deliberately do NOT fall back to a "demo mode" that lets users into the
 // app without authenticating — that was a backdoor.
-const SUPABASE_URL      = window.PFC_CONFIG.SUPABASE_URL;
-const SUPABASE_ANON_KEY = window.PFC_CONFIG.SUPABASE_ANON_KEY;
-const APP_ORIGIN        = window.PFC_CONFIG.APP_ORIGIN;
+const APP_ORIGIN = window.PFC_CONFIG.APP_ORIGIN;
 
-let supabaseClient = null;
-try {
-  supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-} catch(e) {
-  console.error('[auth] Supabase failed to init:', e);
-  // Show a hard error rather than silently allowing access
+// Audit H6: use the shared PFCAuth client so auth.html shares the same
+// persistSession/autoRefreshToken/detectSessionInUrl options the rest of
+// the app relies on. PFCAuth.getClient() returns null if the SDK or
+// config failed to load — render the same hard error in that case.
+const supabaseClient = (typeof PFCAuth !== 'undefined') ? PFCAuth.getClient() : null;
+if (!supabaseClient) {
+  console.error('[auth] Supabase client unavailable via PFCAuth');
   document.addEventListener('DOMContentLoaded', () => {
     const err = document.createElement('div');
     err.style.cssText = 'position:fixed;inset:0;display:grid;place-items:center;background:#080C12;color:#E05252;font-family:DM Sans,sans-serif;padding:24px;text-align:center;';
