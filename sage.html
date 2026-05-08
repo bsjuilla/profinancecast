@@ -296,10 +296,17 @@ async function callSage(msg) {
      This calls /api/sage  — your Vercel serverless function.
      The function holds your Gemini key safely on the server.
      See sage-api.js (companion file) for the server code.
+
+     Audit C1 fix: include the Bearer token from PFCAuth so the
+     server can authenticate the user. Without this, every Sage
+     call returned 401 in production.
   ───────────────────────────────────────────────────────── */
+  const session = (typeof PFCAuth !== 'undefined') ? PFCAuth.getSession() : null;
+  const headers = { 'Content-Type': 'application/json' };
+  if (session?.access_token) headers.Authorization = 'Bearer ' + session.access_token;
   const res = await fetch('/api/sage', {
     method:'POST',
-    headers:{'Content-Type':'application/json'},
+    headers,
     body: JSON.stringify({
       message: msg,
       history: history.slice(-10),
@@ -320,12 +327,29 @@ function addUserBubble(text) {
   m.appendChild(d); m.scrollTop = m.scrollHeight;
 }
 
+// Audit H3 fix: Gemini output was being injected via innerHTML with only
+// markdown-style replacements applied. A prompt-injected response containing
+// `<img src=x onerror=...>` would execute. Now we HTML-escape the raw text
+// FIRST, then re-introduce only the explicit markdown transformations on
+// the escaped string. The escaped output is provably script-free.
+function _safeSageMarkdown(text) {
+  const escaped = String(text)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+  return escaped
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\n\n/g, '</p><p>')
+    .replace(/\n/g, '<br>');
+}
 function addSageBubble(text) {
   const m = document.getElementById('messages');
   const t = now();
   const d = document.createElement('div');
   d.className = 'msg-row';
-  const html = text.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n\n/g,'</p><p>').replace(/\n/g,'<br>');
+  const html = _safeSageMarkdown(text);
   d.innerHTML = `<div class="msg-avatar sage-av">S</div><div class="msg-content"><div class="msg-meta"><span class="msg-name" style="color:var(--teal);">Sage</span><span class="msg-time">${t}</span></div><div class="bubble sage-b"><p>${html}</p></div></div>`;
   m.appendChild(d); m.scrollTop = m.scrollHeight;
 }
