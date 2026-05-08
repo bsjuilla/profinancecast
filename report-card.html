@@ -146,6 +146,11 @@
   <script src="js/pfc-auth.js"></script>
   <script src="js/pfc-storage.js"></script>
   <script src="js/pfc-entitlements.js"></script>
+  <!-- Synchronous Pro guard: hides body before parser hits inline init scripts (audit C3) -->
+  <script>
+    if (typeof PFCPlan !== 'undefined') PFCPlan.requirePlan(['pro','premium']);
+    else if (typeof PFCAuth !== 'undefined') PFCAuth.requireAuth();
+  </script>
   <!-- v3 reskin: new fonts + emerald palette overrides -->
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/pfc-reskin.css">
@@ -596,12 +601,5 @@ if(U.name){document.getElementById('sidebar-name').textContent=U.name;document.g
 const d=calc();
 renderCard(d);renderBreakdown(d);renderRecs(d);renderNextGrade(d);saveHistory(d);renderHistory();
 </script>
-  <!-- Route guard: redirect free users to billing before page logic runs -->
-  <script>
-    window.addEventListener('DOMContentLoaded', () => {
-      if (typeof PFCPlan !== 'undefined') PFCPlan.requirePlan(['pro','premium']);
-      else if (typeof PFCAuth !== 'undefined') PFCAuth.requireAuth();
-    });
-  </script>
 </body>
 </html>

@@ -17,7 +17,7 @@
  *   <button data-pro-action="export">          ← disabled for free users with upgrade tooltip
  */
 const PFCPlan = (() => {
-  const CACHE_TTL_MS = 60 * 1000;     // 1 min
+  const CACHE_TTL_MS = 30 * 1000;     // 30s — short window so webhook downgrades propagate quickly (audit M2)
   const STORAGE_KEY  = 'plan_cache';
 
   let _plan = 'free';
@@ -158,6 +158,16 @@ const PFCPlan = (() => {
   if (typeof PFCAuth !== 'undefined') {
     PFCAuth.onReady(() => { refresh().then(() => applyBadges()); });
     PFCAuth.onAuthChange(() => { refresh().then(() => applyBadges()); });
+  }
+
+  // Revalidate plan when the user returns to the tab — catches webhook-driven
+  // downgrades/upgrades that happened while the tab was backgrounded (audit M2).
+  if (typeof document !== 'undefined') {
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        refresh().then(() => applyBadges());
+      }
+    });
   }
 
   return { get, refresh, requirePlan, applyBadges, onChange };
