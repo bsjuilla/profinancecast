@@ -71,7 +71,12 @@
     try {
       const u = new URL(window.location.href);
       const next = u.searchParams.get('next');
-      if (next && /^\/[a-zA-Z0-9_\-/.?=&]*$/.test(next)) return next;
+      // Audit C2 fix: reject protocol-relative URLs and any candidate that
+      // doesn't resolve to our own origin.
+      if (next && /^\/(?!\/)[A-Za-z0-9_\-./?=&%#]*$/.test(next)) {
+        const resolved = new URL(next, window.location.origin);
+        if (resolved.origin === window.location.origin) return next;
+      }
     } catch (_) {}
     try {
       if (typeof PFCStorage !== 'undefined' && !PFCStorage.get('user')) return 'onboarding.html';

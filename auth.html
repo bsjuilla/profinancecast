@@ -835,7 +835,15 @@ try {
 function _nextDestination() {
   const params = new URLSearchParams(window.location.search);
   const next = params.get('next');
-  if (next && /^\/[a-zA-Z0-9_\-/.?=&]*$/.test(next)) return next;
+  // Audit C2 fix: reject protocol-relative URLs ("//evil.com") and any
+  // candidate that doesn't resolve to our own origin. Browsers treat
+  // "//evil.com" as cross-origin even though it starts with a slash.
+  if (next && /^\/(?!\/)[A-Za-z0-9_\-./?=&%#]*$/.test(next)) {
+    try {
+      const resolved = new URL(next, window.location.origin);
+      if (resolved.origin === window.location.origin) return next;
+    } catch (_) {}
+  }
   return 'dashboard.html';
 }
 
