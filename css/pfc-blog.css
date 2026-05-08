@@ -1,0 +1,234 @@
+/* ════════════════════════════════════════════════════════════════════════
+   pfc-blog.css — Shared styles for blog post pages
+   Mirrors the editorial template established by blog-debt-avalanche.html.
+   Uses the same tokens declared in pfc-tokens.css; falls back to literals
+   so blog posts render even if the token file fails to load.
+   ════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  --pfc-canvas: #0e1116;
+  --pfc-ink: #f3efe6;
+  --pfc-ink-soft: #cfc8b9;
+  --pfc-ink-faint: rgba(243, 239, 230, 0.55);
+  --pfc-rule: rgba(243, 239, 230, 0.12);
+  --pfc-accent: #c9a96a;
+  --pfc-card: rgba(243, 239, 230, 0.04);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  background: var(--pfc-canvas);
+  color: var(--pfc-ink);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+a {
+  color: var(--pfc-ink);
+  text-decoration: none;
+  border-bottom: 1px solid var(--pfc-rule);
+  transition: border-color 0.2s ease;
+}
+a:hover { border-color: var(--pfc-accent); }
+
+.num {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-weight: 500;
+  font-feature-settings: "tnum";
+  font-variant-numeric: tabular-nums;
+}
+
+.pfc-eyebrow {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--pfc-accent);
+  margin-bottom: 1.25rem;
+}
+
+.pfc-header {
+  position: sticky; top: 0; z-index: 20;
+  background: rgba(14, 17, 22, 0.92);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--pfc-rule);
+}
+.pfc-header-inner {
+  max-width: 1180px; margin: 0 auto;
+  padding: 1.1rem 1.5rem;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.pfc-logo {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.5rem; font-style: italic;
+  letter-spacing: 0.01em; border: 0;
+}
+.pfc-logo span { color: var(--pfc-accent); }
+.pfc-nav { display: flex; gap: 1.75rem; align-items: center; }
+.pfc-nav a { font-size: 0.9rem; color: var(--pfc-ink-soft); border: 0; }
+.pfc-nav a:hover { color: var(--pfc-ink); }
+.pfc-cta {
+  padding: 0.55rem 1.1rem;
+  border: 1px solid var(--pfc-accent); border-radius: 2px;
+  color: var(--pfc-accent);
+  font-size: 0.85rem; letter-spacing: 0.04em;
+}
+.pfc-cta:hover {
+  background: var(--pfc-accent); color: var(--pfc-canvas);
+  border-color: var(--pfc-accent);
+}
+
+.pfc-breadcrumb {
+  max-width: 780px; margin: 2.5rem auto 0;
+  padding: 0 1.5rem;
+  font-size: 0.82rem; color: var(--pfc-ink-faint);
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 0.04em;
+}
+.pfc-breadcrumb a { color: var(--pfc-ink-faint); border: 0; }
+.pfc-breadcrumb a:hover { color: var(--pfc-accent); }
+
+article {
+  max-width: 720px; margin: 0 auto;
+  padding: 3rem 1.5rem 5rem;
+}
+article h1 {
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic; font-weight: 500;
+  font-size: clamp(2.4rem, 5.4vw, 3.6rem);
+  line-height: 1.1; margin-bottom: 1.25rem;
+  letter-spacing: -0.005em;
+}
+
+.pfc-byline {
+  font-size: 0.85rem; color: var(--pfc-ink-faint);
+  margin-bottom: 3rem; padding-bottom: 1.75rem;
+  border-bottom: 1px solid var(--pfc-rule);
+}
+.pfc-byline span + span:before {
+  content: "·"; margin: 0 0.65rem; color: var(--pfc-rule);
+}
+
+.pfc-lede {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.4rem; line-height: 1.55;
+  color: var(--pfc-ink-soft);
+  margin-bottom: 2.5rem;
+}
+
+article h2 {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 500; font-size: 1.85rem;
+  margin: 3rem 0 1.1rem;
+  letter-spacing: -0.005em;
+}
+article h3 {
+  font-family: 'Inter', sans-serif;
+  font-weight: 600; font-size: 1.1rem;
+  margin: 2rem 0 0.8rem;
+  color: var(--pfc-ink);
+}
+article p {
+  color: var(--pfc-ink-soft);
+  margin-bottom: 1.25rem;
+  font-size: 1.02rem;
+}
+article ul, article ol {
+  margin: 0 0 1.5rem 1.4rem;
+  color: var(--pfc-ink-soft);
+}
+article li { margin-bottom: 0.5rem; }
+article strong { color: var(--pfc-ink); font-weight: 600; }
+
+blockquote {
+  border-left: 2px solid var(--pfc-accent);
+  padding-left: 1.25rem;
+  margin: 2rem 0;
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic; font-size: 1.2rem;
+  color: var(--pfc-ink);
+}
+
+.pfc-callout {
+  background: var(--pfc-card);
+  border: 1px solid var(--pfc-rule);
+  border-radius: 3px;
+  padding: 1.6rem 1.75rem;
+  margin: 2.5rem 0;
+}
+.pfc-callout p:last-child { margin-bottom: 0; }
+.pfc-callout a {
+  color: var(--pfc-accent);
+  border-bottom-color: var(--pfc-accent);
+}
+
+.pfc-faq {
+  margin-top: 3.5rem;
+  padding-top: 2.5rem;
+  border-top: 1px solid var(--pfc-rule);
+}
+.pfc-faq h2 { margin-top: 0; }
+.pfc-faq-item { margin-bottom: 1.75rem; }
+.pfc-faq-item h3 { margin: 0 0 0.5rem; font-size: 1.02rem; }
+.pfc-faq-item p { margin: 0; }
+
+.pfc-related {
+  max-width: 1080px; margin: 0 auto;
+  padding: 3rem 1.5rem 5rem;
+  border-top: 1px solid var(--pfc-rule);
+}
+.pfc-related h2 {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 500; font-size: 1.5rem;
+  margin-bottom: 1.75rem;
+  letter-spacing: -0.005em;
+}
+.pfc-related-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.25rem;
+}
+.pfc-card {
+  display: block; padding: 1.5rem;
+  background: var(--pfc-card);
+  border: 1px solid var(--pfc-rule);
+  border-radius: 3px;
+  transition: border-color 0.2s ease;
+}
+.pfc-card:hover { border-color: var(--pfc-accent); }
+.pfc-card-eyebrow {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--pfc-accent);
+  margin-bottom: 0.6rem;
+}
+.pfc-card-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic; font-size: 1.25rem;
+  line-height: 1.25;
+  color: var(--pfc-ink);
+}
+
+.pfc-disclaimer {
+  margin-top: 2rem;
+  font-size: 0.82rem;
+  color: var(--pfc-ink-faint);
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.pfc-footer {
+  border-top: 1px solid var(--pfc-rule);
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--pfc-ink-faint);
+}
+.pfc-footer a {
+  color: var(--pfc-ink-faint);
+  margin: 0 0.9rem;
+  border: 0;
+}
+.pfc-footer a:hover { color: var(--pfc-accent); }
