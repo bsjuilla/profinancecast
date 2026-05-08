@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -146,6 +146,9 @@
   input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;}
   input[type=number]{-moz-appearance:textfield;appearance:textfield;}
 </style>
+  <link rel="stylesheet" href="css/pfc-tokens.css">
+  <script src="js/pfc-export.js" defer></script>
+
 </head>
 <body>
 
@@ -911,8 +914,17 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
 // ── START ──
 init();
 </script>
-  <!-- PFCAuth + PFCStorage: user-scoped data isolation -->
+  <!-- Supabase SDK + auth / storage / entitlements (load order matters) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/pfc-config.js"></script>
   <script src="js/pfc-auth.js"></script>
   <script src="js/pfc-storage.js"></script>
+  <script src="js/pfc-entitlements.js"></script>
+  <!-- Route guard: redirect unauthed users to sign-in -->
+  <script>
+    window.addEventListener('DOMContentLoaded', () => {
+      if (typeof PFCAuth !== 'undefined') PFCAuth.requireAuth();
+    });
+  </script>
 </body>
 </html>

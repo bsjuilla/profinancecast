@@ -1,0 +1,173 @@
+/* ========================================================================
+   ProFinanceCast — Design Tokens
+   Single source of truth for color, type, spacing, motion.
+   Loaded after the page-local <style> so it can override stale variables.
+   ======================================================================== */
+:root {
+  /* ── Surface ─────────────────────────────────────────────────────────── */
+  --bg:        #07090F;
+  --bg-2:      #0B1018;
+  --bg-3:      #111827;
+  --surface:   #0F1620;
+  --surface-2: #141C28;
+  --border:    rgba(255,255,255,0.06);
+  --border-2:  rgba(255,255,255,0.10);
+  --border-3:  rgba(255,255,255,0.18);
+
+  /* ── Brand ───────────────────────────────────────────────────────────── */
+  --teal:      #00D4A0;     /* slightly brighter than the original #00C896 — feels more confident */
+  --teal-2:    #00B388;
+  --teal-dim:  rgba(0,212,160,0.10);
+  --teal-glow: rgba(0,212,160,0.28);
+
+  /* ── Accent palette ──────────────────────────────────────────────────── */
+  --amber:     #FFB85C;
+  --red:       #F26B6B;
+  --blue:      #5B8DEF;
+  --purple:    #B49EFF;
+  --green:     #34D399;
+
+  /* ── Text ────────────────────────────────────────────────────────────── */
+  --text:      #F5F8FB;
+  --text-2:    #A1AFC2;
+  --text-3:    #5A6B82;
+  --text-4:    #3A4858;
+
+  /* ── Type ────────────────────────────────────────────────────────────── */
+  --font-display: 'Syne', system-ui, sans-serif;
+  --font-body:    'DM Sans', system-ui, sans-serif;
+  --font-mono:    'JetBrains Mono', ui-monospace, monospace;
+
+  /* Modular type scale (1.250 ratio, 16px base) */
+  --t-12: 0.750rem;
+  --t-13: 0.812rem;
+  --t-14: 0.875rem;
+  --t-15: 0.937rem;
+  --t-16: 1.000rem;
+  --t-18: 1.125rem;
+  --t-20: 1.250rem;
+  --t-24: 1.500rem;
+  --t-32: 2.000rem;
+  --t-44: 2.750rem;
+  --t-56: 3.500rem;
+  --t-72: 4.500rem;
+
+  /* ── Spacing (8pt grid) ──────────────────────────────────────────────── */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 24px;
+  --s-6: 32px;
+  --s-7: 48px;
+  --s-8: 64px;
+  --s-9: 96px;
+
+  /* ── Radius ──────────────────────────────────────────────────────────── */
+  --r-xs: 6px;
+  --r-sm: 10px;
+  --r-md: 14px;
+  --r-lg: 20px;
+  --r-xl: 28px;
+  --r-pill: 999px;
+
+  /* ── Shadow / Elevation ──────────────────────────────────────────────── */
+  --shadow-1: 0 1px 0 rgba(255,255,255,0.04) inset, 0 1px 2px rgba(0,0,0,0.4);
+  --shadow-2: 0 4px 20px rgba(0,0,0,0.35);
+  --shadow-3: 0 18px 60px rgba(0,0,0,0.45);
+  --glow-teal: 0 0 0 1px rgba(0,212,160,0.30), 0 12px 40px rgba(0,212,160,0.18);
+
+  /* ── Motion ──────────────────────────────────────────────────────────── */
+  --ease-out:  cubic-bezier(0.22, 0.61, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --t-fast: 120ms;
+  --t-base: 200ms;
+  --t-slow: 360ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ── Reusable atoms ───────────────────────────────────────────────────── */
+.pfc-glow-teal { box-shadow: var(--glow-teal); }
+.pfc-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-1);
+}
+.pfc-card-hover {
+  transition: border-color var(--t-base) var(--ease-out),
+              transform var(--t-base) var(--ease-out),
+              box-shadow var(--t-base) var(--ease-out);
+}
+.pfc-card-hover:hover {
+  border-color: var(--border-2);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-2);
+}
+
+/* Plan-gated locks */
+[data-pro-only].is-locked,
+[data-pro-action].is-locked {
+  position: relative;
+}
+[data-pro-only].is-locked::after,
+[data-pro-action].is-locked::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background:
+    linear-gradient(135deg, rgba(0,0,0,0.22) 0%, rgba(0,0,0,0) 50%),
+    repeating-linear-gradient(
+      45deg,
+      rgba(255,255,255,0.02) 0,
+      rgba(255,255,255,0.02) 10px,
+      transparent 10px,
+      transparent 20px
+    );
+  pointer-events: none;
+  border-radius: inherit;
+}
+[data-pro-only].is-locked::before,
+[data-pro-action].is-locked::before {
+  content: '🔒 Pro';
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-family: var(--font-body);
+  font-size: var(--t-12);
+  background: var(--surface-2);
+  color: var(--text-2);
+  border: 1px solid var(--border-2);
+  padding: 2px 8px;
+  border-radius: var(--r-pill);
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Smooth focus ring instead of the harsh default outline */
+:where(button, a, input, select, textarea):focus-visible {
+  outline: 2px solid var(--teal);
+  outline-offset: 2px;
+  border-radius: var(--r-xs);
+}
+
+/* Page entry animation — eligible elements opt in via [data-anim] */
+@keyframes pfc-rise {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+[data-anim="rise"]      { animation: pfc-rise var(--t-slow) var(--ease-out) both; }
+[data-anim="rise"][data-delay="1"] { animation-delay: 80ms; }
+[data-anim="rise"][data-delay="2"] { animation-delay: 160ms; }
+[data-anim="rise"][data-delay="3"] { animation-delay: 240ms; }
+[data-anim="rise"][data-delay="4"] { animation-delay: 320ms; }
+[data-anim="rise"][data-delay="5"] { animation-delay: 400ms; }

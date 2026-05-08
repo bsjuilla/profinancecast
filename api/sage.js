@@ -1,142 +1,160 @@
 // api/sage.js — Vercel Serverless Function
-// Lives at /api/sage.js in your project root.
-// Proxies requests to Gemini so your API key NEVER reaches the browser.
 //
-// HOW TO SET UP YOUR API KEY (safe method):
-//   1. Go to vercel.com → your project → Settings → Environment Variables
-//   2. Add:  Name = GEMINI_API_KEY  |  Value = your key  |  Environments = all
-//   3. Redeploy once — done. The key is encrypted on Vercel's servers.
-//   NEVER paste your key directly in this file.
+// Proxies user messages to Gemini. The Gemini key NEVER reaches the browser.
+//
+// Hardening added in this revision:
+//   • Requires a valid Supabase JWT (Bearer token) — no more anonymous spam
+//   • Per-user monthly query limit, enforced server-side based on the plan
+//   • In-memory IP rate limit as a backup floor (5 req / 10s per IP)
+//   • Response shape unchanged → frontend keeps working without changes
+//
+// Required env: GEMINI_API_KEY, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
+
+import { createClient } from '@supabase/supabase-js';
+
+// ── In-memory IP throttle (resets per cold start; good enough as a floor) ─
+const _rateBuckets = new Map();
+function _rateLimit(ip, max = 5, windowMs = 10_000) {
+  const now = Date.now();
+  const bucket = _rateBuckets.get(ip) || [];
+  const recent = bucket.filter(t => now - t < windowMs);
+  if (recent.length >= max) return false;
+  recent.push(now);
+  _rateBuckets.set(ip, recent);
+  return true;
+}
+
+const PLAN_LIMITS = { free: 5, pro: 60, premium: 150 };
 
 export default async function handler(req, res) {
-  // Only allow POST
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+  const ip = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.socket?.remoteAddress || 'unknown';
+  if (!_rateLimit(ip)) return res.status(429).json({ error: 'Too many requests — slow down a moment.' });
 
   const GEMINI_KEY = process.env.GEMINI_API_KEY;
   if (!GEMINI_KEY) {
-    return res.status(500).json({ error: 'API key not configured. Add GEMINI_API_KEY to Vercel environment variables.' });
+    return res.status(500).json({ error: 'AI service not configured.' });
   }
 
-  const { message, history = [], systemPrompt, csvMode = false } = req.body;
+  // ── Auth: require a real signed-in user ─────────────────────────────────
+  const auth = req.headers.authorization || '';
+  const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
+  if (!token) return res.status(401).json({ error: 'Please sign in to use Sage.' });
 
-  if (!message || typeof message !== 'string') {
-    return res.status(400).json({ error: 'Missing message' });
-  }
+  const supabase = createClient(
+    process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY,
+    { auth: { persistSession: false, autoRefreshToken: false } }
+  );
+  const { data: userData, error: userErr } = await supabase.auth.getUser(token);
+  if (userErr || !userData?.user) return res.status(401).json({ error: 'Session expired — please sign in again.' });
+  const userId = userData.user.id;
 
-  // Normal chat: 500 char limit. CSV batch mode: allow up to 8000 chars
+  const { message, history = [], systemPrompt, csvMode = false } = req.body || {};
+  if (!message || typeof message !== 'string') return res.status(400).json({ error: 'Missing message' });
+
   const limit = csvMode ? 8000 : 500;
-  if (message.length > limit) {
-    return res.status(400).json({ error: 'Message too long' });
+  if (message.length > limit) return res.status(400).json({ error: 'Message too long' });
+
+  // ── Plan-aware quota check (skipped for csvMode batch parsing) ──────────
+  if (!csvMode) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('plan, ai_queries_used, ai_queries_limit, ai_queries_reset_at')
+      .eq('id', userId)
+      .maybeSingle();
+
+    const plan = profile?.plan || 'free';
+    const cap  = profile?.ai_queries_limit || PLAN_LIMITS[plan] || PLAN_LIMITS.free;
+    const used = profile?.ai_queries_used || 0;
+    const resetAt = profile?.ai_queries_reset_at ? new Date(profile.ai_queries_reset_at).getTime() : 0;
+
+    // Auto-reset if the period rolled over
+    if (resetAt && resetAt < Date.now()) {
+      await supabase.from('profiles').update({
+        ai_queries_used: 0,
+        ai_queries_reset_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+      }).eq('id', userId);
+    } else if (used >= cap) {
+      return res.status(429).json({
+        error: `You've used all ${cap} Sage queries for this month.`,
+        upgrade: plan === 'free',
+      });
+    }
   }
 
   const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`;
 
-  // ── CSV batch mode: single-turn, low temperature, expects JSON array back ──
+  // ── CSV batch mode (low temp, JSON-array output) ──────────────────────
   if (csvMode) {
     const geminiBody = {
-      contents: [
-        {
-          role: 'user',
-          parts: [{ text: message }]
-        }
-      ],
-      generationConfig: {
-        maxOutputTokens: 1200,
-        temperature: 0.1,   // Low temperature for consistent JSON output
-        topP: 0.9,
-      }
+      contents: [{ role: 'user', parts: [{ text: message }] }],
+      generationConfig: { maxOutputTokens: 1200, temperature: 0.1, topP: 0.9 },
     };
-
     try {
-      const geminiRes = await fetch(GEMINI_URL, {
+      const r = await fetch(GEMINI_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(geminiBody)
+        body: JSON.stringify(geminiBody),
       });
-
-      if (!geminiRes.ok) {
-        const errText = await geminiRes.text();
-        console.error('Gemini CSV error:', errText);
+      if (!r.ok) {
+        console.error('Gemini CSV error:', await r.text());
         return res.status(502).json({ error: 'AI service temporarily unavailable.' });
       }
-
-      const data = await geminiRes.json();
+      const data = await r.json();
       const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-
-      if (!reply) {
-        return res.status(502).json({ error: 'No response from AI.' });
-      }
-
+      if (!reply) return res.status(502).json({ error: 'No response from AI.' });
       return res.status(200).json({ reply });
-
     } catch (err) {
       console.error('Sage CSV API error:', err);
       return res.status(500).json({ error: 'Internal error.' });
     }
   }
 
-  // ── Normal chat mode (original behaviour, fully preserved) ──
-
-  // Build conversation history for multi-turn context
+  // ── Normal chat ───────────────────────────────────────────────────────
   const contents = [
-    // System instruction as first user message (Gemini 1.5 flash approach)
-    {
-      role: 'user',
-      parts: [{ text: systemPrompt || 'You are Sage, a helpful personal finance AI advisor.' }]
-    },
-    {
-      role: 'model',
-      parts: [{ text: "Understood! I'm Sage, your personal financial advisor. I have your complete financial picture and I'm ready to help." }]
-    },
-    // Inject conversation history (last 10 turns to stay within token limits)
+    { role: 'user', parts: [{ text: systemPrompt || 'You are Sage, a helpful personal finance AI advisor.' }] },
+    { role: 'model', parts: [{ text: "Understood! I'm Sage, your personal financial advisor." }] },
     ...history.slice(-10),
-    // Current message
-    {
-      role: 'user',
-      parts: [{ text: message }]
-    }
+    { role: 'user', parts: [{ text: message }] },
   ];
 
   const geminiBody = {
     contents,
-    generationConfig: {
-      maxOutputTokens: 600,     // ~400 words — enough for detailed advice
-      temperature: 0.7,          // Balanced creativity
-      topP: 0.9,
-      stopSequences: []
-    },
+    generationConfig: { maxOutputTokens: 600, temperature: 0.7, topP: 0.9, stopSequences: [] },
     safetySettings: [
       { category: 'HARM_CATEGORY_HARASSMENT',        threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
       { category: 'HARM_CATEGORY_HATE_SPEECH',       threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
-      { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' }
-    ]
+      { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+    ],
   };
 
   try {
-    const geminiRes = await fetch(GEMINI_URL, {
+    const r = await fetch(GEMINI_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(geminiBody)
+      body: JSON.stringify(geminiBody),
     });
-
-    if (!geminiRes.ok) {
-      const errText = await geminiRes.text();
-      console.error('Gemini error:', errText);
+    if (!r.ok) {
+      console.error('Gemini error:', await r.text());
       return res.status(502).json({ error: 'AI service temporarily unavailable. Please try again.' });
     }
-
-    const data = await geminiRes.json();
-
-    // Extract text safely
+    const data = await r.json();
     const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!reply) return res.status(502).json({ error: 'No response from AI. Please try again.' });
 
-    if (!reply) {
-      return res.status(502).json({ error: 'No response from AI. Please try again.' });
-    }
+    // Increment usage counter (best-effort; failure shouldn't break the response)
+    supabase.rpc('increment_ai_queries', { p_user_id: userId }).then(({ error }) => {
+      if (error) {
+        // Fallback: read-modify-write if the RPC doesn't exist yet
+        supabase.from('profiles').select('ai_queries_used').eq('id', userId).maybeSingle()
+          .then(({ data }) => {
+            const used = (data?.ai_queries_used || 0) + 1;
+            return supabase.from('profiles').update({ ai_queries_used: used }).eq('id', userId);
+          });
+      }
+    }).catch(() => {});
 
-    // Return clean response
     return res.status(200).json({ reply });
 
   } catch (err) {

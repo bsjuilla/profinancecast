@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -150,6 +150,9 @@
   @media(max-width:900px){.plans-grid{grid-template-columns:1fr;max-width:380px;}.info-grid{grid-template-columns:1fr;}}
   @media(max-width:680px){.sidebar{display:none;}.plan-banner{flex-direction:column;align-items:flex-start;}.content{padding:20px;}}
 </style>
+  <link rel="stylesheet" href="css/pfc-tokens.css">
+  <script src="js/pfc-export.js" defer></script>
+
 </head>
 <body>
 
@@ -348,7 +351,7 @@
           </div>
         </div>
 
-        <!-- CARD SECTION (via PayPal hosted fields) -->
+        <!-- CARD SECTION — handled by the PayPal "card" funding source above -->
         <div class="payment-section" id="section-card">
           <div class="card-icons">
             <div class="card-icon">VISA</div>
@@ -356,34 +359,17 @@
             <div class="card-icon">AMEX</div>
             <div class="card-icon">Maestro</div>
           </div>
-          <div class="field">
-            <label>Name on card</label>
-            <input type="text" id="card-name" placeholder="Alex Smith" autocomplete="cc-name">
+          <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px 16px;font-size:13px;color:var(--text2);line-height:1.5;margin-bottom:14px;">
+            Card payments are handled inside the PayPal flow. Select the
+            <strong style="color:var(--text);">Debit or Credit Card</strong> button on the PayPal tab —
+            no PayPal account required.
           </div>
-          <div class="field">
-            <label>Card number</label>
-            <div id="card-number-field" style="background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);padding:10px 13px;font-size:14px;color:var(--text3);">
-              <!-- PayPal hosted card field renders here -->
-              <input type="text" id="card-number-fallback" placeholder="1234 5678 9012 3456" maxlength="19" oninput="formatCard(this)" style="width:100%;background:none;border:none;outline:none;font-size:14px;color:var(--text);font-family:'DM Sans',sans-serif;" autocomplete="cc-number">
-            </div>
-          </div>
-          <div class="field-2">
-            <div class="field">
-              <label>Expiry date</label>
-              <input type="text" id="card-expiry" placeholder="MM / YY" maxlength="7" oninput="formatExpiry(this)" autocomplete="cc-exp">
-            </div>
-            <div class="field">
-              <label>CVV</label>
-              <input type="text" id="card-cvv" placeholder="123" maxlength="4" autocomplete="cc-csc">
-            </div>
-          </div>
-          <button class="pay-now-btn" id="pay-card-btn" onclick="payByCard()">
-            <span id="pay-btn-text">Pay <span id="pay-btn-amount">$9.99</span> now</span>
-            <div class="spinner" id="pay-spinner"></div>
+          <button class="pay-now-btn" onclick="setMethod('paypal')">
+            <span>Continue to PayPal</span>
           </button>
           <div class="secure-note">
             <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1l4 1.5v4c0 2.5-4 5.5-4 5.5S2.5 9 2.5 6.5v-4z" stroke="currentColor" stroke-width="1.2"/></svg>
-            Powered by PayPal — card payment processed securely
+            PCI-compliant by routing card details to PayPal directly
           </div>
         </div>
 
@@ -415,13 +401,23 @@
 -->
 
 <script>
-// ── CONFIG — replace this with your PayPal Live Client ID ──
-const PAYPAL_CLIENT_ID = 'AfB2Q0pvmI6fTYSe-JsUn2SHz8ZaDwIcjS-ZTP2jTHnIAQ_j1lkgZHac0gH7sVOVX9GckNnFTCDEP2WN';
+// ── CONFIG — sourced from pfc-config.js (single source of truth) ──
+const PAYPAL_CLIENT_ID = (window.PFC_CONFIG && window.PFC_CONFIG.PAYPAL_CLIENT_ID) || '';
 
 let currentPlan  = 'free';
 let checkoutPlan = 'pro';
 let checkoutAmt  = 9.99;
 let paypalLoaded = false;
+
+// Attach the user's Supabase JWT to PayPal API calls. Without this header the
+// server returns 401, which is exactly what we want when an unauth'd browser
+// pokes at /api/paypal/* directly.
+function _authHeaders() {
+  const session = (typeof PFCAuth !== 'undefined') ? PFCAuth.getSession() : null;
+  const token = session?.access_token;
+  return token ? { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
+               : { 'Content-Type': 'application/json' };
+}
 
 // ── OPEN CHECKOUT ──
 function openCheckout(plan, amount) {
@@ -489,30 +485,32 @@ function renderPayPalButtons() {
       height:  44
     },
 
-    // Step 1: create the order on your server
+    // Step 1: create the order on your server (auth required)
     createOrder: async () => {
       const res = await fetch('/api/paypal/create-order', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plan: checkoutPlan, amount: checkoutAmt })
+        headers: _authHeaders(),
+        body: JSON.stringify({ plan: checkoutPlan }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Order creation failed');
       return data.orderID;
     },
 
-    // Step 2: capture the payment after approval
+    // Step 2: capture the payment, then refresh entitlements from server
     onApprove: async (data) => {
       const res = await fetch('/api/paypal/capture-order', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderID: data.orderID, plan: checkoutPlan })
+        headers: _authHeaders(),
+        body: JSON.stringify({ orderID: data.orderID, plan: checkoutPlan }),
       });
       const result = await res.json();
       if (result.status === 'COMPLETED') {
+        // Force the entitlements module to fetch the new plan from the server
+        if (typeof PFCPlan !== 'undefined') await PFCPlan.refresh();
         showSuccess(checkoutPlan);
       } else {
-        alert('Payment could not be completed. Please try again.');
+        alert(result.error || 'Payment could not be completed. Please try again.');
       }
     },
 
@@ -528,46 +526,10 @@ function renderPayPalButtons() {
   }).render('#paypal-button-container');
 }
 
-// ── CARD PAYMENT (via PayPal) ──
-async function payByCard() {
-  const name   = document.getElementById('card-name').value.trim();
-  const number = document.getElementById('card-number-fallback').value.replace(/\s/g,'');
-  const expiry = document.getElementById('card-expiry').value.trim();
-  const cvv    = document.getElementById('card-cvv').value.trim();
-
-  if (!name || number.length < 15 || !expiry || cvv.length < 3) {
-    alert('Please fill in all card details.'); return;
-  }
-
-  const btn = document.getElementById('pay-card-btn');
-  btn.disabled = true;
-  document.getElementById('pay-btn-text').style.opacity = '0';
-  document.getElementById('pay-spinner').style.display  = 'block';
-
-  // Send to your serverless function which processes via PayPal Cards API
-  try {
-    const [expM, expY] = expiry.replace(/\s/g,'').split('/');
-    const res = await fetch('/api/paypal/card-order', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        plan: checkoutPlan, amount: checkoutAmt,
-        card: { name, number, expiry_month: expM.trim(), expiry_year: '20'+expY.trim(), cvv }
-      })
-    });
-    const data = await res.json();
-    if (data.status === 'COMPLETED') {
-      showSuccess(checkoutPlan);
-    } else {
-      throw new Error(data.error || 'Card payment failed');
-    }
-  } catch(e) {
-    alert('Card payment failed: ' + e.message + '\nPlease try PayPal instead.');
-    btn.disabled = false;
-    document.getElementById('pay-btn-text').style.opacity = '1';
-    document.getElementById('pay-spinner').style.display  = 'none';
-  }
-}
+// Card-payment processing now flows entirely through the PayPal SDK above
+// (the user picks "Debit or Credit Card" inside the PayPal popup).
+// No raw card data ever touches our server — see api/paypal/card-order.js
+// (returns 410) for the rationale.
 
 // ── SUCCESS ──
 function showSuccess(plan) {
@@ -616,26 +578,47 @@ function upgradePlan(plan) {
     </tr>`;
 }
 
-function confirmCancel() {
-  if (confirm('Are you sure you want to cancel your subscription? Your features stay active until the end of this billing period.')) {
-    alert('Subscription cancelled. Your plan will revert to Free at the end of this billing period. We\'re sorry to see you go!');
-    document.getElementById('cancel-btn').style.display = 'none';
+async function confirmCancel() {
+  if (!confirm('Cancel your subscription? Your Pro features stay active until the end of the current billing period.')) return;
+  const btn = document.getElementById('cancel-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Cancelling…'; }
+  try {
+    const res = await fetch('/api/subscription/cancel', { method: 'POST', headers: _authHeaders() });
+    if (!res.ok) throw new Error((await res.json()).error || 'Could not cancel');
+    if (typeof PFCPlan !== 'undefined') await PFCPlan.refresh();
+    alert('Subscription cancelled. Your plan reverts to Free at the end of the current billing period.');
+    if (btn) btn.style.display = 'none';
+  } catch (e) {
+    alert('Could not cancel: ' + e.message + '\nIf this keeps happening, email support@profinancecast.com.');
+    if (btn) { btn.disabled = false; btn.textContent = 'Cancel subscription'; }
   }
 }
 
-// ── CARD FORMATTING HELPERS ──
-function formatCard(input) {
-  let v = input.value.replace(/\D/g,'').substring(0,16);
-  input.value = v.replace(/(.{4})/g,'$1 ').trim();
-}
-function formatExpiry(input) {
-  let v = input.value.replace(/\D/g,'');
-  if (v.length >= 2) v = v.substring(0,2) + ' / ' + v.substring(2,4);
-  input.value = v;
-}
+// Boot: keep UI in sync with whatever the server says is the current plan
+window.addEventListener('DOMContentLoaded', () => {
+  if (typeof PFCPlan !== 'undefined') {
+    PFCPlan.onChange(plan => {
+      currentPlan = plan;
+      const banner = document.getElementById('banner-plan-name');
+      if (banner) banner.textContent = (plan === 'free' ? 'Free' : plan === 'pro' ? 'Pro' : 'Premium') + ' Plan';
+      const sidebar = document.getElementById('sidebar-plan');
+      if (sidebar) sidebar.textContent = (plan === 'free' ? 'Free' : plan === 'pro' ? 'Pro' : 'Premium') + ' plan';
+    });
+    PFCPlan.refresh();
+  }
+});
 </script>
-  <!-- PFCAuth + PFCStorage: user-scoped data isolation -->
+  <!-- Supabase SDK + auth / storage / entitlements (load order matters) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/pfc-config.js"></script>
   <script src="js/pfc-auth.js"></script>
   <script src="js/pfc-storage.js"></script>
+  <script src="js/pfc-entitlements.js"></script>
+  <!-- Route guard: redirect unauthed users to sign-in -->
+  <script>
+    window.addEventListener('DOMContentLoaded', () => {
+      if (typeof PFCAuth !== 'undefined') PFCAuth.requireAuth();
+    });
+  </script>
 </body>
 </html>

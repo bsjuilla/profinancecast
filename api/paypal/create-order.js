@@ -1,72 +1,85 @@
 // api/paypal/create-order.js
-// Creates a PayPal order and returns the orderID to the frontend.
-// The frontend then shows the PayPal popup for the user to approve.
-//
-// SETUP — add these to Vercel Environment Variables:
-//   PAYPAL_CLIENT_ID     → your PayPal app Live Client ID
-//   PAYPAL_CLIENT_SECRET → your PayPal app Live Secret
-//   Both are found at: developer.paypal.com → Your App → Live credentials
+// Creates a PayPal order tied to the authenticated buyer.
+// Required env: PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET, PAYPAL_ENV ('live'|'sandbox'),
+//               SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, APP_ORIGIN
 
-const PAYPAL_BASE = 'https://api-m.paypal.com'; // live endpoint
-// For testing use: 'https://api-m.sandbox.paypal.com'
+import { createClient } from '@supabase/supabase-js';
 
-async function getAccessToken() {
+const PAYPAL_BASE = (process.env.PAYPAL_ENV === 'sandbox')
+  ? 'https://api-m.sandbox.paypal.com'
+  : 'https://api-m.paypal.com';
+
+const PLAN_PRICES = { pro: 9.99, premium: 19.99 };
+const APP_ORIGIN  = process.env.APP_ORIGIN || 'https://profinancecast.com';
+
+async function _verifyUser(req) {
+  const auth = req.headers.authorization || '';
+  const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
+  if (!token) return { error: 'Missing auth token', status: 401 };
+  const supabase = createClient(
+    process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY,
+    { auth: { persistSession: false, autoRefreshToken: false } }
+  );
+  const { data, error } = await supabase.auth.getUser(token);
+  if (error || !data?.user) return { error: 'Invalid auth token', status: 401 };
+  return { user: data.user };
+}
+
+async function _getAccessToken() {
   const creds = Buffer.from(
     `${process.env.PAYPAL_CLIENT_ID}:${process.env.PAYPAL_CLIENT_SECRET}`
   ).toString('base64');
-
   const res = await fetch(`${PAYPAL_BASE}/v1/oauth2/token`, {
     method: 'POST',
-    headers: {
-      'Authorization': `Basic ${creds}`,
-      'Content-Type': 'application/x-www-form-urlencoded'
-    },
-    body: 'grant_type=client_credentials'
+    headers: { 'Authorization': `Basic ${creds}`, 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: 'grant_type=client_credentials',
   });
-
   if (!res.ok) throw new Error('Could not authenticate with PayPal');
-  const data = await res.json();
-  return data.access_token;
+  return (await res.json()).access_token;
 }
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { plan, amount } = req.body;
-
-  // Validate amount matches what we expect — prevents tampering
-  const validPlans = { pro: 9.99, premium: 19.99 };
-  if (!validPlans[plan] || validPlans[plan] !== amount) {
-    return res.status(400).json({ error: 'Invalid plan or amount' });
+  const { plan } = req.body || {};
+  if (!plan || !PLAN_PRICES[plan]) {
+    return res.status(400).json({ error: 'Invalid plan' });
   }
 
-  try {
-    const token = await getAccessToken();
+  // Buyer must be authenticated — prevents anonymous order creation
+  const auth = await _verifyUser(req);
+  if (auth.error) return res.status(auth.status).json({ error: auth.error });
+  const { user } = auth;
 
+  // Server-side amount (never trust the client)
+  const amount = PLAN_PRICES[plan];
+
+  try {
+    const token = await _getAccessToken();
     const order = await fetch(`${PAYPAL_BASE}/v2/checkout/orders`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
-        'PayPal-Request-Id': `pfc-${plan}-${Date.now()}` // idempotency key
+        'PayPal-Request-Id': `pfc-${user.id.slice(0,8)}-${plan}-${Date.now()}`,
       },
       body: JSON.stringify({
         intent: 'CAPTURE',
         purchase_units: [{
-          amount: {
-            currency_code: 'USD',
-            value: amount.toFixed(2)
-          },
+          custom_id: user.id,                          // ties the order back to a real user
+          reference_id: `${user.id}:${plan}`,
+          amount: { currency_code: 'USD', value: amount.toFixed(2) },
           description: `ProFinanceCast ${plan.charAt(0).toUpperCase() + plan.slice(1)} Plan — Monthly`,
-          soft_descriptor: 'PROFINANCECAST'
+          soft_descriptor: 'PROFINANCECAST',
         }],
         application_context: {
           brand_name: 'ProFinanceCast',
           user_action: 'PAY_NOW',
-          return_url: 'https://profinancecast.com/billing.html',
-          cancel_url: 'https://profinancecast.com/billing.html'
-        }
-      })
+          shipping_preference: 'NO_SHIPPING',
+          return_url: `${APP_ORIGIN}/billing.html`,
+          cancel_url: `${APP_ORIGIN}/billing.html`,
+        },
+      }),
     });
 
     if (!order.ok) {
@@ -74,7 +87,6 @@ export default async function handler(req, res) {
       console.error('PayPal create order error:', err);
       return res.status(502).json({ error: 'Could not create PayPal order' });
     }
-
     const orderData = await order.json();
     return res.status(200).json({ orderID: orderData.id });
 

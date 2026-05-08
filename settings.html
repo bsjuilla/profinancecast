@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -134,6 +134,9 @@
 
   @media(max-width:700px){.sidebar{display:none;}.field-2{grid-template-columns:1fr;}.content{padding:20px;}}
 </style>
+  <link rel="stylesheet" href="css/pfc-tokens.css">
+  <script src="js/pfc-export.js" defer></script>
+
 </head>
 <body>
 
@@ -603,8 +606,17 @@ function showToast(msg) {
   setTimeout(() => t.classList.remove('show'), 3000);
 }
 </script>
-  <!-- PFCAuth + PFCStorage: user-scoped data isolation -->
+  <!-- Supabase SDK + auth / storage / entitlements (load order matters) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/pfc-config.js"></script>
   <script src="js/pfc-auth.js"></script>
   <script src="js/pfc-storage.js"></script>
+  <script src="js/pfc-entitlements.js"></script>
+  <!-- Route guard: redirect unauthed users to sign-in -->
+  <script>
+    window.addEventListener('DOMContentLoaded', () => {
+      if (typeof PFCAuth !== 'undefined') PFCAuth.requireAuth();
+    });
+  </script>
 </body>
 </html>

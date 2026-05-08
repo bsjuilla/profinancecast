@@ -95,11 +95,21 @@ export default async function handler(req, res) {
     const valid = datapoints.filter(d => d.value !== null);
 
     if (valid.length === 0) {
-      return res.status(404).json({
-        error: `No inflation data available for ${COUNTRY_NAMES[countryCode] || countryCode}`,
+      // Graceful fallback: return a global average so dashboards don't show 0
+      return res.status(200).json({
         countryCode,
         countryName: COUNTRY_NAMES[countryCode] || countryCode,
-        fallback: true
+        rate: 3.5,                     // ~ global average inflation 2024
+        year: new Date().getFullYear() - 1,
+        previousRate: null,
+        previousYear: null,
+        trend: 'stable',
+        trendAmount: 0,
+        severity: 'normal',
+        source: 'Estimate (no World Bank data for this country)',
+        sourceUrl: null,
+        lastUpdated: new Date().toISOString(),
+        fallback: true,
       });
     }
 

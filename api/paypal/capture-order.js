@@ -1,18 +1,52 @@
 // api/paypal/capture-order.js
-// Called after the user approves payment in the PayPal popup.
-// Captures the funds (moves money to your PayPal account)
-// and upgrades the user's plan in Supabase.
+//
+// Captures a PayPal order, verifies the captured amount matches the plan price,
+// authenticates the buyer via their Supabase JWT, and writes the resulting
+// subscription row to Supabase. This is the SOURCE OF TRUTH for plan upgrades —
+// the client cannot fake a successful payment by simply calling this endpoint.
+//
+// REQUIRED env vars (Vercel → Project → Settings → Environment Variables):
+//   PAYPAL_CLIENT_ID
+//   PAYPAL_CLIENT_SECRET
+//   PAYPAL_ENV               → 'live' or 'sandbox'   (default: 'live')
+//   SUPABASE_URL
+//   SUPABASE_SERVICE_ROLE_KEY  ← service role, NOT anon. Server-only secret.
 
-const PAYPAL_BASE = 'https://api-m.paypal.com';
+import { createClient } from '@supabase/supabase-js';
 
-async function getAccessToken() {
+const PAYPAL_BASE = (process.env.PAYPAL_ENV === 'sandbox')
+  ? 'https://api-m.sandbox.paypal.com'
+  : 'https://api-m.paypal.com';
+
+const PLAN_PRICES = { pro: 9.99, premium: 19.99 };
+const PLAN_QUERIES = { pro: 60, premium: 150 };
+
+function _supabaseAdmin() {
+  return createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY,
+    { auth: { persistSession: false, autoRefreshToken: false } }
+  );
+}
+
+async function _verifyUser(req) {
+  const auth = req.headers.authorization || '';
+  const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
+  if (!token) return { error: 'Missing auth token', status: 401 };
+  const supabase = _supabaseAdmin();
+  const { data, error } = await supabase.auth.getUser(token);
+  if (error || !data?.user) return { error: 'Invalid auth token', status: 401 };
+  return { user: data.user, supabase };
+}
+
+async function _getAccessToken() {
   const creds = Buffer.from(
     `${process.env.PAYPAL_CLIENT_ID}:${process.env.PAYPAL_CLIENT_SECRET}`
   ).toString('base64');
   const res = await fetch(`${PAYPAL_BASE}/v1/oauth2/token`, {
     method: 'POST',
     headers: { 'Authorization': `Basic ${creds}`, 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: 'grant_type=client_credentials'
+    body: 'grant_type=client_credentials',
   });
   if (!res.ok) throw new Error('PayPal auth failed');
   return (await res.json()).access_token;
@@ -21,56 +55,82 @@ async function getAccessToken() {
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { orderID, plan } = req.body;
+  const { orderID, plan } = req.body || {};
   if (!orderID || !plan) return res.status(400).json({ error: 'Missing orderID or plan' });
+  if (!PLAN_PRICES[plan]) return res.status(400).json({ error: 'Invalid plan' });
+
+  // 1. Authenticate the buyer
+  const auth = await _verifyUser(req);
+  if (auth.error) return res.status(auth.status).json({ error: auth.error });
+  const { user, supabase } = auth;
 
   try {
-    const token = await getAccessToken();
+    const token = await _getAccessToken();
 
-    // Capture the payment — this moves money to your PayPal account
-    const capture = await fetch(`${PAYPAL_BASE}/v2/checkout/orders/${orderID}/capture`, {
+    // 2. Capture the funds at PayPal
+    const capRes = await fetch(`${PAYPAL_BASE}/v2/checkout/orders/${orderID}/capture`, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      }
+      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
     });
-
-    if (!capture.ok) {
-      const err = await capture.text();
+    if (!capRes.ok) {
+      const err = await capRes.text();
       console.error('Capture error:', err);
       return res.status(502).json({ error: 'Payment capture failed' });
     }
-
-    const captureData = await capture.json();
-
+    const captureData = await capRes.json();
     if (captureData.status !== 'COMPLETED') {
       return res.status(402).json({ error: 'Payment not completed', status: captureData.status });
     }
 
-    // ── UPGRADE USER IN SUPABASE ──
-    // Uncomment and configure once Supabase is set up:
-    //
-    // import { createClient } from '@supabase/supabase-js'
-    // const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY)
-    //
-    // const userId = req.headers['x-user-id'] // pass from frontend after auth
-    // await supabase.from('profiles').update({
-    //   plan: plan,
-    //   plan_started_at: new Date().toISOString(),
-    //   paypal_order_id: orderID,
-    //   ai_queries_used: 0,
-    //   ai_queries_reset_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
-    // }).eq('id', userId)
+    // 3. Verify amount and currency match the expected plan price.
+    // The client cannot tamper with the price — we compare to our server-side table.
+    const capture = captureData.purchase_units?.[0]?.payments?.captures?.[0];
+    const amountPaid = parseFloat(capture?.amount?.value);
+    const currencyPaid = capture?.amount?.currency_code;
+    if (currencyPaid !== 'USD' || Math.abs(amountPaid - PLAN_PRICES[plan]) > 0.005) {
+      console.error(`Amount mismatch: paid ${amountPaid} ${currencyPaid}, expected ${PLAN_PRICES[plan]} USD for plan ${plan}`);
+      // Money was captured but at the wrong amount — we refuse to upgrade.
+      // Operations team must reconcile manually via PayPal dashboard.
+      return res.status(409).json({ error: 'Payment amount mismatch — please contact support.' });
+    }
 
-    // Log the payment (important for your records)
-    console.log(`PAYMENT CAPTURED: Plan=${plan}, OrderID=${orderID}, Amount=${captureData.purchase_units?.[0]?.payments?.captures?.[0]?.amount?.value}`);
+    // 4. Upsert the subscription row (server is source of truth)
+    const periodEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    const { error: upsertErr } = await supabase
+      .from('subscriptions')
+      .upsert({
+        user_id: user.id,
+        plan,
+        status: 'active',
+        provider: 'paypal',
+        provider_order_id: orderID,
+        provider_capture_id: capture?.id || null,
+        amount_usd: amountPaid,
+        current_period_end: periodEnd,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'user_id' });
 
+    if (upsertErr) {
+      console.error('Supabase upsert error:', upsertErr);
+      // Payment captured but DB write failed — flag for manual reconciliation.
+      // We still return 200 so the user sees success; the webhook will retry.
+      return res.status(200).json({
+        status: 'COMPLETED', plan, orderID,
+        warning: 'Payment recorded — plan activation may take a few minutes.',
+      });
+    }
+
+    // 5. Reset query counters on the profile (best-effort; ignore if column missing)
+    await supabase.from('profiles').update({
+      plan, ai_queries_used: 0, ai_queries_limit: PLAN_QUERIES[plan],
+      ai_queries_reset_at: periodEnd,
+    }).eq('id', user.id);
+
+    console.log(`UPGRADED: user=${user.id} plan=${plan} order=${orderID} amount=${amountPaid}`);
     return res.status(200).json({
-      status: 'COMPLETED',
-      plan,
-      orderID,
-      captureID: captureData.purchase_units?.[0]?.payments?.captures?.[0]?.id
+      status: 'COMPLETED', plan, orderID,
+      captureID: capture?.id,
+      currentPeriodEnd: periodEnd,
     });
 
   } catch (err) {

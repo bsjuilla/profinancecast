@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -264,6 +264,9 @@
     .right { padding: 32px 24px; }
   }
 </style>
+  <link rel="stylesheet" href="css/pfc-tokens.css">
+  <script src="js/pfc-export.js" defer></script>
+
 </head>
 <body>
 
@@ -509,16 +512,35 @@
   5. In Supabase → Authentication → URL Configuration → add https://profinancecast.com
 -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/pfc-config.js"></script>
 <script>
-// ── CONFIG (replace with your Supabase values) ──
-const SUPABASE_URL      = 'https://hmopwxjkxqvubkifplnk.supabase.co';   // ← replace
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhtb3B3eGpreHF2dWJraWZwbG5rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzMzAyOTMsImV4cCI6MjA5MTkwNjI5M30.wCiB9DTSa1Yxy8-3PqLS9P05rrULzcVg_kLbxVuVCUk';                // ← replace
+// Auth config now comes from pfc-config.js (single source of truth).
+// We deliberately do NOT fall back to a "demo mode" that lets users into the
+// app without authenticating — that was a backdoor.
+const SUPABASE_URL      = window.PFC_CONFIG.SUPABASE_URL;
+const SUPABASE_ANON_KEY = window.PFC_CONFIG.SUPABASE_ANON_KEY;
+const APP_ORIGIN        = window.PFC_CONFIG.APP_ORIGIN;
 
 let supabaseClient = null;
 try {
   supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 } catch(e) {
-  console.warn('Supabase not configured yet — running in demo mode');
+  console.error('[auth] Supabase failed to init:', e);
+  // Show a hard error rather than silently allowing access
+  document.addEventListener('DOMContentLoaded', () => {
+    const err = document.createElement('div');
+    err.style.cssText = 'position:fixed;inset:0;display:grid;place-items:center;background:#080C12;color:#E05252;font-family:DM Sans,sans-serif;padding:24px;text-align:center;';
+    err.innerHTML = '<div><h2 style="font-family:Syne,sans-serif;margin-bottom:8px;">Service unavailable</h2><p style="color:#8A9BB0;">Authentication is temporarily down. Please try again in a moment.</p></div>';
+    document.body.appendChild(err);
+  });
+}
+
+// Pages can pass ?next=/scenarios.html to redirect back after sign-in
+function _nextDestination() {
+  const params = new URLSearchParams(window.location.search);
+  const next = params.get('next');
+  if (next && /^\/[a-zA-Z0-9_\-/.?=&]*$/.test(next)) return next;
+  return 'dashboard.html';
 }
 
 // ── VIEW SWITCHING ──
@@ -603,8 +625,9 @@ async function handleLogin() {
   hideAllAlerts();
 
   if (!supabaseClient) {
-    // Demo mode — skip Supabase, go straight to dashboard
-    setTimeout(() => { window.location.href = 'dashboard.html'; }, 1000);
+    setLoading('login-btn', 'login-spinner', false);
+    showAlert('login-error');
+    document.getElementById('login-error').textContent = 'Sign-in is temporarily unavailable. Please try again in a moment.';
     return;
   }
 
@@ -615,7 +638,7 @@ async function handleLogin() {
     showAlert('login-error');
     document.getElementById('login-error').textContent = error.message;
   } else {
-    window.location.href = 'dashboard.html';
+    window.location.href = _nextDestination();
   }
 }
 
@@ -647,18 +670,18 @@ async function handleSignup() {
   hideAllAlerts();
 
   if (!supabaseClient) {
-    // Demo mode
-    setTimeout(() => {
-      document.getElementById('verify-email-display').textContent = email;
-      showView('verify');
-      setLoading('signup-btn', 'signup-spinner', false);
-    }, 1200);
+    setLoading('signup-btn', 'signup-spinner', false);
+    errEl.textContent = 'Sign-up is temporarily unavailable. Please try again in a moment.';
+    showAlert('signup-error');
     return;
   }
 
   const { error } = await supabaseClient.auth.signUp({
     email, password: pw,
-    options: { data: { full_name: fname + ' ' + lname }, emailRedirectTo: 'https://profinancecast.com/onboarding.html' }
+    options: {
+      data: { full_name: fname + ' ' + lname },
+      emailRedirectTo: `${APP_ORIGIN}/onboarding.html`,
+    },
   });
 
   setLoading('signup-btn', 'signup-spinner', false);
@@ -680,12 +703,14 @@ async function handleForgot() {
   hideAllAlerts();
 
   if (!supabaseClient) {
-    setTimeout(() => { showAlert('forgot-success'); setLoading('forgot-btn', 'forgot-spinner', false); }, 1000);
+    setLoading('forgot-btn', 'forgot-spinner', false);
+    showAlert('forgot-error');
+    document.getElementById('forgot-error').textContent = 'Reset is temporarily unavailable. Please try again later.';
     return;
   }
 
   const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
-    redirectTo: 'https://profinancecast.com/reset-password'
+    redirectTo: `${APP_ORIGIN}/reset-password`,
   });
 
   setLoading('forgot-btn', 'forgot-spinner', false);
@@ -704,7 +729,7 @@ async function handleGoogle() {
   errEl.style.display = 'none';
 
   if (!supabaseClient) {
-    errEl.textContent = 'Connection not configured yet. Please use email sign up below — Google login will be available soon.';
+    errEl.textContent = 'Google sign-in is temporarily unavailable. Please use email sign up below.';
     errEl.style.display = 'block';
     return;
   }
@@ -713,12 +738,13 @@ async function handleGoogle() {
   btn.disabled = true;
   btn.textContent = 'Redirecting to Google…';
 
+  const next = _nextDestination();
   const { error } = await supabaseClient.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: 'https://profinancecast.com/onboarding.html',
-      queryParams: { access_type: 'offline', prompt: 'consent' }
-    }
+      redirectTo: `${APP_ORIGIN}/${next.replace(/^\//, '')}`,
+      queryParams: { access_type: 'offline', prompt: 'consent' },
+    },
   });
 
   if (error) {
@@ -729,11 +755,11 @@ async function handleGoogle() {
   }
 }
 
-// ── CHECK SESSION (if already logged in, redirect) ──
+// ── CHECK SESSION (if already logged in, redirect to ?next or dashboard) ──
 async function checkSession() {
   if (!supabaseClient) return;
   const { data: { session } } = await supabaseClient.auth.getSession();
-  if (session) window.location.href = 'dashboard.html';
+  if (session) window.location.href = _nextDestination();
 }
 checkSession();
 </script>
