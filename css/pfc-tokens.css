@@ -96,10 +96,74 @@
   --ease-out:    cubic-bezier(0.22, 0.61, 0.36, 1);
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
   --ease-spring: cubic-bezier(0.34, 1.5, 0.64, 1);
+  --ease-finance: cubic-bezier(0.16, 1, 0.3, 1);
   --t-fast:      120ms;
   --t-base:      220ms;
   --t-slow:      420ms;
   --t-stately:   700ms;        /* for compound-curve drawing, gauge needles */
+
+  /* ── Wave-2 token additions (Sprint 2 — additive, do not modify above) ──
+     Spec: profinancecast-reports/03-design-overhaul.md
+     New names so they don't collide with the existing --s-*, --r-*, --t-*
+     scales. Existing pages keep working; new components opt in by name.
+     ──────────────────────────────────────────────────────────────────── */
+
+  /* Spacing scale (4px base, parallel to --s-* but allows clamp() math) */
+  --space-0: 0;       --space-1: 4px;   --space-2: 8px;
+  --space-3: 12px;    --space-4: 16px;  --space-5: 24px;
+  --space-6: 32px;    --space-7: 48px;  --space-8: 64px;
+  --space-9: 96px;
+
+  /* Radius scale (parallel to --r-*) */
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-pill: 999px;
+
+  /* Elevation — dark-canvas-safe, inset strokes (drop shadows are invisible
+     on #0B1410). Use these for cards/modals on dark surfaces. */
+  --elev-0: none;
+  --elev-1: 0 0 0 1px rgba(244,239,229,0.06) inset;
+  --elev-2: 0 0 0 1px rgba(244,239,229,0.10) inset, 0 1px 0 rgba(212,175,106,0.18) inset;
+  --elev-3: 0 24px 60px -24px rgba(0,0,0,0.55), 0 0 0 1px rgba(244,239,229,0.08) inset;
+  --elev-hover: 0 0 0 1px rgba(212,175,106,0.45) inset; /* champagne hairline */
+
+  /* Motion durations (parallel to --t-*) */
+  --dur-instant: 80ms;
+  --dur-fast: 160ms;
+  --dur-base: 240ms;
+  --dur-slow: 480ms;
+  --dur-curve: 1600ms;
+
+  /* Type scale */
+  --type-display-xl: clamp(48px, 7vw, 96px);
+  --type-display-lg: clamp(36px, 5vw, 64px);
+  --type-display-md: clamp(28px, 3.5vw, 44px);
+  --type-body-lg: 18px;
+  --type-body: 16px;
+  --type-body-sm: 14px;
+  --type-meta: 12px;
+  --type-numeric-xl: 56px;
+  --type-numeric-lg: 32px;
+  --type-numeric: 18px;
+
+  /* Tabular numerics — apply via .num / [data-num] in pfc-app.css */
+  --feat-numeric: "tnum" 1, "ss01" 1;
+
+  /* Ink surfaces — semantic aliases for opacity-stepped ivory text */
+  --pfc-ink-strong: #F4EFE5;
+  --pfc-ink: rgba(244, 239, 229, 0.86);
+  --pfc-ink-muted: rgba(244, 239, 229, 0.62);
+  --pfc-ink-faint: rgba(244, 239, 229, 0.38);
+  --pfc-line: rgba(244, 239, 229, 0.10);
+  --pfc-line-strong: rgba(244, 239, 229, 0.18);
+  --pfc-gold-soft: rgba(212, 175, 106, 0.18);
+
+  /* Container widths */
+  --container-narrow: 720px;
+  --container: 1080px;
+  --container-wide: 1280px;
 
   /* ── Legacy mapping ────────────────────────────────────────────────────
      Old pages used --bg, --text, --teal, --card etc. We map those to new
@@ -124,6 +188,20 @@
   --green:     var(--money);
   --r:         var(--r-md);
   --r-sm:      var(--r-sm);
+}
+
+/* ── Surface contexts (Wave 2) ──────────────────────────────────────────
+   Apply via <body data-surface="ivory"> on report-card.html, blog posts,
+   and other paper-style pages. Inverts the ink scale so dark text is
+   readable on the ivory background.
+   ────────────────────────────────────────────────────────────────────── */
+[data-surface="ivory"] {
+  --pfc-ink-strong: #1A2520;
+  --pfc-ink: rgba(26, 37, 32, 0.86);
+  --pfc-ink-muted: rgba(26, 37, 32, 0.62);
+  --pfc-ink-faint: rgba(26, 37, 32, 0.38);
+  --pfc-line: rgba(26, 37, 32, 0.10);
+  --pfc-line-strong: rgba(26, 37, 32, 0.18);
 }
 
 /* ── Reduced motion: kill animations cleanly ───────────────────────────── */

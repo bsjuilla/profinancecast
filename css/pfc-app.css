@@ -322,6 +322,55 @@ body.pfc-app {
 ::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: 3px; }
 ::-webkit-scrollbar-track { background: transparent; }
 
+/* ── Wave-2 utility layer (Sprint 2 design tokens) ───────────────────────
+   New opt-in classes consuming the --space-*/--radius-*/--elev-*/--dur-*
+   tokens added in pfc-tokens.css. Existing .pfc-card / .pfc-input rules
+   above are preserved unchanged; new behavior is on modifier classes.
+   ──────────────────────────────────────────────────────────────────────── */
+
+.num,
+[data-num] {
+  font-family: var(--font-mono);
+  font-feature-settings: var(--feat-numeric);
+  font-variant-numeric: tabular-nums;
+}
+
+.pfc-card--elev {
+  box-shadow: var(--elev-2);
+  transition: box-shadow var(--dur-base) var(--ease-out);
+}
+.pfc-card--elev:hover {
+  box-shadow: var(--elev-3), var(--elev-hover);
+}
+.pfc-card--gold {
+  box-shadow: var(--elev-2), 0 0 0 1px var(--gold) inset;
+}
+
+.pfc-input--bottom {
+  border: none;
+  border-bottom: 1px solid var(--pfc-line-strong);
+  border-radius: 0;
+  padding: var(--space-3) 0;
+  background: transparent;
+  color: var(--pfc-ink-strong);
+  font: 16px/1.4 var(--font-body);
+  width: 100%;
+  transition: border-color var(--dur-fast) var(--ease-out);
+}
+.pfc-input--bottom:focus {
+  outline: none;
+  border-bottom-color: var(--money);
+}
+.pfc-input--bottom.pfc-input--error {
+  border-bottom-color: var(--warning);
+}
+
+@media print {
+  body { background: white !important; color: #1A2520 !important; }
+  a { color: inherit; text-decoration: none; }
+  .no-print { display: none !important; }
+}
+
 /* ── Mobile ───────────────────────────────────────────────────────────── */
 @media (max-width: 880px) {
   body.pfc-app { display: block; }
