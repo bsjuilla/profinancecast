@@ -1020,11 +1020,13 @@ function showToast(msg) {
 // ── START ──
 init();
 </script>
-  <!-- Route guard: redirect free users to billing before page logic runs -->
+  <!-- Salary calculator is now Free (audit B3 / pricing report 07): single-offer
+       calculation is the SEO honey-pot. Multi-offer compare and "save scenario"
+       Pro hooks land alongside the scenarios.html upsell flow. Auth required so
+       the in-app version can sync state, but no Pro plan check. -->
   <script>
     window.addEventListener('DOMContentLoaded', () => {
-      if (typeof PFCPlan !== 'undefined') PFCPlan.requirePlan(['pro','premium']);
-      else if (typeof PFCAuth !== 'undefined') PFCAuth.requireAuth();
+      if (typeof PFCAuth !== 'undefined') PFCAuth.requireAuth();
     });
   </script>
 </body>
