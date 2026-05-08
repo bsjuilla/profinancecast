@@ -140,6 +140,13 @@
 </style>
   <link rel="stylesheet" href="css/pfc-tokens.css">
   <script src="js/pfc-export.js" defer></script>
+  <!-- Supabase SDK + auth/storage/entitlements (must load before any inline script that uses them) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/pfc-config.js"></script>
+  <script src="js/pfc-auth.js"></script>
+  <script src="js/pfc-storage.js"></script>
+  <script src="js/pfc-entitlements.js"></script>
+
 
 </head>
 <body>
@@ -585,12 +592,6 @@ if(U.name){document.getElementById('sidebar-name').textContent=U.name;document.g
 const d=calc();
 renderCard(d);renderBreakdown(d);renderRecs(d);renderNextGrade(d);saveHistory(d);renderHistory();
 </script>
-  <!-- Supabase SDK + auth / storage / entitlements (load order matters) -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/pfc-config.js"></script>
-  <script src="js/pfc-auth.js"></script>
-  <script src="js/pfc-storage.js"></script>
-  <script src="js/pfc-entitlements.js"></script>
   <!-- Route guard: redirect free users to billing before page logic runs -->
   <script>
     window.addEventListener('DOMContentLoaded', () => {

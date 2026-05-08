@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -524,6 +524,111 @@
     .demo-frame { transform: none; }
   }
 </style>
+  <!-- Supabase SDK + auth/storage/entitlements (must load before any inline script that uses them) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/pfc-config.js"></script>
+  <script src="js/pfc-auth.js"></script>
+  <script src="js/pfc-storage.js"></script>
+  <script src="js/pfc-entitlements.js"></script>
+
+  <!-- ════════════════════════════════════════════════════════════════════
+       OAuth CALLBACK HANDLER
+       Supabase / Google redirect users back here with #access_token=…&… in
+       the URL hash. The Supabase SDK's `detectSessionInUrl: true` (set in
+       pfc-auth.js) reads the hash, writes the session to localStorage, then
+       fires the SIGNED_IN auth event. We listen for that, then route the
+       user to dashboard.html (or onboarding if they're brand new).
+       ════════════════════════════════════════════════════════════════════ -->
+  <script>
+  (function () {
+    const hash = window.location.hash || '';
+    const search = window.location.search || '';
+    const isCallback =
+      hash.includes('access_token=') ||
+      hash.includes('error_description=') ||
+      /[?&]code=/.test(search);
+
+    if (!isCallback) return;
+
+    // Hide the landing page until we know where to send the user
+    document.documentElement.style.visibility = 'hidden';
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const splash = document.createElement('div');
+      splash.id = 'oauth-splash';
+      splash.style.cssText =
+        'position:fixed;inset:0;z-index:9999;display:grid;place-items:center;' +
+        'background:#050810;color:#F4F7FB;font-family:Inter,system-ui,sans-serif;' +
+        'visibility:visible;';
+      splash.innerHTML =
+        '<div style="text-align:center;">' +
+          '<div style="width:42px;height:42px;border:3px solid rgba(0,229,176,0.18);' +
+            'border-top-color:#00E5B0;border-radius:50%;margin:0 auto 18px;' +
+            'animation:pfc-spin .8s linear infinite;"></div>' +
+          '<div style="font-size:14px;color:#A1AFC2;letter-spacing:.04em;">Signing you in…</div>' +
+        '</div>' +
+        '<style>@keyframes pfc-spin{to{transform:rotate(360deg)}}</style>';
+      document.body.appendChild(splash);
+      document.documentElement.style.visibility = '';
+    });
+
+    function decideDestination(userId) {
+      try {
+        const u = new URL(window.location.href);
+        const next = u.searchParams.get('next');
+        if (next && /^\/[a-zA-Z0-9_\-/.?=&]*$/.test(next)) return next;
+      } catch (_) {}
+      try {
+        if (typeof PFCStorage !== 'undefined' && !PFCStorage.get('user')) {
+          return 'onboarding.html';
+        }
+      } catch (_) {}
+      return 'dashboard.html';
+    }
+
+    function complete(userId) {
+      try {
+        const cleanUrl = window.location.origin + window.location.pathname;
+        window.history.replaceState({}, document.title, cleanUrl);
+      } catch (_) {}
+      window.location.replace(decideDestination(userId));
+    }
+
+    if (hash.includes('error_description=')) {
+      const params = new URLSearchParams(hash.replace(/^#/, ''));
+      const msg = decodeURIComponent(params.get('error_description') || 'Sign-in failed');
+      console.error('[oauth] error:', msg);
+      window.location.replace('auth.html?error=' + encodeURIComponent(msg));
+      return;
+    }
+
+    let done = false;
+    const timeout = setTimeout(() => {
+      if (done) return;
+      done = true;
+      console.warn('[oauth] timed out waiting for session — falling back to auth.html');
+      window.location.replace('auth.html?error=timeout');
+    }, 5000);
+
+    function tryComplete() {
+      if (done) return;
+      if (typeof PFCAuth === 'undefined') { setTimeout(tryComplete, 50); return; }
+      PFCAuth.onReady((uid) => {
+        if (done) return;
+        done = true;
+        clearTimeout(timeout);
+        if (uid && uid !== 'guest') {
+          complete(uid);
+        } else {
+          console.error('[oauth] hash present but no session resolved');
+          window.location.replace('auth.html?error=no_session');
+        }
+      });
+    }
+    tryComplete();
+  })();
+  </script>
+
 </head>
 <body>
 

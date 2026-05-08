@@ -766,11 +766,20 @@ async function handleGoogle() {
   btn.disabled = true;
   btn.textContent = 'Redirecting to Google…';
 
+  // Always redirect OAuth back to the site root. index.html has a callback
+  // handler that consumes the #access_token from the URL hash, writes the
+  // session to localStorage, then routes the user to dashboard / onboarding /
+  // ?next=. This survives Supabase's redirect-URL allow-list (which usually
+  // only whitelists `/`) and avoids the "user lands on landing page with a
+  // giant hash and is silently unauthenticated" bug.
   const next = _nextDestination();
+  const nextParam = next && next !== 'dashboard.html'
+    ? `?next=${encodeURIComponent(next.startsWith('/') ? next : '/' + next)}`
+    : '';
   const { error } = await supabaseClient.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: `${APP_ORIGIN}/${next.replace(/^\//, '')}`,
+      redirectTo: `${APP_ORIGIN}/${nextParam}`,
       queryParams: { access_type: 'offline', prompt: 'consent' },
     },
   });
@@ -790,6 +799,26 @@ async function checkSession() {
   if (session) window.location.href = _nextDestination();
 }
 checkSession();
+
+// ── Surface OAuth callback errors that index.html bounced back to us ──
+(function () {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const err = params.get('error');
+    if (!err) return;
+    const map = {
+      timeout:    'Sign-in took too long. Please try again.',
+      no_session: 'We received the Google response but no session was created. Try again, or use email sign-in below.',
+    };
+    const msg = map[err] || decodeURIComponent(err);
+    const errEl = document.getElementById('google-error');
+    if (errEl) {
+      errEl.textContent = msg;
+      errEl.style.display = 'block';
+      errEl.classList.add('show');
+    }
+  } catch (_) {}
+})();
 </script>
 </body>
 </html>
