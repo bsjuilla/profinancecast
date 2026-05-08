@@ -14,6 +14,7 @@ const PFCAuth = (() => {
   let _session = null;
   let _userId  = 'guest';
   let _ready   = false;
+  let _failed  = false; // set when SDK/config didn't load — see requireAuth (audit L3)
   const _readyCb = [];
   const _changeCb = [];
 
@@ -24,13 +25,30 @@ const PFCAuth = (() => {
       });
     } else {
       console.warn('[PFCAuth] Supabase SDK or config missing — auth features disabled.');
+      _failed = true;
     }
   } catch (e) {
     console.error('[PFCAuth] Failed to init Supabase client:', e);
+    _failed = true;
+  }
+
+  function _renderUnavailableBanner() {
+    if (typeof document === 'undefined') return;
+    const insert = () => {
+      if (document.getElementById('pfc-auth-unavailable')) return;
+      const banner = document.createElement('div');
+      banner.id = 'pfc-auth-unavailable';
+      banner.setAttribute('role', 'alert');
+      banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;padding:12px 18px;background:#7a1f1f;color:#fff;font:500 14px/1.4 system-ui,-apple-system,Segoe UI,sans-serif;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.3)';
+      banner.textContent = 'Service unavailable — please refresh in a moment.';
+      document.body.prepend(banner);
+    };
+    if (document.body) insert();
+    else document.addEventListener('DOMContentLoaded', insert, { once: true });
   }
 
   async function _init() {
-    if (!_client) { _ready = true; _flush(); return; }
+    if (!_client) { _failed = true; _ready = true; _flush(); return; }
     try {
       const { data } = await _client.auth.getSession();
       _session = data?.session ?? null;
@@ -65,6 +83,7 @@ const PFCAuth = (() => {
     getSession: () => _session,
     getClient: () => _client,
     isReady: () => _ready,
+    isFailed: () => _failed,
     isLoggedIn: () => _userId !== 'guest' && _session !== null,
     onReady(fn) {
       if (_ready) { try { fn(_userId); } catch(_) {} }
@@ -75,9 +94,18 @@ const PFCAuth = (() => {
      * Redirects to auth.html if the user is not logged in.
      * Closes the auth check synchronously after init resolves.
      * Use on every Pro-gated page.
+     *
+     * If init failed (Supabase SDK / config didn't load — e.g. CDN flake),
+     * we render an inline "service unavailable" banner instead of redirecting,
+     * because auth.html itself depends on the same CDN and would loop forever.
+     * (audit L3)
      */
     requireAuth() {
       this.onReady(uid => {
+        if (_failed) {
+          _renderUnavailableBanner();
+          return;
+        }
         if (uid === 'guest') {
           const here = encodeURIComponent(window.location.pathname + window.location.search);
           window.location.replace(`auth.html?next=${here}`);

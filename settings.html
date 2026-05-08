@@ -579,10 +579,59 @@ function handleAvatar(input) {
   reader.readAsDataURL(input.files[0]);
 }
 
+// Real export — wired to js/pfc-export.js (audit H5 + L1)
 function exportData(type) {
-  const msgs = {csv:'Preparing your CSV export…',json:'Preparing your JSON export…',pdf:'Generating your forecast PDF…'};
-  showToast(msgs[type]);
-  // In production: call /api/export?type=TYPE
+  if (typeof PFCExport === 'undefined') {
+    showToast('Export library failed to load — please refresh');
+    return;
+  }
+  try {
+    const backup = (typeof PFCExport.fullBackup === 'function')
+      ? (PFCExport.fullBackup() || { exportedAt: new Date().toISOString(), data: {} })
+      : { data: {} };
+
+    if (type === 'json') {
+      PFCExport.json('profinancecast-backup.json', backup);
+      showToast('JSON export downloaded');
+      return;
+    }
+    if (type === 'csv') {
+      const rows = [];
+      Object.entries(backup.data || {}).forEach(([section, value]) => {
+        if (Array.isArray(value)) {
+          value.forEach((item, idx) => {
+            if (item && typeof item === 'object') {
+              Object.entries(item).forEach(([field, v]) => {
+                rows.push({ section, index: idx, field, value: typeof v === 'object' ? JSON.stringify(v) : String(v) });
+              });
+            } else {
+              rows.push({ section, index: idx, field: '', value: String(item) });
+            }
+          });
+        } else if (value && typeof value === 'object') {
+          Object.entries(value).forEach(([field, v]) => {
+            rows.push({ section, index: '', field, value: typeof v === 'object' ? JSON.stringify(v) : String(v) });
+          });
+        } else if (value !== undefined && value !== null) {
+          rows.push({ section, index: '', field: '', value: String(value) });
+        }
+      });
+      if (!rows.length) { showToast('No financial data to export yet'); return; }
+      PFCExport.csv('profinancecast-data.csv', rows, ['section','index','field','value']);
+      showToast('CSV export downloaded');
+      return;
+    }
+    if (type === 'pdf') {
+      showToast('Opening print dialog…');
+      if (typeof PFCExport.printReport === 'function') PFCExport.printReport();
+      else window.print();
+      return;
+    }
+    showToast('Unknown export type');
+  } catch (e) {
+    console.error('[exportData] failed:', e);
+    showToast('Export failed — please try again');
+  }
 }
 
 function connectGoogle() {
@@ -593,20 +642,64 @@ function connectFacebook() {
   showToast('Redirecting to Facebook sign-in…');
 }
 
+// Real reset — actually clears storage now (audit H5)
 function confirmReset() {
-  if (confirm('This will delete all your financial data (income, expenses, debts, goals). Your account and settings will stay. Are you sure?')) {
-    showToast('Financial data cleared. Redirecting to onboarding…');
-    setTimeout(() => window.location.href = 'onboarding.html', 1800);
+  if (!confirm('This will delete all your financial data (income, expenses, debts, goals). Your account and settings will stay. Are you sure?')) return;
+  if (typeof PFCStorage === 'undefined') {
+    showToast('Storage unavailable — please refresh');
+    return;
   }
+  try {
+    PFCStorage.clearAll();
+  } catch (e) {
+    console.error('[confirmReset] clearAll failed:', e);
+    showToast('Reset failed — please try again');
+    return;
+  }
+  showToast('Financial data cleared. Redirecting to onboarding…');
+  setTimeout(() => { window.location.href = 'onboarding.html'; }, 1400);
 }
 
-function confirmDelete() {
-  const confirmed = prompt('Type DELETE to permanently delete your account:');
-  if (confirmed === 'DELETE') {
-    showToast('Account deletion scheduled. You will receive a confirmation email.');
-    setTimeout(() => window.location.href = 'index.html', 2500);
-  } else if (confirmed !== null) {
-    showToast('Account not deleted — you must type DELETE exactly');
+// Real account deletion — calls /api/account/delete with double-confirm (audit H5, GDPR)
+function _settingsAuthHeaders() {
+  const session = (typeof PFCAuth !== 'undefined') ? PFCAuth.getSession() : null;
+  const token = session?.access_token;
+  return token
+    ? { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }
+    : { 'Content-Type': 'application/json' };
+}
+
+async function confirmDelete() {
+  const session = (typeof PFCAuth !== 'undefined') ? PFCAuth.getSession() : null;
+  const userEmail = session?.user?.email || '';
+  if (!session || !userEmail) {
+    showToast('You must be signed in to delete your account');
+    return;
+  }
+  const typed = prompt('This permanently deletes your ProFinanceCast account, all financial data, and any active subscription. This cannot be undone.\n\nType your email (' + userEmail + ') to confirm:');
+  if (typed === null) return;
+  if (typed.trim().toLowerCase() !== userEmail.toLowerCase()) {
+    showToast('Email did not match — account NOT deleted');
+    return;
+  }
+  try {
+    const res = await fetch('/api/account/delete', {
+      method: 'POST',
+      headers: _settingsAuthHeaders(),
+    });
+    if (res.status !== 204 && !res.ok) {
+      let msg = 'Deletion failed — please contact support.';
+      try { const body = await res.json(); if (body?.error) msg = body.error; } catch (_) {}
+      showToast(msg);
+      return;
+    }
+    showToast('Account deleted. Goodbye.');
+    try { if (typeof PFCStorage !== 'undefined') PFCStorage.clearAll(); } catch (_) {}
+    try { if (typeof PFCAuth !== 'undefined') await PFCAuth.getClient()?.auth.signOut(); } catch (_) {}
+    setTimeout(() => { window.location.replace('index.html?deleted=1'); }, 600);
+  } catch (e) {
+    console.error('[confirmDelete] network error:', e);
+    showToast('Network error — account NOT deleted');
   }
 }
 
