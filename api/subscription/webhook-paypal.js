@@ -8,6 +8,7 @@
 //   1. PayPal developer dashboard → Apps → your app → Add Webhook
 //   2. URL = https://profinancecast.com/api/subscription/webhook-paypal
 //   3. Subscribe to events:
+//        PAYMENT.CAPTURE.COMPLETED   ← audit H2 fallback (NEW)
 //        PAYMENT.CAPTURE.REFUNDED
 //        PAYMENT.CAPTURE.REVERSED
 //        BILLING.SUBSCRIPTION.CANCELLED
@@ -85,8 +86,100 @@ export default async function handler(req, res) {
     { auth: { persistSession: false, autoRefreshToken: false } }
   );
 
+  // Helper: append-only event log for audit M3.
+  const _logEvent = async (extra) => {
+    try {
+      await supabase.from('subscription_events').insert({
+        user_id: extra.user_id || null,
+        event_type: extra.event_type || eventType,
+        provider: 'paypal',
+        provider_id: extra.provider_id || null,
+        amount: extra.amount || null,
+        currency: extra.currency || null,
+        raw_payload: extra.raw_payload || event,
+      });
+    } catch (e) {
+      console.error('[webhook-paypal] event log non-fatal:', e?.message || e);
+    }
+  };
+
   try {
     switch (eventType) {
+      case 'PAYMENT.CAPTURE.COMPLETED': {
+        // Audit H2 fallback: if api/paypal/capture-order.js 5xxed (or was
+        // never reached), upgrade the user from this verified webhook event.
+        const captureId = resource.id;
+        const amount = resource.amount?.value;
+        const currency = resource.amount?.currency_code || 'USD';
+        const userId =
+          resource.custom_id ||
+          resource.invoice_id ||
+          resource.supplementary_data?.related_ids?.custom_id ||
+          null;
+
+        await _logEvent({
+          user_id: userId,
+          event_type: 'webhook_capture_completed',
+          provider_id: captureId,
+          amount,
+          currency,
+        });
+
+        if (!userId) {
+          console.warn(`[webhook-paypal] capture.completed without resolvable userId (capture ${captureId})`);
+          break;
+        }
+
+        // Idempotency: if subscriptions already has this captureId active, skip.
+        const { data: existing } = await supabase
+          .from('subscriptions')
+          .select('user_id, status, provider_capture_id')
+          .eq('user_id', userId)
+          .maybeSingle();
+        if (existing?.provider_capture_id === captureId && existing.status === 'active') break;
+
+        // Determine plan from amount (server is source of truth).
+        const v = Number(amount).toFixed(2);
+        let plan = null;
+        if (v === '9.99' || v === '9.00') plan = 'pro';
+        else if (v === '69.00') plan = 'pro';      // annual
+        else if (v === '149.00') plan = 'pro';     // founders lifetime
+        else if (v === '19.99') plan = 'premium';
+        if (!plan) {
+          console.warn(`[webhook-paypal] capture.completed amount ${v} ${currency} matched no plan`);
+          break;
+        }
+
+        const days = (v === '69.00') ? 366 : (v === '149.00') ? 36500 : 30;
+        const periodEnd = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
+        const nowIso = new Date().toISOString();
+
+        const { error: upsertErr } = await supabase.from('subscriptions').upsert({
+          user_id: userId,
+          status: 'active',
+          plan,
+          provider: 'paypal',
+          provider_capture_id: captureId,
+          amount_usd: Number(amount),
+          current_period_end: periodEnd,
+          cancel_at_period_end: false,
+          cancelled_at: null,
+          updated_at: nowIso,
+        }, { onConflict: 'user_id' });
+        if (upsertErr) {
+          console.error('[webhook-paypal] fallback upsert err:', upsertErr);
+          await _logEvent({
+            user_id: userId,
+            event_type: 'webhook_capture_upsert_failed',
+            provider_id: captureId,
+            amount,
+            currency,
+            raw_payload: { event, db_error: upsertErr },
+          });
+        }
+        break;
+      }
+
       case 'PAYMENT.CAPTURE.REFUNDED':
       case 'PAYMENT.CAPTURE.REVERSED': {
         // Pull the original order to find the user_id we stored as custom_id
@@ -109,6 +202,11 @@ export default async function handler(req, res) {
           updated_at: new Date().toISOString(),
         }).eq('user_id', userId);
         await supabase.from('profiles').update({ plan: 'free' }).eq('id', userId);
+        await _logEvent({
+          user_id: userId,
+          event_type: eventType === 'PAYMENT.CAPTURE.REFUNDED' ? 'refund' : 'reversal',
+          provider_id: captureId,
+        });
         console.log(`Cancelled subscription for ${userId} via ${eventType} (capture ${captureId})`);
         break;
       }
@@ -123,12 +221,22 @@ export default async function handler(req, res) {
           updated_at: new Date().toISOString(),
         }).eq('user_id', userId);
         await supabase.from('profiles').update({ plan: 'free' }).eq('id', userId);
+        await _logEvent({
+          user_id: userId,
+          event_type: eventType === 'BILLING.SUBSCRIPTION.CANCELLED' ? 'subscription_cancelled' : 'subscription_expired',
+          provider_id: resource.id || null,
+        });
         break;
       }
 
       case 'CUSTOMER.DISPUTE.CREATED': {
         // Flag for manual review — don't auto-cancel since most disputes are resolved.
         const orderId = resource.disputed_transactions?.[0]?.seller_transaction_id;
+        await _logEvent({
+          user_id: null,
+          event_type: 'dispute_created',
+          provider_id: orderId || resource.dispute_id || resource.id || null,
+        });
         if (!orderId) break;
         await supabase.from('subscriptions').update({
           dispute_open: true, updated_at: new Date().toISOString(),
@@ -139,6 +247,11 @@ export default async function handler(req, res) {
       default:
         // Unhandled event types are fine — just acknowledge so PayPal doesn't retry forever.
         console.log(`PayPal webhook: ignoring ${eventType}`);
+        await _logEvent({
+          user_id: null,
+          event_type: 'unhandled:' + eventType,
+          provider_id: event.id || null,
+        });
     }
     return res.status(200).json({ received: true });
   } catch (e) {

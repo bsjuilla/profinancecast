@@ -33,7 +33,7 @@ export default async function handler(req, res) {
   // Look up active subscription. If none, return free.
   const { data: sub, error: subErr } = await supabase
     .from('subscriptions')
-    .select('plan, status, current_period_end, provider')
+    .select('plan, status, current_period_end, cancel_at_period_end, cancelled_at, provider')
     .eq('user_id', userId)
     .maybeSingle();
 
@@ -43,7 +43,9 @@ export default async function handler(req, res) {
     return res.status(200).json({ plan: 'free', status: 'unknown' });
   }
 
-  // Treat subscriptions whose period_end is in the past as "free"
+  // Treat subscriptions whose period_end is in the past as "free".
+  // cancel_at_period_end=true while period_end is still in the future =>
+  // user retains Pro until period end (audit H1).
   const now = Date.now();
   const periodEnd = sub?.current_period_end ? new Date(sub.current_period_end).getTime() : 0;
   const expired = periodEnd && periodEnd < now;
@@ -60,6 +62,8 @@ export default async function handler(req, res) {
     plan,
     status: sub?.status || 'free',
     currentPeriodEnd: sub?.current_period_end || null,
+    cancelAtPeriodEnd: sub?.cancel_at_period_end === true,
+    cancelledAt: sub?.cancelled_at || null,
     provider: sub?.provider || null,
     queries: profile ? {
       used: profile.ai_queries_used || 0,
