@@ -200,7 +200,7 @@
         <svg id="gauge" viewBox="0 0 200 120" aria-hidden="true">
           <path d="M 20 110 A 80 80 0 0 1 180 110" fill="none" stroke="rgba(244,239,229,0.10)" stroke-width="10" stroke-linecap="round"/>
           <path id="gauge-fill" d="M 20 110 A 80 80 0 0 1 180 110" fill="none" stroke="#2BB67D" stroke-width="10" stroke-linecap="round" stroke-dasharray="251.3" stroke-dashoffset="251.3" style="transition: stroke-dashoffset 480ms cubic-bezier(0.16,1,0.3,1);"/>
-          <line id="gauge-needle" x1="100" y1="110" x2="100" y2="40" stroke="#D4AF6A" stroke-width="2" stroke-linecap="round" style="transform-origin: 100px 110px; transform: rotate(-90deg); transition: transform 480ms cubic-bezier(0.16,1,0.3,1);"/>
+          <line id="gauge-needle" x1="100" y1="110" x2="100" y2="40" stroke="#D4AF6A" stroke-width="2" stroke-linecap="round" transform="rotate(-90 100 110)"/>
           <circle cx="100" cy="110" r="4" fill="#D4AF6A"/>
         </svg>
         <p class="pfc-gauge__label" id="r-gauge-label">You keep 0% of every dollar earned.</p>
@@ -290,6 +290,7 @@
     monthly: document.getElementById('r-monthly'),
     hourly: document.getElementById('r-hourly'),
     effective: document.getElementById('r-effective'),
+    gaugeSvg: document.getElementById('gauge'),
     gaugeFill: document.getElementById('gauge-fill'),
     gaugeNeedle: document.getElementById('gauge-needle'),
     gaugeLabel: document.getElementById('r-gauge-label'),
@@ -315,14 +316,21 @@
   }
   function pct(r) { return (Math.round(Number(r) * 1000) / 10).toFixed(1) + '%'; }
 
+  var lastGaugePct = 0;
   function setGauge(ratio) {
     ratio = Math.max(0, Math.min(1, Number(ratio) || 0));
     var fillCirc = 251.3;
     if (els.gaugeFill) els.gaugeFill.setAttribute('stroke-dashoffset', String(fillCirc - fillCirc * ratio));
-    if (els.gaugeNeedle) {
-      var deg = -90 + (180 * ratio);
-      els.gaugeNeedle.style.transform = 'rotate(' + deg + 'deg)';
+    var pct = ratio * 100;
+    if (window.PFCMotion && els.gaugeNeedle) {
+      window.PFCMotion.gaugeNeedle(els.gaugeSvg, lastGaugePct, pct, {
+        minAngle: -90, maxAngle: 90, cx: 100, cy: 110,
+        needleSelector: '#gauge-needle', duration: 480
+      });
+    } else if (els.gaugeNeedle) {
+      els.gaugeNeedle.setAttribute('transform', 'rotate(' + (-90 + 180 * ratio).toFixed(2) + ' 100 110)');
     }
+    lastGaugePct = pct;
   }
 
   function setUSRows(show) {

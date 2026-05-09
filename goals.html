@@ -464,6 +464,7 @@
   <script src="js/pfc-auth.js"></script>
   <script src="js/pfc-storage.js"></script>
   <script src="js/pfc-entitlements.js"></script>
+  <script src="js/pfc-motion.js" defer></script>
   <!-- v3 reskin: new fonts + emerald palette overrides -->
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/pfc-reskin.css">
@@ -893,22 +894,21 @@ function render() {
     // SVG ring
     const ringR = 34, ringC = 40;
     const circ = 2 * Math.PI * ringR;
-    const offset = circ * (1 - pct / 100);
 
     const card = document.createElement('div');
     card.className = 'goal-card' + (completed ? ' completed' : '');
     card.style.setProperty('--goal-color', color);
     card.style.animationDelay = (i * 0.06) + 's';
 
+    // Render with empty ring; PFCMotion.goalRing fills it when the card scrolls into view.
     card.innerHTML = `
       <div class="goal-card-top">
         <div class="goal-ring-wrap">
           <svg width="80" height="80" viewBox="0 0 80 80">
             <circle cx="40" cy="40" r="${ringR}" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="8"/>
-            <circle cx="40" cy="40" r="${ringR}" fill="none" stroke="${color}" stroke-width="8"
-              stroke-dasharray="${circ.toFixed(1)}" stroke-dashoffset="${offset.toFixed(1)}"
-              stroke-linecap="round" transform="rotate(-90 40 40)"
-              style="transition:stroke-dashoffset .8s ease;"/>
+            <circle class="goal-ring-fill" cx="40" cy="40" r="${ringR}" fill="none" stroke="${color}" stroke-width="8"
+              stroke-dasharray="${circ.toFixed(1)}" stroke-dashoffset="${circ.toFixed(1)}"
+              stroke-linecap="round" transform="rotate(-90 40 40)"/>
             <text x="40" y="37" text-anchor="middle" font-family="Syne,sans-serif" font-size="15" font-weight="800" fill="#F0F4F8">${pct}%</text>
             <text x="40" y="51" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="9" fill="#4A5A6E">${icon}</text>
           </svg>
@@ -967,6 +967,14 @@ function render() {
     `;
 
     grid.appendChild(card);
+
+    // Animate ring fill when the card scrolls into view
+    if (window.PFCMotion) {
+      const ringFill = card.querySelector('.goal-ring-fill');
+      window.PFCMotion.observe(card, () => {
+        window.PFCMotion.goalRing(ringFill, pct, { autoColor: false, duration: 1100 });
+      });
+    }
 
     // Check milestones
     checkMilestone(g, pct, i);

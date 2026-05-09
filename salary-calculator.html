@@ -158,6 +158,7 @@
   <script src="js/pfc-auth.js"></script>
   <script src="js/pfc-storage.js"></script>
   <script src="js/pfc-entitlements.js"></script>
+  <script src="js/pfc-motion.js" defer></script>
   <!-- v3 reskin: new fonts + emerald palette overrides -->
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/pfc-reskin.css">
@@ -370,6 +371,21 @@
 
           <!-- Position assessment -->
           <div id="position-box" style="padding:12px 14px;border-radius:var(--r-sm);font-size:13px;line-height:1.55;display:none;"></div>
+
+          <!-- Market-position gauge (animates as target changes) -->
+          <div style="display:flex;align-items:center;gap:18px;margin-top:18px;padding-top:18px;border-top:1px solid var(--border);">
+            <svg id="market-gauge" width="160" height="100" viewBox="0 0 200 120" aria-hidden="true" style="flex-shrink:0;">
+              <path d="M 20 110 A 80 80 0 0 1 180 110" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="10" stroke-linecap="round"/>
+              <path d="M 20 110 A 80 80 0 0 1 100 30" fill="none" stroke="rgba(0,200,150,0.35)" stroke-width="10" stroke-linecap="round"/>
+              <path d="M 100 30 A 80 80 0 0 1 180 110" fill="none" stroke="rgba(245,166,35,0.45)" stroke-width="10" stroke-linecap="round"/>
+              <line id="pfc-needle" x1="100" y1="110" x2="100" y2="40" stroke="var(--gold,#D4AF6A)" stroke-width="2" stroke-linecap="round" transform="rotate(-90 100 110)"/>
+              <circle cx="100" cy="110" r="4" fill="var(--gold,#D4AF6A)"/>
+            </svg>
+            <div style="flex:1;">
+              <div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:4px;">Where your target lands</div>
+              <div id="market-gauge-label" style="font-family:'Cormorant Garamond',serif;font-style:italic;font-size:18px;color:var(--text);line-height:1.3;">Pick a target above to see your market position.</div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -797,6 +813,28 @@ function updateMarketRange(range, salary, target, sym) {
     document.getElementById('target-marker').style.display = 'block';
   } else {
     document.getElementById('target-marker').style.display = 'none';
+  }
+
+  // Market-position gauge — needle climbs from 25th (left) to 75th (right) percentile
+  const gaugeSvg = document.getElementById('market-gauge');
+  const gaugeLabel = document.getElementById('market-gauge-label');
+  if (gaugeSvg && gaugeLabel) {
+    const gPct = targPct !== null ? Math.max(0, Math.min(100, targPct)) : 0;
+    if (window.PFCMotion) {
+      window.PFCMotion.gaugeNeedle(gaugeSvg, window._lastSalaryGaugePct || 0, gPct, {
+        minAngle: -90, maxAngle: 90, cx: 100, cy: 110, duration: 720
+      });
+    } else {
+      const a = -90 + 180 * (gPct / 100);
+      const needle = gaugeSvg.querySelector('#pfc-needle');
+      if (needle) needle.setAttribute('transform', 'rotate(' + a.toFixed(2) + ' 100 110)');
+    }
+    window._lastSalaryGaugePct = gPct;
+    if (target == null) gaugeLabel.textContent = 'Pick a target above to see your market position.';
+    else if (target < range.low) gaugeLabel.textContent = 'Below the 25th percentile — strong case for a raise.';
+    else if (target < range.median) gaugeLabel.textContent = 'Below median — a reasonable, well-supported ask.';
+    else if (target < range.high) gaugeLabel.textContent = 'Above median — defensible with strong evidence.';
+    else gaugeLabel.textContent = 'Top of market — focus negotiation on total comp.';
   }
 
   // Position assessment

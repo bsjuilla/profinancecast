@@ -403,6 +403,7 @@
   <script src="js/pfc-auth.js"></script>
   <script src="js/pfc-storage.js"></script>
   <script src="js/pfc-entitlements.js"></script>
+  <script src="js/pfc-motion.js" defer></script>
   <!-- v3 reskin: new fonts + emerald palette overrides -->
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/pfc-reskin.css">
@@ -489,7 +490,7 @@
   <!-- TOPBAR -->
   <div class="topbar">
     <div class="topbar-left">
-      <div class="topbar-title">My Dashboard</div>
+      <div class="topbar-title">My Dashboard <span id="masthead-month" style="display:inline-block;font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:500;color:var(--gold,#D4AF6A);margin-left:8px;font-size:15px;">—</span></div>
       <div class="topbar-sub" id="topbar-date">Last updated · just now · <span id="today-date"></span></div>
     </div>
     <div class="topbar-right">
@@ -2688,6 +2689,38 @@ function markAllRead() {
 
 // ── UPDATE DATE ──
 document.getElementById('today-date').textContent = new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
+
+// ── MASTHEAD MONTH FLIP ──
+(function () {
+  const monthEl = document.getElementById('masthead-month');
+  if (!monthEl) return;
+  const label = new Date().toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+  if (window.PFCMotion) {
+    setTimeout(() => window.PFCMotion.calendarFlip(monthEl, label), 240);
+  } else {
+    monthEl.textContent = label;
+  }
+})();
+
+// ── KPI NUMBER COUNTERS (animate when scrolled into view) ──
+(function () {
+  if (!window.PFCMotion) return;
+  const moneyFmt = (n) => '$' + Math.round(n).toLocaleString();
+  const targets = [
+    { id: 'm-networth', to: 24840, fmt: moneyFmt },
+    { id: 'm-savings',  to:   570, fmt: moneyFmt },
+    { id: 'm-debt',     to:    14, fmt: (n) => Math.round(n) + ' mo' },
+    { id: 'm-score',    to:    74, fmt: (n) => String(Math.round(n)) },
+  ];
+  targets.forEach(t => {
+    const el = document.getElementById(t.id);
+    if (!el) return;
+    el.textContent = t.fmt(0);
+    window.PFCMotion.observe(el, () => {
+      window.PFCMotion.countTo(el, 0, t.to, { duration: 1100, formatter: t.fmt });
+    });
+  });
+})();
 
 // ── SIDEBAR NAV ──
 const tabMap = {

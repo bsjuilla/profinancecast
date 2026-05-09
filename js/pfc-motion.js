@@ -132,16 +132,24 @@
       // Angle range — default is -120deg to +120deg (240deg arc)
       minAngle: -120,
       maxAngle: 120,
+      // Optional pivot point — when set, emits SVG `rotate(angle cx cy)`
+      // so the needle rotates around (cx,cy) in viewBox space instead of (0,0).
+      cx: null,
+      cy: null,
     }, opts);
 
     const needle = svg.querySelector(cfg.needleSelector);
     if (!needle) return Promise.resolve();
 
     const a = (pct) => cfg.minAngle + (cfg.maxAngle - cfg.minAngle) * (pct / 100);
+    const hasPivot = cfg.cx != null && cfg.cy != null;
 
     return tween(cfg.duration, ease.out, k => {
       const angle = a(fromPct + (toPct - fromPct) * k);
-      needle.setAttribute('transform', `rotate(${angle.toFixed(2)})`);
+      const t = hasPivot
+        ? `rotate(${angle.toFixed(2)} ${cfg.cx} ${cfg.cy})`
+        : `rotate(${angle.toFixed(2)})`;
+      needle.setAttribute('transform', t);
     });
   }
 
@@ -151,16 +159,19 @@
    * The element should be a <circle> with stroke-dasharray = circumference.
    */
   function goalRing(circleEl, toPct, opts = {}) {
-    const cfg = Object.assign({ duration: 1100, fromPct: 0 }, opts);
+    const cfg = Object.assign({ duration: 1100, fromPct: 0, autoColor: true }, opts);
     if (!circleEl) return Promise.resolve();
     const r = parseFloat(circleEl.getAttribute('r')) || 0;
     const circ = 2 * Math.PI * r;
     circleEl.style.strokeDasharray = circ;
 
-    // Choose color band based on target (champagne → emerald)
-    if (toPct >= 100)      circleEl.setAttribute('stroke', getCss('--money'));
-    else if (toPct >= 50)  circleEl.setAttribute('stroke', getCss('--gold'));
-    else                   circleEl.setAttribute('stroke', getCss('--sage'));
+    // Choose color band based on target (champagne → emerald). Pass autoColor:false
+    // to preserve a caller-provided per-goal color.
+    if (cfg.autoColor) {
+      if (toPct >= 100)      circleEl.setAttribute('stroke', getCss('--money'));
+      else if (toPct >= 50)  circleEl.setAttribute('stroke', getCss('--gold'));
+      else                   circleEl.setAttribute('stroke', getCss('--sage'));
+    }
 
     return tween(cfg.duration, ease.out, k => {
       const pct = cfg.fromPct + (toPct - cfg.fromPct) * k;
