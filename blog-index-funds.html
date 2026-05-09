@@ -26,6 +26,14 @@
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is an index fund?","acceptedAnswer":{"@type":"Answer","text":"An index fund is a pooled investment that holds the same securities, in the same proportions, as a published market index — for example, the S&P 500 or the FTSE All-Share."}},{"@type":"Question","name":"What's the difference between an index fund and an ETF?","acceptedAnswer":{"@type":"Answer","text":"Most ETFs are index funds; the difference is structural. Mutual-fund index funds price once a day; ETFs trade like stocks throughout the day."}},{"@type":"Question","name":"Why do index funds usually beat active managers?","acceptedAnswer":{"@type":"Answer","text":"Two reasons: fees (index funds typically charge under 0.10 percent versus 0.75 to 1.5 percent for active funds) and the math (in any given year, the average active manager has to lose to the average passive investor by exactly the amount of their costs)."}},{"@type":"Question","name":"Which index fund should I buy?","acceptedAnswer":{"@type":"Answer","text":"This isn't advice, but the simplest defensible portfolio for most long-term investors is a total US stock market fund, a total international stock market fund, and a bond index fund."}},{"@type":"Question","name":"What are the risks of index funds?","acceptedAnswer":{"@type":"Answer","text":"You get the market's full downside in any given year. Index funds protect against single-stock blowups but not against broad market drawdowns."}}]}
 </script>
+  <script src="https://js.sentry-cdn.com/9b8b34d46908bd9f79a16cf18322ac70.min.js" crossorigin="anonymous"></script>
+  <script>
+    Sentry.onLoad(function () {
+      Sentry.init({
+        environment: location.hostname === 'profinancecast.com' ? 'production' : 'preview',
+      });
+    });
+  </script>
   <!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "37cb784ad53047a9921bfd79e9835310"}'></script><!-- End Cloudflare Web Analytics -->
 </head>
 <body>
