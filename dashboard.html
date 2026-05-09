@@ -396,6 +396,7 @@
   }
 </style>
   <link rel="stylesheet" href="css/pfc-tokens.css">
+  <link rel="stylesheet" href="css/pfc-app.css">
   <script src="js/pfc-export.js" defer></script>
   <!-- Supabase SDK + auth/storage/entitlements (must load before any inline script that uses them) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -740,30 +741,30 @@
 
     <!-- METRICS -->
     <div class="metrics">
-      <div class="metric">
+      <div class="metric pfc-card--elev">
         <div class="metric-label">Projected net worth (12mo)</div>
-        <div class="metric-val" style="color:var(--teal);" id="m-networth">$24,840</div>
+        <div class="metric-val num" style="color:var(--teal);" id="m-networth">$24,840</div>
         <div class="metric-change up">
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 2v8M2 6l4-4 4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
           +$8,220 over 12 months
         </div>
         <div class="metric-bar"><div class="metric-bar-fill" style="width:72%;background:var(--teal);"></div></div>
       </div>
-      <div class="metric">
+      <div class="metric pfc-card--elev">
         <div class="metric-label">Monthly savings</div>
-        <div class="metric-val" id="m-savings">$570</div>
+        <div class="metric-val num" id="m-savings">$570</div>
         <div class="metric-change neutral">19% of income · good rate</div>
         <div class="metric-bar"><div class="metric-bar-fill" style="width:55%;background:var(--blue);"></div></div>
       </div>
-      <div class="metric">
+      <div class="metric pfc-card--elev">
         <div class="metric-label">Debt payoff</div>
-        <div class="metric-val" id="m-debt">14 mo</div>
+        <div class="metric-val num" id="m-debt">14 mo</div>
         <div class="metric-change neutral">at $550/mo payment</div>
         <div class="metric-bar"><div class="metric-bar-fill" style="width:42%;background:var(--amber);"></div></div>
       </div>
-      <div class="metric">
+      <div class="metric pfc-card--elev">
         <div class="metric-label">Financial health score</div>
-        <div class="metric-val" style="color:var(--amber);" id="m-score">74</div>
+        <div class="metric-val num" style="color:var(--amber);" id="m-score">74</div>
         <div class="metric-change up">
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 2v8M2 6l4-4 4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
           +3 this week · Good
@@ -1138,19 +1139,19 @@
           <div style="font-size:13px;color:var(--text2);margin-bottom:12px;" id="infl-desc">At <span id="infl-rate-text">3.5%</span> inflation, <span id="infl-base-text">$3,000</span> today has the purchasing power of:</div>
           <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;text-align:center;">
             <div style="background:var(--bg3);border-radius:var(--r-sm);padding:12px 8px;">
-              <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--text);" id="infl-y1">$2,895</div>
+              <div class="num" style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--text);" id="infl-y1">$2,895</div>
               <div style="font-size:11px;color:var(--text3);margin-top:3px;">in 1 year</div>
             </div>
             <div style="background:var(--bg3);border-radius:var(--r-sm);padding:12px 8px;">
-              <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--amber);" id="infl-y3">$2,552</div>
+              <div class="num" style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--amber);" id="infl-y3">$2,552</div>
               <div style="font-size:11px;color:var(--text3);margin-top:3px;">in 3 years</div>
             </div>
             <div style="background:var(--bg3);border-radius:var(--r-sm);padding:12px 8px;">
-              <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--red);" id="infl-y5">$2,124</div>
+              <div class="num" style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--red);" id="infl-y5">$2,124</div>
               <div style="font-size:11px;color:var(--text3);margin-top:3px;">in 5 years</div>
             </div>
             <div style="background:var(--bg3);border-radius:var(--r-sm);padding:12px 8px;">
-              <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--red);" id="infl-y10">$1,459</div>
+              <div class="num" style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--red);" id="infl-y10">$1,459</div>
               <div style="font-size:11px;color:var(--text3);margin-top:3px;">in 10 years</div>
             </div>
           </div>
@@ -1190,17 +1191,17 @@
 
       <!-- Summary bar -->
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px;">
-        <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px;">
+        <div class="pfc-card--elev" style="background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px;">
           <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Active goals</div>
-          <div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:700;" id="g-panel-count">0</div>
+          <div class="num" style="font-family:'Syne',sans-serif;font-size:22px;font-weight:700;" id="g-panel-count">0</div>
         </div>
-        <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px;">
+        <div class="pfc-card--elev" style="background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px;">
           <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Total target</div>
-          <div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:700;" id="g-panel-total">—</div>
+          <div class="num" style="font-family:'Syne',sans-serif;font-size:22px;font-weight:700;" id="g-panel-total">—</div>
         </div>
-        <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px;">
+        <div class="pfc-card--elev" style="background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px;">
           <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Overall progress</div>
-          <div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:700;color:var(--teal);" id="g-panel-pct">0%</div>
+          <div class="num" style="font-family:'Syne',sans-serif;font-size:22px;font-weight:700;color:var(--teal);" id="g-panel-pct">0%</div>
         </div>
       </div>
 
@@ -1227,24 +1228,24 @@
 
       <!-- 4 summary cards -->
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;">
-        <div style="background:var(--card);border:1px solid var(--border);border-top:2px solid var(--teal);border-radius:var(--r);padding:16px 18px;">
+        <div class="pfc-card--elev" style="background:var(--card);border:1px solid var(--border);border-top:2px solid var(--teal);border-radius:var(--r);padding:16px 18px;">
           <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">Current net worth</div>
-          <div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:700;color:var(--teal);" id="nw-tab-nw">—</div>
+          <div class="num" style="font-family:'Syne',sans-serif;font-size:22px;font-weight:700;color:var(--teal);" id="nw-tab-nw">—</div>
           <div style="font-size:12px;color:var(--text3);margin-top:3px;" id="nw-tab-nw-sub">—</div>
         </div>
-        <div style="background:var(--card);border:1px solid var(--border);border-top:2px solid var(--blue);border-radius:var(--r);padding:16px 18px;">
+        <div class="pfc-card--elev" style="background:var(--card);border:1px solid var(--border);border-top:2px solid var(--blue);border-radius:var(--r);padding:16px 18px;">
           <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">Total assets</div>
-          <div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:700;color:var(--blue);" id="nw-tab-assets">—</div>
+          <div class="num" style="font-family:'Syne',sans-serif;font-size:22px;font-weight:700;color:var(--blue);" id="nw-tab-assets">—</div>
           <div style="font-size:12px;color:var(--text3);margin-top:3px;">savings + investments</div>
         </div>
-        <div style="background:var(--card);border:1px solid var(--border);border-top:2px solid var(--red);border-radius:var(--r);padding:16px 18px;">
+        <div class="pfc-card--elev" style="background:var(--card);border:1px solid var(--border);border-top:2px solid var(--red);border-radius:var(--r);padding:16px 18px;">
           <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">Total debt</div>
-          <div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:700;color:var(--red);" id="nw-tab-debt">—</div>
+          <div class="num" style="font-family:'Syne',sans-serif;font-size:22px;font-weight:700;color:var(--red);" id="nw-tab-debt">—</div>
           <div style="font-size:12px;color:var(--text3);margin-top:3px;">all debts combined</div>
         </div>
-        <div style="background:var(--card);border:1px solid var(--border);border-top:2px solid var(--amber);border-radius:var(--r);padding:16px 18px;">
+        <div class="pfc-card--elev" style="background:var(--card);border:1px solid var(--border);border-top:2px solid var(--amber);border-radius:var(--r);padding:16px 18px;">
           <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">12-mo projection</div>
-          <div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:700;" id="nw-tab-proj">—</div>
+          <div class="num" style="font-family:'Syne',sans-serif;font-size:22px;font-weight:700;" id="nw-tab-proj">—</div>
           <div style="font-size:12px;color:var(--text3);margin-top:3px;">at current trajectory</div>
         </div>
       </div>

@@ -128,6 +128,7 @@
   }
 </style>
   <link rel="stylesheet" href="css/pfc-tokens.css">
+  <link rel="stylesheet" href="css/pfc-app.css">
   <script src="js/pfc-export.js" defer></script>
   <!-- Supabase SDK + auth/storage/entitlements (must load before any inline script that uses them) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -208,16 +209,16 @@
     <div class="field-2">
       <div class="field">
         <div class="field-label"><label>First name</label></div>
-        <input type="text" id="f-fname" placeholder="Alex" oninput="syncName()">
+        <input type="text" class="pfc-input--bottom" id="f-fname" placeholder="Alex" oninput="syncName()">
       </div>
       <div class="field">
         <div class="field-label"><label>Last name</label></div>
-        <input type="text" id="f-lname" placeholder="Smith">
+        <input type="text" class="pfc-input--bottom" id="f-lname" placeholder="Smith">
       </div>
     </div>
     <div class="field">
       <div class="field-label"><label>Age range</label></div>
-      <select id="f-age">
+      <select class="pfc-input--bottom" id="f-age">
         <option value="">Select your age range</option>
         <option value="18-24">18 – 24</option>
         <option value="25-34">25 – 34</option>
@@ -228,7 +229,7 @@
     </div>
     <div class="field">
       <div class="field-label"><label>Employment status</label></div>
-      <select id="f-employment">
+      <select class="pfc-input--bottom" id="f-employment">
         <option value="">Select your employment status</option>
         <option value="employed">Employed full-time</option>
         <option value="part-time">Employed part-time</option>
@@ -240,7 +241,7 @@
     </div>
     <div class="field">
       <div class="field-label"><label>Currency</label></div>
-      <select id="f-currency" onchange="updateCurrency()">
+      <select class="pfc-input--bottom" id="f-currency" onchange="updateCurrency()">
         <option value="USD" data-sym="$">US Dollar (USD)</option>
         <option value="EUR" data-sym="€">Euro (EUR)</option>
         <option value="GBP" data-sym="£">British Pound (GBP)</option>
@@ -263,14 +264,14 @@
         <div class="field-label"><label>Monthly income (take-home)</label><span class="hint">After tax</span></div>
         <div class="field-wrap has-prefix">
           <span class="field-prefix" id="sym-income">$</span>
-          <input type="number" id="f-income" placeholder="3000" min="0" oninput="calcLive()">
+          <input type="number" class="pfc-input--bottom" id="f-income" placeholder="3000" min="0" oninput="calcLive()">
         </div>
       </div>
       <div class="field">
         <div class="field-label"><label>Other income (optional)</label><span class="hint">Side income, rent, etc.</span></div>
         <div class="field-wrap has-prefix">
           <span class="field-prefix" id="sym-other">$</span>
-          <input type="number" id="f-other-income" placeholder="0" min="0" oninput="calcLive()">
+          <input type="number" class="pfc-input--bottom" id="f-other-income" placeholder="0" min="0" oninput="calcLive()">
         </div>
       </div>
     </div>
@@ -279,14 +280,14 @@
         <div class="field-label"><label>Housing (rent / mortgage)</label></div>
         <div class="field-wrap has-prefix">
           <span class="field-prefix" id="sym-housing">$</span>
-          <input type="number" id="f-housing" placeholder="1000" min="0" oninput="calcLive()">
+          <input type="number" class="pfc-input--bottom" id="f-housing" placeholder="1000" min="0" oninput="calcLive()">
         </div>
       </div>
       <div class="field">
         <div class="field-label"><label>Food & groceries</label></div>
         <div class="field-wrap has-prefix">
           <span class="field-prefix" id="sym-food">$</span>
-          <input type="number" id="f-food" placeholder="400" min="0" oninput="calcLive()">
+          <input type="number" class="pfc-input--bottom" id="f-food" placeholder="400" min="0" oninput="calcLive()">
         </div>
       </div>
     </div>
@@ -295,23 +296,23 @@
         <div class="field-label"><label>Transport</label></div>
         <div class="field-wrap has-prefix">
           <span class="field-prefix" id="sym-transport">$</span>
-          <input type="number" id="f-transport" placeholder="200" min="0" oninput="calcLive()">
+          <input type="number" class="pfc-input--bottom" id="f-transport" placeholder="200" min="0" oninput="calcLive()">
         </div>
       </div>
       <div class="field">
         <div class="field-label"><label>Other monthly expenses</label></div>
         <div class="field-wrap has-prefix">
           <span class="field-prefix" id="sym-other-exp">$</span>
-          <input type="number" id="f-other-exp" placeholder="300" min="0" oninput="calcLive()">
+          <input type="number" class="pfc-input--bottom" id="f-other-exp" placeholder="300" min="0" oninput="calcLive()">
         </div>
       </div>
     </div>
     <div class="live-preview" id="income-preview">
       <div class="lp-label">Live calculation</div>
-      <div class="lp-row"><div class="lp-key">Total monthly income</div><div class="lp-val" id="lp-income">$0</div></div>
-      <div class="lp-row"><div class="lp-key">Total monthly expenses</div><div class="lp-val" id="lp-expenses">$0</div></div>
-      <div class="lp-row"><div class="lp-key">Monthly surplus</div><div class="lp-val good" id="lp-surplus">$0</div></div>
-      <div class="lp-row"><div class="lp-key">Savings rate</div><div class="lp-val" id="lp-rate">0%</div></div>
+      <div class="lp-row"><div class="lp-key">Total monthly income</div><div class="lp-val num" id="lp-income">$0</div></div>
+      <div class="lp-row"><div class="lp-key">Total monthly expenses</div><div class="lp-val num" id="lp-expenses">$0</div></div>
+      <div class="lp-row"><div class="lp-key">Monthly surplus</div><div class="lp-val good num" id="lp-surplus">$0</div></div>
+      <div class="lp-row"><div class="lp-key">Savings rate</div><div class="lp-val num" id="lp-rate">0%</div></div>
     </div>
   </div>
 
@@ -325,7 +326,7 @@
         <div class="field-label"><label>Current savings / cash</label></div>
         <div class="field-wrap has-prefix">
           <span class="field-prefix" id="sym-savings">$</span>
-          <input type="number" id="f-savings" placeholder="5000" min="0" oninput="calcDebt()">
+          <input type="number" class="pfc-input--bottom" id="f-savings" placeholder="5000" min="0" oninput="calcDebt()">
         </div>
         <div class="field-row-note">Include all bank accounts and accessible cash</div>
       </div>
@@ -333,7 +334,7 @@
         <div class="field-label"><label>Investments (optional)</label></div>
         <div class="field-wrap has-prefix">
           <span class="field-prefix" id="sym-invest">$</span>
-          <input type="number" id="f-investments" placeholder="0" min="0" oninput="calcDebt()">
+          <input type="number" class="pfc-input--bottom" id="f-investments" placeholder="0" min="0" oninput="calcDebt()">
         </div>
         <div class="field-row-note">Stocks, funds, crypto etc.</div>
       </div>
@@ -343,7 +344,7 @@
         <div class="field-label"><label>Total debt</label></div>
         <div class="field-wrap has-prefix">
           <span class="field-prefix" id="sym-debt">$</span>
-          <input type="number" id="f-debt" placeholder="0" min="0" oninput="calcDebt()">
+          <input type="number" class="pfc-input--bottom" id="f-debt" placeholder="0" min="0" oninput="calcDebt()">
         </div>
         <div class="field-row-note">Loans, credit cards, buy-now-pay-later</div>
       </div>
@@ -351,17 +352,17 @@
         <div class="field-label"><label>Monthly debt payment</label></div>
         <div class="field-wrap has-prefix">
           <span class="field-prefix" id="sym-debtpay">$</span>
-          <input type="number" id="f-debtpay" placeholder="0" min="0" oninput="calcDebt()">
+          <input type="number" class="pfc-input--bottom" id="f-debtpay" placeholder="0" min="0" oninput="calcDebt()">
         </div>
         <div class="field-row-note">Combined minimum payments</div>
       </div>
     </div>
     <div class="live-preview">
       <div class="lp-label">Your net worth today</div>
-      <div class="lp-row"><div class="lp-key">Assets (savings + investments)</div><div class="lp-val" id="lp-assets">$0</div></div>
-      <div class="lp-row"><div class="lp-key">Total debt</div><div class="lp-val bad" id="lp-debt-val">$0</div></div>
-      <div class="lp-row"><div class="lp-key">Net worth</div><div class="lp-val" id="lp-networth">$0</div></div>
-      <div class="lp-row"><div class="lp-key">Months to debt-free</div><div class="lp-val" id="lp-debtfree">—</div></div>
+      <div class="lp-row"><div class="lp-key">Assets (savings + investments)</div><div class="lp-val num" id="lp-assets">$0</div></div>
+      <div class="lp-row"><div class="lp-key">Total debt</div><div class="lp-val bad num" id="lp-debt-val">$0</div></div>
+      <div class="lp-row"><div class="lp-key">Net worth</div><div class="lp-val num" id="lp-networth">$0</div></div>
+      <div class="lp-row"><div class="lp-key">Months to debt-free</div><div class="lp-val num" id="lp-debtfree">—</div></div>
     </div>
   </div>
 
@@ -404,7 +405,7 @@
     </div>
     <div class="field">
       <div class="field-label"><label>Top financial concern right now</label></div>
-      <select id="f-concern">
+      <select class="pfc-input--bottom" id="f-concern">
         <option value="">Select what worries you most</option>
         <option value="not-enough">Not saving enough each month</option>
         <option value="debt-weight">Feeling weighed down by debt</option>
@@ -471,16 +472,16 @@
       <h2 class="complete-heading" id="complete-name">You're all set!</h2>
       <p class="complete-sub">Your 12-month forecast is ready. Here's a snapshot of what Sage has calculated based on your numbers.</p>
       <div class="complete-metrics">
-        <div class="cm-card">
-          <div class="cm-val" style="color:var(--teal);" id="cm-networth">$0</div>
+        <div class="cm-card pfc-card--elev">
+          <div class="cm-val num" style="color:var(--teal);" id="cm-networth">$0</div>
           <div class="cm-label">Projected net worth in 12 months</div>
         </div>
-        <div class="cm-card">
-          <div class="cm-val" id="cm-savings">$0</div>
+        <div class="cm-card pfc-card--elev">
+          <div class="cm-val num" id="cm-savings">$0</div>
           <div class="cm-label">Monthly surplus to save</div>
         </div>
-        <div class="cm-card">
-          <div class="cm-val" id="cm-score" style="color:var(--amber);">—</div>
+        <div class="cm-card pfc-card--elev">
+          <div class="cm-val num" id="cm-score" style="color:var(--amber);">—</div>
           <div class="cm-label">Financial health score</div>
         </div>
       </div>

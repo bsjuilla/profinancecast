@@ -19,6 +19,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 
 <link rel="stylesheet" href="css/pfc-tokens.css">
+<link rel="stylesheet" href="css/pfc-app.css">
 
 <!-- GSAP for scroll choreography (defer = doesn't block paint) -->
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
@@ -726,12 +727,12 @@
           <div class="chart-stats">
             <div>
               <div class="lbl">Net worth · 12 months</div>
-              <div class="val" id="r-nw">$17,000</div>
-              <div class="delta" id="r-delta">+$12,000</div>
+              <div class="val num" id="r-nw">$17,000</div>
+              <div class="delta num" id="r-delta">+$12,000</div>
             </div>
             <div style="text-align:right;">
               <div class="lbl">Debt-free in</div>
-              <div class="val" id="r-debt-free">7<span style="font-family:var(--font-body);font-size:18px;color:var(--ink-3);font-weight:400;"> months</span></div>
+              <div class="val num" id="r-debt-free">7<span style="font-family:var(--font-body);font-size:18px;color:var(--ink-3);font-weight:400;"> months</span></div>
               <div class="delta" id="r-debt-delta">on plan</div>
             </div>
           </div>
@@ -915,9 +916,9 @@
   </div>
 
   <div class="pricing">
-    <div class="price-card">
+    <div class="price-card pfc-card--elev">
       <div class="price-name">Free</div>
-      <div class="price-amount"><span class="currency">$</span>0<span class="period">/mo</span></div>
+      <div class="price-amount num"><span class="currency">$</span>0<span class="period">/mo</span></div>
       <div class="price-pitch">Everything you need to actually use the product.</div>
       <ul class="price-feats">
         <li><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="var(--money)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg> 12-month net worth forecast</li>
@@ -928,10 +929,10 @@
       <a href="auth.html" class="btn btn-outline" style="justify-content: center;">Start free</a>
     </div>
 
-    <div class="price-card hot">
+    <div class="price-card hot pfc-card--elev">
       <div class="price-tag">Most popular</div>
       <div class="price-name">Pro</div>
-      <div class="price-amount"><span class="currency">$</span>9<span style="font-size:36px;">.99</span><span class="period">/mo</span></div>
+      <div class="price-amount num"><span class="currency">$</span>9<span style="font-size:36px;">.99</span><span class="period">/mo</span></div>
       <div class="price-pitch">For people serious about hitting their goals.</div>
       <ul class="price-feats">
         <li><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="var(--money)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg> Everything in Free</li>
@@ -943,9 +944,9 @@
       <a href="auth.html?next=/billing.html" class="btn btn-primary" style="justify-content: center;">Get Pro</a>
     </div>
 
-    <div class="price-card">
+    <div class="price-card pfc-card--elev">
       <div class="price-name">Premium</div>
-      <div class="price-amount"><span class="currency">$</span>19<span style="font-size:36px;">.99</span><span class="period">/mo</span></div>
+      <div class="price-amount num"><span class="currency">$</span>19<span style="font-size:36px;">.99</span><span class="period">/mo</span></div>
       <div class="price-pitch">Power users + small advisors.</div>
       <ul class="price-feats">
         <li><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="var(--money)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg> Everything in Pro</li>
