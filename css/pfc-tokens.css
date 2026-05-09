@@ -303,6 +303,18 @@
   z-index: 2;
 }
 
+/* Sidebar nav links already render their own <span class="nav-badge">Pro</span>.
+   Suppress the card-style ::before/::after lock overlay there to avoid the
+   double-badge + diagonal-stripe artifact on the legacy and pfc-* sidebars. */
+.nav-item[data-pro-only].is-locked::before,
+.nav-item[data-pro-only].is-locked::after,
+.pfc-nav-item[data-pro-only].is-locked::before,
+.pfc-nav-item[data-pro-only].is-locked::after {
+  content: none;
+  background: none;
+  border: none;
+}
+
 /* Reveal-on-scroll utility (paired with pfc-motion or any IO) */
 @keyframes pfc-rise {
   from { opacity: 0; transform: translateY(14px); }
