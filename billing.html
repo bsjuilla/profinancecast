@@ -1593,10 +1593,26 @@ async function confirmCancel() {
   }
 }
 
+// Founders seat counter — public endpoint, no auth required
+async function refreshFoundersCount() {
+  const el = document.getElementById('founders-claimed');
+  if (!el) return;
+  try {
+    const r = await fetch('/api/founders-claimed', { cache: 'no-store' });
+    if (!r.ok) return;
+    const data = await r.json();
+    if (data.claimed == null) return;  // server fail-closed; keep placeholder
+    el.textContent = data.claimed + ' of ' + data.cap;
+  } catch (_) { /* network blip — keep placeholder */ }
+}
+
 // Boot: keep UI in sync with whatever the server says is the current plan
 window.addEventListener('DOMContentLoaded', () => {
   // Default the Pro card to annual pricing
   setBillingInterval('annual');
+
+  // Live Founders seat count
+  refreshFoundersCount();
 
   if (typeof PFCPlan !== 'undefined') {
     PFCPlan.onChange(plan => {

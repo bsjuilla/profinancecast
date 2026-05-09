@@ -1005,7 +1005,7 @@
     <div class="price-card pfc-card--elev">
       <div class="price-name">Founders Lifetime</div>
       <div class="price-amount num"><span class="currency">$</span>149<span class="period">· one-time</span></div>
-      <div class="price-pitch">Pay once. Pro forever. Helps fund the project. <span style="display:block;font-size:12px;color:var(--gold);margin-top:4px;">Limited — 500 seats</span></div>
+      <div class="price-pitch">Pay once. Pro forever. Helps fund the project. <span id="home-founders-counter" style="display:block;font-size:12px;color:var(--gold);margin-top:4px;">Limited — 500 seats</span></div>
       <ul class="price-feats">
         <li><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="var(--money)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg> All Pro features, forever</li>
         <li><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="var(--money)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg> Permanent founders badge in Settings</li>
@@ -1249,6 +1249,18 @@
     initMotion();
     initBentoCursor();
     initForecast();
+    refreshFoundersCount();
+  }
+  async function refreshFoundersCount() {
+    const el = document.getElementById('home-founders-counter');
+    if (!el) return;
+    try {
+      const r = await fetch('/api/founders-claimed', { cache: 'no-store' });
+      if (!r.ok) return;
+      const data = await r.json();
+      if (data.claimed == null) return;
+      el.textContent = 'Limited — ' + data.remaining + ' of ' + data.cap + ' seats left';
+    } catch (_) { /* keep placeholder */ }
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => setTimeout(ready, 50));
   else setTimeout(ready, 50);
