@@ -753,7 +753,7 @@
 <!-- ── MILESTONE FLASH ── -->
 <div class="milestone-flash" id="milestone-flash">
   <div class="milestone-inner">
-    <div class="milestone-emoji" id="milestone-emoji">🎉</div>
+    <div class="milestone-emoji" id="milestone-emoji" aria-hidden="true">★</div>
     <div class="milestone-title" id="milestone-title">Milestone reached!</div>
     <div class="milestone-sub" id="milestone-sub">Keep going — you're doing great.</div>
   </div>
@@ -930,7 +930,7 @@ function render() {
             <circle class="goal-ring-fill" cx="40" cy="40" r="${ringR}" fill="none" stroke="${color}" stroke-width="8"
               stroke-dasharray="${circ.toFixed(1)}" stroke-dashoffset="${circ.toFixed(1)}"
               stroke-linecap="round" transform="rotate(-90 40 40)"/>
-            <text x="40" y="37" text-anchor="middle" font-family="Syne,sans-serif" font-size="15" font-weight="800" fill="#F0F4F8">${pct}%</text>
+            <text x="40" y="37" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="15" font-weight="800" fill="#F0F4F8">${pct}%</text>
             <text x="40" y="51" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#4A5A6E">${icon}</text>
           </svg>
         </div>
@@ -945,7 +945,7 @@ function render() {
       <div class="goal-card-body">
         <div class="goal-timeline">
           <span class="goal-timeline-label">Est. completion</span>
-          <span class="goal-timeline-val">${completed ? '🎉 Done!' : months ? months + ' month' + (months===1?'':'s') : '—'}</span>
+          <span class="goal-timeline-val">${completed ? 'Done.' : months ? months + ' month' + (months===1?'':'s') : '—'}</span>
         </div>
 
         <div class="goal-alloc-row">
@@ -984,7 +984,7 @@ function render() {
         </div>
       </div>
 
-      ${completed ? '<div class="completed-strip">🎉 Goal reached! Add funds to this goal or set a new target.</div>' : ''}
+      ${completed ? '<div class="completed-strip">Goal reached. Add funds or set a new target.</div>' : ''}
     `;
 
     grid.appendChild(card);
@@ -1037,7 +1037,7 @@ function checkMilestone(g, pct, idx) {
   if (shownMilestones.has(key)) return;
   if (pct >= 100 && !shownMilestones.has(g.name + '-100')) {
     shownMilestones.add(g.name + '-100');
-    showMilestone('🎉', g.name + ' — Complete!', 'You reached your goal! Time to celebrate.');
+    showMilestone('★', g.name + ' — Complete', 'You reached your goal.');
   } else if (pct >= 75 && pct < 100 && !shownMilestones.has(g.name + '-75')) {
     shownMilestones.add(g.name + '-75');
     showMilestone('🔥', '75% there!', `Just ${USER.sym}${Math.round((g.target - g.current)).toLocaleString()} left on ${g.name}.`);

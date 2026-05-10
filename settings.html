@@ -277,22 +277,22 @@
         <div class="section-body">
           <div class="avatar-row">
             <div class="big-avatar" onclick="document.getElementById('avatar-input').click()">
-              DK
+              <span id="profile-avatar-initials">—</span>
               <div class="avatar-edit-overlay">
                 <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M12.5 2.5a2 2 0 012.8 2.8L5 15.5H2.5V13L12.5 2.5z" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
               </div>
             </div>
             <input type="file" id="avatar-input" accept="image/*" style="display:none" onchange="handleAvatar(this)">
             <div>
-              <div class="avatar-info"><strong id="profile-display-name">Divyesh Khadun</strong>Free plan · Member since April 2026</div>
+              <div class="avatar-info"><strong id="profile-display-name">—</strong><span id="profile-meta">Free plan</span></div>
               <button class="avatar-upload-btn" onclick="document.getElementById('avatar-input').click()">Change photo</button>
             </div>
           </div>
           <div class="field-2">
-            <div class="field"><label>First name</label><input type="text" id="s-fname" value="Divyesh"></div>
-            <div class="field"><label>Last name</label><input type="text" id="s-lname" value="Khadun"></div>
+            <div class="field"><label>First name</label><input type="text" id="s-fname" value=""></div>
+            <div class="field"><label>Last name</label><input type="text" id="s-lname" value=""></div>
           </div>
-          <div class="field"><label>Email address</label><input type="email" id="s-email" value="business060407@gmail.com"><div class="field-note">Changing your email will require re-verification</div></div>
+          <div class="field"><label>Email address</label><input type="email" id="s-email" value=""><div class="field-note">Changing your email will require re-verification</div></div>
           <div class="field-2">
             <div class="field"><label>Age range</label>
               <select id="s-age">
@@ -390,7 +390,7 @@
           <svg width="52" height="52" viewBox="0 0 52 52">
             <circle cx="26" cy="26" r="21" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="7"/>
             <circle cx="26" cy="26" r="21" fill="none" stroke="#2BB67D" stroke-width="7" stroke-dasharray="132" stroke-dashoffset="13" stroke-linecap="round" transform="rotate(-90 26 26)"/>
-            <text x="26" y="31" text-anchor="middle" font-family="Syne,sans-serif" font-size="13" font-weight="800" fill="#F0F4F8">90</text>
+            <text x="26" y="31" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="13" font-weight="800" fill="#F0F4F8">90</text>
           </svg>
         </div>
         <div class="privacy-score-text"><strong>Privacy score: 90 / 100</strong><span>Your data is very well protected. Three core protections can never be disabled.</span></div>
@@ -783,10 +783,30 @@ function showToast(msg) {
   setTimeout(() => t.classList.remove('show'), 3000);
 }
 </script>
-  <!-- Route guard: redirect unauthed users to sign-in -->
+  <!-- Route guard + profile hydration: pull email/name from session, populate fields -->
   <script>
     window.addEventListener('DOMContentLoaded', () => {
-      if (typeof PFCAuth !== 'undefined') PFCAuth.requireAuth();
+      if (typeof PFCAuth === 'undefined') return;
+      PFCAuth.requireAuth();
+      PFCAuth.onReady(() => {
+        const session = PFCAuth.getSession();
+        const user    = session && session.user;
+        if (!user) return;
+        const email   = user.email || '';
+        const meta    = user.user_metadata || {};
+        const fullNm  = meta.full_name || meta.name || '';
+        const parts   = fullNm.trim().split(/\s+/);
+        const fname   = parts[0] || '';
+        const lname   = parts.slice(1).join(' ') || '';
+        const initials= ((fname[0] || email[0] || '') + (lname[0] || '')).toUpperCase() || '—';
+        const setVal  = (id, v) => { const el = document.getElementById(id); if (el && 'value' in el) el.value = v; };
+        const setText = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+        setVal('s-email', email);
+        setVal('s-fname', fname);
+        setVal('s-lname', lname);
+        setText('profile-display-name', fullNm || email || '—');
+        setText('profile-avatar-initials', initials);
+      });
     });
   </script>
 <footer class="site-footer" role="contentinfo">

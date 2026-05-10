@@ -688,7 +688,7 @@ function calcPayoff(debts, strategy, extra) {
     pool.forEach(d => {
       if (d.remaining <= 0 && d.clearedMonth === null) {
         d.clearedMonth = month;
-        event += (event ? ', ' : '') + d.name + ' cleared! 🎉';
+        event += (event ? ', ' : '') + d.name + ' cleared.';
         if (strategy === 'snowball' || strategy === 'avalanche') {
           // Freed minimum cascades to next debt
           monthlyExtra += d.minPay;
@@ -875,7 +875,7 @@ function renderChart(opt, base) {
         {
           label: 'Optimised',
           data: optData,
-          borderColor: 'var(--money)',
+          borderColor: '#2BB67D',
           backgroundColor: 'rgba(43,182,125,0.08)',
           borderWidth: 2,
           pointRadius: 0,
