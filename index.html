@@ -711,6 +711,46 @@
     .hero-cta .btn { justify-content: center; }
     .bento { grid-template-columns: 1fr; }
   }
+  /* Mobile sticky CTA (UX §6.18). 30-day dismiss via localStorage; opt-in
+     show on viewports ≤ 540px so the desktop hero remains uncluttered. */
+  .pfc-sticky-cta-wrap {
+    display: none;
+    position: fixed; left: 12px; right: 12px;
+    bottom: calc(12px + env(safe-area-inset-bottom));
+    z-index: 50;
+    align-items: center; gap: 8px;
+    padding: 4px;
+    background: var(--canvas);
+    border: 1px solid var(--gold);
+    border-radius: 999px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.45);
+  }
+  body[data-sticky-cta="show"] .pfc-sticky-cta-wrap { display: flex; }
+  .pfc-sticky-cta {
+    flex: 1;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    min-height: 48px;
+    padding: 0 18px;
+    border-radius: 999px;
+    background: var(--gold);
+    color: var(--canvas);
+    font-family: var(--font-body);
+    font-size: 14px; font-weight: 600;
+    text-decoration: none;
+    touch-action: manipulation;
+  }
+  .pfc-sticky-cta-dismiss {
+    width: 40px; height: 40px;
+    flex-shrink: 0;
+    border: none; background: transparent;
+    color: var(--ink-3);
+    font-size: 18px; line-height: 1;
+    cursor: pointer; touch-action: manipulation;
+  }
+  .pfc-sticky-cta-dismiss:hover { color: var(--ink); }
+  @media (min-width: 541px) {
+    body[data-sticky-cta="show"] .pfc-sticky-cta-wrap { display: none; }
+  }
 </style>
   <script src="js/pfc-sentry-scrub.js" defer></script>
   <script src="https://js.sentry-cdn.com/9b8b34d46908bd9f79a16cf18322ac70.min.js" crossorigin="anonymous" defer></script>
@@ -1335,6 +1375,52 @@
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => setTimeout(ready, 50));
   else setTimeout(ready, 50);
+})();
+</script>
+
+<!-- Mobile sticky CTA — shows on ≤540px after a 5s engagement delay; dismissible 30 days. -->
+<div class="pfc-sticky-cta-wrap" id="pfc-sticky-cta-wrap" hidden role="region" aria-label="Quick start">
+  <a class="pfc-sticky-cta pfc-tap" href="auth.html" data-cta="sticky-mobile">
+    Try ProFinanceCast
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M3 7h8m-3-3l3 3-3 3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </a>
+  <button class="pfc-sticky-cta-dismiss pfc-tap" type="button" id="pfc-sticky-cta-dismiss" aria-label="Dismiss for 30 days">×</button>
+</div>
+<script>
+(function () {
+  // 30-day dismiss using PFCStorage (avoid raw localStorage per REUSE-AUDIT).
+  const KEY = 'sticky-cta-dismissed-at';
+  const COUNT_KEY = 'sticky-cta-dismissed-count';
+  const TTL_MS = 30 * 24 * 60 * 60 * 1000;
+  function dismissedAt() {
+    if (typeof PFCStorage === 'undefined') return 0;
+    const raw = PFCStorage.get(KEY);
+    return parseInt(raw || '0', 10) || 0;
+  }
+  function hidden() { return Date.now() - dismissedAt() < TTL_MS; }
+  function show() {
+    if (hidden()) return;
+    document.body.setAttribute('data-sticky-cta', 'show');
+    const wrap = document.getElementById('pfc-sticky-cta-wrap');
+    if (wrap) wrap.removeAttribute('hidden');
+  }
+  function dismiss() {
+    if (typeof PFCStorage !== 'undefined') {
+      PFCStorage.set(KEY, String(Date.now()));
+      const c = Math.min(30, parseInt(PFCStorage.get(COUNT_KEY) || '0', 10) + 1);
+      PFCStorage.set(COUNT_KEY, String(c));
+    }
+    document.body.removeAttribute('data-sticky-cta');
+    const wrap = document.getElementById('pfc-sticky-cta-wrap');
+    if (wrap) wrap.setAttribute('hidden', '');
+  }
+  // Engagement gate: 5s after page load before showing, so the user can
+  // read the hero first.
+  setTimeout(show, 5000);
+  document.addEventListener('DOMContentLoaded', () => {
+    const btn = document.getElementById('pfc-sticky-cta-dismiss');
+    if (btn) btn.addEventListener('click', dismiss);
+  });
 })();
 </script>
 
