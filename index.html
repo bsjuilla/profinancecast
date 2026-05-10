@@ -1082,6 +1082,122 @@
   .bento-card:hover .micro-glyph { opacity: 0.92; transform: translateY(-2px); }
   .bento-card .micro-glyph svg { width: 100%; height: 100%; }
 
+  /* Bento — sample-data row at the bottom of each card.
+     Anchored to the card foot via the parent's space-between layout, so it
+     reads as evidence rather than decoration. Hairline divider above. */
+  .bento-data {
+    margin-top: 18px;
+    padding-top: 14px;
+    border-top: 1px dashed var(--line);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--font-mono);
+    font-size: var(--t-12);
+    color: var(--ink-3);
+    line-height: 1.45;
+    font-feature-settings: "tnum" 1, "lnum" 1;
+  }
+  .bento-data .num { color: var(--ink); font-weight: 500; }
+  .bento-data .pos { color: var(--money); }
+  .bento-data .accent { color: var(--gold); }
+  .bento-data .warn { color: var(--warning); }
+  .bento-data svg { flex-shrink: 0; display: block; }
+  .bento-data .sep { color: var(--ink-4); }
+  /* Quote-bubble variant for the Sage AI card */
+  .bento-data.bento-quote {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  .bento-quote .ask, .bento-quote .reply {
+    padding: 8px 12px;
+    border-radius: var(--r-sm);
+    border: 1px solid var(--line);
+    font-size: var(--t-12);
+  }
+  .bento-quote .ask { background: var(--surface-3); color: var(--ink-2); align-self: flex-start; max-width: 78%; border-bottom-left-radius: 2px; }
+  .bento-quote .reply { background: rgba(143,160,146,0.08); color: var(--ink); align-self: flex-end; max-width: 82%; border-bottom-right-radius: 2px; }
+  .bento-quote .reply strong { color: var(--sage); font-weight: 600; }
+  /* Compact recurring list for the Recurring Radar card */
+  .bento-list { display: flex; flex-direction: column; gap: 6px; width: 100%; }
+  .bento-list .row {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: var(--t-12); font-family: var(--font-mono);
+  }
+  .bento-list .row .name { color: var(--ink-2); }
+  .bento-list .row .delta { color: var(--warning); font-feature-settings: "tnum" 1; }
+  .bento-list .row.flat .delta { color: var(--ink-3); }
+
+  /* Step-visual enrichment — faux form labels + button + pill + summary. */
+  .step-form { width: 78%; display: flex; flex-direction: column; gap: 10px; }
+  .step-form-row {
+    display: grid; grid-template-columns: 92px 1fr;
+    align-items: center; gap: 12px;
+  }
+  .step-form-row .lbl {
+    font-family: var(--font-mono); font-size: 10.5px;
+    color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.10em;
+  }
+  .step-form-row .field {
+    height: 26px; border-radius: 6px; background: var(--surface-3);
+    border: 1px solid var(--line); display: flex; align-items: center;
+    padding: 0 10px; gap: 6px;
+    font-family: var(--font-mono); font-size: 11px; color: var(--ink-2);
+    font-feature-settings: "tnum" 1;
+  }
+  .step-form-row .field .caret { color: var(--ink-4); margin-left: auto; }
+  .step-form-row .field.filled { background: rgba(43,182,125,0.08); border-color: rgba(43,182,125,0.30); color: var(--ink); }
+  .step-form .step-form-cta {
+    margin-top: 4px;
+    background: var(--money); color: var(--canvas);
+    border-radius: 6px; height: 30px;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    font-family: var(--font-mono); font-size: 11px; font-weight: 600;
+    letter-spacing: 0.06em; text-transform: uppercase;
+  }
+  .step-pill {
+    position: absolute; top: 14px; right: 14px;
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: var(--font-mono); font-size: 10px;
+    color: var(--money); letter-spacing: 0.10em; text-transform: uppercase;
+    background: var(--money-soft);
+    border: 1px solid rgba(43,182,125,0.22);
+    padding: 4px 8px; border-radius: 999px;
+    font-weight: 600;
+  }
+  .step-pill .pulse {
+    width: 6px; height: 6px; border-radius: 50%; background: var(--money);
+    box-shadow: 0 0 0 0 rgba(43,182,125,0.6);
+    animation: pfc-pulse 2.4s var(--ease-out) infinite;
+  }
+  @keyframes pfc-pulse {
+    0%   { box-shadow: 0 0 0 0 rgba(43,182,125,0.50); }
+    70%  { box-shadow: 0 0 0 10px rgba(43,182,125,0); }
+    100% { box-shadow: 0 0 0 0 rgba(43,182,125,0); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .step-pill .pulse { animation: none; }
+  }
+  .step-scenario { width: 82%; display: flex; flex-direction: column; gap: 8px; }
+  .step-scenario .row {
+    background: var(--surface-3); border-radius: 8px; padding: 9px 14px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .step-scenario .row .lbl { font-family: var(--font-mono); font-size: 12px; color: var(--ink-3); }
+  .step-scenario .row .val { font-family: var(--font-mono); font-size: 13px; color: var(--money); font-feature-settings: "tnum" 1; }
+  .step-scenario .row.summary {
+    background: transparent;
+    border-top: 1px solid var(--line);
+    border-radius: 0;
+    padding-top: 12px; padding-bottom: 0;
+    margin-top: 4px;
+  }
+  .step-scenario .row.summary .lbl {
+    color: var(--ink-2); text-transform: uppercase; letter-spacing: 0.10em; font-size: 10.5px;
+  }
+  .step-scenario .row.summary .val { color: var(--gold); font-weight: 600; }
+
   /* Section padding refinement — vary the rhythm. */
   #how { padding-top: 80px; padding-bottom: 80px; }
   #pricing { padding-top: 80px; padding-bottom: 72px; }
@@ -1351,16 +1467,32 @@
         <p>Income, debts, recurring bills, savings goals, target country. Type them once or paste a CSV. Everything stays in your browser, encrypted.</p>
       </div>
       <div class="step-visual">
-        <svg width="68%" viewBox="0 0 200 150" fill="none">
-          <rect x="10" y="20" width="180" height="20" rx="6" fill="var(--surface-3)"/>
-          <rect x="14" y="26" width="80" height="8" rx="3" fill="var(--ink-3)"/>
-          <rect x="10" y="50" width="180" height="20" rx="6" fill="var(--surface-3)"/>
-          <rect x="14" y="56" width="120" height="8" rx="3" fill="var(--money)"/>
-          <rect x="10" y="80" width="180" height="20" rx="6" fill="var(--surface-3)"/>
-          <rect x="14" y="86" width="60" height="8" rx="3" fill="var(--ink-3)"/>
-          <rect x="10" y="110" width="180" height="24" rx="6" fill="var(--money)"/>
-          <rect x="80" y="118" width="40" height="8" rx="3" fill="var(--canvas)"/>
-        </svg>
+        <div class="step-form" aria-hidden="true">
+          <div class="step-form-row">
+            <span class="lbl">Income</span>
+            <span class="field filled">$4,820 / mo</span>
+          </div>
+          <div class="step-form-row">
+            <span class="lbl">Debt</span>
+            <span class="field filled">$11,400 · 7.4% APR</span>
+          </div>
+          <div class="step-form-row">
+            <span class="lbl">Goals</span>
+            <span class="field filled">$20k by Aug 2027</span>
+          </div>
+          <div class="step-form-row">
+            <span class="lbl">Country</span>
+            <span class="field">Portugal<svg class="caret" width="10" height="6" viewBox="0 0 10 6" fill="none"><path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          </div>
+          <div class="step-form-row">
+            <span class="lbl">Currency</span>
+            <span class="field">USD · $<svg class="caret" width="10" height="6" viewBox="0 0 10 6" fill="none"><path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          </div>
+          <div class="step-form-cta">
+            Run forecast
+            <svg width="11" height="11" viewBox="0 0 11 11" fill="none" aria-hidden="true"><path d="M2 5.5h6m-2-2.5l2.5 2.5L6 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -1371,16 +1503,64 @@
         <p>Our model projects every month for the next year. Real inflation pulled from the World Bank for your country. Real interest on every debt. Goals projected to the exact month you'll hit them.</p>
       </div>
       <div class="step-visual">
-        <svg width="80%" viewBox="0 0 280 160" fill="none" id="step2-svg">
+        <span class="step-pill" aria-hidden="true"><span class="pulse"></span>Live</span>
+        <svg width="84%" viewBox="0 0 320 200" fill="none" id="step2-svg" aria-hidden="true">
           <defs>
             <linearGradient id="sg" x1="0" x2="0" y1="0" y2="1">
-              <stop offset="0%" stop-color="var(--money)" stop-opacity="0.45"/>
+              <stop offset="0%" stop-color="var(--money)" stop-opacity="0.40"/>
               <stop offset="100%" stop-color="var(--money)" stop-opacity="0"/>
             </linearGradient>
           </defs>
-          <path d="M0,140 L20,135 L40,128 L60,118 L80,108 L100,96 L120,82 L140,74 L160,62 L180,50 L200,40 L220,28 L240,22 L260,18 L260,160 L0,160 Z" fill="url(#sg)"/>
-          <path d="M0,140 L20,135 L40,128 L60,118 L80,108 L100,96 L120,82 L140,74 L160,62 L180,50 L200,40 L220,28 L240,22 L260,18" stroke="var(--money)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-          <circle cx="260" cy="18" r="4" fill="var(--gold)"/>
+          <!-- Y-axis label -->
+          <text x="6" y="22" fill="var(--ink-3)" font-family="ui-monospace, monospace" font-size="9" letter-spacing="0.05em">€/mo</text>
+          <!-- Y-axis gridlines -->
+          <line x1="40" y1="40"  x2="310" y2="40"  stroke="var(--line)" stroke-width="0.6" stroke-dasharray="2 3"/>
+          <line x1="40" y1="80"  x2="310" y2="80"  stroke="var(--line)" stroke-width="0.6" stroke-dasharray="2 3"/>
+          <line x1="40" y1="120" x2="310" y2="120" stroke="var(--line)" stroke-width="0.6" stroke-dasharray="2 3"/>
+          <!-- Y-axis tick labels -->
+          <text x="34" y="44"  text-anchor="end" fill="var(--ink-4)" font-family="ui-monospace, monospace" font-size="8.5">$30k</text>
+          <text x="34" y="84"  text-anchor="end" fill="var(--ink-4)" font-family="ui-monospace, monospace" font-size="8.5">$20k</text>
+          <text x="34" y="124" text-anchor="end" fill="var(--ink-4)" font-family="ui-monospace, monospace" font-size="8.5">$10k</text>
+          <!-- Optimistic projection (gold, dashed) -->
+          <path d="M40,150 L62,140 L84,128 L106,114 L128,98 L150,82 L172,68 L194,54 L216,42 L238,30 L260,22 L282,18 L304,12"
+                stroke="var(--gold)" stroke-width="1.4" fill="none"
+                stroke-dasharray="3 3" stroke-linecap="round" stroke-linejoin="round" opacity="0.85"/>
+          <!-- Projected (green, area) -->
+          <path d="M40,160 L62,156 L84,148 L106,138 L128,128 L150,116 L172,102 L194,94 L216,82 L238,70 L260,60 L282,48 L304,38 L304,170 L40,170 Z" fill="url(#sg)"/>
+          <path d="M40,160 L62,156 L84,148 L106,138 L128,128 L150,116 L172,102 L194,94 L216,82 L238,70 L260,60 L282,48 L304,38"
+                stroke="var(--money)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          <!-- End markers -->
+          <circle cx="304" cy="38" r="3.4" fill="var(--money)"/>
+          <circle cx="304" cy="12" r="3" fill="var(--gold)"/>
+          <!-- X-axis baseline -->
+          <line x1="40" y1="172" x2="310" y2="172" stroke="var(--line-2)" stroke-width="0.8"/>
+          <!-- X-axis ticks (12 months) -->
+          <g stroke="var(--ink-4)" stroke-width="0.8">
+            <line x1="40"  y1="172" x2="40"  y2="176"/>
+            <line x1="62"  y1="172" x2="62"  y2="176"/>
+            <line x1="84"  y1="172" x2="84"  y2="176"/>
+            <line x1="106" y1="172" x2="106" y2="176"/>
+            <line x1="128" y1="172" x2="128" y2="176"/>
+            <line x1="150" y1="172" x2="150" y2="176"/>
+            <line x1="172" y1="172" x2="172" y2="176"/>
+            <line x1="194" y1="172" x2="194" y2="176"/>
+            <line x1="216" y1="172" x2="216" y2="176"/>
+            <line x1="238" y1="172" x2="238" y2="176"/>
+            <line x1="260" y1="172" x2="260" y2="176"/>
+            <line x1="282" y1="172" x2="282" y2="176"/>
+            <line x1="304" y1="172" x2="304" y2="176"/>
+          </g>
+          <!-- X-axis labels -->
+          <text x="40"  y="190" text-anchor="middle" fill="var(--ink-4)" font-family="ui-monospace, monospace" font-size="8.5">M0</text>
+          <text x="172" y="190" text-anchor="middle" fill="var(--ink-4)" font-family="ui-monospace, monospace" font-size="8.5">M6</text>
+          <text x="304" y="190" text-anchor="middle" fill="var(--ink-4)" font-family="ui-monospace, monospace" font-size="8.5">M12</text>
+          <!-- Legend -->
+          <g font-family="ui-monospace, monospace" font-size="8.5">
+            <line x1="200" y1="6" x2="212" y2="6" stroke="var(--money)" stroke-width="1.6"/>
+            <text x="216" y="9" fill="var(--ink-3)">Projected</text>
+            <line x1="252" y1="6" x2="264" y2="6" stroke="var(--gold)" stroke-width="1.4" stroke-dasharray="2 2"/>
+            <text x="268" y="9" fill="var(--ink-3)">Optimistic</text>
+          </g>
         </svg>
       </div>
     </div>
@@ -1392,19 +1572,12 @@
         <p>Try a scenario: pay $200 more each month on the highest-rate debt. Save 5% extra. Cancel one subscription. Watch your debt-free date jump three months earlier — instantly.</p>
       </div>
       <div class="step-visual">
-        <div style="position:relative;width:78%;display:flex;flex-direction:column;gap:10px;">
-          <div style="background:var(--surface-3);border-radius:8px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;">
-            <span style="font-family:var(--font-mono);font-size:12px;color:var(--ink-3);">Pay extra $200/mo</span>
-            <span style="font-family:var(--font-mono);font-size:13px;color:var(--money);">−3 months</span>
-          </div>
-          <div style="background:var(--surface-3);border-radius:8px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;">
-            <span style="font-family:var(--font-mono);font-size:12px;color:var(--ink-3);">Save 5% extra</span>
-            <span style="font-family:var(--font-mono);font-size:13px;color:var(--money);">+$3,420</span>
-          </div>
-          <div style="background:var(--surface-3);border-radius:8px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;">
-            <span style="font-family:var(--font-mono);font-size:12px;color:var(--ink-3);">Cut Netflix</span>
-            <span style="font-family:var(--font-mono);font-size:13px;color:var(--money);">+$192/yr</span>
-          </div>
+        <div class="step-scenario" aria-hidden="true">
+          <div class="row"><span class="lbl">Pay extra $200/mo</span><span class="val">−3 months</span></div>
+          <div class="row"><span class="lbl">Save 5% extra</span><span class="val">+$3,420</span></div>
+          <div class="row"><span class="lbl">Cut Netflix</span><span class="val">+$192 / yr</span></div>
+          <div class="row"><span class="lbl">Refinance car · 6.9% → 4.5%</span><span class="val">−2 months</span></div>
+          <div class="row summary"><span class="lbl">Net effect</span><span class="val">−5 months · +$3,612</span></div>
         </div>
       </div>
     </div>
@@ -1436,6 +1609,17 @@
         <h3>Net worth forecast</h3>
         <p>The headline number — where you'll be in three, six, twelve months. Month by month, with compounding interest, the published consumer-price index for inflation, and your real spending — all on the page so you can audit the figures.</p>
       </div>
+      <div class="bento-data" aria-label="Sample 12-month net-worth forecast">
+        <svg width="62" height="20" viewBox="0 0 62 20" fill="none" aria-hidden="true">
+          <path d="M1 16 L8 14 L15 15 L22 12 L29 10 L36 9 L43 6 L50 5 L57 3 L61 2"
+                stroke="var(--money)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          <circle cx="61" cy="2" r="1.8" fill="var(--gold)"/>
+        </svg>
+        <span>12 mo:</span>
+        <span class="num">$24,840</span>
+        <span class="sep">·</span>
+        <span class="pos">+$8,220</span>
+      </div>
       <div class="micro-glyph" aria-hidden="true">
         <svg viewBox="0 0 56 56" fill="none">
           <path d="M6 44 L18 36 L26 40 L36 24 L50 12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
@@ -1453,6 +1637,19 @@
         </div>
         <h3>Debt-free date</h3>
         <p>To the exact month. Avalanche or snowball — whichever frees you faster — modelled against the published rate on each balance, including the slow-burn ones (29.99% store cards) most planners skip.</p>
+      </div>
+      <div class="bento-data" aria-label="Sample debt-free date">
+        <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+          <rect x="3" y="5" width="16" height="14" rx="2" stroke="var(--ink-3)" stroke-width="1.2"/>
+          <line x1="3" y1="9" x2="19" y2="9" stroke="var(--ink-3)" stroke-width="1.2"/>
+          <line x1="7" y1="3" x2="7" y2="6" stroke="var(--ink-3)" stroke-width="1.2" stroke-linecap="round"/>
+          <line x1="15" y1="3" x2="15" y2="6" stroke="var(--ink-3)" stroke-width="1.2" stroke-linecap="round"/>
+          <rect x="13" y="12" width="4" height="4" rx="1" fill="var(--money)"/>
+        </svg>
+        <span>Free by</span>
+        <span class="num">Mar 2027</span>
+        <span class="sep">·</span>
+        <span class="pos">14 mo</span>
       </div>
       <div class="micro-glyph" aria-hidden="true">
         <svg viewBox="0 0 56 56" fill="none">
@@ -1472,6 +1669,18 @@
         <h3>Goal projector</h3>
         <p>Target $20,000 by August? We show you the exact month you'll hit it at your current rate — then surface the shortest path: $145 more saved per month, or one cancelled subscription, or a single 0.5 percent rate cut on your highest-rate debt.</p>
       </div>
+      <div class="bento-data" aria-label="Sample goal progress">
+        <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+          <circle cx="11" cy="11" r="8" stroke="var(--line-3)" stroke-width="1.6" fill="none"/>
+          <circle cx="11" cy="11" r="8" stroke="var(--gold)" stroke-width="1.6" fill="none"
+                  stroke-linecap="round" stroke-dasharray="50.27"
+                  stroke-dashoffset="6.53" transform="rotate(-90 11 11)"/>
+        </svg>
+        <span>$20k by Aug:</span>
+        <span class="num">$17,420</span>
+        <span class="sep">·</span>
+        <span class="accent">87%</span>
+      </div>
       <div class="micro-glyph" aria-hidden="true">
         <svg viewBox="0 0 56 56" fill="none">
           <rect x="10" y="36" width="6" height="14" stroke="currentColor" stroke-width="1.3"/>
@@ -1489,6 +1698,13 @@
         </div>
         <h3>Recurring radar</h3>
         <p>Flags every subscription before it auto-renews — including the unannounced price hikes that quietly add up to $312 a year on a typical European household. Tagged by category, exportable to CSV, dismissable per row.</p>
+      </div>
+      <div class="bento-data" aria-label="Sample subscriptions flagged">
+        <div class="bento-list">
+          <div class="row"><span class="name">Adobe CC</span><span class="delta">↑ $19.99 → $23.99</span></div>
+          <div class="row"><span class="name">Spotify Family</span><span class="delta">↑ $11.99 → $13.99</span></div>
+          <div class="row flat"><span class="name">iCloud 200 GB</span><span class="delta">$2.99 · steady</span></div>
+        </div>
       </div>
       <div class="micro-glyph" aria-hidden="true">
         <svg viewBox="0 0 56 56" fill="none">
@@ -1508,6 +1724,10 @@
         <h3>Sage AI · your personal advisor</h3>
         <p>An AI that holds your full picture in context. Ask anything — "should I pay off the car or invest?" — and get a numbered answer in plain English, with the formula it used and a one-line caveat where the answer changes by jurisdiction. No upselling, no hedging.</p>
       </div>
+      <div class="bento-data bento-quote" aria-label="Sample Sage AI exchange">
+        <div class="ask">When can I retire on $3,200/month?</div>
+        <div class="reply"><strong>2041 · age 58.</strong> Run scenario →</div>
+      </div>
       <div class="micro-glyph" aria-hidden="true">
         <svg viewBox="0 0 56 56" fill="none">
           <circle cx="28" cy="28" r="18" stroke="currentColor" stroke-width="1.3"/>
@@ -1524,6 +1744,18 @@
         </div>
         <h3>Encrypted by default</h3>
         <p>AES-256 in the browser, on a Web Crypto API key never sent to a server. Zero bank credentials, zero third-party trackers, zero cross-domain pixels. Delete everything in one click — settings to wipe.</p>
+      </div>
+      <div class="bento-data" aria-label="Sample privacy posture">
+        <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+          <rect x="4" y="9" width="14" height="9" rx="1.5" stroke="var(--gold)" stroke-width="1.3" fill="none"/>
+          <path d="M7 9 V6.5 a4 4 0 0 1 8 0 V9" stroke="var(--gold)" stroke-width="1.3" fill="none"/>
+          <circle cx="11" cy="13" r="1.2" fill="var(--gold)"/>
+        </svg>
+        <span>AES-256</span>
+        <span class="sep">·</span>
+        <span class="num">0 bank logins</span>
+        <span class="sep">·</span>
+        <span class="num">0 trackers</span>
       </div>
       <div class="micro-glyph" aria-hidden="true">
         <svg viewBox="0 0 56 56" fill="none">
