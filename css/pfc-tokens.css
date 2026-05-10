@@ -238,7 +238,7 @@
   --purple:    #9F8FB7;
   --green:     var(--money);
   --r:         var(--r-md);
-  --r-sm:      var(--r-sm);
+  /* --r-sm aliased to itself was a no-op; tokens above already define --r-sm */
 }
 
 /* ── Surface contexts (Wave 2) ──────────────────────────────────────────
