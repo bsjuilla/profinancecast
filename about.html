@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
+<title>About ProFinanceCast — A quiet European forecasting house</title>
+<meta name="description" content="ProFinanceCast projects ten years of personal-finance numbers without asking for a bank password. Methodology, primary sources, and the institutional disclosure of what we are not.">
+<meta name="robots" content="index,follow">
+<link rel="canonical" href="https://profinancecast.com/about.html">
+
+<meta property="og:type" content="website">
+<meta property="og:title" content="About ProFinanceCast — A quiet European forecasting house">
+<meta property="og:description" content="A privacy-first personal-finance projection tool. Methodology, primary sources, and the institutional disclosure of what we are not.">
+<meta property="og:url" content="https://profinancecast.com/about.html">
+<meta property="og:image" content="https://profinancecast.com/api/og?title=About+ProFinanceCast&eyebrow=Methodology&subtitle=A+quiet+European+forecasting+house">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:site_name" content="ProFinanceCast">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="About ProFinanceCast">
+<meta name="twitter:description" content="Methodology + primary sources for ProFinanceCast forecasts.">
+<meta name="twitter:image" content="https://profinancecast.com/api/og?title=About+ProFinanceCast&eyebrow=Methodology&subtitle=A+quiet+European+forecasting+house">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="css/pfc-tokens.css">
+<link rel="stylesheet" href="css/pfc-app.css">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500;1,600&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/pfc-reskin.css">
+<style>
+  /* Static-page baseline. pfc-app.css scopes its body styling to .pfc-app
+     (which forces flex layout for the dashboard chrome), so static pages
+     bring their own reset + body rules. Mirrors privacy.html. */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font-body); background: var(--canvas); color: var(--ink-2); line-height: 1.7; -webkit-font-smoothing: antialiased; }
+  .skip-link { position: absolute; top: -40px; left: 0; padding: 8px 16px; background: var(--canvas); color: var(--ink); border: 1px solid var(--gold); border-radius: var(--r-xs); font-size: 13px; z-index: 200; text-decoration: none; }
+  .skip-link:focus { top: 8px; left: 8px; }
+  .about-nav { position: sticky; top: 0; z-index: 100; display: flex; align-items: center; justify-content: space-between; padding: 0 var(--space-6); height: 64px; background: rgba(11,20,16,0.85); border-bottom: 1px solid var(--line); backdrop-filter: blur(16px) saturate(140%); }
+  .nav-logo { display: flex; align-items: center; gap: var(--space-2); font-family: var(--font-display); font-style: italic; font-size: 18px; font-weight: 500; color: var(--ink); text-decoration: none; }
+  .logo-mark { width: 28px; height: 28px; background: var(--money); border-radius: var(--r-xs); display: flex; align-items: center; justify-content: center; font-family: var(--font-body); font-style: normal; font-size: 11px; font-weight: 700; color: var(--canvas); }
+  .nav-back { font-size: 13px; color: var(--ink-3); text-decoration: none; transition: color 160ms ease-out; }
+  .nav-back:hover { color: var(--ink-2); }
+  .content { max-width: 760px; margin: 0 auto; padding: var(--space-9) var(--space-5); }
+  .page-tag { display: inline-block; font-family: var(--font-mono); font-size: 11px; font-weight: 500; padding: 3px 10px; border-radius: var(--r-pill); margin-bottom: var(--space-3); background: var(--gold-soft); color: var(--gold); letter-spacing: 0.08em; text-transform: uppercase; }
+  h1 { font-family: var(--font-display); font-style: italic; font-size: clamp(36px, 5vw, 56px); font-weight: 500; line-height: 1.05; letter-spacing: -0.01em; color: var(--ink); margin-bottom: var(--space-2); }
+  .meta { font-size: 13px; color: var(--ink-3); margin-bottom: var(--space-7); font-family: var(--font-mono); }
+  h2 { font-family: var(--font-display); font-style: italic; font-size: 28px; font-weight: 500; color: var(--ink); margin: var(--space-8) 0 var(--space-4); padding-top: var(--space-6); border-top: 1px solid var(--line); }
+  h2:first-of-type { border-top: none; padding-top: 0; margin-top: 0; }
+  h3 { font-family: var(--font-body); font-size: 14px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-2); margin: var(--space-5) 0 var(--space-2); }
+  p { font-size: 16px; color: var(--ink-2); margin-bottom: var(--space-4); }
+  p.lead { font-family: var(--font-display); font-style: italic; font-size: 20px; color: var(--ink); line-height: 1.5; margin-bottom: var(--space-5); }
+  ul { padding-left: 20px; margin-bottom: var(--space-4); display: flex; flex-direction: column; gap: var(--space-2); }
+  li { font-size: 15px; color: var(--ink-2); line-height: 1.6; }
+  strong { color: var(--ink); font-weight: 600; }
+  a { color: var(--gold); text-decoration: none; transition: color 160ms ease-out; }
+  a:hover { text-decoration: underline; }
+  .formula { font-family: var(--font-mono); font-size: 14px; background: rgba(244,239,229,0.04); border: 1px solid var(--line); border-radius: var(--r-xs); padding: var(--space-4); margin: var(--space-3) 0; color: var(--ink); display: block; overflow-x: auto; font-feature-settings: "tnum"; }
+  .changelog { display: flex; flex-direction: column; gap: var(--space-3); border-left: 2px solid var(--line); padding-left: var(--space-5); }
+  .changelog .entry { display: grid; grid-template-columns: 110px 1fr; gap: var(--space-4); font-size: 15px; }
+  .changelog time { font-family: var(--font-mono); font-size: 13px; color: var(--ink-3); font-feature-settings: "tnum"; }
+  .changelog .what { color: var(--ink-2); }
+  footer.site-footer { border-top: 1px solid var(--line); margin-top: var(--space-9); padding: var(--space-7) var(--space-5) var(--space-5); }
+  .footer-grid { max-width: 1080px; margin: 0 auto; display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-6); }
+  .footer-col h4 { font-family: var(--font-body); font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); margin-bottom: var(--space-3); }
+  .footer-col ul { padding: 0; gap: var(--space-2); }
+  .footer-col li { list-style: none; font-size: 13px; }
+  .footer-col a { color: var(--ink-2); }
+  .footer-col a:hover { color: var(--ink); }
+  .footer-stamp { max-width: 1080px; margin: var(--space-6) auto 0; padding-top: var(--space-4); border-top: 1px solid var(--line); display: flex; justify-content: space-between; flex-wrap: wrap; gap: var(--space-3); font-size: 12px; color: var(--ink-3); font-family: var(--font-mono); }
+  @media (max-width: 760px) {
+    .content { padding: var(--space-7) var(--space-4); }
+    nav { padding: 0 var(--space-4); }
+    .footer-grid { grid-template-columns: repeat(2, 1fr); }
+    .changelog .entry { grid-template-columns: 1fr; gap: var(--space-1); }
+  }
+</style>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "AboutPage",
+  "name": "About ProFinanceCast",
+  "url": "https://profinancecast.com/about.html",
+  "description": "ProFinanceCast projects ten years of personal-finance numbers without asking for a bank password. Methodology, primary sources, and institutional disclosure.",
+  "publisher": {
+    "@type": "Organization",
+    "name": "ProFinanceCast",
+    "url": "https://profinancecast.com",
+    "foundingDate": "2024",
+    "foundingLocation": { "@type": "Place", "address": { "@type": "PostalAddress", "addressCountry": "EU" } },
+    "knowsAbout": ["personal finance forecasting", "debt strategy", "compound interest", "net worth projection", "household financial planning"],
+    "logo": "https://profinancecast.com/favicon.svg",
+    "sameAs": []
+  },
+  "isPartOf": { "@type": "WebSite", "name": "ProFinanceCast", "url": "https://profinancecast.com" }
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://profinancecast.com/" },
+    { "@type": "ListItem", "position": 2, "name": "About", "item": "https://profinancecast.com/about.html" }
+  ]
+}
+</script>
+
+<script src="js/pfc-sentry-scrub.js"></script>
+<script src="https://js.sentry-cdn.com/9b8b34d46908bd9f79a16cf18322ac70.min.js" crossorigin="anonymous"></script>
+<script src="js/pfc-sentry.js"></script>
+<!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "37cb784ad53047a9921bfd79e9835310"}'></script><!-- End Cloudflare Web Analytics -->
+<script src="js/pfc-storage.js" defer></script>
+<script src="js/pfc-analytics.js" defer></script>
+</head>
+<body>
+
+<a href="#main" class="skip-link">Skip to content</a>
+
+<nav class="about-nav" role="banner">
+  <a href="/" class="nav-logo"><span class="logo-mark">PF</span>ProFinanceCast</a>
+  <a href="/" class="nav-back">← Back to home</a>
+</nav>
+
+<main id="main" class="content" aria-labelledby="about-headline">
+  <span class="page-tag">About</span>
+  <h1 id="about-headline">A quiet European forecasting house</h1>
+  <p class="meta">Last revised 2026-05-10</p>
+
+  <p class="lead">ProFinanceCast projects ten years of personal-finance numbers without ever asking for a bank password.</p>
+
+  <h2>About ProFinanceCast</h2>
+  <p>ProFinanceCast is built by independent professionals in Europe; private by design; published in the editorial register of a private-bank quarterly letter. The product projects ten years of net worth, the month a household becomes debt-free, and the goals it will meet — without connecting to any bank account. Calculations run in the reader's browser. Nothing in the projection leaves the device unencrypted, and the projection is encrypted before it touches any server.</p>
+  <p>There is one product, three tiers — Free, Pro at $9 a month or $69 a year, Founders Lifetime at $149 limited to 500 seats — and no upsells beyond them. ProFinanceCast does not store bank credentials, does not sell user data, and is not affiliated with any institution it forecasts against.</p>
+
+  <h2 id="methodology">Methodology</h2>
+  <p>Each forecast is built from four user inputs — monthly income, monthly expenses, monthly savings, and total debt — and three macroeconomic assumptions: an inflation rate, a long-run real return, and a static income trajectory unless the reader varies it on the dashboard.</p>
+  <p>The compound-growth curve uses the standard future-value formula:</p>
+  <code class="formula">FV = PV × (1 + r)^n + PMT × ((1 + r)^n − 1) ÷ r</code>
+  <p>where <strong>PV</strong> is starting net worth, <strong>PMT</strong> is monthly savings, <strong>r</strong> is the monthly real return (annual real return divided by twelve), and <strong>n</strong> is the number of months in the horizon. Inflation is applied to expenses each month using a published consumer-price index for the reader's reporting currency, fetched fresh on each forecast and cached for one day.</p>
+  <p>Debt amortization is computed line by line: each debt carries its own balance, rate, and minimum payment, and ProFinanceCast simulates either the avalanche order (highest interest rate first) or the snowball order (lowest balance first), whichever the reader selects on the dashboard. The same numbers in produce the same forecast out, every time. There is no smoothing, no scenario-mixing, and no proprietary "score" that hides its math.</p>
+
+  <h3>Primary sources</h3>
+  <ul>
+    <li>World Bank — consumer-price index, country-level (<a href="https://api.worldbank.org/" rel="external">api.worldbank.org</a>)</li>
+    <li>Federal Reserve Economic Data — long-run real return baseline (<a href="https://fred.stlouisfed.org/" rel="external">fred.stlouisfed.org</a>)</li>
+    <li>European Central Bank — harmonized index of consumer prices (<a href="https://www.ecb.europa.eu/" rel="external">ecb.europa.eu</a>)</li>
+  </ul>
+
+  <h2>What we are not</h2>
+  <ul>
+    <li><strong>Not a bank.</strong> ProFinanceCast does not hold deposits, issue credit, or move money.</li>
+    <li><strong>Not a registered investment adviser.</strong> Forecasts are educational projections, not personalized advice. Consult a licensed adviser before acting on any figure shown.</li>
+    <li><strong>Not a broker-dealer or fiduciary.</strong> No transactions are facilitated through this product.</li>
+    <li><strong>Not a tax advisor.</strong> Tax assumptions are illustrative; jurisdictional rules are the reader's responsibility.</li>
+    <li><strong>Not affiliated</strong> with any bank, brokerage, asset manager, or other institution that may appear in the forecast.</li>
+    <li><strong>Not available</strong> in jurisdictions where the operation of an unlicensed financial-projection tool is restricted. Local applicability is the reader's responsibility.</li>
+  </ul>
+
+  <h2>Changelog</h2>
+  <div class="changelog">
+    <div class="entry"><time datetime="2026-05-10">2026-05-10</time><span class="what">Founders Lifetime tier opened — 500 seats, $149 once.</span></div>
+    <div class="entry"><time datetime="2026-04-22">2026-04-22</time><span class="what">Debt avalanche calculator shipped on the dashboard.</span></div>
+    <div class="entry"><time datetime="2026-03-15">2026-03-15</time><span class="what">Goal projector overhauled with custom-horizon support.</span></div>
+    <div class="entry"><time datetime="2026-02-28">2026-02-28</time><span class="what">Sage AI advisor — 200 messages a month on Pro — launched.</span></div>
+    <div class="entry"><time datetime="2026-01-04">2026-01-04</time><span class="what">Net-worth projection compounding upgraded from quarterly to monthly.</span></div>
+  </div>
+</main>
+
+<footer class="site-footer" role="contentinfo">
+  <div class="footer-grid">
+    <div class="footer-col">
+      <h4>Product</h4>
+      <ul>
+        <li><a href="/">Forecast</a></li>
+        <li><a href="/blog.html">Journal</a></li>
+        <li><a href="/billing.html">Pricing</a></li>
+        <li><a href="/tools/take-home-pay.html">Take-home pay</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Company</h4>
+      <ul>
+        <li><a href="/about.html">About</a></li>
+        <li><a href="/about.html#methodology">Methodology</a></li>
+        <li><a href="/llms.txt">For language models</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Resources</h4>
+      <ul>
+        <li><a href="/help.html">Help</a></li>
+        <li><a href="/blog.html">Articles</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Trust</h4>
+      <ul>
+        <li><a href="/about.html#methodology">Methodology</a></li>
+        <li><a href="/about.html">Changelog</a></li>
+        <li><a href="/privacy.html">Data handling</a></li>
+        <li><a href="/about.html">What we are not</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-stamp">
+    <span>© 2026 ProFinanceCast — Built in Europe</span>
+    <span>Last shipped <time datetime="2026-05-10">2026-05-10</time></span>
+  </div>
+</footer>
+
+</body>
+</html>

@@ -579,15 +579,11 @@
 
   <script src="js/pfc-export.js" defer></script>
 
+  <script src="js/pfc-sentry-scrub.js"></script>
   <script src="https://js.sentry-cdn.com/9b8b34d46908bd9f79a16cf18322ac70.min.js" crossorigin="anonymous"></script>
-  <script>
-    Sentry.onLoad(function () {
-      Sentry.init({
-        environment: location.hostname === 'profinancecast.com' ? 'production' : 'preview',
-      });
-    });
-  </script>
+  <script src="js/pfc-sentry.js"></script>
   <!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "37cb784ad53047a9921bfd79e9835310"}'></script><!-- End Cloudflare Web Analytics -->
+  <script src="js/pfc-analytics.js" defer></script>
 </head>
 <body>
 
@@ -644,8 +640,8 @@
   <div class="auth-box">
 
     <!-- ── LOGIN VIEW ── -->
-    <div class="view active" id="view-login">
-      <div class="auth-heading">Welcome back</div>
+    <div class="view" id="view-login">
+      <div class="auth-heading">Sign in</div>
       <div class="auth-sub">No account yet? <a onclick="showView('signup')">Create one free →</a></div>
 
       <div class="alert alert-error" id="login-error">Invalid email or password. Please try again.</div>
@@ -691,9 +687,9 @@
     </div>
 
     <!-- ── SIGNUP VIEW ── -->
-    <div class="view" id="view-signup">
-      <div class="auth-heading">Create your account</div>
-      <div class="auth-sub">Already have one? <a onclick="showView('login')">Sign in →</a></div>
+    <div class="view active" id="view-signup">
+      <div class="auth-heading">Start your free forecast</div>
+      <div class="auth-sub">Already have an account? <a onclick="showView('login')">Sign in →</a></div>
 
       <div class="alert alert-error" id="signup-error"></div>
 
@@ -709,15 +705,9 @@
 
       <div class="divider">or sign up with email</div>
 
-      <div class="field-row-2">
-        <div class="field">
-          <label>First name</label>
-          <input type="text" id="signup-fname" placeholder="Alex" autocomplete="given-name">
-        </div>
-        <div class="field">
-          <label>Last name</label>
-          <input type="text" id="signup-lname" placeholder="Smith" autocomplete="family-name">
-        </div>
+      <div class="field">
+        <label for="signup-name">Full name</label>
+        <input type="text" id="signup-name" placeholder="Alex Smith" autocomplete="name">
       </div>
 
       <div class="field">
@@ -748,11 +738,6 @@
         </div>
       </div>
 
-      <div class="field">
-        <label>Confirm password</label>
-        <input type="password" id="signup-pw2" placeholder="Repeat password" autocomplete="new-password">
-      </div>
-
       <div class="check-row">
         <input type="checkbox" id="agree-terms">
         <label class="check-label" for="agree-terms">
@@ -780,7 +765,7 @@
       <div class="auth-sub">Enter your email and we'll send you a reset link.</div>
 
       <div class="alert alert-success" id="forgot-success">
-        Reset link sent! Check your inbox — it may take a minute. Check your spam folder if you don't see it.
+        Reset link sent — check your inbox. It may take a minute. Check your spam folder if you don't see it.
       </div>
       <div class="alert alert-error" id="forgot-error">No account found with that email address.</div>
 
@@ -1001,50 +986,46 @@ async function resendConfirmation(email) {
 
 // ── SIGNUP ──
 async function handleSignup() {
-  const fname = document.getElementById('signup-fname').value.trim();
-  const lname = document.getElementById('signup-lname').value.trim();
+  const fullName = document.getElementById('signup-name').value.trim();
   const email = document.getElementById('signup-email').value.trim();
   const pw    = document.getElementById('signup-pw').value;
-  const pw2   = document.getElementById('signup-pw2').value;
   const terms = document.getElementById('agree-terms').checked;
 
   const errEl = document.getElementById('signup-error');
+  const fail = (msg) => { errEl.textContent = msg; showAlert('signup-error'); };
 
-  if (!fname || !lname || !email || !pw) {
-    errEl.textContent = 'Please fill in all fields.'; showAlert('signup-error'); return;
-  }
-  if (pw !== pw2) {
-    errEl.textContent = 'Passwords do not match.'; showAlert('signup-error'); return;
-  }
-  if (pw.length < 8) {
-    errEl.textContent = 'Password must be at least 8 characters.'; showAlert('signup-error'); return;
-  }
-  if (!terms) {
-    errEl.textContent = 'Please accept the Terms of Service to continue.'; showAlert('signup-error'); return;
-  }
+  if (!fullName || !email || !pw) return fail('Please fill in name, email, and password.');
+  if (pw.length < 8)              return fail('Password must be at least 8 characters.');
+  if (!terms)                     return fail('Please accept the Terms of Service to continue.');
 
   setLoading('signup-btn', 'signup-spinner', true);
   hideAllAlerts();
 
   if (!supabaseClient) {
     setLoading('signup-btn', 'signup-spinner', false);
-    errEl.textContent = 'Sign-up is temporarily unavailable. Please try again in a moment.';
-    showAlert('signup-error');
-    return;
+    return fail('Sign-up is temporarily unavailable. Please try again in a moment.');
   }
 
-  const { error } = await supabaseClient.auth.signUp({
+  const { data, error } = await supabaseClient.auth.signUp({
     email, password: pw,
     options: {
-      data: { full_name: fname + ' ' + lname },
+      data: { full_name: fullName },
       emailRedirectTo: `${APP_ORIGIN}/onboarding.html`,
     },
   });
 
   setLoading('signup-btn', 'signup-spinner', false);
 
-  if (error) {
-    errEl.textContent = error.message; showAlert('signup-error');
+  if (error) return fail(error.message);
+
+  // Deferred email verify: if Supabase returned a session, route to
+  // onboarding immediately. The confirmation email is still sent in
+  // parallel; a banner on the dashboard nudges the user to click the
+  // link when convenient. Falls back to the verify view if the project
+  // is configured with email_confirm_required=true.
+  document.dispatchEvent(new CustomEvent('pfc:signup-defer-verify-success', { detail: { method: 'email' } }));
+  if (data && data.session) {
+    location.assign('onboarding.html');
   } else {
     document.getElementById('verify-email-display').textContent = email;
     showView('verify');

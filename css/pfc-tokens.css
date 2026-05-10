@@ -181,6 +181,39 @@
   --container: 1080px;
   --container-wide: 1280px;
 
+  /* ── W1-D · Final 4-axis token block (Sprint 5) ───────────────────────
+     Canonical `--pfc-*` namespace. New components opt in here.
+     Coexists with --s-*, --r-*, --t-*, --space-*, --radius-* above so
+     legacy pages keep rendering unchanged.
+     ──────────────────────────────────────────────────────────────────── */
+
+  /* Spacing — 7-step + sub */
+  --pfc-space-0: 0;     --pfc-space-1: 4px;   --pfc-space-2: 8px;
+  --pfc-space-3: 16px;  --pfc-space-4: 24px;  --pfc-space-5: 32px;
+  --pfc-space-6: 48px;  --pfc-space-7: 96px;
+
+  /* Radius — 3 steps + pill (12px standard = Monarch grammar) */
+  --pfc-radius-sharp: 4px;
+  --pfc-radius-standard: 12px;
+  --pfc-radius-rounded: 20px;
+  --pfc-radius-pill: 999px;
+
+  /* Elevation — 3 inset-stroke variants. Gold = hover signal. */
+  --pfc-elev-ambient: 0 0 0 1px rgba(244,239,229,0.08) inset;
+  --pfc-elev-raised:  0 0 0 1px rgba(244,239,229,0.10) inset,
+                      0 18px 48px -24px rgba(0,0,0,0.55);
+  --pfc-elev-gold:    0 0 0 1px rgba(212,175,106,0.45) inset;
+
+  /* Motion — 4 durations × 4 easings */
+  --pfc-dur-micro: 120ms;
+  --pfc-dur-standard: 240ms;
+  --pfc-dur-settle: 480ms;
+  --pfc-dur-hero: 1600ms;
+  --pfc-ease-standard: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --pfc-ease-micro:    cubic-bezier(0.65, 0, 0.35, 1);
+  --pfc-ease-hero:     cubic-bezier(0.16, 1, 0.3, 1);
+  --pfc-ease-settle:   cubic-bezier(0.34, 1.5, 0.64, 1);
+
   /* ── Legacy mapping ────────────────────────────────────────────────────
      Old pages used --bg, --text, --teal, --card etc. We map those to new
      tokens so the existing inline CSS still renders, but in the new palette.
@@ -223,6 +256,21 @@
 
 /* ── Reduced motion: kill animations cleanly ───────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
+  :root {
+    --pfc-dur-micro: 0.01ms;
+    --pfc-dur-standard: 0.01ms;
+    --pfc-dur-settle: 0.01ms;
+    --pfc-dur-hero: 0.01ms;
+    --dur-instant: 0.01ms;
+    --dur-fast: 0.01ms;
+    --dur-base: 0.01ms;
+    --dur-slow: 0.01ms;
+    --dur-curve: 0.01ms;
+    --t-fast: 0.01ms;
+    --t-base: 0.01ms;
+    --t-slow: 0.01ms;
+    --t-stately: 0.01ms;
+  }
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;

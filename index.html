@@ -2,17 +2,17 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="apple-touch-icon" href="/favicon.svg">
 <meta name="theme-color" content="#0B1410">
-<title>ProFinanceCast — Watch your money compound, month by month.</title>
+<title>ProFinanceCast — Plan the next ten years, without a bank password</title>
 <meta name="description" content="Drop in your numbers. See exactly when you'll be debt-free, what your net worth becomes 12 months from now, and which goals you'll hit. No bank login, no spreadsheets.">
 <meta name="robots" content="index,follow">
 <link rel="canonical" href="https://profinancecast.com/">
 
-<meta property="og:title" content="ProFinanceCast — Watch your money compound, month by month.">
-<meta property="og:description" content="The forecast your bank should give you. Free forever, encrypted, bank-decoupled.">
+<meta property="og:title" content="ProFinanceCast — Plan the next ten years, without a bank password">
+<meta property="og:description" content="Plan the next ten years of your money — without a bank password. Calculations run in your browser; encrypted at rest. Free forever.">
 <meta property="og:url" content="https://profinancecast.com/">
   <meta property="og:image" content="https://profinancecast.com/api/og?title=See+where+your+money+lands+in+2030.&eyebrow=ProFinanceCast&subtitle=The+forecast+your+bank+should+give+you.+Free%2C+no+bank+login.">
   <meta property="og:image:width" content="1200">
@@ -21,8 +21,8 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="ProFinanceCast">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="ProFinanceCast — Watch your money compound, month by month.">
-<meta name="twitter:description" content="The forecast your bank should give you. Free forever, encrypted, bank-decoupled.">
+<meta name="twitter:title" content="ProFinanceCast — Plan the next ten years, without a bank password">
+<meta name="twitter:description" content="Plan the next ten years of your money — without a bank password. Calculations run in your browser; encrypted at rest. Free forever.">
 
 <script type="application/ld+json">
 {
@@ -42,7 +42,12 @@
       "url": "https://profinancecast.com/",
       "name": "ProFinanceCast",
       "publisher": { "@id": "https://profinancecast.com/#org" },
-      "inLanguage": "en"
+      "inLanguage": "en",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": { "@type": "EntryPoint", "urlTemplate": "https://profinancecast.com/blog.html?q={search_term_string}" },
+        "query-input": "required name=search_term_string"
+      }
     },
     {
       "@type": "WebApplication",
@@ -51,15 +56,64 @@
       "applicationCategory": "FinanceApplication",
       "operatingSystem": "Web",
       "browserRequirements": "Requires JavaScript",
-      "description": "A personal finance forecast app that projects your net worth, debt payoff, and goal completion over 10 years using your own numbers — no bank linking required.",
+      "description": "A personal-finance forecasting tool that projects net worth, debt payoff, and goal completion over ten years from your own numbers — no bank login required.",
       "offers": [
         { "@type": "Offer", "name": "Free", "price": "0", "priceCurrency": "USD" },
-        { "@type": "Offer", "name": "Pro monthly", "price": "9", "priceCurrency": "USD" },
-        { "@type": "Offer", "name": "Pro annual", "price": "69", "priceCurrency": "USD" },
+        { "@type": "Offer", "name": "Pro monthly", "price": "9", "priceCurrency": "USD", "billingDuration": "P1M" },
+        { "@type": "Offer", "name": "Pro annual", "price": "69", "priceCurrency": "USD", "billingDuration": "P1Y" },
         { "@type": "Offer", "name": "Founders Lifetime", "price": "149", "priceCurrency": "USD" }
       ],
       "publisher": { "@id": "https://profinancecast.com/#org" }
     }
+  ]
+}
+</script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    { "@type": "Question", "name": "Do you connect to my bank account?",
+      "acceptedAnswer": { "@type": "Answer", "text": "No. ProFinanceCast does not link to bank accounts and does not store bank credentials. Numbers are entered manually or pasted from CSV. Calculations run in the reader's browser, encrypted at rest." } },
+    { "@type": "Question", "name": "How accurate is the forecast?",
+      "acceptedAnswer": { "@type": "Answer", "text": "The forecast is deterministic — same numbers in, same forecast out. It compounds the user's reported income, debts, and savings against the standard future-value formula and applies a published consumer-price index for inflation. ProFinanceCast does not predict the stock market." } },
+    { "@type": "Question", "name": "What happens to my data if I cancel Pro?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Local data stays in the browser; only Pro features are gated again. Free features keep working. Users can export everything to CSV or JSON, or wipe it in one click from Settings." } },
+    { "@type": "Question", "name": "Is there a free trial of Pro?",
+      "acceptedAnswer": { "@type": "Answer", "text": "The Free plan covers the core ten-year forecast forever — no time limit. ProFinanceCast does not run trials. Subscribe and cancel any time." } },
+    { "@type": "Question", "name": "Who built ProFinanceCast?",
+      "acceptedAnswer": { "@type": "Answer", "text": "An independent team based in Europe. ProFinanceCast does not take outside money, does not sell user data, and does not connect to any bank. The product is the entirety of the offer." } },
+    { "@type": "Question", "name": "How is the forecast calculated?",
+      "acceptedAnswer": { "@type": "Answer", "text": "The compound-growth curve uses the future-value formula FV = PV × (1 + r)^n + PMT × ((1 + r)^n − 1) ÷ r. Inputs: monthly income, expenses, savings, total debt. Macro assumptions: inflation, long-run real return, income trajectory. Full methodology lives at /about.html#methodology." } },
+    { "@type": "Question", "name": "Can I forecast without a bank login?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Yes — that is the entire premise. ProFinanceCast never asks for a bank password. Users type four numbers; the projection runs locally and the result is encrypted before any server contact." } },
+    { "@type": "Question", "name": "Is ProFinanceCast a registered investment adviser?",
+      "acceptedAnswer": { "@type": "Answer", "text": "No. ProFinanceCast is not an RIA, broker-dealer, or fiduciary. The product is a deterministic forecasting tool, not personalized investment advice. Consult a licensed adviser before acting on any figure shown." } },
+    { "@type": "Question", "name": "What happens when 500 Founders Lifetime seats are reached?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Once all 500 Founders Lifetime seats are claimed, the tier closes permanently — there is no extension and no second cohort. Pro at $9 a month or $69 a year continues unchanged after that point. The seat counter on the pricing page is the live source of truth." } }
+  ]
+}
+</script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "HowTo",
+  "name": "Forecast ten years of net worth without a bank login",
+  "description": "Drop in four numbers and ProFinanceCast projects your net worth, debt-free month, and goal completion over the next ten years.",
+  "totalTime": "PT2M",
+  "tool": [{ "@type": "HowToTool", "name": "ProFinanceCast" }],
+  "step": [
+    { "@type": "HowToStep", "position": 1, "name": "Enter your numbers",
+      "text": "Type your monthly income, monthly expenses, monthly savings, and total debt. No bank login. Numbers stay in your browser.",
+      "url": "https://profinancecast.com/#demo" },
+    { "@type": "HowToStep", "position": 2, "name": "Choose your horizon",
+      "text": "Drag the horizon slider to one, five, or ten years. The chart re-projects in real time using the compound-growth formula.",
+      "url": "https://profinancecast.com/#demo" },
+    { "@type": "HowToStep", "position": 3, "name": "Read the forecast",
+      "text": "ProFinanceCast surfaces your projected net worth, the month you become debt-free, and which goals will hit on time.",
+      "url": "https://profinancecast.com/#demo" }
   ]
 }
 </script>
@@ -73,16 +127,17 @@
 <link rel="stylesheet" href="css/pfc-app.css">
 
 <!-- GSAP for scroll choreography (defer = doesn't block paint) -->
-<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
-<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer integrity="sha384-g4NTh/Iv5PPU4xPyhEWqPcwtNXOvdaDI8LLnyYfyNZOjKJeYQyjzQ9X5275eBjpt" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js" defer integrity="sha384-Z3REaz79l2IaAZqJsSABtTbhjgOUYyV3p90XNnAPCSHg3EMTz1fouunq9WZRtj3d" crossorigin="anonymous"></script>
 
 <!-- PFC modules (must load before page logic that uses them) -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.105.4" integrity="sha384-4eCDoMN/7A46qQ5Tj0rZ/D2VEolFGNIINDTLAcWZcvhkRSsvTfqNfaBMlRRoGEZ5" crossorigin="anonymous"></script>
 <script src="js/pfc-config.js"></script>
 <script src="js/pfc-auth.js"></script>
 <script src="js/pfc-storage.js"></script>
 <script src="js/pfc-entitlements.js"></script>
 <script src="js/pfc-motion.js"></script>
+<script src="js/pfc-analytics.js" defer></script>
 
 <!-- ════════════════════════════════════════════════════════════════════════
      OAuth CALLBACK HANDLER (preserved from Wave 1 fix)
@@ -195,28 +250,7 @@
   a { color: inherit; text-decoration: none; }
   img, svg { display: block; max-width: 100%; }
 
-  /* Atmospheric backdrop — subtle radial vignettes, no 3D ─────────── */
-  .bg-fx {
-    position: fixed; inset: 0; z-index: 0;
-    pointer-events: none;
-    background:
-      radial-gradient(ellipse 60% 50% at 80% 0%, rgba(43,182,125,0.06), transparent 70%),
-      radial-gradient(ellipse 60% 50% at 20% 100%, rgba(212,175,106,0.04), transparent 70%);
-  }
-  .bg-grid {
-    position: fixed; inset: 0; z-index: 0;
-    pointer-events: none; opacity: 0.20;
-    background-image:
-      linear-gradient(rgba(43,182,125,0.06) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(43,182,125,0.06) 1px, transparent 1px);
-    background-size: 64px 64px;
-    mask-image: radial-gradient(ellipse 80% 60% at 50% 30%, black 30%, transparent 80%);
-  }
-  .grain {
-    position: fixed; inset: 0; z-index: 1;
-    pointer-events: none; opacity: 0.04; mix-blend-mode: overlay;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' /%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' /%3E%3C/svg%3E");
-  }
+  /* Atmospheric layers removed Sprint 5 — restraint over decoration */
   main { position: relative; z-index: 2; }
 
   /* ── NAV ─────────────────────────────────────────────────────────── */
@@ -319,15 +353,12 @@
     color: var(--gold);
     font-weight: 400;
   }
+  /* Sprint 5: animated gradient on display copy banned. Static gold italic only. */
   .hero h1 .grad {
-    background: linear-gradient(120deg, var(--money) 0%, var(--gold) 100%);
-    -webkit-background-clip: text; background-clip: text; color: transparent;
-    background-size: 200% 100%;
-    animation: shift 8s var(--ease-out) infinite;
+    color: var(--gold);
     font-style: italic;
     font-weight: 500;
   }
-  @keyframes shift { 0%,100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
   .hero-sub {
     font-size: clamp(16px, 1.3vw, 19px);
     color: var(--ink-2); font-weight: 300;
@@ -345,8 +376,8 @@
     margin: 80px auto 0;
     max-width: 1080px;
     padding: 0 24px;
-    perspective: 1800px;
   }
+  /* Sprint 5: 3D tilt removed. Editorial restraint, not Vercel mood. */
   .chart-frame {
     background: linear-gradient(180deg, var(--surface-2) 0%, var(--surface) 100%);
     border: 1px solid var(--line-2);
@@ -354,12 +385,8 @@
     padding: 36px;
     box-shadow:
       0 1px 0 rgba(255,255,255,0.04) inset,
-      0 30px 80px rgba(0,0,0,0.5),
-      0 0 60px rgba(43,182,125,0.05);
-    transform: rotateX(6deg) translateZ(0);
-    transition: transform var(--t-stately) var(--ease-out);
+      0 30px 80px rgba(0,0,0,0.5);
   }
-  .hero-chart:hover .chart-frame { transform: rotateX(1deg); }
   .chart-grid { display: grid; grid-template-columns: 1fr 1.4fr; gap: 32px; align-items: center; }
 
   .chart-controls h3 {
@@ -685,14 +712,9 @@
     .bento { grid-template-columns: 1fr; }
   }
 </style>
-  <script src="https://js.sentry-cdn.com/9b8b34d46908bd9f79a16cf18322ac70.min.js" crossorigin="anonymous"></script>
-  <script>
-    Sentry.onLoad(function () {
-      Sentry.init({
-        environment: location.hostname === 'profinancecast.com' ? 'production' : 'preview',
-      });
-    });
-  </script>
+  <script src="js/pfc-sentry-scrub.js" defer></script>
+  <script src="https://js.sentry-cdn.com/9b8b34d46908bd9f79a16cf18322ac70.min.js" crossorigin="anonymous" defer></script>
+  <script src="js/pfc-sentry.js" defer></script>
   <!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "37cb784ad53047a9921bfd79e9835310"}'></script><!-- End Cloudflare Web Analytics -->
 </head>
 <body>
@@ -701,11 +723,13 @@
 <div class="bg-grid" aria-hidden="true"></div>
 <div class="grain" aria-hidden="true"></div>
 
+<a href="#main" class="skip-link" style="position:absolute;top:-40px;left:0;padding:8px 16px;background:var(--canvas);color:var(--ink);border:1px solid var(--gold);border-radius:var(--r-xs);font-size:13px;z-index:200;text-decoration:none;" onfocus="this.style.top='8px';this.style.left='8px';" onblur="this.style.top='-40px';">Skip to content</a>
+
 <!-- ─────────── NAV ─────────── -->
-<nav id="nav">
-  <a class="logo" href="/">
-    <span class="logo-mark">
-      <svg viewBox="0 0 32 32" width="30" height="30">
+<nav id="nav" role="banner" aria-label="Primary navigation">
+  <a class="logo" href="/" aria-label="ProFinanceCast home">
+    <span class="logo-mark" aria-hidden="true">
+      <svg viewBox="0 0 32 32" width="30" height="30" aria-hidden="true">
         <path d="M5 22 L11 19.5 L17 14.5 L23 7" fill="none" stroke="#D4AF6A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
         <circle cx="23" cy="7" r="3" fill="#D4AF6A" fill-opacity="0.22"/>
         <circle cx="23" cy="7" r="1.8" fill="#D4AF6A"/>
@@ -723,39 +747,51 @@
     <a href="auth.html" class="btn btn-ghost">Sign in</a>
     <a href="auth.html" class="btn btn-primary">
       Start free
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7h8m-3-3l3 3-3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M3 7h8m-3-3l3 3-3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </a>
   </div>
 </nav>
 
-<main>
+<main id="main" role="main">
 
 <!-- ─────────── HERO ─────────── -->
-<section class="hero">
+<section class="hero" aria-labelledby="hero-headline">
   <div class="eyebrow reveal">
-    <span class="dot"></span> v2 · The forecasting cockpit
+    <span class="dot" aria-hidden="true"></span> A FORECASTING TOOL FOR YOUR PERSONAL FINANCES
   </div>
-  <h1 class="reveal">
-    Watch your money<br>
-    <em>compound,</em> <span class="grad">month by month.</span>
+  <h1 class="reveal" id="hero-headline">
+    Plan the next ten years —<br>
+    <em>without a bank password</em>
   </h1>
   <p class="hero-sub reveal">
-    Drop in your numbers. We project the next twelve months — to the exact day you'll be debt-free,
-    what your net worth becomes, and which goals you'll actually hit. No bank login, no spreadsheets,
-    no guessing.
+    Drop in your income, debts, and savings rate. We project ten years of net worth, the month you're debt-free, and which goals you'll actually hit. Numbers stay in your browser.
   </p>
   <div class="hero-cta reveal">
     <a href="auth.html" class="btn btn-primary btn-lg">
-      Start free — no card
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7h8m-3-3l3 3-3 3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Start your free forecast
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M3 7h8m-3-3l3 3-3 3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </a>
-    <a href="#demo" class="btn btn-outline btn-lg">Try it without signing up ↓</a>
+    <a href="#demo" class="btn btn-outline btn-lg">Try the live demo — no signup</a>
   </div>
-  <div class="trust-row reveal">
-    <span><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3 3 6-6" stroke="var(--money)" stroke-width="1.6" stroke-linecap="round"/></svg> Free forever</span>
-    <span><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3 3 6-6" stroke="var(--money)" stroke-width="1.6" stroke-linecap="round"/></svg> No bank login</span>
-    <span><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3 3 6-6" stroke="var(--money)" stroke-width="1.6" stroke-linecap="round"/></svg> AES-256 encrypted</span>
+  <p class="hero-disclosure reveal" style="font-family:var(--font-body);font-size:13px;color:var(--ink-3);max-width:62ch;margin:8px auto 28px;line-height:1.55;">
+    Free forever. Numbers stay in your browser. We never see your bank credentials, and your forecast is encrypted before it touches our servers.
+  </p>
+  <p class="hero-byline reveal" style="font-family:var(--font-body);font-size:14px;color:var(--ink-3);max-width:60ch;margin:0 auto 12px;">
+    Built in Europe by independent finance professionals. Private by design — your numbers stay in your browser.
+  </p>
+</section>
+
+<!-- ─────────── CREDIBILITY STRIP ─────────── -->
+<section class="credibility" aria-label="Privacy guarantees">
+  <div class="grid">
+    <div class="cell"><div class="num">100%</div><div class="lbl">Client-side compute</div></div>
+    <div class="cell"><div class="num">0</div><div class="lbl">Bank credentials stored</div></div>
+    <div class="cell"><div class="num">AES-256</div><div class="lbl">Encryption at rest</div></div>
+    <div class="cell"><div class="num">0</div><div class="lbl">Third-party trackers</div></div>
   </div>
+</section>
+
+<section class="hero-demo-wrapper" style="padding:64px 24px 0;text-align:center;">
 
   <!-- ── INTERACTIVE FORECAST WIDGET ── -->
   <div class="hero-chart reveal" id="demo">
@@ -900,7 +936,7 @@
   <div class="section-head reveal">
     <div class="section-eyebrow">Built for clarity</div>
     <h2 class="section-title">Six tools, <em>working in concert.</em></h2>
-    <p class="section-sub">Not another budgeting app. A forecasting cockpit for your finances.</p>
+    <p class="section-sub">Six tools, working in concert.</p>
   </div>
 
   <div class="bento reveal-stagger">
@@ -1045,8 +1081,12 @@
       <p>The Free plan covers the core forecast forever — no time limit. We don't run "trials" because most trials are confusing dark patterns. If you want Pro for a month, subscribe and cancel before renewal. Cancellation takes 5 seconds.</p>
     </details>
     <details>
-      <summary>Who built this?</summary>
-      <p>One developer (the reason it's still cheap). Built because every personal finance tool either connects to your bank (creepy) or only shows you the past (useless). I wanted to see the future.</p>
+      <summary>Who built ProFinanceCast?</summary>
+      <p>An independent team based in Europe. ProFinanceCast does not take outside money, does not sell user data, and does not connect to any bank. The product is the entirety of the offer. <a href="about.html">Read the methodology →</a></p>
+    </details>
+    <details>
+      <summary>What happens when 500 Founders Lifetime seats are reached?</summary>
+      <p>Once all 500 seats are claimed, the Founders tier closes permanently — there is no extension and no second cohort. Pro at $9 a month or $69 a year continues unchanged. The seat counter on the <a href="billing.html">pricing page</a> is the live source of truth.</p>
     </details>
   </div>
 </section>
@@ -1076,7 +1116,7 @@
       </span>
       ProFinanceCast
     </a>
-    <p>The forecast your bank should give you. Free, encrypted, bank-decoupled.</p>
+    <p>Plan the next ten years of your money — without a bank password. Calculations run in your browser; encrypted at rest.</p>
   </div>
   <div class="col">
     <h4>Product</h4>
@@ -1088,7 +1128,8 @@
   </div>
   <div class="col">
     <h4>Company</h4>
-    <a href="#features">About</a>
+    <a href="about.html">About</a>
+    <a href="about.html#methodology">Methodology</a>
     <a href="mailto:support@profinancecast.com">Contact</a>
     <a href="privacy.html">Privacy</a>
     <a href="terms.html">Terms</a>
@@ -1101,7 +1142,7 @@
   </div>
   <div class="footer-bottom">
     <span>© 2026 ProFinanceCast — All forecasts are projections, not guarantees.</span>
-    <span>v2.0 · Made with care</span>
+    <span>Built in Europe · Last shipped <time datetime="2026-05-10">2026-05-10</time></span>
   </div>
 </footer>
 
@@ -1176,9 +1217,9 @@
     if (!sIn) return;
 
     const fmt = n => {
-      if (n >= 1e6) return '$' + (n/1e6).toFixed(1) + 'M';
-      if (Math.abs(n) >= 1e3) return '$' + Math.round(n/1e3) + 'k';
-      return '$' + Math.round(n).toLocaleString();
+      // BRAND-VOICE: every dollar gets thousands separator. Never $17k.
+      const sign = n < 0 ? '−' : '';
+      return sign + '$' + Math.abs(Math.round(n)).toLocaleString('en-US');
     };
     function updatePct(input) {
       const min = +input.min, max = +input.max, val = +input.value;
@@ -1235,7 +1276,7 @@
       rDelta.classList.toggle('bad', delta < 0);
       if (debt === 0) {
         rDebt.innerHTML = 'Already';
-        rDebtDel.textContent = 'no debt 🎉';
+        rDebtDel.textContent = 'no debt';
       } else if (debtFreeMonth > 0 && debtFreeMonth <= 12) {
         rDebt.innerHTML = debtFreeMonth + '<span style="font-family:var(--font-body);font-size:18px;color:var(--ink-3);font-weight:400;"> months</span>';
         rDebtDel.textContent = 'on plan';

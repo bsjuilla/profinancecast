@@ -170,7 +170,7 @@
   <div class="sidebar-footer">
     <div class="user-pill">
       <div class="user-avatar">DK</div>
-      <div><div class="user-name">Divyesh K.</div><div class="user-plan" id="plan-label">Free plan · 0/10 used</div></div>
+      <div><div class="user-name" id="user-name">—</div><div class="user-plan" id="plan-label">Free plan · 0/10 used</div></div>
     </div>
   </div>
 </aside>
@@ -214,8 +214,8 @@
 
       <div class="limit-wall" id="limit-wall">
         <div class="limit-wall-title">You've used all 10 free queries this month</div>
-        <div class="limit-wall-text">Upgrade to Pro for 60 queries/month with deeper analysis, or Premium for 150. Your limit resets on the 1st of each month.</div>
-        <button class="limit-wall-btn">Upgrade to Pro — $9.99/mo →</button>
+        <div class="limit-wall-text">Try Pro free for 14 days — 200 messages a month with deeper analysis. Your free limit resets on the 1st of each month.</div>
+        <a href="billing.html" class="limit-wall-btn" style="display:inline-block;">See Pro plans</a>
       </div>
 
       <div class="input-area">
@@ -233,13 +233,19 @@
     </div>
 
     <div class="context-panel">
-      <div class="ctx-card">
+      <div class="ctx-card" id="snapshot-card">
         <div class="ctx-title">Your financial snapshot</div>
-        <div class="ctx-stat"><span class="ctx-stat-label">Net worth (now)</span><span class="ctx-stat-val" style="color:var(--teal);">$3,580</span></div>
-        <div class="ctx-stat"><span class="ctx-stat-label">Monthly savings</span><span class="ctx-stat-val">$570</span></div>
-        <div class="ctx-stat"><span class="ctx-stat-label">Total debt</span><span class="ctx-stat-val" style="color:var(--amber);">$8,000</span></div>
-        <div class="ctx-stat"><span class="ctx-stat-label">Health score</span><span class="ctx-stat-val" style="color:var(--amber);">74 / 100</span></div>
-        <div class="ctx-stat"><span class="ctx-stat-label">12-mo forecast</span><span class="ctx-stat-val" style="color:var(--teal);">+$8,220</span></div>
+        <div id="snapshot-empty" style="font-family:var(--font-body);font-size:14px;color:var(--ink-3);line-height:1.55;padding:8px 0;">
+          Your numbers aren't in yet — finish onboarding to see your context.
+          <a href="onboarding.html" style="display:block;margin-top:8px;color:var(--money);font-size:13px;">Continue onboarding →</a>
+        </div>
+        <div id="snapshot-stats" style="display:none;">
+          <div class="ctx-stat"><span class="ctx-stat-label">Net worth (now)</span><span class="ctx-stat-val" data-snap="netWorth">—</span></div>
+          <div class="ctx-stat"><span class="ctx-stat-label">Monthly savings</span><span class="ctx-stat-val" data-snap="monthlySavings">—</span></div>
+          <div class="ctx-stat"><span class="ctx-stat-label">Total debt</span><span class="ctx-stat-val" data-snap="debt">—</span></div>
+          <div class="ctx-stat"><span class="ctx-stat-label">Health score</span><span class="ctx-stat-val" data-snap="healthScore">—</span></div>
+          <div class="ctx-stat"><span class="ctx-stat-label">12-mo forecast</span><span class="ctx-stat-val" data-snap="forecast12mo">—</span></div>
+        </div>
       </div>
       <div class="ctx-card">
         <div class="ctx-title">Quick topics</div>
@@ -253,9 +259,9 @@
         </div>
       </div>
       <div class="upgrade-ctx">
-        <div class="upgrade-ctx-title">Unlock Pro Sage</div>
-        <div class="upgrade-ctx-text">Get 60 queries/month, longer conversation memory, and deeper financial analysis for $9.99/mo.</div>
-        <button class="upgrade-ctx-btn">Upgrade to Pro →</button>
+        <div class="upgrade-ctx-title">More questions on Pro</div>
+        <div class="upgrade-ctx-text">200 messages a month, longer conversation memory, and deeper analysis. $9 a month or $69 a year.</div>
+        <a href="billing.html" class="upgrade-ctx-btn" style="display:inline-block;">See Pro plans</a>
       </div>
       <div class="ctx-card" id="history-card" style="display:none;">
         <div class="ctx-title">Recent questions</div>
@@ -266,14 +272,36 @@
 </main>
 
 <script>
+// Sprint 5: zero seeds. USER_CTX is built from real onboarding data
+// (window.PFC.user → PFCStorage('user') → null) by hydrateContext() below.
+// Until real data exists, the snapshot card renders the empty state.
 const USER_CTX = {
-  name:'Divyesh', income:3000, expenses:2430, savings:11580,
-  debt:8000, debtPayment:550, healthScore:74, monthlySavings:570,
-  netWorth:3580, forecast12mo:24840, plan:'free',
-  goals:[{name:'Emergency fund',current:12600,target:15000},{name:'Home deposit',current:4200,target:25000},{name:'Holiday fund',current:1140,target:2000}],
-  debts:[{name:'Car loan',balance:4950,rate:6.5},{name:'Credit card',balance:2100,rate:19.9},{name:'Personal loan',balance:950,rate:8.2}]
+  name:'', income:0, expenses:0, savings:0,
+  debt:0, debtPayment:0, healthScore:0, monthlySavings:0,
+  netWorth:0, forecast12mo:0, plan:'free',
+  goals:[], debts:[]
 };
-const LIMITS = {free:10, pro:60, premium:150};
+const LIMITS = {free:10, pro:200};
+
+(function hydrateContext(){
+  try {
+    const stored = (window.PFC && window.PFC.user) ||
+                   (window.PFCStorage && window.PFCStorage.get && window.PFCStorage.get('user')) ||
+                   null;
+    if (!stored || !stored.income) return; // empty state stays
+    Object.assign(USER_CTX, stored);
+    document.getElementById('snapshot-empty').style.display = 'none';
+    document.getElementById('snapshot-stats').style.display = '';
+    document.querySelectorAll('[data-snap]').forEach(el => {
+      const key = el.dataset.snap;
+      const v = USER_CTX[key];
+      if (typeof v === 'number') {
+        el.textContent = (key === 'healthScore' ? v + ' / 100' : '$' + v.toLocaleString('en-US'));
+      }
+    });
+    if (USER_CTX.name) document.getElementById('user-name').textContent = USER_CTX.name;
+  } catch(_) {}
+})();
 let queryCount = 0, history = [], isTyping = false;
 
 function buildSysPrompt() {

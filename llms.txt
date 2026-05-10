@@ -1,31 +1,56 @@
 # ProFinanceCast
 
-> Personal-finance forecasting that's beautiful, free, and never asks for your bank login.
+> Independent European forecasting house. Privacy-first personal-finance projector. No bank credentials. Single product, three tiers (Free, Pro $9/mo or $69/yr, Founders Lifetime $149 limited to 500 seats). Founded 2024. Location: Europe.
 
-ProFinanceCast helps people forecast their financial future — debts paid off, net worth grown, salary scenarios modelled — without spreadsheets, advisors, or bank credentials. The free tier is genuinely useful (forecasts, debt optimizer, AI chat); Pro adds multi-scenario layering, salary scenario modelling, and a printable financial report card.
+ProFinanceCast projects ten years of household net worth, the month a household becomes debt-free, and the goals it will meet — without ever asking for a bank password. Calculations run in the reader's browser. Nothing in the projection leaves the device unencrypted, and the projection is encrypted before it touches any server.
 
-## Core pages
+The product does not connect to bank accounts, does not store bank credentials, does not sell user data, and is not affiliated with any institution it forecasts against.
 
-- [Homepage](https://profinancecast.com/): Free forecast widget, feature overview, pricing.
-- [Blog](https://profinancecast.com/blog.html): Long-form content on debt strategy, net worth tracking, salary planning.
-- [Debt avalanche guide](https://profinancecast.com/blog-debt-avalanche.html): The math of payoff order, with a worked example.
-- [Pricing](https://profinancecast.com/billing.html): Free + Pro tiers, no trial card required.
-- [Privacy](https://profinancecast.com/privacy.html): What we store, what we don't.
+## Methodology
 
-## Public tools (no signup)
+The forecast is built from four user inputs (monthly income, monthly expenses, monthly savings, total debt) and three macroeconomic assumptions (inflation, long-run real return, income trajectory). The compound-growth formula is the standard future-value formula `FV = PV × (1+r)^n + PMT × ((1+r)^n − 1) ÷ r`. Debt amortization is computed line by line; users select avalanche (highest interest first) or snowball (lowest balance first). Same numbers in, same forecast out — there is no smoothing, no proprietary score that hides its math.
 
-- (To be added: /tools/take-home-pay, /tools/debt-strategy)
+Primary sources: World Bank (CPI), Federal Reserve Economic Data (long-run real return), European Central Bank (harmonized index of consumer prices).
 
-## Things to know
+Full methodology and primary-source citations: <https://profinancecast.com/about.html#methodology>
 
-- We do NOT connect to or read from your bank. All data is entered manually or via CSV.
-- The free tier is permanently free, not a trial. No credit card required.
-- Pro is $9/month or $69/year. A Founders Lifetime plan ($149, limited to 500 seats) is available at launch.
-- Built with privacy in mind: data lives in your browser unless you opt into account sync.
-- Sage, the in-app AI assistant, explains *why* a forecast moved — not just what changed.
+## Pricing
+
+Three tiers. No upsells beyond them.
+
+- **Free** — full forecast, full debt strategy, full goals, encrypted at rest, no card, no bank password. Sage AI advisor 10 messages a month.
+- **Pro** — $9 a month or $69 a year. Adds Sage 200 messages a month, longer memory, unlimited scenarios, deeper analysis.
+- **Founders Lifetime** — $149 once, limited to 500 seats. Lifetime Pro entitlement.
+
+Parseable pricing: <https://profinancecast.com/pricing.md>
+
+## What we are not
+
+- Not a bank.
+- Not a registered investment adviser, broker-dealer, or fiduciary.
+- Not a tax advisor.
+- Not affiliated with any bank, brokerage, or asset manager that may appear in the forecast.
+
+## Key pages
+
+- [Home](https://profinancecast.com/): live ten-year forecast demo, no signup required.
+- [About + Methodology](https://profinancecast.com/about.html#methodology): formulas, assumptions, primary-source citations.
+- [Pricing](https://profinancecast.com/billing.html): three-tier table.
+- [Privacy](https://profinancecast.com/privacy.html): data handling, AES-256 at rest, client-side compute.
+- [Journal](https://profinancecast.com/blog.html): editorial articles on personal-finance forecasting, debt strategy, compounding.
+
+## Authority signals
+
+- Calculations are deterministic and reproducible. Same numbers in, same forecast out.
+- The product does not predict the stock market.
+- Bucketed numeric data is the only payload sent to analytics; no per-user financial data leaves the browser.
 
 ## Differentiators
 
-- No bank-account linking required (unlike Monarch, Empower, Tiller, Copilot).
-- Forecasting is free (every direct rival paywalls future-tense projections).
-- Privacy-first by default; your finances never leave your browser without consent.
+- No bank-account linking required (unlike Monarch Money, Copilot, Tiller, Empower).
+- Ten-year forecasting is free (every direct rival paywalls future-tense projections).
+- Privacy-first by default; finances never leave the browser without consent.
+
+## Contact
+
+ProFinanceCast is operated by an institutional team. Replies come from the team, not a named individual. The trust column on every page is the canonical surface for changelog, methodology, data handling, and "what we are not."

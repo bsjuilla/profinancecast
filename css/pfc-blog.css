@@ -219,6 +219,60 @@ blockquote {
   line-height: 1.6;
 }
 
+/* ── Topic accent override (W1-K · 4 sub-themes) ──────────────────────
+   Set on .pfc-eyebrow only; never on global --pfc-accent. */
+.pfc-eyebrow.topic-debt      { color: #B8584A; }
+.pfc-eyebrow.topic-investing { color: #3F6E8F; }
+.pfc-eyebrow.topic-planning  { color: #2BB67D; }
+.pfc-eyebrow.topic-salary    { color: #D4AF6A; }
+
+/* ── Editorial drop cap (one per post; only on the first body paragraph
+   directly after the AEO answer-block lede). ───────────────────────── */
+.pfc-lede + p::first-letter {
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-weight: 500;
+  font-size: 4em;
+  line-height: 0.85;
+  float: left;
+  padding: 0.15em 0.12em 0 0;
+  color: var(--pfc-ink);
+}
+
+/* ── In-content callout variants ──────────────────────────────────────
+   .pfc-callout--method = methodology footnote (left rule, ivory wash)
+   .pfc-callout--cta    = conversion ribbon (centered, gold border) */
+.pfc-callout--method {
+  border-left: 2px solid var(--pfc-accent);
+  background: transparent;
+  padding-left: 1.25rem;
+  border-top: 0; border-right: 0; border-bottom: 0;
+  border-radius: 0;
+  font-size: 0.95rem;
+}
+.pfc-callout--cta {
+  border: 1px solid var(--pfc-accent);
+  text-align: center;
+  padding: 2rem 1.75rem;
+}
+.pfc-callout--cta a.pfc-cta-button {
+  display: inline-block;
+  margin-top: 0.85rem;
+  padding: 0.7rem 1.4rem;
+  background: var(--pfc-accent);
+  color: var(--pfc-canvas);
+  border: 1px solid var(--pfc-accent);
+  border-radius: 2px;
+  font-size: 0.9rem;
+  letter-spacing: 0.04em;
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+}
+.pfc-callout--cta a.pfc-cta-button:hover {
+  background: transparent;
+  color: var(--pfc-accent);
+}
+
 .pfc-footer {
   border-top: 1px solid var(--pfc-rule);
   padding: 2.5rem 1.5rem;

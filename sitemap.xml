@@ -73,13 +73,19 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://profinancecast.com/auth.html</loc>
-    <lastmod>2026-05-08</lastmod>
+    <loc>https://profinancecast.com/about.html</loc>
+    <lastmod>2026-05-10</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.4</priority>
+    <priority>0.6</priority>
   </url>
   <url>
     <loc>https://profinancecast.com/privacy.html</loc>
+    <lastmod>2026-05-08</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+  <url>
+    <loc>https://profinancecast.com/terms.html</loc>
     <lastmod>2026-05-08</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>

@@ -504,7 +504,7 @@
     <div class="user-pill">
       <div class="user-avatar">DK</div>
       <div>
-        <div class="user-name">Divyesh K.</div>
+        <div class="user-name" id="dash-user-name">—</div>
         <div class="user-plan">Free plan</div>
       </div>
     </div>
@@ -749,7 +749,7 @@
         <strong>You're on the Free plan — unlock your full financial picture</strong>
         Pro gives you 60 AI queries/month, multi-scenario planning, CSV import, and a completely ad-free experience.
       </div>
-      <button class="upgrade-btn">Upgrade for $9.99/mo →</button>
+      <a href="billing.html" class="upgrade-btn" style="display:inline-block;">See Pro plans</a>
     </div>
 
     <!-- TABS -->
@@ -1524,15 +1524,16 @@
 
 </main><!-- /main -->
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js" integrity="sha384-dug+JxfBvklEQdJ4AYuBBAIScUz0bVN73xpy273gcAwHjb3qI0fXmuYNaNfdyYJG" crossorigin="anonymous"></script>
 <script>
 // ── CENTRAL USER DATA (persisted to localStorage) ──
+// Sprint 5: zero seeds. Empty-state copy renders until real onboarding data exists.
 const DEFAULT_USER = {
-  income: 3000, otherIncome: 0,
-  housing: 1200, food: 540, transport: 310, otherExp: 380,
-  savings: 11580, investments: 0,
-  debt: 8000, debtPay: 550,
-  currency: '$', name: 'Divyesh K.'
+  income: 0, otherIncome: 0,
+  housing: 0, food: 0, transport: 0, otherExp: 0,
+  savings: 0, investments: 0,
+  debt: 0, debtPay: 0,
+  currency: '$', name: ''
 };
 
 function loadUser() {
@@ -1540,6 +1541,9 @@ function loadUser() {
     const saved = PFCStorage.get('user');
     return saved ? { ...DEFAULT_USER, ...JSON.parse(saved) } : { ...DEFAULT_USER };
   } catch(e) { return { ...DEFAULT_USER }; }
+}
+function isUserEmpty(u) {
+  return !u || (!u.income && !u.savings && !u.debt && !(u.name && u.name.length));
 }
 function saveUser(u) {
   try { PFCStorage.setJSON('user', u); } catch(e) {}
@@ -1821,7 +1825,7 @@ function sendToSage() {
   const msg   = input.value.trim();
   if (!msg) return;
   if (sageCount >= MAX_FREE) {
-    addBubble('ai', 'You\'ve used all <em>10 free queries</em> this month. Upgrade to Pro for 60 queries/month and deeper analysis.');
+    addBubble('ai', 'You\'ve used your <em>10 free messages</em> this month. Pro gives you 200 messages a month, longer memory, and deeper analysis. Try Pro free for 14 days.');
     return;
   }
   addBubble('user', msg);

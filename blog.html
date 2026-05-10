@@ -19,40 +19,40 @@
 <meta property="og:site_name" content="ProFinanceCast">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="The financial forecast journal — ProFinanceCast">
-<meta name="twitter:description" content="Practical, pull-quote-friendly writing on personal finance, debt strategy, salary negotiation, and long-term planning.">
+<meta name="twitter:description" content="Practical, pull-quote-friendly writing on personal finance, debt strategy, salary negotiation, and ten-year planning.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
 <style>
-  :root{--bg:#080C12;--bg2:#0D1320;--bg3:#111827;--card:#0F1923;--border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);--teal:#00C896;--teal-dim:rgba(0,200,150,0.1);--text:#F0F4F8;--text2:#8A9BB0;--text3:#4A5A6E;--amber:#F5A623;--r:12px;--r-sm:8px;}
+  /* Sprint 5: legacy Syne/DM-Sans brand stripped. Variables now source from pfc-tokens.css.
+     The local mapping below preserves blog-page layout while the canonical brand wins. */
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-  body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);line-height:1.6;}
+  body{font-family:var(--font-body);background:var(--canvas);color:var(--ink);line-height:1.6;}
   nav{position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:0 6%;height:64px;background:rgba(8,12,18,0.92);border-bottom:1px solid var(--border);backdrop-filter:blur(16px);}
-  .nav-logo{display:flex;align-items:center;gap:9px;font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--text);text-decoration:none;}
+  .nav-logo{display:flex;align-items:center;gap:9px;font-family:var(--font-display);font-size:16px;font-weight:700;color:var(--text);text-decoration:none;}
   .logo-mark{width:28px;height:28px;background:var(--teal);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#080C12;}
   .nav-links{display:flex;align-items:center;gap:28px;}
   .nav-links a{font-size:14px;color:var(--text2);text-decoration:none;transition:color .15s;}
   .nav-links a:hover,.nav-links a.active{color:var(--text);}
   .nav-cta{display:flex;gap:10px;align-items:center;}
-  .btn-sm{padding:7px 16px;border-radius:var(--r-sm);font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;text-decoration:none;}
+  .btn-sm{padding:7px 16px;border-radius:var(--r-sm);font-size:13px;font-family:var(--font-body);cursor:pointer;text-decoration:none;}
   .btn-ghost-sm{color:var(--text2);background:none;border:none;}
   .btn-teal-sm{background:var(--teal);color:#080C12;border:none;font-weight:600;}
 
   .hero{padding:80px 6% 60px;max-width:1200px;margin:0 auto;}
   .hero-tag{display:inline-flex;align-items:center;gap:6px;background:var(--teal-dim);border:1px solid rgba(0,200,150,0.25);border-radius:16px;padding:5px 12px;font-size:12px;color:var(--teal);font-weight:600;margin-bottom:20px;}
-  .hero h1{font-family:'Syne',sans-serif;font-size:clamp(32px,5vw,56px);font-weight:800;line-height:1.15;letter-spacing:-0.3px;margin-bottom:14px;}
+  .hero h1{font-family:var(--font-display);font-size:clamp(32px,5vw,56px);font-weight:800;line-height:1.15;letter-spacing:-0.3px;margin-bottom:14px;}
   .hero p{font-size:17px;color:var(--text2);font-weight:300;max-width:560px;line-height:1.7;margin-bottom:32px;}
   .search-wrap{display:flex;gap:10px;max-width:480px;}
-  .search-input{flex:1;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);padding:11px 16px;font-size:14px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;transition:border-color .15s;}
+  .search-input{flex:1;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);padding:11px 16px;font-size:14px;color:var(--text);font-family:var(--font-body);outline:none;transition:border-color .15s;}
   .search-input:focus{border-color:rgba(0,200,150,0.4);}
   .search-input::placeholder{color:var(--text3);}
-  .search-btn{padding:11px 20px;background:var(--teal);border:none;border-radius:var(--r-sm);font-size:14px;font-weight:600;color:#080C12;font-family:'DM Sans',sans-serif;cursor:pointer;}
+  .search-btn{padding:11px 20px;background:var(--teal);border:none;border-radius:var(--r-sm);font-size:14px;font-weight:600;color:#080C12;font-family:var(--font-body);cursor:pointer;}
 
   .container{max-width:1200px;margin:0 auto;padding:0 6% 80px;}
 
   /* CATEGORY PILLS */
   .cats{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:36px;}
-  .cat{padding:7px 16px;border-radius:20px;font-size:13px;color:var(--text2);background:var(--bg3);border:1px solid var(--border);cursor:pointer;transition:all .15s;font-family:'DM Sans',sans-serif;}
+  .cat{padding:7px 16px;border-radius:20px;font-size:13px;color:var(--text2);background:var(--bg3);border:1px solid var(--border);cursor:pointer;transition:all .15s;font-family:var(--font-body);}
   .cat.active,.cat:hover{border-color:var(--teal);background:var(--teal-dim);color:var(--teal);}
 
   /* FEATURED ARTICLE */
@@ -68,7 +68,7 @@
   .tag-salary{background:rgba(245,166,35,0.1);color:var(--amber);}
   .tag-budgeting{background:rgba(167,139,250,0.1);color:#C4B5FD;}
   .tag-inflation{background:rgba(34,197,94,0.1);color:#86EFAC;}
-  .feat-title{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;line-height:1.25;margin-bottom:10px;letter-spacing:-0.2px;}
+  .feat-title{font-family:var(--font-display);font-size:22px;font-weight:800;line-height:1.25;margin-bottom:10px;letter-spacing:-0.2px;}
   .feat-excerpt{font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:18px;}
   .art-meta{display:flex;align-items:center;gap:14px;font-size:12px;color:var(--text3);}
   .art-meta-dot{width:3px;height:3px;border-radius:50%;background:var(--text3);}
@@ -76,31 +76,31 @@
   .read-more:hover{text-decoration:underline;}
 
   /* ARTICLES GRID */
-  .arts-heading{font-family:'Syne',sans-serif;font-size:18px;font-weight:700;margin-bottom:20px;}
+  .arts-heading{font-family:var(--font-display);font-size:18px;font-weight:700;margin-bottom:20px;}
   .arts-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:48px;}
   .art-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;transition:border-color .2s,transform .2s;text-decoration:none;color:inherit;display:flex;flex-direction:column;}
   .art-card:hover{border-color:var(--border2);transform:translateY(-2px);}
   .art-card-img{height:140px;background:linear-gradient(135deg,var(--bg2),var(--bg3));display:flex;align-items:center;justify-content:center;position:relative;}
   .art-card-body{padding:18px 20px;flex:1;display:flex;flex-direction:column;}
-  .art-card-title{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;line-height:1.35;margin-bottom:8px;}
+  .art-card-title{font-family:var(--font-display);font-size:15px;font-weight:700;line-height:1.35;margin-bottom:8px;}
   .art-card-excerpt{font-size:13px;color:var(--text2);line-height:1.6;flex:1;margin-bottom:14px;}
   .art-card-footer{display:flex;align-items:center;justify-content:space-between;font-size:11.5px;color:var(--text3);}
   .art-read-time{display:flex;align-items:center;gap:4px;}
 
   /* CALCULATOR CTA CARD */
   .calc-cta{background:linear-gradient(135deg,rgba(0,200,150,0.08),rgba(59,130,246,0.06));border:1px solid rgba(0,200,150,0.2);border-radius:var(--r);padding:28px 32px;display:flex;align-items:center;justify-content:space-between;gap:20px;margin-bottom:48px;}
-  .calc-cta-text h3{font-family:'Syne',sans-serif;font-size:19px;font-weight:700;margin-bottom:6px;}
+  .calc-cta-text h3{font-family:var(--font-display);font-size:19px;font-weight:700;margin-bottom:6px;}
   .calc-cta-text p{font-size:14px;color:var(--text2);line-height:1.6;}
-  .calc-cta-btn{padding:11px 24px;background:var(--teal);color:#080C12;border:none;border-radius:var(--r-sm);font-size:14px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;white-space:nowrap;text-decoration:none;display:inline-block;}
+  .calc-cta-btn{padding:11px 24px;background:var(--teal);color:#080C12;border:none;border-radius:var(--r-sm);font-size:14px;font-weight:700;font-family:var(--font-body);cursor:pointer;white-space:nowrap;text-decoration:none;display:inline-block;}
 
   /* NEWSLETTER */
   .newsletter{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:40px;text-align:center;margin-bottom:48px;}
-  .newsletter h3{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;margin-bottom:8px;}
+  .newsletter h3{font-family:var(--font-display);font-size:22px;font-weight:800;margin-bottom:8px;}
   .newsletter p{font-size:15px;color:var(--text2);margin-bottom:24px;}
   .newsletter-form{display:flex;gap:10px;max-width:420px;margin:0 auto;}
-  .newsletter-input{flex:1;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);padding:11px 16px;font-size:14px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;}
+  .newsletter-input{flex:1;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);padding:11px 16px;font-size:14px;color:var(--text);font-family:var(--font-body);outline:none;}
   .newsletter-input::placeholder{color:var(--text3);}
-  .newsletter-btn{padding:11px 22px;background:var(--teal);border:none;border-radius:var(--r-sm);font-size:14px;font-weight:600;color:#080C12;font-family:'DM Sans',sans-serif;cursor:pointer;}
+  .newsletter-btn{padding:11px 22px;background:var(--teal);border:none;border-radius:var(--r-sm);font-size:14px;font-weight:600;color:#080C12;font-family:var(--font-body);cursor:pointer;}
   .newsletter-note{font-size:12px;color:var(--text3);margin-top:10px;}
 
   footer{background:var(--bg2);border-top:1px solid var(--border);padding:40px 6% 28px;}
@@ -125,6 +125,16 @@
     "name": "ProFinanceCast",
     "url": "https://profinancecast.com"
   }
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://profinancecast.com/" },
+    { "@type": "ListItem", "position": 2, "name": "Journal", "item": "https://profinancecast.com/blog.html" }
+  ]
 }
 </script>
   <link rel="stylesheet" href="css/pfc-tokens.css">
@@ -163,14 +173,14 @@
   </div>
   <div class="nav-cta">
     <a href="auth.html" class="btn-sm btn-ghost-sm">Log in</a>
-    <a href="auth.html#signup" class="btn-sm btn-teal-sm">Start free →</a>
+    <a href="auth.html#signup" class="btn-sm btn-teal-sm">Start your free forecast</a>
   </div>
 </nav>
 
 <div class="hero">
   <div class="hero-tag"><span style="width:6px;height:6px;border-radius:50%;background:var(--teal);display:inline-block;"></span>Personal finance guides</div>
-  <h1>Learn to make your<br>money work for you</h1>
-  <p>Practical guides on budgeting, debt, saving, and building wealth — written clearly, no jargon, no fluff.</p>
+  <h1>The financial forecast journal</h1>
+  <p>Practical writing on debt, salary, and ten-year planning — clearly written, no jargon, no fluff.</p>
   <div class="search-wrap">
     <input class="search-input" placeholder="Search articles — try 'debt payoff' or 'emergency fund'…" id="search-input" onkeydown="if(event.key==='Enter')searchArticles()">
     <button class="search-btn" onclick="searchArticles()">Search</button>
@@ -378,7 +388,7 @@ function subscribeNewsletter() {
   const email = document.getElementById('nl-email').value.trim();
   if (!email || !email.includes('@')) { alert('Please enter a valid email address.'); return; }
   const btn = document.querySelector('.newsletter-btn');
-  btn.textContent = 'Subscribed!';
+  btn.textContent = 'Subscribed — check your inbox';
   btn.style.background = '#22C55E';
   document.getElementById('nl-email').value = '';
   setTimeout(() => { btn.textContent = 'Subscribe free'; btn.style.background = ''; }, 3000);

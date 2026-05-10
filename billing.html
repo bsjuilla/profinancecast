@@ -1146,11 +1146,14 @@
           <li><svg class="check" viewBox="0 0 16 16" fill="none"><path d="M3 8.5l3 3 7-7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>All Pro features, forever</li>
           <li><svg class="check" viewBox="0 0 16 16" fill="none"><path d="M3 8.5l3 3 7-7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Permanent founders badge in Settings</li>
           <li><svg class="check" viewBox="0 0 16 16" fill="none"><path d="M3 8.5l3 3 7-7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Priority access to new tools</li>
-          <li><svg class="check" viewBox="0 0 16 16" fill="none"><path d="M3 8.5l3 3 7-7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Direct line to the founder for feedback</li>
+          <li><svg class="check" viewBox="0 0 16 16" fill="none"><path d="M3 8.5l3 3 7-7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Direct line to the team for feedback</li>
         </ul>
-        <div class="founders-counter"><span id="founders-claimed">— of 500</span> claimed</div>
-        <button class="plan-btn plan-btn--gold"
-                onclick="openCheckout('founders', 149)">Claim founders price</button>
+        <div class="founders-counter" data-founders-counter>500 founders seats — limited cohort</div>
+        <button class="plan-btn plan-btn--gold" id="founders-cta"
+                onclick="openCheckout('founders', 149)">Claim a Founders seat — $149 once</button>
+        <p class="paypal-clarifier" style="font-family:var(--font-body);font-size:12px;color:var(--ink-3);margin-top:8px;line-height:1.5;">
+          Card payments are processed by PayPal — we never see or store your card details.
+        </p>
       </div>
 
     </div>
@@ -1199,7 +1202,7 @@
         </details>
         <details>
           <summary>What's the difference between the Free salary calculator and Pro?</summary>
-          <div class="faq-body">The Free calculator computes take-home pay for a single offer. Pro lets you compare two offers side-by-side, layer raises into a long-term forecast, and save the comparison.</div>
+          <div class="faq-body">The Free calculator computes take-home pay for a single offer. Pro lets you compare two offers side-by-side, layer raises across ten years, and save the comparison.</div>
         </details>
         <details>
           <summary>How does the 14-day Pro trial work?</summary>
@@ -1289,7 +1292,7 @@
         <div class="success-icon">
           <svg width="26" height="26" viewBox="0 0 26 26" fill="none"><path d="M4 13l6 6L22 5" stroke="var(--pfc-emerald)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </div>
-        <div class="success-title">Welcome aboard.</div>
+        <div class="success-title">You're on Pro.</div>
         <div class="success-sub" id="success-msg">Your account has been upgraded. All Pro features are now active.</div>
         <button class="success-btn" onclick="onPaymentSuccess()">Go to dashboard →</button>
       </div>
@@ -1543,7 +1546,7 @@ function showSuccess(plan) {
   document.getElementById('payment-form').style.display = 'none';
   document.getElementById('success-screen').classList.add('show');
   // All SKUs grant Pro features. Founders gets a slightly warmer prefix.
-  const base = "Welcome to Pro! All Pro features are now active — 200 Sage messages/month, unlimited scenarios, comparison tools, and a quarterly Report Card.";
+  const base = "All Pro features are active — 200 Sage messages a month, unlimited scenarios, comparison tools, and a quarterly Report Card.";
   const msg  = (plan === 'founders') ? "You're a Founder. " + base : base;
   document.getElementById('success-msg').textContent = msg;
   upgradePlan(plan);
@@ -1557,7 +1560,7 @@ function onPaymentSuccess() {
 // All paid SKUs (pro_monthly, pro_annual, founders) elevate the user to Pro.
 function upgradePlan(plan) {
   currentPlan = 'pro';
-  const desc  = '200 Sage messages/month · all Pro features unlocked';
+  const desc  = '200 Sage messages a month · all Pro features active';
 
   document.getElementById('banner-plan-name').textContent = 'Pro Plan';
   document.getElementById('banner-plan-desc').textContent = desc;
@@ -1597,18 +1600,51 @@ async function confirmCancel() {
   }
 }
 
-// Founders seat counter — public endpoint, no auth required
+// Founders seat counter — 3-state copy, sold-out handling, no polling.
+// Refreshes once on load + on visibilitychange (5-min throttle).
+let _foundersLastFetch = 0;
 async function refreshFoundersCount() {
-  const el = document.getElementById('founders-claimed');
-  if (!el) return;
+  const els = document.querySelectorAll('[data-founders-counter]');
+  const cta = document.getElementById('founders-cta');
+  if (!els.length) return;
+  const now = Date.now();
+  if (now - _foundersLastFetch < 5 * 60 * 1000) return; // 5-min throttle
+  _foundersLastFetch = now;
   try {
     const r = await fetch('/api/founders-claimed', { cache: 'no-store' });
     if (!r.ok) return;
     const data = await r.json();
-    if (data.claimed == null) return;  // server fail-closed; keep placeholder
-    el.textContent = data.claimed + ' of ' + data.cap;
-  } catch (_) { /* network blip — keep placeholder */ }
+    if (data.claimed == null) return; // fail-closed; keep placeholder
+    const claimed = data.claimed;
+    const cap = data.cap || 500;
+    const remaining = Math.max(0, cap - claimed);
+    let copy;
+    if (remaining === 0) {
+      copy = 'All ' + cap + ' founder seats claimed. Thank you.';
+      if (cta) {
+        cta.disabled = true;
+        cta.textContent = 'Founders Lifetime closed';
+        cta.style.opacity = '0.4';
+        cta.style.cursor = 'not-allowed';
+        cta.setAttribute('aria-disabled', 'true');
+        const note = document.createElement('p');
+        note.style.cssText = 'font-family:var(--font-display);font-style:italic;color:var(--ink-2);margin-top:8px;font-size:14px;';
+        note.textContent = 'Pro at $9 a month or $69 a year remains the same product.';
+        cta.parentNode.insertBefore(note, cta.nextSibling);
+      }
+    } else if (remaining <= 25) {
+      copy = 'Only ' + remaining + ' seats remaining — closes when sold out';
+    } else if (remaining <= 100) {
+      copy = remaining + ' of ' + cap + ' seats remaining';
+    } else {
+      copy = claimed + ' of ' + cap + ' claimed';
+    }
+    els.forEach(el => el.textContent = copy);
+  } catch (_) { /* keep placeholder */ }
 }
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) refreshFoundersCount();
+});
 
 // Boot: keep UI in sync with whatever the server says is the current plan
 window.addEventListener('DOMContentLoaded', () => {
