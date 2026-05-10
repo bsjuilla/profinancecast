@@ -1127,6 +1127,26 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
 
 // ── START ──
 init();
+
+// ── AUTH-AWARE RE-HYDRATION ──
+// init() ran synchronously before PFCAuth resolved the real userId — so USER/
+// DEBTS/STRATEGY may reflect pfc:guest:* (often empty). Once auth resolves and
+// pfc-storage.js finishes adoptGuestData, re-read from the now-correct
+// namespace and re-render in place. Re-running init() is safe — renderChart
+// destroys+recreates the Chart.js instance.
+function _rehydrateFromStorage() { init(); }
+if (typeof PFCAuth !== 'undefined') {
+  PFCAuth.onReady(() => {
+    let freshUser = {}, freshDebts = [];
+    try { freshUser = PFCStorage.getJSON('user') || {}; } catch(e) {}
+    try { freshDebts = PFCStorage.getJSON('debts') || []; } catch(e) {}
+    if (JSON.stringify(freshUser) !== JSON.stringify(USER) ||
+        JSON.stringify(freshDebts) !== JSON.stringify(DEBTS)) {
+      _rehydrateFromStorage();
+    }
+  });
+  PFCAuth.onAuthChange(_rehydrateFromStorage);
+}
 </script>
   <!-- Route guard: redirect unauthed users to sign-in -->
   <script>

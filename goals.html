@@ -1224,6 +1224,27 @@ function showToast(msg) {
 
 // ── INIT ──
 load();
+
+// ── AUTH-AWARE RE-HYDRATION ──
+// load() ran synchronously before PFCAuth resolved the real userId — so USER/
+// GOALS may reflect pfc:guest:* (often empty). Once auth resolves and pfc-
+// storage.js finishes adoptGuestData, re-read from the now-correct namespace.
+function _rehydrateFromStorage() {
+  load();
+}
+if (typeof PFCAuth !== 'undefined') {
+  PFCAuth.onReady(() => {
+    let freshUser = {}, freshGoals = [];
+    try { freshUser = PFCStorage.getJSON('user') || {}; } catch(e) {}
+    try { freshGoals = PFCStorage.getJSON('goals') || []; } catch(e) {}
+    if (JSON.stringify(freshGoals) !== JSON.stringify(GOALS) ||
+        (freshUser.currency || '$') !== (USER.sym || '$') ||
+        JSON.stringify(freshUser.income) !== JSON.stringify(USER.income)) {
+      _rehydrateFromStorage();
+    }
+  });
+  PFCAuth.onAuthChange(_rehydrateFromStorage);
+}
 </script>
   <!-- Route guard: redirect unauthed users to sign-in -->
   <script>

@@ -1091,6 +1091,38 @@ function showToast(msg) {
 
 // ── START ──
 init();
+
+// ── AUTH-AWARE RE-HYDRATION ──
+// init() ran synchronously before PFCAuth resolved the real userId — so USER
+// may reflect pfc:guest:* (often empty → no prefill). Once auth resolves and
+// pfc-storage.js finishes adoptGuestData, re-read and re-prefill.
+function _rehydrateFromStorage() {
+  const prevSalaryPrefill = USER.income ? USER.income * 12 : null;
+  try { USER = PFCStorage.getJSON('user') || {}; } catch(e) { USER = {}; }
+  const sym = USER.currency || '$';
+  ['sym-label','sym-custom','sym-offer'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = sym;
+  });
+  // Only re-prefill salary if the input is empty or still at the previous
+  // (possibly stale) prefill — don't clobber a value the user has typed.
+  const salaryInput = document.getElementById('i-salary');
+  if (salaryInput && USER.income) {
+    const curr = salaryInput.value.trim();
+    if (curr === '' || (prevSalaryPrefill !== null && Number(curr) === prevSalaryPrefill)) {
+      salaryInput.value = USER.income * 12;
+    }
+  }
+  calc();
+}
+if (typeof PFCAuth !== 'undefined') {
+  PFCAuth.onReady(() => {
+    let fresh = {};
+    try { fresh = PFCStorage.getJSON('user') || {}; } catch(e) {}
+    if (JSON.stringify(fresh) !== JSON.stringify(USER)) _rehydrateFromStorage();
+  });
+  PFCAuth.onAuthChange(_rehydrateFromStorage);
+}
 </script>
   <!-- Salary calculator is now Free (audit B3 / pricing report 07): single-offer
        calculation is the SEO honey-pot. Multi-offer compare and "save scenario"

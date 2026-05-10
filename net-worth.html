@@ -1042,6 +1042,30 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
 
 // ── START ──
 init();
+
+// ── AUTH-AWARE RE-HYDRATION ──
+// init() ran synchronously at script-tag time, before PFCAuth resolved the real
+// userId — so USER/HISTORY may reflect pfc:guest:* (often empty). Once auth
+// resolves and pfc-storage.js finishes adoptGuestData, re-read from the now-
+// correct namespace and re-render in place.
+function _rehydrateFromStorage() {
+  try { USER = PFCStorage.getJSON('user') || {}; } catch(e) { USER = {}; }
+  try { HISTORY = PFCStorage.getJSON('nw_history') || []; } catch(e) { HISTORY = []; }
+  logTodaySnapshot();
+  renderAll();
+}
+if (typeof PFCAuth !== 'undefined') {
+  PFCAuth.onReady(() => {
+    let freshUser = {}, freshHistory = [];
+    try { freshUser = PFCStorage.getJSON('user') || {}; } catch(e) {}
+    try { freshHistory = PFCStorage.getJSON('nw_history') || []; } catch(e) {}
+    if (JSON.stringify(freshUser) !== JSON.stringify(USER) ||
+        JSON.stringify(freshHistory) !== JSON.stringify(HISTORY)) {
+      _rehydrateFromStorage();
+    }
+  });
+  PFCAuth.onAuthChange(_rehydrateFromStorage);
+}
 </script>
   <!-- Route guard: redirect unauthed users to sign-in -->
   <script>

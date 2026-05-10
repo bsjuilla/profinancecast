@@ -1653,6 +1653,41 @@ if (typeof PFCPlan !== 'undefined') {
   PFCPlan.onChange(applyPlan);
   PFCPlan.refresh().then(applyPlan);
 }
+
+// ── AUTH-AWARE RE-HYDRATION ──
+// loadUser()/loadScenarios() ran synchronously before PFCAuth resolved the real
+// userId — so USER/SCENARIOS may reflect pfc:guest:* (often DEFAULT_USER zeros).
+// Once auth resolves and pfc-storage.js finishes adoptGuestData, re-read from
+// the now-correct namespace and re-render in place.
+function _rehydrateFromStorage() {
+  USER = loadUser();
+  // Update sidebar avatar/name
+  const sName = document.getElementById('sidebar-name');
+  const sAvatar = document.getElementById('sidebar-avatar');
+  if (USER.name && sName && sAvatar) {
+    sName.textContent = USER.name;
+    sAvatar.textContent = USER.name.charAt(0).toUpperCase();
+  }
+  // Only re-render scenarios UI if it was actually initialized (Pro/Premium).
+  if (_liveInited) {
+    SCENARIOS = loadScenarios();
+    renderAll();
+  }
+}
+if (typeof PFCAuth !== 'undefined') {
+  PFCAuth.onReady(() => {
+    const fresh = loadUser();
+    if (JSON.stringify(fresh) !== JSON.stringify(USER)) _rehydrateFromStorage();
+    else if (_liveInited) {
+      // User unchanged but scenarios may have been adopted from guest namespace
+      const freshSc = loadScenarios();
+      if (JSON.stringify(freshSc) !== JSON.stringify(SCENARIOS)) {
+        SCENARIOS = freshSc; renderAll();
+      }
+    }
+  });
+  PFCAuth.onAuthChange(_rehydrateFromStorage);
+}
 </script>
 <footer class="site-footer" role="contentinfo">
   <div class="footer-grid">

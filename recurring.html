@@ -1075,6 +1075,40 @@ function showToast(msg){
 
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeManual();});
 init();
+
+// ── AUTH-AWARE RE-HYDRATION ──
+// init() ran synchronously before PFCAuth resolved the real userId — so USER/
+// RECURRINGS may reflect pfc:guest:* (often empty). Once auth resolves and pfc-
+// storage.js finishes adoptGuestData, re-read from the now-correct namespace.
+function _rehydrateFromStorage() {
+  try { USER = PFCStorage.getJSON('user') || {}; } catch(e) {}
+  try {
+    const saved = PFCStorage.get('recurrings');
+    if (saved) {
+      RECURRINGS = JSON.parse(saved);
+      // Don't yank the user out of an in-progress upload flow.
+      const processing = document.getElementById('state-processing');
+      if (!processing || processing.style.display !== 'block') showResults();
+    } else if (RECURRINGS.length) {
+      // Storage cleared (e.g. sign-out) — drop back to upload state.
+      RECURRINGS = [];
+      setState('upload');
+      document.getElementById('btn-add-manual').style.display='none';
+      document.getElementById('btn-clear').style.display='none';
+    } else {
+      // Still empty after auth resolve — at least refresh currency in any
+      // already-rendered metrics. Cheap no-op when nothing's mounted.
+      const resultsState = document.getElementById('state-results');
+      if (resultsState && resultsState.style.display === 'block') {
+        updateMetrics(); renderCards();
+      }
+    }
+  } catch(e) {}
+}
+if (typeof PFCAuth !== 'undefined') {
+  PFCAuth.onReady(_rehydrateFromStorage);
+  PFCAuth.onAuthChange(_rehydrateFromStorage);
+}
 </script>
   <!-- Route guard: redirect unauthed users to sign-in -->
   <script>

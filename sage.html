@@ -330,15 +330,17 @@ const USER_CTX = {
 };
 const LIMITS = {free:10, pro:200};
 
-(function hydrateContext(){
+function hydrateContext(){
   try {
     const stored = (window.PFC && window.PFC.user) ||
                    (window.PFCStorage && window.PFCStorage.get && window.PFCStorage.get('user')) ||
                    null;
     if (!stored || !stored.income) return; // empty state stays
     Object.assign(USER_CTX, stored);
-    document.getElementById('snapshot-empty').style.display = 'none';
-    document.getElementById('snapshot-stats').style.display = '';
+    const empty = document.getElementById('snapshot-empty');
+    const stats = document.getElementById('snapshot-stats');
+    if (empty) empty.style.display = 'none';
+    if (stats) stats.style.display = '';
     document.querySelectorAll('[data-snap]').forEach(el => {
       const key = el.dataset.snap;
       const v = USER_CTX[key];
@@ -349,7 +351,8 @@ const LIMITS = {free:10, pro:200};
     // sidebar user-pill is hydrated by js/pfc-sidebar.js from PFCStorage
     // ('user'); no per-page hydrate needed here.
   } catch(_) {}
-})();
+}
+hydrateContext();
 let queryCount = 0, history = [], isTyping = false;
 
 function buildSysPrompt() {
@@ -498,6 +501,17 @@ function autoResize(el) { el.style.height='auto'; el.style.height=Math.min(el.sc
 function clearChat() { const m=document.getElementById('messages'); m.innerHTML=''; const w=document.createElement('div'); w.id='welcome-screen'; w.className='welcome'; w.innerHTML='<div class="welcome-avatar">S</div><h2>Hi, I\'m Sage</h2><p>Ask me anything about your finances.</p>'; m.appendChild(w); history=[]; document.getElementById('limit-wall').classList.remove('show'); document.getElementById('history-card').style.display='none'; document.getElementById('history-list').innerHTML=''; }
 function now() { return new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}); }
 function esc(t) { return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ── AUTH-AWARE RE-HYDRATION ──
+// hydrateContext() ran synchronously at script-tag time, before PFCAuth resolved
+// the real userId — so USER_CTX may reflect pfc:guest:* (often empty → snapshot
+// stays in empty state). Once auth resolves and pfc-storage.js finishes
+// adoptGuestData, re-read from the now-correct namespace.
+function _rehydrateFromStorage() { hydrateContext(); updateUsage(); }
+if (typeof PFCAuth !== 'undefined') {
+  PFCAuth.onReady(_rehydrateFromStorage);
+  PFCAuth.onAuthChange(_rehydrateFromStorage);
+}
 </script>
   <!-- Route guard: redirect unauthed users to sign-in -->
   <script>

@@ -499,7 +499,7 @@
 
 const DEF={income:3000,otherIncome:0,housing:1200,food:540,transport:310,otherExp:380,savings:11580,investments:0,debt:8000,debtPay:550,currency:'$',name:'User'};
 function loadUser(){try{const s=PFCStorage.get('user');return s?{...DEF,...JSON.parse(s)}:{...DEF}}catch(e){return{...DEF}}}
-const U=loadUser();const C=U.currency||'$';
+let U=loadUser();let C=U.currency||'$';
 function fmt(v){return C+Math.abs(Math.round(v)).toLocaleString()}
 
 function calc(){
@@ -745,8 +745,31 @@ function showToast(msg){
 // INIT
 document.getElementById('today-date').textContent=new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
 if(U.name){document.getElementById('sidebar-name').textContent=U.name;document.getElementById('sidebar-avatar').textContent=U.name.charAt(0).toUpperCase()}
-const d=calc();
+let d=calc();
 renderCard(d);renderBreakdown(d);renderRecs(d);renderNextGrade(d);saveHistory(d);renderHistory();
+
+// ── AUTH-AWARE RE-HYDRATION ──
+// loadUser() ran synchronously before PFCAuth resolved the real userId — so U
+// may reflect pfc:guest:* (often DEFAULT zeros). Once auth resolves and
+// pfc-storage.js finishes adoptGuestData, re-read and re-render.
+function _rehydrateFromStorage(){
+  U=loadUser();C=U.currency||'$';
+  if(U.name){
+    const sn=document.getElementById('sidebar-name');
+    const sa=document.getElementById('sidebar-avatar');
+    if(sn)sn.textContent=U.name;
+    if(sa)sa.textContent=U.name.charAt(0).toUpperCase();
+  }
+  d=calc();
+  renderCard(d);renderBreakdown(d);renderRecs(d);renderNextGrade(d);renderHistory();
+}
+if(typeof PFCAuth!=='undefined'){
+  PFCAuth.onReady(()=>{
+    const fresh=loadUser();
+    if(JSON.stringify(fresh)!==JSON.stringify(U))_rehydrateFromStorage();
+  });
+  PFCAuth.onAuthChange(_rehydrateFromStorage);
+}
 </script>
 <footer class="site-footer" role="contentinfo">
   <div class="footer-grid">
