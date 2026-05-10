@@ -81,7 +81,13 @@
     { "@type": "Question", "name": "What happens to my data if I cancel Pro?",
       "acceptedAnswer": { "@type": "Answer", "text": "Local data stays in the browser; only Pro features are gated again. Free features keep working. Users can export everything to CSV or JSON, or wipe it in one click from Settings." } },
     { "@type": "Question", "name": "Is there a free trial of Pro?",
-      "acceptedAnswer": { "@type": "Answer", "text": "The Free plan covers the core ten-year forecast forever — no time limit. ProFinanceCast does not run trials. Subscribe and cancel any time." } },
+      "acceptedAnswer": { "@type": "Answer", "text": "The Free plan covers the core ten-year forecast forever — no time limit. ProFinanceCast does not run trials. Subscribe and cancel any time. Any paid plan is refundable within 30 days from Settings." } },
+    { "@type": "Question", "name": "Do you sell my data?",
+      "acceptedAnswer": { "@type": "Answer", "text": "No. The forecast runs in the user's browser, not on a server — the math happens on the device. The homepage transmits a single anonymous page-view (Cloudflare Web Analytics, no cookies, no IP retention beyond aggregation). There is no ad network, no data broker, and no behavioural profile." } },
+    { "@type": "Question", "name": "What if I cancel?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Users keep their data. Cancellation gates the Pro features and leaves the Free forecast running on the same numbers. Export everything to CSV or JSON from Settings in one click. Any paid charge within the prior 30 days is refunded automatically when the subscription is cancelled." } },
+    { "@type": "Question", "name": "Is this tax or investment advice?",
+      "acceptedAnswer": { "@type": "Answer", "text": "No. ProFinanceCast is a deterministic forecasting tool — math, not advice. It is not a registered investment adviser, broker-dealer, or fiduciary. Tax figures use published statutory rates for the user's country; consult a licensed adviser before acting on any number. The full methodology is published at /about.html#methodology." } },
     { "@type": "Question", "name": "Who built ProFinanceCast?",
       "acceptedAnswer": { "@type": "Answer", "text": "An independent team based in Europe. ProFinanceCast does not take outside money, does not sell user data, and does not connect to any bank. The product is the entirety of the offer." } },
     { "@type": "Question", "name": "How is the forecast calculated?",
@@ -350,10 +356,11 @@
   .hero {
     min-height: 100svh;
     display: grid; place-items: center;
-    padding: 140px 24px 80px;
+    padding: 128px 24px 56px;
     text-align: center;
     position: relative;
   }
+  .hero-inner { max-width: 1120px; margin: 0 auto; width: 100%; position: relative; z-index: 1; }
   .eyebrow {
     display: inline-flex; align-items: center; gap: 10px;
     font-family: var(--font-mono); font-size: var(--t-12); font-weight: 500;
@@ -927,6 +934,210 @@
     .section-divider .divider-line { stroke-dashoffset: 0 !important; transition: none !important; }
     .section-divider .divider-mark { opacity: 0.75 !important; transition: none !important; }
     body.features-in-view .bento-card { animation: none !important; }
+    .hero-anchor .ha-spark .spark-line { stroke-dashoffset: 0 !important; transition: none !important; }
+    .hero-anchor .ha-spark .spark-end { opacity: 1 !important; transition: none !important; }
+  }
+
+  /* ─────────────────────────────────────────────────────────────────
+     SPRINT 6 AESTHETIC PASS — institutional density / boutique-Europe
+     Goal: kill the empty-hero feeling, add editorial information
+     density, numbered section anchors, hover lift on bento, comparison
+     row in pricing, pull-quote typography. No new assets, no new fonts.
+     All transform/opacity-only motion; IntersectionObserver reveals
+     reused. Tokens-only colors.
+     ─────────────────────────────────────────────────────────────── */
+
+  .hero h1 {
+    font-variation-settings: "opsz" 144, "wght" 480;
+    text-wrap: balance;
+  }
+  .hero-sub { text-wrap: pretty; }
+  .hero-cta { margin-bottom: 22px; }
+  .hero-disclosure { margin: 4px auto 6px !important; }
+  .hero-byline { margin: 0 auto 22px !important; }
+
+  /* Hero numerical anchor — replaces empty bottom-half with a compressed,
+     immediately-readable forecast preview. Editorial, not a SaaS mockup. */
+  .hero-anchor {
+    margin: 18px auto 6px;
+    max-width: 880px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 28px;
+    align-items: center;
+    padding: 22px 26px;
+    background: linear-gradient(180deg, rgba(20,53,36,0.32) 0%, rgba(11,20,16,0.55) 100%);
+    border: 1px solid var(--line-2);
+    border-radius: var(--r-lg);
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.04) inset,
+      0 18px 48px rgba(0,0,0,0.35);
+    text-align: left;
+    backdrop-filter: blur(6px) saturate(120%);
+  }
+  .hero-anchor .ha-meta {
+    font-family: var(--font-mono); font-size: var(--t-11);
+    color: var(--ink-3); letter-spacing: 0.14em; text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .hero-anchor .ha-meta::before { content: '— '; color: var(--ink-4); }
+  .hero-anchor .ha-num {
+    font-family: var(--font-display);
+    font-size: clamp(40px, 5.6vw, 64px);
+    font-weight: 500;
+    line-height: 1;
+    color: var(--ink);
+    letter-spacing: -0.02em;
+    font-feature-settings: "tnum" 1, "lnum" 1;
+    font-variation-settings: "opsz" 144;
+    margin-bottom: 8px;
+  }
+  .hero-anchor .ha-num .ha-curr { font-size: 0.55em; color: var(--ink-3); margin-right: 4px; vertical-align: super; }
+  .hero-anchor .ha-num em { font-style: italic; color: var(--gold); font-weight: 500; }
+  .hero-anchor .ha-cap {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: clamp(15px, 1.4vw, 18px);
+    color: var(--ink-2);
+    font-weight: 400;
+    max-width: 42ch;
+    line-height: 1.4;
+  }
+  .hero-anchor .ha-cap b { color: var(--money); font-weight: 500; font-style: normal; font-family: var(--font-mono); font-size: 0.92em; letter-spacing: 0.02em; }
+  .hero-anchor .ha-spark {
+    width: clamp(180px, 22vw, 260px);
+    height: 96px;
+    flex-shrink: 0;
+  }
+  .hero-anchor .ha-spark svg { width: 100%; height: 100%; }
+  .hero-anchor .ha-spark .spark-area { opacity: 0.32; }
+  .hero-anchor .ha-spark .spark-line {
+    fill: none; stroke: var(--money); stroke-width: 1.6;
+    stroke-linecap: round; stroke-linejoin: round;
+    stroke-dasharray: 480; stroke-dashoffset: 480;
+    transition: stroke-dashoffset 1.6s var(--ease-out, cubic-bezier(.2,.7,.2,1)) 0.4s;
+  }
+  .hero-anchor.in-view .ha-spark .spark-line { stroke-dashoffset: 0; }
+  .hero-anchor .ha-spark .spark-end {
+    fill: var(--gold);
+    opacity: 0;
+    transition: opacity 500ms ease 1700ms;
+  }
+  .hero-anchor.in-view .ha-spark .spark-end { opacity: 1; }
+  .hero-anchor .ha-foot {
+    grid-column: 1 / -1;
+    display: flex; flex-wrap: wrap; gap: 6px 22px;
+    padding-top: 14px;
+    margin-top: 14px;
+    border-top: 1px solid var(--line);
+    font-family: var(--font-mono); font-size: var(--t-11);
+    color: var(--ink-3); letter-spacing: 0.10em; text-transform: uppercase;
+  }
+  .hero-anchor .ha-foot span::before { content: '· '; color: var(--gold); margin-right: 6px; }
+  .hero-anchor .ha-foot span:first-child::before { content: ''; margin-right: 0; }
+  @media (max-width: 720px) {
+    .hero-anchor { grid-template-columns: 1fr; gap: 18px; padding: 20px; }
+    .hero-anchor .ha-spark { width: 100%; height: 80px; }
+    .hero-anchor .ha-cap { font-size: 15px; }
+  }
+
+  /* Numbered section index — typeset roman numeral marker. Editorial-
+     quarterly register, replaces the plain dash-eyebrow on key sections. */
+  .section-index {
+    display: flex; align-items: baseline; gap: 14px;
+    font-family: var(--font-mono); font-size: var(--t-11);
+    color: var(--ink-3); letter-spacing: 0.18em; text-transform: uppercase;
+    margin-bottom: 18px;
+  }
+  .section-index .roman {
+    font-family: var(--font-display); font-style: italic; font-weight: 500;
+    color: var(--gold); font-size: var(--t-15); letter-spacing: 0;
+    text-transform: none;
+  }
+  .section-index .rule { flex: 0 0 36px; height: 1px; background: var(--gold); opacity: 0.55; }
+
+  /* Pull-quote / lede — distinct, larger Fraunces italic */
+  .pfc-lede {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-weight: 400;
+    font-size: clamp(18px, 1.6vw, 22px);
+    line-height: 1.5;
+    color: var(--ink);
+    max-width: 56ch;
+    font-variation-settings: "opsz" 36;
+    text-wrap: pretty;
+  }
+
+  /* Bento card — gold border on hover + micro-glyph in the corner */
+  .bento-card:hover { border-color: var(--gold); transform: translateY(-2px); }
+  .bento-card .micro-glyph {
+    position: absolute; right: 22px; top: 22px;
+    width: 56px; height: 56px;
+    pointer-events: none;
+    color: var(--gold);
+    opacity: 0.40;
+    transition: opacity var(--t-base) var(--ease-out), transform 0.7s var(--ease-out);
+  }
+  .bento-card:hover .micro-glyph { opacity: 0.92; transform: translateY(-2px); }
+  .bento-card .micro-glyph svg { width: 100%; height: 100%; }
+
+  /* Section padding refinement — vary the rhythm. */
+  #how { padding-top: 80px; padding-bottom: 80px; }
+  #pricing { padding-top: 80px; padding-bottom: 72px; }
+  #journal { padding-top: 88px; padding-bottom: 56px; }
+
+  /* Pricing — Most-chosen tag + comparison row */
+  .price-card .most-chosen {
+    position: absolute; top: -14px; right: 16px;
+    font-family: var(--font-mono); font-size: 10px; font-weight: 600;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--gold);
+    padding: 5px 10px;
+    background: var(--canvas);
+    border: 1px solid var(--gold);
+    border-radius: 4px;
+    line-height: 1;
+  }
+  .pricing-compare {
+    margin-top: 28px;
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    overflow: hidden;
+    background: var(--surface);
+  }
+  .pricing-compare-row {
+    display: grid;
+    grid-template-columns: 1.6fr 1fr 1fr 1fr;
+    align-items: center;
+    padding: 14px 22px;
+    font-size: var(--t-13);
+    border-bottom: 1px solid var(--line);
+  }
+  .pricing-compare-row:last-child { border-bottom: none; }
+  .pricing-compare-row.head {
+    background: linear-gradient(180deg, var(--surface-2) 0%, var(--surface) 100%);
+    font-family: var(--font-mono); font-size: 11px;
+    color: var(--ink-3); letter-spacing: 0.12em; text-transform: uppercase;
+    padding: 12px 22px;
+  }
+  .pricing-compare-row .feat {
+    color: var(--ink); font-weight: 500;
+    font-size: var(--t-14);
+    text-align: left;
+  }
+  .pricing-compare-row .col {
+    text-align: center;
+    color: var(--ink-2);
+    font-family: var(--font-mono); font-size: var(--t-12);
+  }
+  .pricing-compare-row .col.yes { color: var(--money); }
+  .pricing-compare-row .col.no { color: var(--ink-4); }
+  .pricing-compare-row.head .col { color: var(--ink); font-weight: 600; }
+  .pricing-compare-row.head .col.hot { color: var(--gold); }
+  @media (max-width: 720px) {
+    .pricing-compare-row { grid-template-columns: 1.4fr 1fr 1fr 1fr; padding: 12px 14px; gap: 6px; }
+    .pricing-compare-row .feat { font-size: 12px; }
   }
 </style>
   <script src="js/pfc-sentry-scrub.js" defer></script>
@@ -980,15 +1191,18 @@
     <div class="mesh-blob mesh-blob-2"></div>
     <div class="mesh-blob mesh-blob-3"></div>
   </div>
+  <div class="hero-inner">
   <div class="eyebrow reveal">
     <span class="dot" aria-hidden="true"></span> A FORECASTING TOOL FOR YOUR PERSONAL FINANCES
   </div>
   <h1 class="reveal" id="hero-headline">
-    Plan the next ten years —<br>
-    <em>without a bank password</em>
+    What your money looks like in 2036 —<br>
+    <em>not advice, just math you can verify.</em>
   </h1>
   <p class="hero-sub reveal">
-    Drop in your income, debts, and savings rate. We project ten years of net worth, the month you're debt-free, and which goals you'll actually hit. Numbers stay in your browser.
+    Drop in four numbers and see the answers most planners won't give you on the first call:
+    <em style="font-style:italic;color:var(--ink);">When am I debt-free? · What if I get a raise? · Will I hit my goal on time?</em>
+    Numbers stay in your browser. The compound-growth formula is on the page; check our work.
   </p>
   <div class="hero-cta reveal">
     <a href="auth.html" class="btn btn-primary btn-lg">
@@ -997,12 +1211,54 @@
     </a>
     <a href="#demo" class="btn btn-outline btn-lg">Try the live demo — no signup</a>
   </div>
-  <p class="hero-disclosure reveal" style="font-family:var(--font-body);font-size:13px;color:var(--ink-3);max-width:62ch;margin:8px auto 28px;line-height:1.55;">
+  <p class="hero-disclosure reveal" style="font-family:var(--font-body);font-size:13px;color:var(--ink-3);max-width:62ch;margin:8px auto 22px;line-height:1.55;">
     Free forever. Numbers stay in your browser. We never see your bank credentials, and your forecast is encrypted before it touches our servers.
   </p>
-  <p class="hero-byline reveal" style="font-family:var(--font-body);font-size:14px;color:var(--ink-3);max-width:60ch;margin:0 auto 12px;">
+  <div class="trust-row reveal" role="list" aria-label="What we do and don't do" style="margin-bottom:18px;">
+    <span role="listitem"><span aria-hidden="true" style="color:var(--money);">✓</span> Calculations run in your browser</span>
+    <span role="listitem"><span aria-hidden="true" style="color:var(--money);">✓</span> No bank login required</span>
+    <span role="listitem"><span aria-hidden="true" style="color:var(--money);">✓</span> EU GDPR compliant</span>
+    <span role="listitem"><span aria-hidden="true" style="color:var(--money);">✓</span> Built in Europe</span>
+  </div>
+  <!-- Hero numerical anchor — institutional preview of what the dashboard
+       reveals. Static dummy numbers framed editorially; the sparkline
+       draws in once when the figure scrolls into view. Replaces the
+       empty lower half of the hero with information density without
+       becoming a SaaS mockup. aria-hidden because the figures are
+       illustrative, not user data. -->
+  <figure class="hero-anchor reveal" id="hero-anchor" aria-hidden="true">
+    <div>
+      <div class="ha-meta">Sample household · 12-month projection</div>
+      <div class="ha-num"><span class="ha-curr">$</span>24,840 <em>·</em> <span style="font-size:0.55em;color:var(--ink-2);font-style:normal;font-family:var(--font-mono);letter-spacing:0;">+$8,220</span></div>
+      <div class="ha-cap">From <b>$16,620</b> today to a projected net worth twelve months out, debt-free in month seven, holding a 22 percent savings rate.</div>
+    </div>
+    <div class="ha-spark">
+      <svg viewBox="0 0 260 96" preserveAspectRatio="none" aria-hidden="true">
+        <defs>
+          <linearGradient id="ha-grad" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%"  stop-color="var(--money)" stop-opacity="0.55"/>
+            <stop offset="100%" stop-color="var(--money)" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <line x1="0" y1="32" x2="260" y2="32" stroke="rgba(255,255,255,0.05)"/>
+        <line x1="0" y1="64" x2="260" y2="64" stroke="rgba(255,255,255,0.05)"/>
+        <path class="spark-area" d="M0,86 L20,82 L40,76 L60,72 L80,66 L100,58 L120,52 L140,46 L160,38 L180,30 L200,24 L220,16 L240,10 L240,96 L0,96 Z" fill="url(#ha-grad)"/>
+        <path class="spark-line" d="M0,86 L20,82 L40,76 L60,72 L80,66 L100,58 L120,52 L140,46 L160,38 L180,30 L200,24 L220,16 L240,10"/>
+        <circle class="spark-end" cx="240" cy="10" r="3.4"/>
+      </svg>
+    </div>
+    <div class="ha-foot">
+      <span>Inputs · 4 numbers</span>
+      <span>Calc · client-side</span>
+      <span>Encryption · AES-256</span>
+      <span>Bank credentials · 0</span>
+    </div>
+  </figure>
+
+  <p class="hero-byline reveal" style="font-family:var(--font-body);font-size:13px;color:var(--ink-3);max-width:60ch;margin:14px auto 8px;">
     Built in Europe by independent finance professionals. Private by design — your numbers stay in your browser.
   </p>
+  </div>
 </section>
 
 <!-- ─────────── CREDIBILITY STRIP ─────────── -->
@@ -1082,9 +1338,9 @@
 <!-- ─────────── HOW IT WORKS ─────────── -->
 <section id="how">
   <div class="section-head reveal">
-    <div class="section-eyebrow">How it works</div>
+    <div class="section-index"><span class="roman">i.</span><span class="rule"></span>How it works</div>
     <h2 class="section-title">Five minutes of input. <em>Twelve months of clarity.</em></h2>
-    <p class="section-sub">No bank login, no broker, no spreadsheets. You give us your numbers — we give you the future.</p>
+    <p class="pfc-lede" style="margin-top:14px;">No bank login. No broker. No spreadsheets to maintain. You bring your numbers; the model compounds them forward, month by month, with a published consumer-price index for inflation and the published rate on each debt — and shows the work.</p>
   </div>
 
   <div class="steps">
@@ -1166,9 +1422,9 @@
 <!-- ─────────── FEATURES ─────────── -->
 <section id="features">
   <div class="section-head reveal">
-    <div class="section-eyebrow">Built for clarity</div>
+    <div class="section-index"><span class="roman">ii.</span><span class="rule"></span>Built for clarity</div>
     <h2 class="section-title">Six tools, <em>working in concert.</em></h2>
-    <p class="section-sub">Six tools, working in concert.</p>
+    <p class="pfc-lede" style="margin-top:14px;">Forecast, debt, goals, recurring spend, salary and an in-context advisor — every one of them sharing the same set of your numbers, so a change in one place propagates through the others without a re-export.</p>
   </div>
 
   <div class="bento reveal-stagger">
@@ -1178,7 +1434,14 @@
           <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M3 17l5-5 4 3 7-9" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </div>
         <h3>Net worth forecast</h3>
-        <p>The headline number. Where will you be in 3, 6, 12 months? We show you — month by month, accounting for compounding, inflation, and your real spending.</p>
+        <p>The headline number — where you'll be in three, six, twelve months. Month by month, with compounding interest, the published consumer-price index for inflation, and your real spending — all on the page so you can audit the figures.</p>
+      </div>
+      <div class="micro-glyph" aria-hidden="true">
+        <svg viewBox="0 0 56 56" fill="none">
+          <path d="M6 44 L18 36 L26 40 L36 24 L50 12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="50" cy="12" r="2.4" fill="currentColor"/>
+          <line x1="6" y1="50" x2="50" y2="50" stroke="currentColor" stroke-width="0.8" opacity="0.5"/>
+        </svg>
       </div>
       <div class="visual-orb"></div>
     </div>
@@ -1189,7 +1452,15 @@
           <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="7.5" stroke="currentColor" stroke-width="1.7"/><path d="M11 6.5v5l3 2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
         </div>
         <h3>Debt-free date</h3>
-        <p>To the month. Avalanche or snowball — whichever frees you faster.</p>
+        <p>To the exact month. Avalanche or snowball — whichever frees you faster — modelled against the published rate on each balance, including the slow-burn ones (29.99% store cards) most planners skip.</p>
+      </div>
+      <div class="micro-glyph" aria-hidden="true">
+        <svg viewBox="0 0 56 56" fill="none">
+          <circle cx="28" cy="28" r="18" stroke="currentColor" stroke-width="1.3"/>
+          <path d="M28 28 L28 12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+          <path d="M28 28 L40 32" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+          <circle cx="28" cy="28" r="1.8" fill="currentColor"/>
+        </svg>
       </div>
     </div>
 
@@ -1199,7 +1470,15 @@
           <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M5 18V8m6 10V4m6 14v-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
         </div>
         <h3>Goal projector</h3>
-        <p>Target $20k by August? We show you the exact month you'll hit it at your current rate — and what to change to get there sooner.</p>
+        <p>Target $20,000 by August? We show you the exact month you'll hit it at your current rate — then surface the shortest path: $145 more saved per month, or one cancelled subscription, or a single 0.5 percent rate cut on your highest-rate debt.</p>
+      </div>
+      <div class="micro-glyph" aria-hidden="true">
+        <svg viewBox="0 0 56 56" fill="none">
+          <rect x="10" y="36" width="6" height="14" stroke="currentColor" stroke-width="1.3"/>
+          <rect x="22" y="26" width="6" height="24" stroke="currentColor" stroke-width="1.3"/>
+          <rect x="34" y="14" width="6" height="36" stroke="currentColor" stroke-width="1.3"/>
+          <line x1="6" y1="50" x2="50" y2="50" stroke="currentColor" stroke-width="0.8" opacity="0.5"/>
+        </svg>
       </div>
     </div>
 
@@ -1209,7 +1488,15 @@
           <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M5 11a6 6 0 0112 0v3l1.5 3h-15L5 14v-3z" stroke="currentColor" stroke-width="1.6"/><path d="M9 18a2 2 0 004 0" stroke="currentColor" stroke-width="1.6"/></svg>
         </div>
         <h3>Recurring radar</h3>
-        <p>Catches every subscription before it auto-renews. Never get blindsided by a $14.99 charge again.</p>
+        <p>Flags every subscription before it auto-renews — including the unannounced price hikes that quietly add up to $312 a year on a typical European household. Tagged by category, exportable to CSV, dismissable per row.</p>
+      </div>
+      <div class="micro-glyph" aria-hidden="true">
+        <svg viewBox="0 0 56 56" fill="none">
+          <rect x="14" y="10" width="28" height="36" rx="2" stroke="currentColor" stroke-width="1.3"/>
+          <line x1="20" y1="20" x2="36" y2="20" stroke="currentColor" stroke-width="1.2"/>
+          <line x1="20" y1="28" x2="32" y2="28" stroke="currentColor" stroke-width="1.2"/>
+          <line x1="20" y1="36" x2="36" y2="36" stroke="currentColor" stroke-width="1.2"/>
+        </svg>
       </div>
     </div>
 
@@ -1219,7 +1506,14 @@
           <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="7.5" stroke="currentColor" stroke-width="1.6"/><path d="M11 6v5l4 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
         </div>
         <h3>Sage AI · your personal advisor</h3>
-        <p>An AI that knows your full financial picture. Ask anything — "Should I pay off the car or invest?" — get a real answer in plain English. No upselling, no hedging.</p>
+        <p>An AI that holds your full picture in context. Ask anything — "should I pay off the car or invest?" — and get a numbered answer in plain English, with the formula it used and a one-line caveat where the answer changes by jurisdiction. No upselling, no hedging.</p>
+      </div>
+      <div class="micro-glyph" aria-hidden="true">
+        <svg viewBox="0 0 56 56" fill="none">
+          <circle cx="28" cy="28" r="18" stroke="currentColor" stroke-width="1.3"/>
+          <path d="M28 14 L28 28 L40 30" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          <circle cx="28" cy="28" r="2.2" fill="currentColor"/>
+        </svg>
       </div>
     </div>
 
@@ -1229,7 +1523,15 @@
           <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="4" y="6" width="14" height="12" rx="1.6" stroke="currentColor" stroke-width="1.6"/><path d="M8 6V4a3 3 0 016 0v2" stroke="currentColor" stroke-width="1.6"/></svg>
         </div>
         <h3>Encrypted by default</h3>
-        <p>AES-256 in your browser. No bank credentials. Never sold. Delete everything in one click.</p>
+        <p>AES-256 in the browser, on a Web Crypto API key never sent to a server. Zero bank credentials, zero third-party trackers, zero cross-domain pixels. Delete everything in one click — settings to wipe.</p>
+      </div>
+      <div class="micro-glyph" aria-hidden="true">
+        <svg viewBox="0 0 56 56" fill="none">
+          <rect x="14" y="22" width="28" height="22" rx="2" stroke="currentColor" stroke-width="1.3"/>
+          <path d="M20 22 V16 a8 8 0 0 1 16 0 v6" stroke="currentColor" stroke-width="1.3"/>
+          <circle cx="28" cy="33" r="2.4" fill="currentColor"/>
+          <line x1="28" y1="35" x2="28" y2="40" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
       </div>
     </div>
   </div>
@@ -1246,9 +1548,9 @@
 <!-- ─────────── PRICING ─────────── -->
 <section id="pricing">
   <div class="section-head reveal">
-    <div class="section-eyebrow">Pricing</div>
-    <h2 class="section-title">Free covers most of you. <em>Pro covers the rest.</em></h2>
-    <p class="section-sub">No credit card to start. Upgrade only when you need scenario modelling and unlimited Sage queries.</p>
+    <div class="section-index"><span class="roman">iii.</span><span class="rule"></span>Pricing</div>
+    <h2 class="section-title">Three tiers. <em>One product.</em></h2>
+    <p class="pfc-lede" style="margin-top:14px;">Free covers the ten-year forecast forever, with no time limit and no degradation. Pro is for households running multiple scenarios in parallel — a job offer, a relocation, a paid-off mortgage. Cancel any time — refund within thirty days, no email exchange required.</p>
   </div>
 
   <div class="pricing">
@@ -1267,10 +1569,10 @@
     </div>
 
     <div class="price-card hot pfc-card--elev">
-      <div class="price-tag">Recommended</div>
+      <div class="price-tag">Most chosen</div>
       <div class="price-name">Pro</div>
       <div class="price-amount num"><span class="currency">$</span>69<span class="period">· /year</span></div>
-      <div class="price-pitch">For households modelling a real financial life. <span style="display:block;font-size:12px;color:var(--ink-3);margin-top:4px;">Or $9/month, billed monthly.</span></div>
+      <div class="price-pitch">For households modelling a real financial life. <span style="display:block;font-size:12px;color:var(--ink-3);margin-top:4px;">$5.75/month annual · or $9/month billed monthly — less than one streaming subscription.</span></div>
       <ul class="price-feats">
         <li><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="var(--money)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg> Everything in Free, plus</li>
         <li><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="var(--money)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg> Unlimited scenarios — side-by-side</li>
@@ -1279,7 +1581,7 @@
         <li><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="var(--money)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg> Sage AI — 200 messages / month</li>
         <li><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="var(--money)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg> CSV / JSON / PDF export</li>
       </ul>
-      <a href="auth.html?next=/billing.html" class="btn btn-primary" style="justify-content: center;">Try Pro free for 14 days</a>
+      <a href="auth.html?next=/billing.html" class="btn btn-primary" style="justify-content: center;">Subscribe — cancel any time</a>
     </div>
 
     <div class="price-card pfc-card--elev">
@@ -1290,17 +1592,67 @@
         <li><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="var(--money)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg> All Pro features, forever</li>
         <li><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="var(--money)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg> Permanent founders badge in Settings</li>
         <li><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="var(--money)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg> Priority access to new tools</li>
-        <li><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="var(--money)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg> Direct line to the founder for feedback</li>
+        <li><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="var(--money)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg> Direct feedback channel into the roadmap</li>
       </ul>
       <a href="auth.html?next=/billing.html#founders" class="btn btn-outline" style="justify-content: center;">Claim founders price</a>
     </div>
   </div>
+  <!-- Compare at a glance — concrete feature checkmarks per tier so the
+       price/value relationship is auditable without scanning the cards. -->
+  <div class="pricing-compare reveal" role="table" aria-label="Plan comparison">
+    <div class="pricing-compare-row head" role="row">
+      <div class="feat" role="columnheader">What you get</div>
+      <div class="col" role="columnheader">Free</div>
+      <div class="col hot" role="columnheader">Pro</div>
+      <div class="col" role="columnheader">Founders</div>
+    </div>
+    <div class="pricing-compare-row" role="row">
+      <div class="feat">Ten-year compound-growth forecast</div>
+      <div class="col yes" aria-label="Included">Included</div>
+      <div class="col yes">Included</div>
+      <div class="col yes">Included</div>
+    </div>
+    <div class="pricing-compare-row" role="row">
+      <div class="feat">Side-by-side scenarios (raise, move, pay-off)</div>
+      <div class="col no">1 scenario</div>
+      <div class="col yes">Unlimited</div>
+      <div class="col yes">Unlimited</div>
+    </div>
+    <div class="pricing-compare-row" role="row">
+      <div class="feat">Sage AI advisor messages, monthly</div>
+      <div class="col">10</div>
+      <div class="col yes">200</div>
+      <div class="col yes">200</div>
+    </div>
+    <div class="pricing-compare-row" role="row">
+      <div class="feat">Quarterly Report Card (PDF, mailed)</div>
+      <div class="col no">—</div>
+      <div class="col yes">Included</div>
+      <div class="col yes">Included</div>
+    </div>
+    <div class="pricing-compare-row" role="row">
+      <div class="feat">Net-worth history retained</div>
+      <div class="col">24 months</div>
+      <div class="col yes">Forever</div>
+      <div class="col yes">Forever</div>
+    </div>
+    <div class="pricing-compare-row" role="row">
+      <div class="feat">Permanent founders badge · roadmap input</div>
+      <div class="col no">—</div>
+      <div class="col no">—</div>
+      <div class="col yes">Included</div>
+    </div>
+  </div>
+
+  <p style="text-align:center;margin-top:28px;font-family:var(--font-body);font-size:13px;color:var(--ink-3);max-width:60ch;margin-left:auto;margin-right:auto;line-height:1.6;">
+    Thirty-day refund on any paid plan, no email exchange required — cancel from Settings and the charge reverses. Free covers the ten-year forecast forever, with no time limit.
+  </p>
 </section>
 
 <!-- ─────────── FROM THE JOURNAL ─────────── -->
 <section id="journal" class="reveal journal-strip" aria-labelledby="journal-headline">
   <div class="head section-head">
-    <div class="section-eyebrow">From the journal</div>
+    <div class="section-index"><span class="roman">iv.</span><span class="rule"></span>From the journal</div>
     <h2 id="journal-headline" class="section-title">Practical writing on <em>debt, salary, and the next ten years.</em></h2>
   </div>
   <div class="grid">
@@ -1326,33 +1678,45 @@
 <!-- ─────────── FAQ ─────────── -->
 <section id="faq">
   <div class="section-head reveal">
-    <div class="section-eyebrow">Common questions</div>
+    <div class="section-index"><span class="roman">v.</span><span class="rule"></span>Common questions</div>
     <h2 class="section-title">Plain answers, <em>no fine print.</em></h2>
   </div>
   <div class="faq reveal">
     <details>
       <summary>Do you connect to my bank account?</summary>
-      <p>No, by design. Most "personal finance" apps lure you in, sell your spending data, then go bankrupt with your bank credentials sitting in their database. We don't connect to anything — you enter your numbers manually (or paste a CSV) and they live in your browser, encrypted. We never see, store, or sell your bank credentials. We never could.</p>
+      <p>No, by design. Most personal-finance apps lure you in, sell your spending data, then go bankrupt with your credentials sitting in their database. ProFinanceCast does not connect to anything — you enter your numbers manually (or paste a CSV) and they live in your browser, encrypted with AES-256 against a Web Crypto API key that never leaves the device. We could not see your bank credentials even if subpoenaed: we never receive them.</p>
     </details>
     <details>
       <summary>How accurate is the forecast?</summary>
-      <p>It's deterministic — same inputs always give the same forecast. We're not predicting the stock market. We're compounding what you tell us about your income, debts, and savings rate, and layering on real inflation data from the World Bank for your country. The accuracy is a function of how honest you are with your inputs.</p>
+      <p>It is deterministic — same inputs always give the same forecast. The compound-growth curve uses the standard future-value formula: FV = PV × (1 + r)^n + PMT × ((1 + r)^n − 1) ÷ r. Real inflation comes from the World Bank consumer-price index for your country (refreshed quarterly). The accuracy is a function of how honest you are with your inputs — not of any opaque model. ProFinanceCast does not predict the stock market.</p>
     </details>
     <details>
       <summary>What happens to my data if I cancel Pro?</summary>
-      <p>Your data stays in your browser locally — only the Pro features (scenarios, salary calc, report card) get gated again. Free features keep working. You can export everything to CSV/JSON or wipe it all in one click from Settings.</p>
+      <p>Your data stays in your browser locally — only the Pro features (multi-scenario, salary calc, Quarterly Report Card) gate back to Free. The forecast keeps running on the same numbers. Export everything to CSV or JSON from Settings in one click, or wipe the entire local store with a second click. The thirty-day refund applies regardless of usage; no email exchange required.</p>
     </details>
     <details>
       <summary>Is there a free trial of Pro?</summary>
-      <p>The Free plan covers the core forecast forever — no time limit. We don't run "trials" because most trials are confusing dark patterns. If you want Pro for a month, subscribe and cancel before renewal. Cancellation takes 5 seconds.</p>
+      <p>The Free plan covers the core ten-year forecast forever — no time limit, no degradation, no upsell prompts after month three. Trials are most often dark patterns, so we do not run them. If you need Pro for a single month — modelling a single job offer, say — subscribe at $9, cancel before renewal, and the next charge does not happen. Any paid plan is refundable within thirty days from Settings.</p>
+    </details>
+    <details>
+      <summary>Do you sell my data?</summary>
+      <p>No. The forecast runs in your browser, not on our servers — the math literally happens on the device you're holding. The only thing we transmit on this homepage is a single anonymous page-view (Cloudflare Web Analytics, no cookies, no IP retention beyond aggregation). There is no ad network, no data broker, no behavioural profile. Read the full data-handling note in <a href="privacy.html">privacy</a>.</p>
+    </details>
+    <details>
+      <summary>What if I cancel?</summary>
+      <p>You keep your data. Cancellation gates the Pro features (multi-scenario, salary comparison, report card, higher Sage limits) and leaves the Free forecast running on the same numbers. Export everything to CSV or JSON from Settings — one button, no support ticket. If you cancel within 30 days of any paid charge, the charge reverses; no email exchange required.</p>
+    </details>
+    <details>
+      <summary>Is this tax or investment advice?</summary>
+      <p>No. ProFinanceCast is a deterministic forecasting tool — math, not advice. It is not a registered investment adviser, broker-dealer, or fiduciary, and nothing on the page is a recommendation to buy, sell, or hold any specific instrument. Tax figures use published statutory rates for your country; consult a licensed adviser before acting on any number. The full <a href="about.html#methodology">methodology</a> shows every formula and assumption.</p>
     </details>
     <details>
       <summary>Who built ProFinanceCast?</summary>
-      <p>An independent team based in Europe. ProFinanceCast does not take outside money, does not sell user data, and does not connect to any bank. The product is the entirety of the offer. <a href="about.html">Read the methodology →</a></p>
+      <p>An independent forecasting house based in Europe. ProFinanceCast takes no outside money, sells no user data, runs no advertising network, and does not connect to a single bank. The product — three tiers, one ten-year compound-growth model — is the entirety of the offer; there is no consulting arm, no managed accounts, no upsell to a paid advisor. <a href="about.html">Read the methodology →</a></p>
     </details>
     <details>
       <summary>What happens when 500 Founders Lifetime seats are reached?</summary>
-      <p>Once all 500 seats are claimed, the Founders tier closes permanently — there is no extension and no second cohort. Pro at $9 a month or $69 a year continues unchanged. The seat counter on the <a href="billing.html">pricing page</a> is the live source of truth.</p>
+      <p>Once all 500 Founders Lifetime seats are claimed, the tier closes permanently — there is no extension, no waitlist, and no second cohort at a higher price. Pro at $9 monthly or $69 annual continues unchanged. The seat counter on the <a href="billing.html">pricing page</a> is the live source of truth — it polls the same Stripe webhook that gates the checkout, so it cannot drift from the actual claim count.</p>
     </details>
   </div>
 </section>
@@ -1360,12 +1724,15 @@
 <!-- ─────────── CTA ─────────── -->
 <section style="padding: 48px 0 96px;">
   <div class="cta-strip reveal">
-    <h2>Stop guessing about <em>your money.</em></h2>
-    <p>Five minutes to drop in your numbers. Twelve months of clarity. Free, forever.</p>
+    <h2>See where your money <em>actually lands.</em></h2>
+    <p>Four numbers in. Ten years out. Free forever — no bank login, no card on file, no email confirmation before you see the chart.</p>
     <a href="auth.html" class="btn btn-primary btn-lg">
-      Start your free forecast
+      Run the forecast
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7h8m-3-3l3 3-3 3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </a>
+    <p style="margin-top:18px;margin-bottom:0;font-family:var(--font-body);font-size:13px;color:var(--ink-3);max-width:54ch;">
+      Numbers stay in your browser. Cancel from Settings — paid plans refundable within 30 days.
+    </p>
   </div>
 </section>
 
@@ -1439,7 +1806,7 @@
     gsap.set('.hero .reveal', { opacity: 0, y: 30 });
     gsap.to('.hero .reveal', {
       opacity: 1, y: 0,
-      duration: 0.9, stagger: 0.08, ease: 'power3.out', delay: 0.1,
+      duration: 0.8, stagger: 0.06, ease: 'power3.out', delay: 0.08,
     });
 
     document.querySelectorAll('section .reveal').forEach((el) => {
@@ -1592,6 +1959,22 @@
       });
     }, { threshold: 0.3, rootMargin: '0px 0px -10% 0px' });
     document.querySelectorAll('[data-divider]').forEach(d => dividerIO.observe(d));
+
+    // Hero anchor figure: when the figure scrolls into view, draw the
+    // sparkline and the gold endpoint. Mirrors the divider IO logic —
+    // once-only, ignored under prefers-reduced-motion via CSS overrides.
+    const anchor = document.getElementById('hero-anchor');
+    if (anchor) {
+      const anchorIO = new IntersectionObserver((entries) => {
+        entries.forEach(e => {
+          if (e.isIntersecting) {
+            e.target.classList.add('in-view');
+            anchorIO.unobserve(e.target);
+          }
+        });
+      }, { threshold: 0.4, rootMargin: '0px 0px -10% 0px' });
+      anchorIO.observe(anchor);
+    }
 
     const features = document.getElementById('features');
     if (features) {
