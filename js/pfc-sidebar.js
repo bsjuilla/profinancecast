@@ -93,7 +93,6 @@
       if (e.target.closest('[data-sidebar-toggle]')) return;
       close();
     });
-    // ESC closes.
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && sidebar.classList.contains('is-open')) close();
     });
