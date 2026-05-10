@@ -26,15 +26,11 @@
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Is three months really enough?","acceptedAnswer":{"@type":"Answer","text":"For a dual-income household with stable jobs and good insurance, three months of essential expenses is usually enough. For a single earner, a freelancer, or anyone with variable income, six months is the safer floor."}},{"@type":"Question","name":"Should I pay off debt first or build the fund first?","acceptedAnswer":{"@type":"Answer","text":"Save a starter fund of about $1,000 first, then attack high-interest debt while contributing a small monthly amount to the fund. Once consumer debt is gone, finish funding to your full target."}},{"@type":"Question","name":"Where should I keep my emergency fund?","acceptedAnswer":{"@type":"Answer","text":"A high-yield savings account at a separate bank from your checking. You want it accessible within a day or two, but not so accessible that you tap it for non-emergencies."}},{"@type":"Question","name":"Should the fund cover gross or net expenses?","acceptedAnswer":{"@type":"Answer","text":"Net, essential expenses only. Rent, groceries, utilities, insurance, transportation, minimum debt payments. Skip discretionary categories — the goal is survival, not lifestyle preservation."}},{"@type":"Question","name":"Is it ever too big?","acceptedAnswer":{"@type":"Answer","text":"Yes. Holding twelve-plus months in cash drags on long-term returns. Once you pass six to nine months for most situations, additional money is better placed in tax-advantaged investing accounts."}}]}
 </script>
-  <script src="https://js.sentry-cdn.com/9b8b34d46908bd9f79a16cf18322ac70.min.js" crossorigin="anonymous"></script>
-  <script>
-    Sentry.onLoad(function () {
-      Sentry.init({
-        environment: location.hostname === 'profinancecast.com' ? 'production' : 'preview',
-      });
-    });
-  </script>
+  <script src="js/pfc-sentry-scrub.js" defer></script>
+  <script src="https://js.sentry-cdn.com/9b8b34d46908bd9f79a16cf18322ac70.min.js" crossorigin="anonymous" defer></script>
+  <script src="js/pfc-sentry.js" defer></script>
   <!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "37cb784ad53047a9921bfd79e9835310"}'></script><!-- End Cloudflare Web Analytics -->
+  <script src="js/pfc-analytics.js" defer></script>
   <meta property="og:image" content="https://profinancecast.com/api/og?title=How+big+should+your+emergency+fund+actually+be%3F&eyebrow=Blog+%C2%B7+Saving&subtitle=Three+months%2C+six+months%2C+twelve+months+%E2%80%94+the+honest+answer+depends+on+three+variables+you+already+know.">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">

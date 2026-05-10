@@ -24,7 +24,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js" integrity="sha384-bs/nf9FbdNouRbMiFcrcZfLXYPKiPaGVGplVbv7dLGECccEXDW+S3zjqSKR5ZEaD" crossorigin="anonymous"></script>
 <style>
   :root {
     --bg:#080C12; --bg2:#0D1320; --bg3:#111827; --card:#0F1923;
@@ -176,15 +176,11 @@
 
 
 
-  <script src="https://js.sentry-cdn.com/9b8b34d46908bd9f79a16cf18322ac70.min.js" crossorigin="anonymous"></script>
-  <script>
-    Sentry.onLoad(function () {
-      Sentry.init({
-        environment: location.hostname === 'profinancecast.com' ? 'production' : 'preview',
-      });
-    });
-  </script>
+  <script src="js/pfc-sentry-scrub.js" defer></script>
+  <script src="https://js.sentry-cdn.com/9b8b34d46908bd9f79a16cf18322ac70.min.js" crossorigin="anonymous" defer></script>
+  <script src="js/pfc-sentry.js" defer></script>
   <!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "37cb784ad53047a9921bfd79e9835310"}'></script><!-- End Cloudflare Web Analytics -->
+  <script src="js/pfc-analytics.js" defer></script>
 </head>
 <body>
 

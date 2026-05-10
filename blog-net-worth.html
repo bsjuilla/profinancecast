@@ -26,15 +26,11 @@
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"How do I calculate my net worth?","acceptedAnswer":{"@type":"Answer","text":"Add up everything you own (cash, investments, retirement accounts, real estate, vehicles, valuable possessions). Subtract everything you owe (mortgage, student loans, car loans, credit-card balances, personal loans)."}},{"@type":"Question","name":"How often should I track net worth?","acceptedAnswer":{"@type":"Answer","text":"Monthly is enough for most people. Quarterly is fine if monthly feels obsessive. Daily tracking adds noise and not much signal."}},{"@type":"Question","name":"Should I include my home equity?","acceptedAnswer":{"@type":"Answer","text":"Yes, but mark it conservatively. Use a recent comparable sale or your tax assessment, not Zillow's optimistic estimate. Subtract estimated selling costs (5 to 7 percent)."}},{"@type":"Question","name":"Is a negative net worth bad?","acceptedAnswer":{"@type":"Answer","text":"Not necessarily. New graduates and recent home buyers often start negative. What matters is the trajectory."}},{"@type":"Question","name":"What's a good net worth for my age?","acceptedAnswer":{"@type":"Answer","text":"By age 30, your net worth should equal roughly half your annual income. By 40, two times. By 50, four times. By retirement, eight to ten times."}}]}
 </script>
-  <script src="https://js.sentry-cdn.com/9b8b34d46908bd9f79a16cf18322ac70.min.js" crossorigin="anonymous"></script>
-  <script>
-    Sentry.onLoad(function () {
-      Sentry.init({
-        environment: location.hostname === 'profinancecast.com' ? 'production' : 'preview',
-      });
-    });
-  </script>
+  <script src="js/pfc-sentry-scrub.js" defer></script>
+  <script src="https://js.sentry-cdn.com/9b8b34d46908bd9f79a16cf18322ac70.min.js" crossorigin="anonymous" defer></script>
+  <script src="js/pfc-sentry.js" defer></script>
   <!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "37cb784ad53047a9921bfd79e9835310"}'></script><!-- End Cloudflare Web Analytics -->
+  <script src="js/pfc-analytics.js" defer></script>
   <meta property="og:image" content="https://profinancecast.com/api/og?title=Net+worth+is+the+only+number+that+matters&eyebrow=Blog+%C2%B7+Net+worth&subtitle=Why+net+worth+is+the+single+best+report+card+on+your+financial+life+%E2%80%94+and+how+to+forecast+it+without+making+it+neurotic.">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
