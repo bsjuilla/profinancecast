@@ -23,25 +23,24 @@
   <meta name="twitter:description" content="Negotiate your next raise with market-percentile data and a 5-year compounding earnings projection.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js" integrity="sha384-bs/nf9FbdNouRbMiFcrcZfLXYPKiPaGVGplVbv7dLGECccEXDW+S3zjqSKR5ZEaD" crossorigin="anonymous"></script>
 <style>
   :root {
-    --bg:#080C12;--bg2:#0D1320;--bg3:#111827;--card:#0F1923;
+    --bg:var(--canvas);--bg2:#0D1320;--bg3:#111827;--card:#0F1923;
     --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);
-    --teal:#00C896;--teal-dim:rgba(0,200,150,0.12);
+    --teal:var(--money);--teal-dim:rgba(43,182,125,0.12);
     --text:#F0F4F8;--text2:#8A9BB0;--text3:#4A5A6E;
     --amber:#F5A623;--red:#E05252;--blue:#3B82F6;
     --purple:#A78BFA;--green:#22C55E;--r:12px;--r-sm:8px;
   }
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
   html,body{height:100%;}
-  body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);display:flex;overflow:hidden;}
+  body{font-family:var(--font-body);background:var(--bg);color:var(--text);display:flex;overflow:hidden;}
 
   /* SIDEBAR */
   .sidebar{width:240px;flex-shrink:0;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;height:100vh;overflow-y:auto;}
-  .sidebar-logo{display:flex;align-items:center;gap:10px;padding:22px 20px 18px;border-bottom:1px solid var(--border);font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:var(--text);text-decoration:none;}
-  .logo-mark{width:30px;height:30px;background:var(--teal);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#080C12;font-family:'Syne',sans-serif;flex-shrink:0;}
+  .sidebar-logo{display:flex;align-items:center;gap:10px;padding:22px 20px 18px;border-bottom:1px solid var(--border);font-family:var(--font-display);font-size:15px;font-weight:700;color:var(--text);text-decoration:none;}
+  .logo-mark{width:30px;height:30px;background:var(--teal);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:var(--canvas);font-family:var(--font-display);flex-shrink:0;}
   .sidebar-section{padding:18px 12px 8px;font-size:10px;font-weight:600;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;}
   .nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--r-sm);margin:1px 8px;font-size:13.5px;color:var(--text2);cursor:pointer;transition:background .15s,color .15s;text-decoration:none;}
   .nav-item:hover{background:rgba(255,255,255,0.05);color:var(--text);}
@@ -52,7 +51,7 @@
   .sidebar-footer{margin-top:auto;padding:16px 12px;border-top:1px solid var(--border);}
   .user-pill{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:var(--r-sm);cursor:pointer;transition:background .15s;}
   .user-pill:hover{background:rgba(255,255,255,0.05);}
-  .user-avatar{width:32px;height:32px;border-radius:50%;background:var(--teal);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#080C12;font-family:'Syne',sans-serif;flex-shrink:0;}
+  .user-avatar{width:32px;height:32px;border-radius:50%;background:var(--teal);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--canvas);font-family:var(--font-display);flex-shrink:0;}
   .user-name{font-size:13px;font-weight:500;}
   .user-plan{font-size:11px;color:var(--text3);}
 
@@ -62,12 +61,12 @@
   /* TOPBAR */
   .topbar{display:flex;align-items:center;justify-content:space-between;padding:0 28px;height:64px;flex-shrink:0;border-bottom:1px solid var(--border);background:rgba(8,12,18,0.9);position:sticky;top:0;z-index:10;backdrop-filter:blur(12px);}
   .topbar-left{display:flex;flex-direction:column;}
-  .topbar-title{font-family:'Syne',sans-serif;font-size:17px;font-weight:700;}
+  .topbar-title{font-family:var(--font-display);font-size:17px;font-weight:700;}
   .topbar-sub{font-size:12px;color:var(--text3);margin-top:1px;}
   .topbar-right{display:flex;align-items:center;gap:12px;}
-  .topbar-btn{display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--r-sm);font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;border:1px solid var(--border2);background:transparent;color:var(--text2);transition:all .15s;}
+  .topbar-btn{display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--r-sm);font-size:13px;font-family:var(--font-body);cursor:pointer;border:1px solid var(--border2);background:transparent;color:var(--text2);transition:all .15s;}
   .topbar-btn:hover{color:var(--text);border-color:rgba(255,255,255,0.2);}
-  .topbar-btn.primary{background:var(--teal);color:#080C12;border-color:var(--teal);font-weight:600;}
+  .topbar-btn.primary{background:var(--teal);color:var(--canvas);border-color:var(--teal);font-weight:600;}
   .topbar-btn.primary:hover{opacity:.88;}
 
   /* CONTENT */
@@ -76,13 +75,13 @@
   /* CARD */
   .card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);}
   .card-inner{padding:20px 22px;}
-  .card-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;margin-bottom:3px;}
+  .card-title{font-family:var(--font-display);font-size:14px;font-weight:700;margin-bottom:3px;}
   .card-sub{font-size:12px;color:var(--text3);}
 
   /* INPUTS */
   .field-label{font-size:12px;color:var(--text2);display:block;margin-bottom:5px;}
-  .field-input{width:100%;padding:10px 13px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;transition:border-color .15s;}
-  .field-input:focus{border-color:rgba(0,200,150,0.4);}
+  .field-input{width:100%;padding:10px 13px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:var(--font-body);outline:none;transition:border-color .15s;}
+  .field-input:focus{border-color:rgba(43,182,125,0.4);}
   .field-input::placeholder{color:var(--text3);}
   .field-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
   .field-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;}
@@ -96,15 +95,15 @@
   .metric-card:hover{border-color:var(--border2);}
   .metric-accent{position:absolute;bottom:0;left:0;right:0;height:2px;}
   .metric-label{font-size:11px;color:var(--text3);margin-bottom:5px;font-weight:500;letter-spacing:.02em;}
-  .metric-val{font-family:'Syne',sans-serif;font-size:21px;font-weight:700;margin-bottom:2px;}
+  .metric-val{font-family:var(--font-display);font-size:21px;font-weight:700;margin-bottom:2px;}
   .metric-hint{font-size:11.5px;color:var(--text3);}
 
   /* RAISE BUTTONS */
   .raise-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:14px;}
-  .raise-btn{padding:10px 6px;border-radius:var(--r-sm);border:1px solid var(--border2);background:var(--bg3);cursor:pointer;text-align:center;transition:all .15s;font-family:'DM Sans',sans-serif;}
-  .raise-btn:hover{border-color:rgba(0,200,150,0.4);}
+  .raise-btn{padding:10px 6px;border-radius:var(--r-sm);border:1px solid var(--border2);background:var(--bg3);cursor:pointer;text-align:center;transition:all .15s;font-family:var(--font-body);}
+  .raise-btn:hover{border-color:rgba(43,182,125,0.4);}
   .raise-btn.active{border-color:var(--teal);background:var(--teal-dim);}
-  .raise-btn .pct{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--teal);margin-bottom:3px;}
+  .raise-btn .pct{font-family:var(--font-display);font-size:16px;font-weight:700;color:var(--teal);margin-bottom:3px;}
   .raise-btn .amt{font-size:11px;color:var(--text3);}
   .raise-btn.active .amt{color:var(--teal);}
 
@@ -121,26 +120,26 @@
   .yr-table tr:last-child td{border-bottom:none;}
   .yr-table td:first-child{color:var(--text);font-weight:600;}
   .yr-table .gain{color:var(--teal);font-weight:700;}
-  .yr-table .highlight-row td{background:rgba(0,200,150,0.04);}
+  .yr-table .highlight-row td{background:rgba(43,182,125,0.04);}
 
   /* SCRIPT BOX */
   .script-box{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);padding:18px 20px;font-size:13.5px;color:var(--text2);line-height:1.75;white-space:pre-wrap;min-height:120px;position:relative;}
   .script-loading{display:flex;align-items:center;gap:10px;color:var(--teal);font-size:13px;}
-  .spin{width:14px;height:14px;border:2px solid rgba(0,200,150,0.2);border-top-color:var(--teal);border-radius:50%;animation:spin .7s linear infinite;}
+  .spin{width:14px;height:14px;border:2px solid rgba(43,182,125,0.2);border-top-color:var(--teal);border-radius:50%;animation:spin .7s linear infinite;}
   @keyframes spin{to{transform:rotate(360deg);}}
 
   /* COUNTER OFFER */
   .counter-row{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
   .counter-label{font-size:12px;color:var(--text3);width:130px;flex-shrink:0;}
-  .counter-val{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;}
+  .counter-val{font-family:var(--font-display);font-size:15px;font-weight:700;}
   .counter-bar{flex:1;height:5px;background:var(--bg3);border-radius:3px;overflow:hidden;}
   .counter-bar-fill{height:100%;border-radius:3px;transition:width .4s ease;}
 
   /* BENEFITS */
   .benefit-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);}
   .benefit-row:last-child{border-bottom:none;}
-  .benefit-input{width:90px;padding:6px 10px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:13px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;text-align:right;}
-  .benefit-input:focus{border-color:rgba(0,200,150,0.4);}
+  .benefit-input{width:90px;padding:6px 10px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:13px;color:var(--text);font-family:var(--font-body);outline:none;text-align:right;}
+  .benefit-input:focus{border-color:rgba(43,182,125,0.4);}
 
   /* LIFETIME CHART */
   .chart-wrap{height:200px;position:relative;}
@@ -156,12 +155,12 @@
   ::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:2px;}
 
   /* TOAST */
-  .toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:var(--card);border:1px solid rgba(0,200,150,0.3);border-radius:10px;padding:12px 20px;font-size:13.5px;color:var(--text);z-index:200;white-space:nowrap;animation:toastIn .25s ease;pointer-events:none;}
+  .toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:var(--card);border:1px solid rgba(43,182,125,0.3);border-radius:10px;padding:12px 20px;font-size:13.5px;color:var(--text);z-index:200;white-space:nowrap;animation:toastIn .25s ease;pointer-events:none;}
   @keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(8px);}to{opacity:1;transform:translateX(-50%) translateY(0);}}
   @keyframes fadeIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
 
   /* HIGHLIGHT PULSE */
-  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(0,200,150,0);}50%{box-shadow:0 0 0 6px rgba(0,200,150,0.12);}}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(43,182,125,0);}50%{box-shadow:0 0 0 6px rgba(43,182,125,0.12);}}
   .pulse{animation:pulse 1.2s ease 1;}
 
   .section-gap{margin-bottom:18px;}
@@ -357,7 +356,7 @@
           <!-- Range visual -->
           <div style="margin-bottom:20px;">
             <div class="range-bar-wrap" id="range-bar-wrap">
-              <div class="range-bar-fill" id="range-fill" style="left:0%;width:100%;background:linear-gradient(90deg,rgba(59,130,246,0.3),rgba(0,200,150,0.4),rgba(245,166,35,0.3));"></div>
+              <div class="range-bar-fill" id="range-fill" style="left:0%;width:100%;background:linear-gradient(90deg,rgba(59,130,246,0.3),rgba(43,182,125,0.4),rgba(245,166,35,0.3));"></div>
               <!-- You marker -->
               <div class="range-marker" id="you-marker" style="left:50%;background:var(--teal);">
                 <div class="range-marker-label" style="color:var(--teal);">You</div>
@@ -378,15 +377,15 @@
           <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:18px;">
             <div style="background:var(--bg3);border-radius:var(--r-sm);padding:12px;text-align:center;">
               <div style="font-size:10px;color:var(--text3);margin-bottom:4px;font-weight:600;letter-spacing:.04em;">25TH %ILE</div>
-              <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--blue);" id="r-low">—</div>
+              <div style="font-family:var(--font-display);font-size:16px;font-weight:700;color:var(--blue);" id="r-low">—</div>
             </div>
-            <div style="background:rgba(0,200,150,0.06);border:1px solid rgba(0,200,150,0.2);border-radius:var(--r-sm);padding:12px;text-align:center;">
+            <div style="background:rgba(43,182,125,0.06);border:1px solid rgba(43,182,125,0.2);border-radius:var(--r-sm);padding:12px;text-align:center;">
               <div style="font-size:10px;color:var(--teal);margin-bottom:4px;font-weight:600;letter-spacing:.04em;">MEDIAN</div>
-              <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--teal);" id="r-mid">—</div>
+              <div style="font-family:var(--font-display);font-size:16px;font-weight:700;color:var(--teal);" id="r-mid">—</div>
             </div>
             <div style="background:var(--bg3);border-radius:var(--r-sm);padding:12px;text-align:center;">
               <div style="font-size:10px;color:var(--text3);margin-bottom:4px;font-weight:600;letter-spacing:.04em;">75TH %ILE</div>
-              <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--amber);" id="r-high">—</div>
+              <div style="font-family:var(--font-display);font-size:16px;font-weight:700;color:var(--amber);" id="r-high">—</div>
             </div>
           </div>
 
@@ -397,10 +396,10 @@
           <div style="display:flex;align-items:center;gap:18px;margin-top:18px;padding-top:18px;border-top:1px solid var(--border);">
             <svg id="market-gauge" width="160" height="100" viewBox="0 0 200 120" aria-hidden="true" style="flex-shrink:0;">
               <path d="M 20 110 A 80 80 0 0 1 180 110" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="10" stroke-linecap="round"/>
-              <path d="M 20 110 A 80 80 0 0 1 100 30" fill="none" stroke="rgba(0,200,150,0.35)" stroke-width="10" stroke-linecap="round"/>
+              <path d="M 20 110 A 80 80 0 0 1 100 30" fill="none" stroke="rgba(43,182,125,0.35)" stroke-width="10" stroke-linecap="round"/>
               <path d="M 100 30 A 80 80 0 0 1 180 110" fill="none" stroke="rgba(245,166,35,0.45)" stroke-width="10" stroke-linecap="round"/>
-              <line id="pfc-needle" x1="100" y1="110" x2="100" y2="40" stroke="var(--gold,#D4AF6A)" stroke-width="2" stroke-linecap="round" transform="rotate(-90 100 110)"/>
-              <circle cx="100" cy="110" r="4" fill="var(--gold,#D4AF6A)"/>
+              <line id="pfc-needle" x1="100" y1="110" x2="100" y2="40" stroke="#D4AF6A" stroke-width="2" stroke-linecap="round" transform="rotate(-90 100 110)"/>
+              <circle cx="100" cy="110" r="4" fill="#D4AF6A"/>
             </svg>
             <div style="flex:1;">
               <div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:4px;">Where your target lands</div>
@@ -531,7 +530,7 @@
             <!-- Visual bar -->
             <div style="margin-top:14px;background:var(--bg3);border-radius:var(--r-sm);padding:12px 14px;">
               <div id="counter-bar-row" style="position:relative;height:8px;background:rgba(255,255,255,0.06);border-radius:4px;margin-bottom:8px;">
-                <div id="counter-zone" style="position:absolute;height:100%;border-radius:4px;background:linear-gradient(90deg,rgba(245,166,35,0.4),rgba(0,200,150,0.4));transition:all .4s;"></div>
+                <div id="counter-zone" style="position:absolute;height:100%;border-radius:4px;background:linear-gradient(90deg,rgba(245,166,35,0.4),rgba(43,182,125,0.4));transition:all .4s;"></div>
               </div>
               <div id="counter-advice" style="font-size:12px;color:var(--text2);line-height:1.55;"></div>
             </div>
@@ -595,7 +594,7 @@
             <div style="height:1px;background:var(--border2);margin-bottom:8px;"></div>
             <div style="display:flex;justify-content:space-between;">
               <span style="font-size:13px;font-weight:700;">Total comp</span>
-              <span style="font-family:'Syne',sans-serif;font-size:17px;font-weight:700;color:var(--teal);" id="tc-total">—</span>
+              <span style="font-family:var(--font-display);font-size:17px;font-weight:700;color:var(--teal);" id="tc-total">—</span>
             </div>
           </div>
         </div>
@@ -611,8 +610,8 @@
             <div class="card-sub">Personalised talking points based on your numbers — generated by Sage</div>
           </div>
           <div style="display:flex;gap:8px;">
-            <button onclick="copyScript()" id="copy-btn" style="display:none;padding:6px 14px;background:transparent;border:1px solid var(--border2);border-radius:var(--r-sm);font-size:12px;color:var(--text2);cursor:pointer;font-family:'DM Sans',sans-serif;">Copy script</button>
-            <button onclick="generateScript()" style="padding:6px 14px;background:var(--teal);border:none;border-radius:var(--r-sm);font-size:12px;font-weight:700;color:#080C12;cursor:pointer;font-family:'DM Sans',sans-serif;">Generate with Sage</button>
+            <button onclick="copyScript()" id="copy-btn" style="display:none;padding:6px 14px;background:transparent;border:1px solid var(--border2);border-radius:var(--r-sm);font-size:12px;color:var(--text2);cursor:pointer;font-family:var(--font-body);">Copy script</button>
+            <button onclick="generateScript()" style="padding:6px 14px;background:var(--teal);border:none;border-radius:var(--r-sm);font-size:12px;font-weight:700;color:var(--canvas);cursor:pointer;font-family:var(--font-body);">Generate with Sage</button>
           </div>
         </div>
         <div class="script-box" id="script-box">
@@ -869,7 +868,7 @@ function updateMarketRange(range, salary, target, sym) {
     bg = 'rgba(245,166,35,0.08)'; color = 'var(--amber)';
   } else if (salary < range.high) {
     msg = `✅ You're <strong>above median</strong> and in the upper-mid range. To push to the 75th percentile, emphasise specialised skills and impact. This is achievable.`;
-    bg = 'rgba(0,200,150,0.08)'; color = 'var(--teal)';
+    bg = 'rgba(43,182,125,0.08)'; color = 'var(--teal)';
   } else {
     msg = `🏆 You're <strong>at or above the 75th percentile</strong> for your role. Focus your negotiation on total comp — bonus, equity, benefits, and flexibility rather than base.`;
     bg = 'rgba(59,130,246,0.08)'; color = 'var(--blue)';
@@ -907,8 +906,8 @@ function renderLifetimeChart(curr, newB, sym, years) {
         {
           label: 'With raise',
           data: newB,
-          borderColor: '#00C896',
-          backgroundColor: 'rgba(0,200,150,0.07)',
+          borderColor: 'var(--money)',
+          backgroundColor: 'rgba(43,182,125,0.07)',
           borderWidth: 2,
           pointRadius: 0,
           tension: 0.3,
@@ -969,7 +968,7 @@ function calcCounter() {
   const walkPct    = span > 0 ? ((walkaway - offer) / span * 100) : 5;
   const counterPct = span > 0 ? ((counter - offer) / span * 100) : 65;
   document.getElementById('counter-zone').style.cssText =
-    `left:${walkPct.toFixed(0)}%;width:${(counterPct - walkPct).toFixed(0)}%;position:absolute;height:100%;border-radius:4px;background:linear-gradient(90deg,rgba(245,166,35,0.4),rgba(0,200,150,0.4));transition:all .4s;`;
+    `left:${walkPct.toFixed(0)}%;width:${(counterPct - walkPct).toFixed(0)}%;position:absolute;height:100%;border-radius:4px;background:linear-gradient(90deg,rgba(245,166,35,0.4),rgba(43,182,125,0.4));transition:all .4s;`;
 
   const gap = counter - offer;
   document.getElementById('counter-advice').innerHTML =
@@ -1050,8 +1049,8 @@ Keep it realistic, not arrogant. Use their actual numbers throughout. Format cle
       .replace(/\*\*(.*?)\*\*/g, '<strong style="color:var(--text)">$1</strong>')
       .replace(/^##\s(.+)$/gm, '<div style="font-size:12px;font-weight:700;color:var(--teal);letter-spacing:.06em;text-transform:uppercase;margin:14px 0 6px;">$1</div>')
       .replace(/^#\s(.+)$/gm,  '<div style="font-size:13px;font-weight:700;color:var(--text);margin:12px 0 5px;">$1</div>')
-      .replace(/^\d\.\s(.+)$/gm, '<div style="margin:5px 0;padding-left:14px;border-left:2px solid rgba(0,200,150,0.3);color:var(--text2);">$1</div>')
-      .replace(/^-\s(.+)$/gm,   '<div style="margin:4px 0;padding-left:14px;border-left:2px solid rgba(0,200,150,0.3);color:var(--text2);">• $1</div>')
+      .replace(/^\d\.\s(.+)$/gm, '<div style="margin:5px 0;padding-left:14px;border-left:2px solid rgba(43,182,125,0.3);color:var(--text2);">$1</div>')
+      .replace(/^-\s(.+)$/gm,   '<div style="margin:4px 0;padding-left:14px;border-left:2px solid rgba(43,182,125,0.3);color:var(--text2);">• $1</div>')
       .replace(/\n/g, '<br>');
 
     scriptBox.innerHTML = formatted;

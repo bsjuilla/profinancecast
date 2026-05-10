@@ -22,40 +22,39 @@
   <meta name="twitter:description" content="Set up your ProFinanceCast forecast in three minutes — income, expenses, goals.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:#080C12;--bg2:#0D1320;--bg3:#111827;--card:#0F1923;
+    --bg:var(--canvas);--bg2:#0D1320;--bg3:#111827;--card:#0F1923;
     --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);
-    --teal:#00C896;--teal-dim:rgba(0,200,150,0.1);--teal-glow:rgba(0,200,150,0.2);
+    --teal:var(--money);--teal-dim:rgba(43,182,125,0.1);--teal-glow:rgba(43,182,125,0.2);
     --text:#F0F4F8;--text2:#8A9BB0;--text3:#4A5A6E;
     --amber:#F5A623;--red:#E05252;--blue:#3B82F6;--green:#22C55E;
     --r:12px;--r-sm:8px;
   }
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
   html,body{height:100%;overflow:hidden;}
-  body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);display:flex;flex-direction:column;}
-  .bg-grid{position:fixed;inset:0;pointer-events:none;opacity:.15;background-image:linear-gradient(rgba(0,200,150,.15) 1px,transparent 1px),linear-gradient(90deg,rgba(0,200,150,.15) 1px,transparent 1px);background-size:56px 56px;mask-image:radial-gradient(ellipse 80% 60% at 50% 30%,black 20%,transparent 80%);}
-  .bg-glow{position:fixed;top:-100px;left:50%;transform:translateX(-50%);width:700px;height:500px;background:radial-gradient(ellipse,rgba(0,200,150,0.07) 0%,transparent 65%);pointer-events:none;}
+  body{font-family:var(--font-body);background:var(--bg);color:var(--text);display:flex;flex-direction:column;}
+  .bg-grid{position:fixed;inset:0;pointer-events:none;opacity:.15;background-image:linear-gradient(rgba(43,182,125,.15) 1px,transparent 1px),linear-gradient(90deg,rgba(43,182,125,.15) 1px,transparent 1px);background-size:56px 56px;mask-image:radial-gradient(ellipse 80% 60% at 50% 30%,black 20%,transparent 80%);}
+  .bg-glow{position:fixed;top:-100px;left:50%;transform:translateX(-50%);width:700px;height:500px;background:radial-gradient(ellipse,rgba(43,182,125,0.07) 0%,transparent 65%);pointer-events:none;}
   .topnav{height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 40px;flex-shrink:0;border-bottom:1px solid var(--border);position:relative;z-index:10;}
-  .nav-logo{display:flex;align-items:center;gap:9px;font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:var(--text);text-decoration:none;}
-  .logo-mark{width:28px;height:28px;background:var(--teal);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#080C12;}
+  .nav-logo{display:flex;align-items:center;gap:9px;font-family:var(--font-display);font-size:15px;font-weight:700;color:var(--text);text-decoration:none;}
+  .logo-mark{width:28px;height:28px;background:var(--teal);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:var(--canvas);}
   .nav-step-label{font-size:13px;color:var(--text3);}
-  .nav-skip{font-size:13px;color:var(--text3);cursor:pointer;background:none;border:none;font-family:'DM Sans',sans-serif;padding:6px 12px;border-radius:var(--r-sm);transition:color .15s;}
+  .nav-skip{font-size:13px;color:var(--text3);cursor:pointer;background:none;border:none;font-family:var(--font-body);padding:6px 12px;border-radius:var(--r-sm);transition:color .15s;}
   .nav-skip:hover{color:var(--text2);}
   .progress-wrap{height:3px;background:var(--bg3);flex-shrink:0;}
   .progress-bar{height:100%;background:var(--teal);transition:width .5s cubic-bezier(.4,0,.2,1);}
   .step-dots{display:flex;align-items:center;justify-content:center;gap:8px;padding:18px 0 0;flex-shrink:0;position:relative;z-index:1;}
   .dot{width:8px;height:8px;border-radius:50%;background:var(--bg3);border:1px solid var(--border2);transition:all .3s ease;cursor:default;}
   .dot.done{background:var(--teal);border-color:var(--teal);}
-  .dot.active{background:var(--teal);border-color:var(--teal);box-shadow:0 0 0 3px rgba(0,200,150,0.25);transform:scale(1.3);}
+  .dot.active{background:var(--teal);border-color:var(--teal);box-shadow:0 0 0 3px rgba(43,182,125,0.25);transform:scale(1.3);}
   .wizard-body{flex:1;overflow-y:auto;display:flex;align-items:flex-start;justify-content:center;padding:32px 20px 40px;position:relative;z-index:1;}
   .wizard-inner{width:100%;max-width:560px;}
   .step-panel{display:none;animation:fadeInUp .35s ease both;}
   .step-panel.active{display:block;}
   @keyframes fadeInUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
   .step-eyebrow{font-size:12px;font-weight:600;color:var(--teal);letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px;}
-  .step-heading{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;line-height:1.2;letter-spacing:-0.2px;margin-bottom:8px;}
+  .step-heading{font-family:var(--font-display);font-size:28px;font-weight:800;line-height:1.2;letter-spacing:-0.2px;margin-bottom:8px;}
   .step-sub{font-size:15px;color:var(--text2);font-weight:300;line-height:1.65;margin-bottom:28px;}
   .field{margin-bottom:16px;}
   .field-label{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
@@ -66,13 +65,13 @@
   input[type=text],input[type=number],input[type=email],select{
     width:100%;background:var(--bg3);border:1px solid var(--border2);
     border-radius:var(--r-sm);padding:12px 14px;font-size:15px;
-    color:var(--text);font-family:'DM Sans',sans-serif;outline:none;
+    color:var(--text);font-family:var(--font-body);outline:none;
     transition:border-color .15s,box-shadow .15s;
     -moz-appearance:textfield;appearance:textfield;
   }
   input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;}
   input[type=text]:focus,input[type=number]:focus,input[type=email]:focus,select:focus{
-    border-color:rgba(0,200,150,.5);box-shadow:0 0 0 3px rgba(0,200,150,0.08);
+    border-color:rgba(43,182,125,.5);box-shadow:0 0 0 3px rgba(43,182,125,0.08);
   }
   input::placeholder{color:var(--text3);}
   select{cursor:pointer;}
@@ -91,23 +90,23 @@
   .lp-val.bad{color:var(--red);}
   .goal-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;}
   .goal-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px 16px;cursor:pointer;transition:all .18s;display:flex;align-items:flex-start;gap:10px;}
-  .goal-card:hover{border-color:rgba(0,200,150,0.3);}
+  .goal-card:hover{border-color:rgba(43,182,125,0.3);}
   .goal-card.selected{border-color:var(--teal);background:var(--teal-dim);}
   .goal-card-icon{width:34px;height:34px;border-radius:8px;background:var(--bg2);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .18s;}
-  .goal-card.selected .goal-card-icon{background:rgba(0,200,150,0.15);}
-  .goal-card-title{font-size:13.5px;font-weight:600;margin-bottom:2px;font-family:'Syne',sans-serif;}
+  .goal-card.selected .goal-card-icon{background:rgba(43,182,125,0.15);}
+  .goal-card-title{font-size:13.5px;font-weight:600;margin-bottom:2px;font-family:var(--font-display);}
   .goal-card-desc{font-size:12px;color:var(--text2);line-height:1.4;}
   .goal-check{width:16px;height:16px;border-radius:50%;border:1.5px solid var(--border2);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-left:auto;transition:all .18s;}
   .goal-card.selected .goal-check{background:var(--teal);border-color:var(--teal);}
   .stress-area{margin-bottom:20px;}
   .stress-labels{display:flex;justify-content:space-between;font-size:12px;color:var(--text3);margin-bottom:6px;}
   input[type=range]{width:100%;appearance:none;height:6px;border-radius:3px;background:var(--bg3);outline:none;cursor:pointer;}
-  input[type=range]::-webkit-slider-thumb{appearance:none;width:20px;height:20px;border-radius:50%;background:var(--teal);border:3px solid var(--bg2);cursor:pointer;box-shadow:0 0 0 3px rgba(0,200,150,0.2);transition:transform .15s;}
+  input[type=range]::-webkit-slider-thumb{appearance:none;width:20px;height:20px;border-radius:50%;background:var(--teal);border:3px solid var(--bg2);cursor:pointer;box-shadow:0 0 0 3px rgba(43,182,125,0.2);transition:transform .15s;}
   input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.15);}
   .stress-output{text-align:center;margin-top:10px;font-size:22px;}
   .privacy-row{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r-sm);margin-bottom:10px;}
   .privacy-row-left{display:flex;align-items:center;gap:12px;}
-  .privacy-icon{width:32px;height:32px;border-radius:8px;background:var(--teal-dim);border:1px solid rgba(0,200,150,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .privacy-icon{width:32px;height:32px;border-radius:8px;background:var(--teal-dim);border:1px solid rgba(43,182,125,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
   .privacy-label{font-size:13.5px;font-weight:500;}
   .privacy-desc{font-size:12px;color:var(--text3);margin-top:1px;}
   .toggle{width:40px;height:22px;border-radius:11px;background:var(--teal);border:none;cursor:pointer;position:relative;transition:background .2s;flex-shrink:0;}
@@ -115,23 +114,23 @@
   .toggle.off{background:var(--bg2);border:1px solid var(--border2);}
   .toggle.off .toggle-thumb{left:3px;}
   .wizard-footer{height:76px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 40px;flex-shrink:0;position:relative;z-index:1;}
-  .btn-back{padding:10px 20px;background:transparent;border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text2);font-family:'DM Sans',sans-serif;cursor:pointer;display:flex;align-items:center;gap:7px;transition:all .15s;}
+  .btn-back{padding:10px 20px;background:transparent;border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text2);font-family:var(--font-body);cursor:pointer;display:flex;align-items:center;gap:7px;transition:all .15s;}
   .btn-back:hover{border-color:rgba(255,255,255,.2);color:var(--text);}
   .btn-back:disabled{opacity:.3;cursor:default;}
-  .btn-next{padding:11px 28px;background:var(--teal);border:none;border-radius:var(--r-sm);font-size:15px;font-weight:600;color:#080C12;font-family:'DM Sans',sans-serif;cursor:pointer;display:flex;align-items:center;gap:8px;transition:opacity .15s,transform .1s;}
+  .btn-next{padding:11px 28px;background:var(--teal);border:none;border-radius:var(--r-sm);font-size:15px;font-weight:600;color:var(--canvas);font-family:var(--font-body);cursor:pointer;display:flex;align-items:center;gap:8px;transition:opacity .15s,transform .1s;}
   .btn-next:hover{opacity:.88;}
   .btn-next:active{transform:scale(.98);}
   .btn-next:disabled{opacity:.35;cursor:default;}
   .footer-hint{font-size:12px;color:var(--text3);}
   .complete-wrap{text-align:center;padding:20px 0;}
   .complete-icon{width:72px;height:72px;border-radius:50%;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);display:flex;align-items:center;justify-content:center;margin:0 auto 20px;}
-  .complete-heading{font-family:'Syne',sans-serif;font-size:30px;font-weight:800;margin-bottom:10px;letter-spacing:-0.3px;}
+  .complete-heading{font-family:var(--font-display);font-size:30px;font-weight:800;margin-bottom:10px;letter-spacing:-0.3px;}
   .complete-sub{font-size:15px;color:var(--text2);line-height:1.65;margin-bottom:32px;max-width:440px;margin-left:auto;margin-right:auto;}
   .complete-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:32px;}
   .cm-card{background:var(--card);border:1px solid var(--border2);border-radius:var(--r);padding:16px;}
-  .cm-val{font-family:'Syne',sans-serif;font-size:22px;font-weight:700;margin-bottom:4px;}
+  .cm-val{font-family:var(--font-display);font-size:22px;font-weight:700;margin-bottom:4px;}
   .cm-label{font-size:12px;color:var(--text3);}
-  .btn-go{display:inline-flex;align-items:center;gap:9px;padding:14px 36px;background:var(--teal);color:#080C12;border:none;border-radius:var(--r-sm);font-size:16px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;transition:opacity .15s,transform .1s;text-decoration:none;}
+  .btn-go{display:inline-flex;align-items:center;gap:9px;padding:14px 36px;background:var(--teal);color:var(--canvas);border:none;border-radius:var(--r-sm);font-size:16px;font-weight:700;font-family:var(--font-body);cursor:pointer;transition:opacity .15s,transform .1s;text-decoration:none;}
   .btn-go:hover{opacity:.88;}
   .btn-go:active{transform:scale(.98);}
   .confetti-wrap{position:fixed;inset:0;pointer-events:none;z-index:50;}
@@ -198,26 +197,26 @@
     <p class="step-sub">This takes about 3 minutes. We'll ask you a few simple questions and generate your personalised 12-month financial forecast. Your data is encrypted and never shared.</p>
     <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:24px;">
       <div style="display:flex;align-items:center;gap:12px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px 14px;">
-        <div style="width:32px;height:32px;border-radius:8px;background:var(--teal-dim);border:1px solid rgba(0,200,150,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-          <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M2 11L5.5 6.5l3 2.5L12 3.5" stroke="#00C896" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <div style="width:32px;height:32px;border-radius:8px;background:var(--teal-dim);border:1px solid rgba(43,182,125,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M2 11L5.5 6.5l3 2.5L12 3.5" stroke="#2BB67D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </div>
         <div><div style="font-size:13.5px;font-weight:500;">12-month net worth forecast</div><div style="font-size:12px;color:var(--text3);">See exactly where you're heading financially</div></div>
       </div>
       <div style="display:flex;align-items:center;gap:12px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px 14px;">
-        <div style="width:32px;height:32px;border-radius:8px;background:var(--teal-dim);border:1px solid rgba(0,200,150,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-          <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M7.5 1l1.8 4H14l-3.5 3 1.5 4.5L7.5 10l-4.5 2.5L4.5 8 1 5h4.7z" stroke="#00C896" stroke-width="1.3" stroke-linejoin="round"/></svg>
+        <div style="width:32px;height:32px;border-radius:8px;background:var(--teal-dim);border:1px solid rgba(43,182,125,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M7.5 1l1.8 4H14l-3.5 3 1.5 4.5L7.5 10l-4.5 2.5L4.5 8 1 5h4.7z" stroke="#2BB67D" stroke-width="1.3" stroke-linejoin="round"/></svg>
         </div>
         <div><div style="font-size:13.5px;font-weight:500;">Financial health score</div><div style="font-size:12px;color:var(--text3);">A single score that tracks your progress daily</div></div>
       </div>
       <div style="display:flex;align-items:center;gap:12px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px 14px;">
-        <div style="width:32px;height:32px;border-radius:8px;background:var(--teal-dim);border:1px solid rgba(0,200,150,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-          <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M3 4h9M3 7.5h6M3 11h4" stroke="#00C896" stroke-width="1.5" stroke-linecap="round"/></svg>
+        <div style="width:32px;height:32px;border-radius:8px;background:var(--teal-dim);border:1px solid rgba(43,182,125,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M3 4h9M3 7.5h6M3 11h4" stroke="#2BB67D" stroke-width="1.5" stroke-linecap="round"/></svg>
         </div>
         <div><div style="font-size:13.5px;font-weight:500;">Ask Sage anything</div><div style="font-size:12px;color:var(--text3);">AI advisor that knows your exact numbers</div></div>
       </div>
     </div>
-    <div style="background:rgba(0,200,150,0.06);border:1px solid rgba(0,200,150,0.15);border-radius:var(--r-sm);padding:12px 14px;display:flex;align-items:center;gap:10px;">
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2l3 2v4c0 2.5-3 5-3 5S5 10.5 5 8V4z" stroke="#00C896" stroke-width="1.3"/></svg>
+    <div style="background:rgba(43,182,125,0.06);border:1px solid rgba(43,182,125,0.15);border-radius:var(--r-sm);padding:12px 14px;display:flex;align-items:center;gap:10px;">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2l3 2v4c0 2.5-3 5-3 5S5 10.5 5 8V4z" stroke="#2BB67D" stroke-width="1.3"/></svg>
       <span style="font-size:13px;color:var(--text2);">All your data is <strong style="color:var(--text);">AES-256 encrypted</strong> and <strong style="color:var(--text);">never sold or shared</strong> — ever.</span>
     </div>
   </div>
@@ -394,34 +393,34 @@
     <p class="step-sub">Select all that apply — Sage will prioritise its advice around your goals.</p>
     <div class="goal-grid">
       <div class="goal-card" onclick="toggleGoal(this,'emergency')">
-        <div class="goal-card-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1l3.5 2v5c0 3-3.5 6-3.5 6S4.5 11 4.5 8V3z" stroke="#00C896" stroke-width="1.3"/></svg></div>
+        <div class="goal-card-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1l3.5 2v5c0 3-3.5 6-3.5 6S4.5 11 4.5 8V3z" stroke="#2BB67D" stroke-width="1.3"/></svg></div>
         <div style="flex:1;"><div class="goal-card-title">Emergency fund</div><div class="goal-card-desc">3–6 months of expenses saved</div></div>
-        <div class="goal-check"><svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M1 4l2 2 4-4" stroke="#080C12" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="goal-check"><svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M1 4l2 2 4-4" stroke="#0B1410" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
       </div>
       <div class="goal-card" onclick="toggleGoal(this,'debt')">
-        <div class="goal-card-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l2.5 2.5L13 3" stroke="#00C896" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="goal-card-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l2.5 2.5L13 3" stroke="#2BB67D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
         <div style="flex:1;"><div class="goal-card-title">Pay off debt</div><div class="goal-card-desc">Become completely debt-free</div></div>
-        <div class="goal-check"><svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M1 4l2 2 4-4" stroke="#080C12" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="goal-check"><svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M1 4l2 2 4-4" stroke="#0B1410" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
       </div>
       <div class="goal-card" onclick="toggleGoal(this,'home')">
-        <div class="goal-card-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 7.5L8 2l6 5.5V14H10v-3.5H6V14H2V7.5z" stroke="#00C896" stroke-width="1.3" stroke-linejoin="round"/></svg></div>
+        <div class="goal-card-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 7.5L8 2l6 5.5V14H10v-3.5H6V14H2V7.5z" stroke="#2BB67D" stroke-width="1.3" stroke-linejoin="round"/></svg></div>
         <div style="flex:1;"><div class="goal-card-title">Buy a home</div><div class="goal-card-desc">Save for a deposit</div></div>
-        <div class="goal-check"><svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M1 4l2 2 4-4" stroke="#080C12" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="goal-check"><svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M1 4l2 2 4-4" stroke="#0B1410" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
       </div>
       <div class="goal-card" onclick="toggleGoal(this,'invest')">
-        <div class="goal-card-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 11.5L5.5 7 9 9.5 13.5 4" stroke="#00C896" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="goal-card-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 11.5L5.5 7 9 9.5 13.5 4" stroke="#2BB67D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
         <div style="flex:1;"><div class="goal-card-title">Start investing</div><div class="goal-card-desc">Grow wealth through markets</div></div>
-        <div class="goal-check"><svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M1 4l2 2 4-4" stroke="#080C12" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="goal-check"><svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M1 4l2 2 4-4" stroke="#0B1410" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
       </div>
       <div class="goal-card" onclick="toggleGoal(this,'retire')">
-        <div class="goal-card-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="#00C896" stroke-width="1.3"/><path d="M8 5v3.5l2 1" stroke="#00C896" stroke-width="1.3" stroke-linecap="round"/></svg></div>
+        <div class="goal-card-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="#2BB67D" stroke-width="1.3"/><path d="M8 5v3.5l2 1" stroke="#2BB67D" stroke-width="1.3" stroke-linecap="round"/></svg></div>
         <div style="flex:1;"><div class="goal-card-title">Retire early</div><div class="goal-card-desc">Build long-term financial freedom</div></div>
-        <div class="goal-check"><svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M1 4l2 2 4-4" stroke="#080C12" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="goal-check"><svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M1 4l2 2 4-4" stroke="#0B1410" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
       </div>
       <div class="goal-card" onclick="toggleGoal(this,'travel')">
-        <div class="goal-card-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 8h12M8 2c-2 2-3 4-3 6s1 4 3 6M8 2c2 2 3 4 3 6s-1 4-3 6" stroke="#00C896" stroke-width="1.3"/></svg></div>
+        <div class="goal-card-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 8h12M8 2c-2 2-3 4-3 6s1 4 3 6M8 2c2 2 3 4 3 6s-1 4-3 6" stroke="#2BB67D" stroke-width="1.3"/></svg></div>
         <div style="flex:1;"><div class="goal-card-title">Travel / holiday</div><div class="goal-card-desc">Save for trips and experiences</div></div>
-        <div class="goal-check"><svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M1 4l2 2 4-4" stroke="#080C12" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="goal-check"><svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M1 4l2 2 4-4" stroke="#0B1410" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
       </div>
     </div>
     <div class="field">
@@ -446,40 +445,40 @@
     <p class="step-sub">These settings are on by default and protect you. You can change any of them at any time in your account settings.</p>
     <div class="privacy-row">
       <div class="privacy-row-left">
-        <div class="privacy-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="3" y="7" width="10" height="7" rx="1.5" stroke="#00C896" stroke-width="1.3"/><path d="M5 7V5a3 3 0 016 0v2" stroke="#00C896" stroke-width="1.3" stroke-linecap="round"/></svg></div>
+        <div class="privacy-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="3" y="7" width="10" height="7" rx="1.5" stroke="#2BB67D" stroke-width="1.3"/><path d="M5 7V5a3 3 0 016 0v2" stroke="#2BB67D" stroke-width="1.3" stroke-linecap="round"/></svg></div>
         <div><div class="privacy-label">AES-256 encryption</div><div class="privacy-desc">All data encrypted at rest and in transit</div></div>
       </div>
       <button class="toggle" id="tog-encrypt" onclick="togglePrivacy(this)" data-locked="true"><div class="toggle-thumb"></div></button>
     </div>
     <div class="privacy-row">
       <div class="privacy-row-left">
-        <div class="privacy-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="#00C896" stroke-width="1.3"/><path d="M5 8l2 2 4-4" stroke="#00C896" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="privacy-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="#2BB67D" stroke-width="1.3"/><path d="M5 8l2 2 4-4" stroke="#2BB67D" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
         <div><div class="privacy-label">Never sold or shared</div><div class="privacy-desc">Your financial data stays private always</div></div>
       </div>
       <button class="toggle" id="tog-share" onclick="togglePrivacy(this)" data-locked="true"><div class="toggle-thumb"></div></button>
     </div>
     <div class="privacy-row">
       <div class="privacy-row-left">
-        <div class="privacy-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2l3 1.5v4c0 2.5-3 5-3 5S5 9.5 5 7.5v-4z" stroke="#00C896" stroke-width="1.3"/></svg></div>
+        <div class="privacy-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2l3 1.5v4c0 2.5-3 5-3 5S5 9.5 5 7.5v-4z" stroke="#2BB67D" stroke-width="1.3"/></svg></div>
         <div><div class="privacy-label">No AI training on your data</div><div class="privacy-desc">Your numbers never train any AI model</div></div>
       </div>
       <button class="toggle" id="tog-ai" onclick="togglePrivacy(this)" data-locked="true"><div class="toggle-thumb"></div></button>
     </div>
     <div class="privacy-row">
       <div class="privacy-row-left">
-        <div class="privacy-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="9" rx="1.5" stroke="#00C896" stroke-width="1.3"/><path d="M5 13h6M8 12v1" stroke="#00C896" stroke-width="1.3" stroke-linecap="round"/></svg></div>
+        <div class="privacy-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="9" rx="1.5" stroke="#2BB67D" stroke-width="1.3"/><path d="M5 13h6M8 12v1" stroke="#2BB67D" stroke-width="1.3" stroke-linecap="round"/></svg></div>
         <div><div class="privacy-label">Weekly email digest</div><div class="privacy-desc">"Your wealth grew $X this week" every Monday</div></div>
       </div>
       <button class="toggle" id="tog-email" onclick="togglePrivacy(this)"><div class="toggle-thumb"></div></button>
     </div>
     <div class="privacy-row">
       <div class="privacy-row-left">
-        <div class="privacy-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2v8M4 7l4 3 4-3" stroke="#00C896" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 13h10" stroke="#00C896" stroke-width="1.3" stroke-linecap="round"/></svg></div>
+        <div class="privacy-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2v8M4 7l4 3 4-3" stroke="#2BB67D" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 13h10" stroke="#2BB67D" stroke-width="1.3" stroke-linecap="round"/></svg></div>
         <div><div class="privacy-label">Data export available</div><div class="privacy-desc">Download or delete all your data anytime</div></div>
       </div>
       <button class="toggle" id="tog-export" onclick="togglePrivacy(this)" data-locked="true"><div class="toggle-thumb"></div></button>
     </div>
-    <div style="background:rgba(0,200,150,0.06);border:1px solid rgba(0,200,150,0.15);border-radius:var(--r-sm);padding:12px 14px;margin-top:6px;">
+    <div style="background:rgba(43,182,125,0.06);border:1px solid rgba(43,182,125,0.15);border-radius:var(--r-sm);padding:12px 14px;margin-top:6px;">
       <p style="font-size:13px;color:var(--text2);line-height:1.6;">The three locked settings can never be turned off — they are core to how ProFinanceCast protects you. You can delete your entire account and all data at any time from Settings.</p>
     </div>
   </div>
@@ -765,7 +764,7 @@ function calcScore(surplus, income, debt, savings) {
 
 function launchConfetti() {
   const wrap = document.getElementById('confetti');
-  const colors = ['#00C896','#3B82F6','#F5A623','#A78BFA','#22C55E'];
+  const colors = ['var(--money)','#3B82F6','#F5A623','#A78BFA','#22C55E'];
   for (let i = 0; i < 80; i++) {
     const p = document.createElement('div');
     const size = Math.random() * 8 + 4;

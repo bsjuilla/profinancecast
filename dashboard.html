@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="apple-touch-icon" href="/favicon.svg">
-  <meta name="theme-color" content="#00C896">
+  <meta name="theme-color" content="#2BB67D">
 <title>Dashboard — ProFinanceCast</title>
   <meta name="description" content="Your ProFinanceCast control room — net-worth forecast, monthly savings, debt payoff, and financial health score.">
   <meta name="robots" content="noindex,nofollow">
@@ -25,17 +25,16 @@
   <meta name="twitter:description" content="Your ProFinanceCast control room — net-worth forecast, monthly savings, debt payoff, and financial health score.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg:    #080C12;
+    --bg:    var(--canvas);
     --bg2:   #0D1320;
     --bg3:   #111827;
     --card:  #0F1923;
     --border: rgba(255,255,255,0.07);
     --border2: rgba(255,255,255,0.13);
-    --teal:  #00C896;
-    --teal-dim: rgba(0,200,150,0.12);
+    --teal:  var(--money);
+    --teal-dim: rgba(43,182,125,0.12);
     --text:  #F0F4F8;
     --text2: #8A9BB0;
     --text3: #4A5A6E;
@@ -50,7 +49,7 @@
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   html, body { height: 100%; }
   body {
-    font-family: 'DM Sans', sans-serif;
+    font-family: var(--font-body);
     background: var(--bg);
     color: var(--text);
     display: flex;
@@ -69,13 +68,13 @@
     display: flex; align-items: center; gap: 10px;
     padding: 22px 20px 18px;
     border-bottom: 1px solid var(--border);
-    font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700;
+    font-family: var(--font-display); font-size: 15px; font-weight: 700;
     color: var(--text); text-decoration: none;
   }
   .logo-mark {
     width: 30px; height: 30px; background: var(--teal);
     border-radius: 7px; display: flex; align-items: center; justify-content: center;
-    font-size: 12px; font-weight: 800; color: #080C12; font-family: 'Syne', sans-serif;
+    font-size: 12px; font-weight: 800; color: var(--canvas); font-family: var(--font-display);
     flex-shrink: 0;
   }
   .sidebar-section {
@@ -94,7 +93,7 @@
   .nav-item svg { flex-shrink: 0; opacity: .8; }
   .nav-item.active svg { opacity: 1; }
   .nav-badge {
-    margin-left: auto; font-size: 10px; background: rgba(0,200,150,0.15);
+    margin-left: auto; font-size: 10px; background: rgba(43,182,125,0.15);
     color: var(--teal); padding: 2px 7px; border-radius: 6px; font-weight: 600;
   }
   .sidebar-footer {
@@ -110,7 +109,7 @@
   .user-avatar {
     width: 32px; height: 32px; border-radius: 50%;
     background: var(--teal); display: flex; align-items: center; justify-content: center;
-    font-size: 12px; font-weight: 700; color: #080C12; font-family: 'Syne', sans-serif;
+    font-size: 12px; font-weight: 700; color: var(--canvas); font-family: var(--font-display);
     flex-shrink: 0;
   }
   .user-name { font-size: 13px; font-weight: 500; }
@@ -132,20 +131,20 @@
     backdrop-filter: blur(12px);
   }
   .topbar-left { display: flex; flex-direction: column; }
-  .topbar-title { font-family: 'Syne', sans-serif; font-size: 17px; font-weight: 700; }
+  .topbar-title { font-family: var(--font-display); font-size: 17px; font-weight: 700; }
   .topbar-sub { font-size: 12px; color: var(--text3); margin-top: 1px; }
   .topbar-right { display: flex; align-items: center; gap: 12px; }
   .topbar-btn {
     display: flex; align-items: center; gap: 6px;
     padding: 7px 14px; border-radius: var(--r-sm);
-    font-size: 13px; font-family: 'DM Sans', sans-serif;
+    font-size: 13px; font-family: var(--font-body);
     cursor: pointer; border: 1px solid var(--border2);
     background: transparent; color: var(--text2);
     transition: all .15s;
   }
   .topbar-btn:hover { color: var(--text); border-color: rgba(255,255,255,0.2); }
   .topbar-btn.primary {
-    background: var(--teal); color: #080C12;
+    background: var(--teal); color: var(--canvas);
     border-color: var(--teal); font-weight: 500;
   }
   .topbar-btn.primary:hover { opacity: .88; }
@@ -168,7 +167,7 @@
     padding: 7px 16px; border-radius: 6px;
     font-size: 13px; color: var(--text2); cursor: pointer;
     transition: all .15s; border: none; background: none;
-    font-family: 'DM Sans', sans-serif;
+    font-family: var(--font-body);
   }
   .tab.active { background: var(--bg3); color: var(--text); border: 1px solid var(--border2); }
   .tab:not(.active):hover { color: var(--text); }
@@ -184,7 +183,7 @@
   .metric:hover { border-color: var(--border2); }
   .metric-label { font-size: 12px; color: var(--text3); margin-bottom: 6px; }
   .metric-val {
-    font-family: 'Syne', sans-serif; font-size: 26px; font-weight: 700;
+    font-family: var(--font-display); font-size: 26px; font-weight: 700;
     line-height: 1.1; margin-bottom: 4px;
   }
   .metric-change {
@@ -214,7 +213,7 @@
     display: flex; align-items: center; justify-content: space-between;
     margin-bottom: 16px;
   }
-  .card-title { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; }
+  .card-title { font-family: var(--font-display); font-size: 14px; font-weight: 700; }
   .card-sub { font-size: 12px; color: var(--text3); margin-top: 2px; }
   .card-badge {
     font-size: 11px; padding: 3px 9px; border-radius: 6px;
@@ -318,7 +317,7 @@
     max-width: 88%;
   }
   .sage-bubble.ai {
-    background: var(--teal-dim); border: 1px solid rgba(0,200,150,0.18);
+    background: var(--teal-dim); border: 1px solid rgba(43,182,125,0.18);
     border-radius: 10px 10px 10px 3px; color: var(--text); max-width: 88%;
   }
   .sage-bubble.ai em { color: var(--teal); font-style: normal; font-weight: 500; }
@@ -328,10 +327,10 @@
   .sage-input-field {
     flex: 1; background: var(--bg3); border: 1px solid var(--border2);
     border-radius: var(--r-sm); padding: 8px 13px; font-size: 13px;
-    color: var(--text); font-family: 'DM Sans', sans-serif;
+    color: var(--text); font-family: var(--font-body);
     outline: none; transition: border-color .15s;
   }
-  .sage-input-field:focus { border-color: rgba(0,200,150,0.4); }
+  .sage-input-field:focus { border-color: rgba(43,182,125,0.4); }
   .sage-input-field::placeholder { color: var(--text3); }
   .sage-send-btn {
     width: 34px; height: 34px; background: var(--teal); border: none;
@@ -348,25 +347,25 @@
     padding: 9px 12px; border-radius: var(--r-sm);
     background: var(--bg3); border: 1px solid var(--border);
     font-size: 12.5px; color: var(--text2); cursor: pointer;
-    font-family: 'DM Sans', sans-serif; text-align: left;
+    font-family: var(--font-body); text-align: left;
     transition: all .15s; display: flex; align-items: center; gap: 7px;
   }
-  .event-btn:hover { border-color: rgba(0,200,150,0.3); color: var(--teal); }
+  .event-btn:hover { border-color: rgba(43,182,125,0.3); color: var(--teal); }
   .event-btn.active { border-color: var(--teal); background: var(--teal-dim); color: var(--teal); }
 
   /* ── UPGRADE BANNER ── */
   .upgrade-banner {
-    background: linear-gradient(135deg, rgba(0,200,150,0.08), rgba(59,130,246,0.06));
-    border: 1px solid rgba(0,200,150,0.2); border-radius: var(--r);
+    background: linear-gradient(135deg, rgba(43,182,125,0.08), rgba(59,130,246,0.06));
+    border: 1px solid rgba(43,182,125,0.2); border-radius: var(--r);
     padding: 16px 20px; display: flex; align-items: center;
     justify-content: space-between; gap: 16px; margin-bottom: 16px;
   }
   .upgrade-text { font-size: 13.5px; color: var(--text2); line-height: 1.5; }
   .upgrade-text strong { color: var(--text); display: block; font-size: 14px; margin-bottom: 2px; }
   .upgrade-btn {
-    flex-shrink: 0; background: var(--teal); color: #080C12;
+    flex-shrink: 0; background: var(--teal); color: var(--canvas);
     border: none; border-radius: var(--r-sm); padding: 8px 18px;
-    font-size: 13px; font-weight: 600; font-family: 'DM Sans', sans-serif;
+    font-size: 13px; font-weight: 600; font-family: var(--font-body);
     cursor: pointer; white-space: nowrap; transition: opacity .15s;
   }
   .upgrade-btn:hover { opacity: .88; }
@@ -384,7 +383,7 @@
   .notif-item{display:flex;gap:12px;padding:13px 18px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;}
   .notif-item:hover{background:rgba(255,255,255,0.03);}
   .notif-item:last-child{border-bottom:none;}
-  .notif-item.unread{background:rgba(0,200,150,0.04);}
+  .notif-item.unread{background:rgba(43,182,125,0.04);}
   .notif-dot-sm{width:7px;height:7px;border-radius:50%;background:var(--teal);flex-shrink:0;margin-top:5px;transition:opacity .2s;}
   .notif-title{font-size:13px;font-weight:600;margin-bottom:3px;}
   .notif-body{font-size:12.5px;color:var(--text2);line-height:1.5;margin-bottom:3px;}
@@ -408,7 +407,7 @@
   select.cat-select {
     background:var(--bg3);border:1px solid var(--border2);
     border-radius:5px;font-size:11px;color:var(--text);
-    padding:2px 6px;cursor:pointer;font-family:'DM Sans',sans-serif;outline:none;
+    padding:2px 6px;cursor:pointer;font-family:var(--font-body);outline:none;
   }
 </style>
   <link rel="stylesheet" href="css/pfc-tokens.css">
@@ -520,7 +519,7 @@
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
         Import CSV
       </button>
-      <button class="topbar-btn" onclick="openEditFinances()" style="border-color:rgba(0,200,150,0.35);color:var(--teal);">
+      <button class="topbar-btn" onclick="openEditFinances()" style="border-color:rgba(43,182,125,0.35);color:var(--teal);">
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9.5 1.5a1.5 1.5 0 012.1 2.1L4.5 10.7 2 11.5l.8-2.5z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>
         Edit finances
       </button>
@@ -539,7 +538,7 @@
   <!-- NOTIFICATIONS PANEL -->
   <div id="notif-panel" style="display:none;position:fixed;top:70px;right:20px;width:340px;background:var(--card);border:1px solid var(--border2);border-radius:var(--r);z-index:50;box-shadow:0 8px 32px rgba(0,0,0,0.4);">
     <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
-      <span style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700;">Notifications</span>
+      <span style="font-family:var(--font-display);font-size:14px;font-weight:700;">Notifications</span>
       <span style="font-size:12px;color:var(--teal);cursor:pointer;" onclick="markAllRead()">Mark all read</span>
     </div>
     <div id="notif-list" style="max-height:320px;overflow-y:auto;">
@@ -582,18 +581,18 @@
     <div id="csv-stage-upload" style="background:var(--bg2);border:1px solid var(--border2);border-radius:16px;width:100%;max-width:500px;margin:auto;overflow:hidden;">
       <div style="padding:20px 24px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
         <div>
-          <div style="font-family:'Syne',sans-serif;font-size:17px;font-weight:700;">Import bank statement</div>
+          <div style="font-family:var(--font-display);font-size:17px;font-weight:700;">Import bank statement</div>
           <div style="font-size:12px;color:var(--text3);margin-top:2px;">Real analysis · AI categorisation · Dashboard sync</div>
         </div>
         <div onclick="closeCSV()" style="width:28px;height:28px;border-radius:50%;background:var(--bg3);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2);">✕</div>
       </div>
       <div style="padding:22px 24px;">
         <div id="csv-drop" onclick="document.getElementById('csv-file').click()"
-          ondragover="event.preventDefault();this.style.borderColor='var(--teal)';this.style.background='rgba(0,200,150,0.04)'"
+          ondragover="event.preventDefault();this.style.borderColor='var(--teal)';this.style.background='rgba(43,182,125,0.04)'"
           ondragleave="this.style.borderColor='';this.style.background=''"
           ondrop="handleDrop(event)"
           style="background:var(--bg3);border:2px dashed var(--border2);border-radius:var(--r);padding:36px;text-align:center;margin-bottom:16px;cursor:pointer;transition:all .2s;">
-          <svg width="36" height="36" viewBox="0 0 36 36" fill="none" style="margin:0 auto 12px;display:block;"><path d="M18 4v20M8 14l10-10 10 10" stroke="#00C896" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 28h28" stroke="#4A5A6E" stroke-width="2" stroke-linecap="round"/></svg>
+          <svg width="36" height="36" viewBox="0 0 36 36" fill="none" style="margin:0 auto 12px;display:block;"><path d="M18 4v20M8 14l10-10 10 10" stroke="#2BB67D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 28h28" stroke="#4A5A6E" stroke-width="2" stroke-linecap="round"/></svg>
           <div style="font-size:14px;font-weight:600;margin-bottom:5px;">Drop your CSV here or click to browse</div>
           <div style="font-size:12px;color:var(--text3);">Works with MCB, Barclays, HSBC, SBM, standard exports · Max 10MB</div>
           <input type="file" id="csv-file" accept=".csv,.txt" style="display:none" onchange="handleCSVFile(this)">
@@ -617,7 +616,7 @@
     <div id="csv-stage-processing" style="display:none;background:var(--bg2);border:1px solid var(--border2);border-radius:16px;width:100%;max-width:500px;margin:auto;overflow:hidden;">
       <div style="padding:40px 32px;text-align:center;">
         <div id="csv-spinner" style="width:56px;height:56px;border:3px solid var(--bg3);border-top-color:var(--teal);border-radius:50%;margin:0 auto 20px;animation:spin 0.8s linear infinite;"></div>
-        <div style="font-family:'Syne',sans-serif;font-size:17px;font-weight:700;margin-bottom:8px;" id="csv-proc-title">Reading your statement…</div>
+        <div style="font-family:var(--font-display);font-size:17px;font-weight:700;margin-bottom:8px;" id="csv-proc-title">Reading your statement…</div>
         <div style="font-size:13px;color:var(--text3);margin-bottom:20px;" id="csv-proc-sub">Detecting bank format and parsing transactions</div>
         <div style="height:4px;background:var(--bg3);border-radius:2px;overflow:hidden;">
           <div id="csv-proc-bar" style="height:100%;background:var(--teal);border-radius:2px;width:0%;transition:width .4s ease;"></div>
@@ -631,11 +630,11 @@
       <!-- Report header -->
       <div style="padding:18px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
         <div>
-          <div style="font-family:'Syne',sans-serif;font-size:17px;font-weight:700;">Statement Analysis</div>
+          <div style="font-family:var(--font-display);font-size:17px;font-weight:700;">Statement Analysis</div>
           <div style="font-size:12px;color:var(--text3);margin-top:2px;" id="rpt-filename">—</div>
         </div>
         <div style="display:flex;align-items:center;gap:10px;">
-          <button onclick="csvStage('upload')" style="padding:6px 14px;background:transparent;border:1px solid var(--border2);border-radius:var(--r-sm);font-size:12px;color:var(--text2);cursor:pointer;font-family:'DM Sans',sans-serif;">← New file</button>
+          <button onclick="csvStage('upload')" style="padding:6px 14px;background:transparent;border:1px solid var(--border2);border-radius:var(--r-sm);font-size:12px;color:var(--text2);cursor:pointer;font-family:var(--font-body);">← New file</button>
           <div onclick="closeCSV()" style="width:28px;height:28px;border-radius:50%;background:var(--bg3);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2);">✕</div>
         </div>
       </div>
@@ -644,24 +643,24 @@
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0;border-bottom:1px solid var(--border);">
         <div style="padding:16px 20px;border-right:1px solid var(--border);">
           <div style="font-size:11px;color:var(--text3);margin-bottom:4px;font-weight:500;">Total income found</div>
-          <div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:700;color:var(--teal);" id="rpt-income">—</div>
+          <div style="font-family:var(--font-display);font-size:20px;font-weight:700;color:var(--teal);" id="rpt-income">—</div>
         </div>
         <div style="padding:16px 20px;border-right:1px solid var(--border);">
           <div style="font-size:11px;color:var(--text3);margin-bottom:4px;font-weight:500;">Total spent</div>
-          <div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:700;color:var(--red);" id="rpt-spent">—</div>
+          <div style="font-family:var(--font-display);font-size:20px;font-weight:700;color:var(--red);" id="rpt-spent">—</div>
         </div>
         <div style="padding:16px 20px;border-right:1px solid var(--border);">
           <div style="font-size:11px;color:var(--text3);margin-bottom:4px;font-weight:500;">Net cash flow</div>
-          <div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:700;" id="rpt-net">—</div>
+          <div style="font-family:var(--font-display);font-size:20px;font-weight:700;" id="rpt-net">—</div>
         </div>
         <div style="padding:16px 20px;">
           <div style="font-size:11px;color:var(--text3);margin-bottom:4px;font-weight:500;">Transactions</div>
-          <div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:700;" id="rpt-count">—</div>
+          <div style="font-family:var(--font-display);font-size:20px;font-weight:700;" id="rpt-count">—</div>
         </div>
       </div>
 
       <!-- Gemini status bar -->
-      <div id="rpt-ai-bar" style="display:none;padding:10px 20px;background:rgba(0,200,150,0.06);border-bottom:1px solid rgba(0,200,150,0.15);font-size:12px;color:var(--teal);display:flex;align-items:center;gap:8px;">
+      <div id="rpt-ai-bar" style="display:none;padding:10px 20px;background:rgba(43,182,125,0.06);border-bottom:1px solid rgba(43,182,125,0.15);font-size:12px;color:var(--teal);display:flex;align-items:center;gap:8px;">
         <div style="width:10px;height:10px;border:2px solid var(--teal);border-top-color:transparent;border-radius:50%;animation:spin 0.8s linear infinite;flex-shrink:0;"></div>
         <span id="rpt-ai-msg">Sage is categorising unrecognised transactions…</span>
       </div>
@@ -688,9 +687,9 @@
           <!-- Table toolbar -->
           <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0;">
             <input id="txn-search" type="text" placeholder="Search transactions…" oninput="filterTxns()"
-              style="flex:1;padding:7px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:13px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;">
+              style="flex:1;padding:7px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:13px;color:var(--text);font-family:var(--font-body);outline:none;">
             <select id="txn-filter-cat" onchange="filterTxns()"
-              style="padding:7px 10px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:12px;color:var(--text2);cursor:pointer;font-family:'DM Sans',sans-serif;outline:none;">
+              style="padding:7px 10px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:12px;color:var(--text2);cursor:pointer;font-family:var(--font-body);outline:none;">
               <option value="">All categories</option>
               <option value="income">Income</option>
               <option value="housing">Housing</option>
@@ -724,9 +723,9 @@
       <div style="padding:14px 24px;border-top:1px solid var(--border);background:var(--bg);display:flex;align-items:center;justify-content:space-between;gap:16px;">
         <div style="font-size:13px;color:var(--text2);" id="rpt-apply-hint">Review categories above, then apply real numbers to your dashboard.</div>
         <div style="display:flex;gap:10px;flex-shrink:0;">
-          <button onclick="closeCSV()" style="padding:9px 18px;background:transparent;border:1px solid var(--border2);border-radius:var(--r-sm);font-size:13px;color:var(--text2);cursor:pointer;font-family:'DM Sans',sans-serif;">Close</button>
-          <button onclick="applyToDashboard()" style="padding:9px 20px;background:var(--teal);border:none;border-radius:var(--r-sm);font-size:13px;font-weight:700;color:#080C12;cursor:pointer;font-family:'DM Sans',sans-serif;display:flex;align-items:center;gap:7px;">
-            <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 7l3.5 3.5L11 3" stroke="#080C12" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <button onclick="closeCSV()" style="padding:9px 18px;background:transparent;border:1px solid var(--border2);border-radius:var(--r-sm);font-size:13px;color:var(--text2);cursor:pointer;font-family:var(--font-body);">Close</button>
+          <button onclick="applyToDashboard()" style="padding:9px 20px;background:var(--teal);border:none;border-radius:var(--r-sm);font-size:13px;font-weight:700;color:var(--canvas);cursor:pointer;font-family:var(--font-body);display:flex;align-items:center;gap:7px;">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 7l3.5 3.5L11 3" stroke="#0B1410" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
             Apply to dashboard
           </button>
         </div>
@@ -832,7 +831,7 @@
               stroke-linecap="round" transform="rotate(-90 65 65)"
               style="transition:stroke-dashoffset 1s ease;"/>
             <text x="65" y="62" text-anchor="middle" font-family="Syne,sans-serif" font-size="28" font-weight="800" fill="#F0F4F8">74</text>
-            <text x="65" y="78" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="11" fill="#8A9BB0">out of 100</text>
+            <text x="65" y="78" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#8A9BB0">out of 100</text>
           </svg>
         </div>
         <div class="score-breakdown">
@@ -1059,7 +1058,7 @@
             <div style="font-size:11px;color:var(--text3);margin-top:4px;">~2 months to reach goal</div>
           </div>
         </div>
-        <button id="add-goal-btn" onclick="openAddGoal()" style="width:100%;margin-top:16px;padding:8px;background:transparent;border:1px dashed rgba(255,255,255,0.1);border-radius:var(--r-sm);font-size:13px;color:var(--text3);cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;" onmouseover="this.style.borderColor='rgba(0,200,150,0.3)';this.style.color='var(--teal)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.1)';this.style.color='var(--text3)'">+ Add new goal</button>
+        <button id="add-goal-btn" onclick="openAddGoal()" style="width:100%;margin-top:16px;padding:8px;background:transparent;border:1px dashed rgba(255,255,255,0.1);border-radius:var(--r-sm);font-size:13px;color:var(--text3);cursor:pointer;font-family:var(--font-body);transition:all .15s;" onmouseover="this.style.borderColor='rgba(43,182,125,0.3)';this.style.color='var(--teal)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.1)';this.style.color='var(--text3)'">+ Add new goal</button>
       </div>
     </div>
 
@@ -1074,7 +1073,7 @@
       <div class="card">
         <div class="card-header">
           <div style="display:flex;align-items:center;gap:10px;">
-            <div style="width:32px;height:32px;background:var(--teal);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:12px;font-weight:800;color:#080C12;flex-shrink:0;">S</div>
+            <div style="width:32px;height:32px;background:var(--teal);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:12px;font-weight:800;color:var(--canvas);flex-shrink:0;">S</div>
             <div>
               <div class="card-title">Ask Sage</div>
               <div class="card-sub" style="color:var(--teal);">● Online</div>
@@ -1088,7 +1087,7 @@
         <div class="sage-input-row" style="margin-top:12px;">
           <input class="sage-input-field" id="sage-input" placeholder="Ask Sage about your finances…" onkeydown="if(event.key==='Enter')sendToSage()">
           <button class="sage-send-btn" onclick="sendToSage()">
-            <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M1 6.5h11M7 2l4.5 4.5L7 11" stroke="#080C12" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M1 6.5h11M7 2l4.5 4.5L7 11" stroke="#0B1410" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </button>
         </div>
         <div class="sage-limit">Free plan: <span id="sage-count">0</span> / 10 queries used this month</div>
@@ -1102,7 +1101,7 @@
             <div class="card-sub" id="infl-sub">How inflation erodes your purchasing power</div>
           </div>
           <div style="display:flex;align-items:center;gap:8px;">
-            <button onclick="openInflCountry()" style="display:flex;align-items:center;gap:5px;padding:5px 10px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:11.5px;color:var(--text2);cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;" onmouseover="this.style.borderColor='rgba(0,200,150,0.4)';this.style.color='var(--teal)'" onmouseout="this.style.borderColor='';this.style.color=''">
+            <button onclick="openInflCountry()" style="display:flex;align-items:center;gap:5px;padding:5px 10px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:11.5px;color:var(--text2);cursor:pointer;font-family:var(--font-body);transition:all .15s;" onmouseover="this.style.borderColor='rgba(43,182,125,0.4)';this.style.color='var(--teal)'" onmouseout="this.style.borderColor='';this.style.color=''">
               <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><circle cx="5.5" cy="5.5" r="4.5" stroke="currentColor" stroke-width="1.2"/><ellipse cx="5.5" cy="5.5" rx="2" ry="4.5" stroke="currentColor" stroke-width="1.2"/><line x1="1" y1="5.5" x2="10" y2="5.5" stroke="currentColor" stroke-width="1.2"/></svg>
               Live rate
             </button>
@@ -1116,7 +1115,7 @@
             <div style="font-size:13px;font-weight:600;color:var(--text);">Select your country</div>
             <span onclick="closeInflCountry()" style="cursor:pointer;color:var(--text3);font-size:15px;line-height:1;">✕</span>
           </div>
-          <select id="infl-country-select" style="width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:13.5px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;margin-bottom:10px;">
+          <select id="infl-country-select" style="width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:13.5px;color:var(--text);font-family:var(--font-body);outline:none;cursor:pointer;margin-bottom:10px;">
             <option value="">— Choose a country —</option>
             <option value="MU">🇲🇺 Mauritius</option>
             <option value="US">🇺🇸 United States</option>
@@ -1149,8 +1148,8 @@
             <option value="NO">🇳🇴 Norway</option>
             <option value="NZ">🇳🇿 New Zealand</option>
           </select>
-          <button onclick="fetchLiveInflation()" style="width:100%;padding:9px;background:var(--teal);border:none;border-radius:var(--r-sm);font-size:13px;font-weight:700;color:#080C12;font-family:'DM Sans',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;" id="infl-fetch-btn">
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M10 6A4 4 0 1 1 6 2" stroke="#080C12" stroke-width="1.5" stroke-linecap="round"/><path d="M10 2v4H6" stroke="#080C12" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <button onclick="fetchLiveInflation()" style="width:100%;padding:9px;background:var(--teal);border:none;border-radius:var(--r-sm);font-size:13px;font-weight:700;color:var(--canvas);font-family:var(--font-body);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;" id="infl-fetch-btn">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M10 6A4 4 0 1 1 6 2" stroke="#0B1410" stroke-width="1.5" stroke-linecap="round"/><path d="M10 2v4H6" stroke="#0B1410" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
             Fetch live rate
           </button>
           <div id="infl-status" style="display:none;margin-top:8px;font-size:12px;padding:8px 10px;border-radius:var(--r-sm);"></div>
@@ -1160,19 +1159,19 @@
           <div style="font-size:13px;color:var(--text2);margin-bottom:12px;" id="infl-desc">At <span id="infl-rate-text">3.5%</span> inflation, <span id="infl-base-text">$3,000</span> today has the purchasing power of:</div>
           <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;text-align:center;">
             <div style="background:var(--bg3);border-radius:var(--r-sm);padding:12px 8px;">
-              <div class="num" style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--text);" id="infl-y1">$2,895</div>
+              <div class="num" style="font-family:var(--font-display);font-size:16px;font-weight:700;color:var(--text);" id="infl-y1">$2,895</div>
               <div style="font-size:11px;color:var(--text3);margin-top:3px;">in 1 year</div>
             </div>
             <div style="background:var(--bg3);border-radius:var(--r-sm);padding:12px 8px;">
-              <div class="num" style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--amber);" id="infl-y3">$2,552</div>
+              <div class="num" style="font-family:var(--font-display);font-size:16px;font-weight:700;color:var(--amber);" id="infl-y3">$2,552</div>
               <div style="font-size:11px;color:var(--text3);margin-top:3px;">in 3 years</div>
             </div>
             <div style="background:var(--bg3);border-radius:var(--r-sm);padding:12px 8px;">
-              <div class="num" style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--red);" id="infl-y5">$2,124</div>
+              <div class="num" style="font-family:var(--font-display);font-size:16px;font-weight:700;color:var(--red);" id="infl-y5">$2,124</div>
               <div style="font-size:11px;color:var(--text3);margin-top:3px;">in 5 years</div>
             </div>
             <div style="background:var(--bg3);border-radius:var(--r-sm);padding:12px 8px;">
-              <div class="num" style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--red);" id="infl-y10">$1,459</div>
+              <div class="num" style="font-family:var(--font-display);font-size:16px;font-weight:700;color:var(--red);" id="infl-y10">$1,459</div>
               <div style="font-size:11px;color:var(--text3);margin-top:3px;">in 10 years</div>
             </div>
           </div>
@@ -1214,27 +1213,27 @@
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px;">
         <div class="pfc-card--elev" style="background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px;">
           <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Active goals</div>
-          <div class="num" style="font-family:'Syne',sans-serif;font-size:22px;font-weight:700;" id="g-panel-count">0</div>
+          <div class="num" style="font-family:var(--font-display);font-size:22px;font-weight:700;" id="g-panel-count">0</div>
         </div>
         <div class="pfc-card--elev" style="background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px;">
           <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Total target</div>
-          <div class="num" style="font-family:'Syne',sans-serif;font-size:22px;font-weight:700;" id="g-panel-total">—</div>
+          <div class="num" style="font-family:var(--font-display);font-size:22px;font-weight:700;" id="g-panel-total">—</div>
         </div>
         <div class="pfc-card--elev" style="background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px;">
           <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Overall progress</div>
-          <div class="num" style="font-family:'Syne',sans-serif;font-size:22px;font-weight:700;color:var(--teal);" id="g-panel-pct">0%</div>
+          <div class="num" style="font-family:var(--font-display);font-size:22px;font-weight:700;color:var(--teal);" id="g-panel-pct">0%</div>
         </div>
       </div>
 
       <!-- Goals list -->
       <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:20px 22px;margin-bottom:16px;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
-          <div style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700;">My Goals</div>
+          <div style="font-family:var(--font-display);font-size:14px;font-weight:700;">My Goals</div>
           <div style="display:flex;gap:8px;">
-            <button onclick="openAddGoal()" style="display:flex;align-items:center;gap:6px;padding:6px 12px;background:var(--teal-dim);border:1px solid rgba(0,200,150,0.3);border-radius:var(--r-sm);font-size:12px;color:var(--teal);cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:500;">
+            <button onclick="openAddGoal()" style="display:flex;align-items:center;gap:6px;padding:6px 12px;background:var(--teal-dim);border:1px solid rgba(43,182,125,0.3);border-radius:var(--r-sm);font-size:12px;color:var(--teal);cursor:pointer;font-family:var(--font-body);font-weight:500;">
               + Add goal
             </button>
-            <a href="goals.html" style="display:flex;align-items:center;gap:6px;padding:6px 12px;background:none;border:1px solid var(--border2);border-radius:var(--r-sm);font-size:12px;color:var(--text2);cursor:pointer;font-family:'DM Sans',sans-serif;text-decoration:none;">
+            <a href="goals.html" style="display:flex;align-items:center;gap:6px;padding:6px 12px;background:none;border:1px solid var(--border2);border-radius:var(--r-sm);font-size:12px;color:var(--text2);cursor:pointer;font-family:var(--font-body);text-decoration:none;">
               Full Goals page →
             </a>
           </div>
@@ -1251,22 +1250,22 @@
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;">
         <div class="pfc-card--elev" style="background:var(--card);border:1px solid var(--border);border-top:2px solid var(--teal);border-radius:var(--r);padding:16px 18px;">
           <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">Current net worth</div>
-          <div class="num" style="font-family:'Syne',sans-serif;font-size:22px;font-weight:700;color:var(--teal);" id="nw-tab-nw">—</div>
+          <div class="num" style="font-family:var(--font-display);font-size:22px;font-weight:700;color:var(--teal);" id="nw-tab-nw">—</div>
           <div style="font-size:12px;color:var(--text3);margin-top:3px;" id="nw-tab-nw-sub">—</div>
         </div>
         <div class="pfc-card--elev" style="background:var(--card);border:1px solid var(--border);border-top:2px solid var(--blue);border-radius:var(--r);padding:16px 18px;">
           <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">Total assets</div>
-          <div class="num" style="font-family:'Syne',sans-serif;font-size:22px;font-weight:700;color:var(--blue);" id="nw-tab-assets">—</div>
+          <div class="num" style="font-family:var(--font-display);font-size:22px;font-weight:700;color:var(--blue);" id="nw-tab-assets">—</div>
           <div style="font-size:12px;color:var(--text3);margin-top:3px;">savings + investments</div>
         </div>
         <div class="pfc-card--elev" style="background:var(--card);border:1px solid var(--border);border-top:2px solid var(--red);border-radius:var(--r);padding:16px 18px;">
           <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">Total debt</div>
-          <div class="num" style="font-family:'Syne',sans-serif;font-size:22px;font-weight:700;color:var(--red);" id="nw-tab-debt">—</div>
+          <div class="num" style="font-family:var(--font-display);font-size:22px;font-weight:700;color:var(--red);" id="nw-tab-debt">—</div>
           <div style="font-size:12px;color:var(--text3);margin-top:3px;">all debts combined</div>
         </div>
         <div class="pfc-card--elev" style="background:var(--card);border:1px solid var(--border);border-top:2px solid var(--amber);border-radius:var(--r);padding:16px 18px;">
           <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">12-mo projection</div>
-          <div class="num" style="font-family:'Syne',sans-serif;font-size:22px;font-weight:700;" id="nw-tab-proj">—</div>
+          <div class="num" style="font-family:var(--font-display);font-size:22px;font-weight:700;" id="nw-tab-proj">—</div>
           <div style="font-size:12px;color:var(--text3);margin-top:3px;">at current trajectory</div>
         </div>
       </div>
@@ -1278,7 +1277,7 @@
         <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:20px 22px;">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
             <div>
-              <div style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700;">Net Worth Over Time</div>
+              <div style="font-family:var(--font-display);font-size:14px;font-weight:700;">Net Worth Over Time</div>
               <div style="font-size:12px;color:var(--text3);margin-top:2px;">Logged automatically each time you visit</div>
             </div>
             <a href="net-worth.html" style="font-size:12px;color:var(--teal);text-decoration:none;font-weight:500;">Full timeline →</a>
@@ -1291,7 +1290,7 @@
 
         <!-- Asset breakdown -->
         <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:20px 22px;">
-          <div style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700;margin-bottom:16px;">Breakdown</div>
+          <div style="font-family:var(--font-display);font-size:14px;font-weight:700;margin-bottom:16px;">Breakdown</div>
 
           <div style="margin-bottom:14px;">
             <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px;">
@@ -1325,11 +1324,11 @@
 
           <div style="border-top:1px solid var(--border);padding-top:14px;">
             <div style="font-size:11px;color:var(--text3);margin-bottom:6px;">Monthly change</div>
-            <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700;" id="nw-tab-monthly">—</div>
+            <div style="font-family:var(--font-display);font-size:18px;font-weight:700;" id="nw-tab-monthly">—</div>
             <div style="font-size:12px;color:var(--text3);margin-top:2px;">based on current surplus</div>
           </div>
 
-          <a href="net-worth.html" style="display:flex;align-items:center;justify-content:center;gap:6px;margin-top:16px;padding:9px;background:var(--teal-dim);border:1px solid rgba(0,200,150,0.25);border-radius:var(--r-sm);font-size:12px;color:var(--teal);text-decoration:none;font-weight:500;">
+          <a href="net-worth.html" style="display:flex;align-items:center;justify-content:center;gap:6px;margin-top:16px;padding:9px;background:var(--teal-dim);border:1px solid rgba(43,182,125,0.25);border-radius:var(--r-sm);font-size:12px;color:var(--teal);text-decoration:none;font-weight:500;">
             Open full Net Worth page →
           </a>
         </div>
@@ -1337,7 +1336,7 @@
 
       <!-- Milestones row -->
       <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:20px 22px;">
-        <div style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700;margin-bottom:14px;">Net worth milestones</div>
+        <div style="font-family:var(--font-display);font-size:14px;font-weight:700;margin-bottom:14px;">Net worth milestones</div>
         <div id="nw-tab-milestones" style="display:flex;flex-wrap:wrap;gap:10px;"></div>
       </div>
 
@@ -1348,28 +1347,28 @@
 <div id="goal-overlay" style="display:none;position:fixed;inset:0;background:rgba(4,6,10,0.85);backdrop-filter:blur(6px);z-index:100;align-items:center;justify-content:center;padding:20px;">
   <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:16px;width:100%;max-width:420px;overflow:hidden;">
     <div style="padding:18px 22px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
-      <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;" id="goal-modal-title">Add new goal</div>
+      <div style="font-family:var(--font-display);font-size:16px;font-weight:700;" id="goal-modal-title">Add new goal</div>
       <div onclick="closeGoalModal()" style="width:28px;height:28px;border-radius:50%;background:var(--bg3);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2);font-size:15px;">✕</div>
     </div>
     <div style="padding:20px 22px;">
       <div style="margin-bottom:14px;">
         <label style="font-size:12px;color:var(--text2);display:block;margin-bottom:5px;">Goal name</label>
-        <input type="text" id="goal-name" placeholder="e.g. New car, Wedding, Emergency fund" style="width:100%;padding:10px 13px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;">
+        <input type="text" id="goal-name" placeholder="e.g. New car, Wedding, Emergency fund" style="width:100%;padding:10px 13px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:var(--font-body);outline:none;">
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
         <div>
           <label style="font-size:12px;color:var(--text2);display:block;margin-bottom:5px;">Current amount</label>
-          <input type="number" id="goal-current" placeholder="0" min="0" style="width:100%;padding:10px 13px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;" oninput="goalCalcPreview()">
+          <input type="number" id="goal-current" placeholder="0" min="0" style="width:100%;padding:10px 13px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:var(--font-body);outline:none;" oninput="goalCalcPreview()">
         </div>
         <div>
           <label style="font-size:12px;color:var(--text2);display:block;margin-bottom:5px;">Target amount</label>
-          <input type="number" id="goal-target" placeholder="10000" min="1" style="width:100%;padding:10px 13px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;" oninput="goalCalcPreview()">
+          <input type="number" id="goal-target" placeholder="10000" min="1" style="width:100%;padding:10px 13px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:var(--font-body);outline:none;" oninput="goalCalcPreview()">
         </div>
       </div>
       <div style="margin-bottom:18px;">
         <label style="font-size:12px;color:var(--text2);display:block;margin-bottom:5px;">Colour</label>
         <div style="display:flex;gap:8px;" id="goal-colors">
-          <div class="goal-color-opt selected" data-color="var(--teal)" style="width:24px;height:24px;border-radius:50%;background:#00C896;cursor:pointer;border:2px solid white;"></div>
+          <div class="goal-color-opt selected" data-color="var(--teal)" style="width:24px;height:24px;border-radius:50%;background:var(--money);cursor:pointer;border:2px solid white;"></div>
           <div class="goal-color-opt" data-color="var(--blue)" style="width:24px;height:24px;border-radius:50%;background:#3B82F6;cursor:pointer;border:2px solid transparent;"></div>
           <div class="goal-color-opt" data-color="var(--amber)" style="width:24px;height:24px;border-radius:50%;background:#F5A623;cursor:pointer;border:2px solid transparent;"></div>
           <div class="goal-color-opt" data-color="var(--purple)" style="width:24px;height:24px;border-radius:50%;background:#A78BFA;cursor:pointer;border:2px solid transparent;"></div>
@@ -1388,8 +1387,8 @@
         <div id="gp-months" style="font-size:11px;color:var(--text3);"></div>
       </div>
       <div style="display:flex;gap:10px;">
-        <button onclick="saveGoal()" style="flex:1;padding:11px;background:var(--teal);border:none;border-radius:var(--r-sm);font-size:14px;font-weight:700;color:#080C12;font-family:'DM Sans',sans-serif;cursor:pointer;">Save goal</button>
-        <button onclick="closeGoalModal()" style="padding:11px 18px;background:transparent;border:1px solid var(--border2);border-radius:var(--r-sm);font-size:13px;color:var(--text2);font-family:'DM Sans',sans-serif;cursor:pointer;">Cancel</button>
+        <button onclick="saveGoal()" style="flex:1;padding:11px;background:var(--teal);border:none;border-radius:var(--r-sm);font-size:14px;font-weight:700;color:var(--canvas);font-family:var(--font-body);cursor:pointer;">Save goal</button>
+        <button onclick="closeGoalModal()" style="padding:11px 18px;background:transparent;border:1px solid var(--border2);border-radius:var(--r-sm);font-size:13px;color:var(--text2);font-family:var(--font-body);cursor:pointer;">Cancel</button>
       </div>
     </div>
   </div>
@@ -1402,7 +1401,7 @@
     <!-- Header -->
     <div style="padding:20px 24px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
       <div>
-        <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700;">Edit my finances</div>
+        <div style="font-family:var(--font-display);font-size:18px;font-weight:700;">Edit my finances</div>
         <div style="font-size:12px;color:var(--text3);margin-top:2px;">Changes update your forecast, health score and all charts instantly</div>
       </div>
       <div onclick="closeEditFinances()" style="width:30px;height:30px;border-radius:50%;background:var(--bg3);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2);font-size:16px;">✕</div>
@@ -1414,15 +1413,15 @@
       <div style="background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);padding:14px 18px;display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:22px;">
         <div style="text-align:center;">
           <div style="font-size:11px;color:var(--text3);margin-bottom:3px;">Monthly surplus</div>
-          <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700;" id="ef-surplus">$0</div>
+          <div style="font-family:var(--font-display);font-size:18px;font-weight:700;" id="ef-surplus">$0</div>
         </div>
         <div style="text-align:center;border-left:1px solid var(--border);border-right:1px solid var(--border);">
           <div style="font-size:11px;color:var(--text3);margin-bottom:3px;">Net worth today</div>
-          <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700;" id="ef-nw">$0</div>
+          <div style="font-family:var(--font-display);font-size:18px;font-weight:700;" id="ef-nw">$0</div>
         </div>
         <div style="text-align:center;">
           <div style="font-size:11px;color:var(--text3);margin-bottom:3px;">Health score</div>
-          <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700;" id="ef-score">0</div>
+          <div style="font-family:var(--font-display);font-size:18px;font-weight:700;" id="ef-score">0</div>
         </div>
       </div>
 
@@ -1433,14 +1432,14 @@
           <label style="font-size:12px;color:var(--text2);display:block;margin-bottom:5px;">Monthly take-home pay</label>
           <div style="position:relative;">
             <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:14px;" id="ef-sym1">$</span>
-            <input type="number" id="ef-income" style="width:100%;padding:9px 12px 9px 26px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;" oninput="efCalc()">
+            <input type="number" id="ef-income" style="width:100%;padding:9px 12px 9px 26px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:var(--font-body);outline:none;" oninput="efCalc()">
           </div>
         </div>
         <div>
           <label style="font-size:12px;color:var(--text2);display:block;margin-bottom:5px;">Other income (optional)</label>
           <div style="position:relative;">
             <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:14px;" id="ef-sym2">$</span>
-            <input type="number" id="ef-other-income" style="width:100%;padding:9px 12px 9px 26px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;" oninput="efCalc()">
+            <input type="number" id="ef-other-income" style="width:100%;padding:9px 12px 9px 26px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:var(--font-body);outline:none;" oninput="efCalc()">
           </div>
         </div>
       </div>
@@ -1450,19 +1449,19 @@
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px;">
         <div>
           <label style="font-size:12px;color:var(--text2);display:block;margin-bottom:5px;">Housing (rent/mortgage)</label>
-          <input type="number" id="ef-housing" style="width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;" oninput="efCalc()">
+          <input type="number" id="ef-housing" style="width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:var(--font-body);outline:none;" oninput="efCalc()">
         </div>
         <div>
           <label style="font-size:12px;color:var(--text2);display:block;margin-bottom:5px;">Food & groceries</label>
-          <input type="number" id="ef-food" style="width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;" oninput="efCalc()">
+          <input type="number" id="ef-food" style="width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:var(--font-body);outline:none;" oninput="efCalc()">
         </div>
         <div>
           <label style="font-size:12px;color:var(--text2);display:block;margin-bottom:5px;">Transport</label>
-          <input type="number" id="ef-transport" style="width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;" oninput="efCalc()">
+          <input type="number" id="ef-transport" style="width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:var(--font-body);outline:none;" oninput="efCalc()">
         </div>
         <div>
           <label style="font-size:12px;color:var(--text2);display:block;margin-bottom:5px;">Other expenses</label>
-          <input type="number" id="ef-other-exp" style="width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;" oninput="efCalc()">
+          <input type="number" id="ef-other-exp" style="width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:var(--font-body);outline:none;" oninput="efCalc()">
         </div>
       </div>
 
@@ -1471,19 +1470,19 @@
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:22px;">
         <div>
           <label style="font-size:12px;color:var(--text2);display:block;margin-bottom:5px;">Current savings / cash</label>
-          <input type="number" id="ef-savings" style="width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;" oninput="efCalc()">
+          <input type="number" id="ef-savings" style="width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:var(--font-body);outline:none;" oninput="efCalc()">
         </div>
         <div>
           <label style="font-size:12px;color:var(--text2);display:block;margin-bottom:5px;">Investments (optional)</label>
-          <input type="number" id="ef-investments" style="width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;" oninput="efCalc()">
+          <input type="number" id="ef-investments" style="width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:var(--font-body);outline:none;" oninput="efCalc()">
         </div>
         <div>
           <label style="font-size:12px;color:var(--text2);display:block;margin-bottom:5px;">Total debt</label>
-          <input type="number" id="ef-debt" style="width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;" oninput="efCalc()">
+          <input type="number" id="ef-debt" style="width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:var(--font-body);outline:none;" oninput="efCalc()">
         </div>
         <div>
           <label style="font-size:12px;color:var(--text2);display:block;margin-bottom:5px;">Monthly debt payment</label>
-          <input type="number" id="ef-debtpay" style="width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;" oninput="efCalc()">
+          <input type="number" id="ef-debtpay" style="width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:var(--font-body);outline:none;" oninput="efCalc()">
         </div>
       </div>
 
@@ -1491,7 +1490,7 @@
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:22px;">
         <div style="flex:1;">
           <label style="font-size:12px;color:var(--text2);display:block;margin-bottom:5px;">Currency</label>
-          <select id="ef-currency" style="width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;" onchange="efCalc()">
+          <select id="ef-currency" style="width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:var(--font-body);outline:none;" onchange="efCalc()">
             <option value="$">US Dollar ($)</option>
             <option value="€">Euro (€)</option>
             <option value="£">British Pound (£)</option>
@@ -1506,10 +1505,10 @@
 
       <!-- BUTTONS -->
       <div style="display:flex;gap:10px;">
-        <button onclick="saveEditFinances()" style="flex:1;padding:12px;background:var(--teal);border:none;border-radius:var(--r-sm);font-size:14px;font-weight:700;color:#080C12;font-family:'DM Sans',sans-serif;cursor:pointer;transition:opacity .15s;" onmouseover="this.style.opacity='.88'" onmouseout="this.style.opacity='1'">
+        <button onclick="saveEditFinances()" style="flex:1;padding:12px;background:var(--teal);border:none;border-radius:var(--r-sm);font-size:14px;font-weight:700;color:var(--canvas);font-family:var(--font-body);cursor:pointer;transition:opacity .15s;" onmouseover="this.style.opacity='.88'" onmouseout="this.style.opacity='1'">
           Save & update dashboard
         </button>
-        <button onclick="resetFinances()" style="padding:12px 18px;background:transparent;border:1px solid var(--border2);border-radius:var(--r-sm);font-size:13px;color:var(--text2);font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .15s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--text2)'">
+        <button onclick="resetFinances()" style="padding:12px 18px;background:transparent;border:1px solid var(--border2);border-radius:var(--r-sm);font-size:13px;color:var(--text2);font-family:var(--font-body);cursor:pointer;transition:all .15s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--text2)'">
           Reset to defaults
         </button>
       </div>
@@ -1637,7 +1636,7 @@ function recalcForecast() {
   const ringArc = document.querySelector('circle[stroke-linecap="round"]');
   if (ringArc) {
     ringArc.setAttribute('stroke-dashoffset', Math.round(339 - (339 * score / 100)));
-    ringArc.setAttribute('stroke', score >= 70 ? '#00C896' : score >= 40 ? '#F5A623' : '#E05252');
+    ringArc.setAttribute('stroke', score >= 70 ? 'var(--money)' : score >= 40 ? '#F5A623' : '#E05252');
   }
   const ringNum = document.querySelector('text[font-size="28"]');
   if (ringNum) ringNum.textContent = score;
@@ -1661,7 +1660,7 @@ function recalcForecast() {
     if (!fill || !val) return;
     if (label.includes('savings')) {
       fill.style.width = Math.min(100, pct * 2) + '%';
-      fill.style.background = pct >= 20 ? '#00C896' : '#F5A623';
+      fill.style.background = pct >= 20 ? 'var(--money)' : '#F5A623';
       val.textContent = pct + '%'; val.style.color = pct >= 20 ? 'var(--teal)' : 'var(--amber)';
     } else if (label.includes('debt')) {
       const dr = USER.debt === 0 ? 100 : Math.max(0, Math.round((1 - USER.debt / Math.max(1, assets + USER.debt)) * 100));
@@ -1669,7 +1668,7 @@ function recalcForecast() {
       val.textContent = USER.debt === 0 ? 'None' : 'Mid';
     } else if (label.includes('emergency')) {
       fill.style.width = Math.min(100, emergencyMo / 6 * 100) + '%';
-      fill.style.background = emergencyMo >= 3 ? '#00C896' : '#F5A623';
+      fill.style.background = emergencyMo >= 3 ? 'var(--money)' : '#F5A623';
       val.textContent = emergencyMo + 'mo'; val.style.color = emergencyMo >= 3 ? 'var(--teal)' : 'var(--amber)';
     } else if (label.includes('spending')) {
       const sp = surplus > 0 ? Math.min(100, Math.round((1 - Math.abs(surplus - d.monthly) / Math.max(1, income)) * 100)) : 30;
@@ -1713,9 +1712,9 @@ function initChart() {
       datasets: [
         {
           label: 'Projected', data: d.base,
-          borderColor: '#00C896', backgroundColor: 'rgba(0,200,150,0.07)',
+          borderColor: 'var(--money)', backgroundColor: 'rgba(43,182,125,0.07)',
           borderWidth: 2.5, tension: 0.4, fill: true,
-          pointRadius: 3, pointBackgroundColor: '#00C896', pointBorderColor: '#0D1320', pointBorderWidth: 2
+          pointRadius: 3, pointBackgroundColor: 'var(--money)', pointBorderColor: '#0D1320', pointBorderWidth: 2
         },
         {
           label: 'Optimistic', data: d.opt,
@@ -1743,12 +1742,12 @@ function initChart() {
       scales: {
         x: {
           grid: { color: 'rgba(255,255,255,0.04)' },
-          ticks: { color: '#4A5A6E', font: { size: 11, family: 'DM Sans' } }
+          ticks: { color: '#4A5A6E', font: { size: 11, family: var(--font-body) } }
         },
         y: {
           grid: { color: 'rgba(255,255,255,0.04)' },
           ticks: {
-            color: '#4A5A6E', font: { size: 11, family: 'DM Sans' },
+            color: '#4A5A6E', font: { size: 11, family: var(--font-body) },
             callback: v => '$' + Math.round(v / 1000) + 'k'
           }
         }
@@ -1968,7 +1967,7 @@ function updateAllCards() {
   if (ringArc) {
     const dashOff = Math.round(339 - (339 * score / 100));
     ringArc.setAttribute('stroke-dashoffset', dashOff);
-    ringArc.setAttribute('stroke', score >= 70 ? '#00C896' : score >= 40 ? '#F5A623' : '#E05252');
+    ringArc.setAttribute('stroke', score >= 70 ? 'var(--money)' : score >= 40 ? '#F5A623' : '#E05252');
   }
 
   // Score breakdown bars
@@ -2241,7 +2240,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // ── Category definitions ──
 const CAT_META = {
-  income:        { label: 'Income',        color: '#00C896', bg: 'rgba(0,200,150,0.12)' },
+  income:        { label: 'Income',        color: 'var(--money)', bg: 'rgba(43,182,125,0.12)' },
   housing:       { label: 'Housing',       color: '#3B82F6', bg: 'rgba(59,130,246,0.12)' },
   food:          { label: 'Food',          color: '#F5A623', bg: 'rgba(245,166,35,0.12)' },
   transport:     { label: 'Transport',     color: '#F97316', bg: 'rgba(249,115,22,0.12)' },
@@ -2913,8 +2912,8 @@ function applyInflationData(data) {
 function showInflStatus(msg, ok) {
   const el = document.getElementById('infl-status');
   el.style.display = 'block';
-  el.style.background = ok ? 'rgba(0,200,150,0.08)' : 'rgba(224,82,82,0.08)';
-  el.style.border = '1px solid ' + (ok ? 'rgba(0,200,150,0.25)' : 'rgba(224,82,82,0.25)');
+  el.style.background = ok ? 'rgba(43,182,125,0.08)' : 'rgba(224,82,82,0.08)';
+  el.style.border = '1px solid ' + (ok ? 'rgba(43,182,125,0.25)' : 'rgba(224,82,82,0.25)');
   el.style.color = ok ? 'var(--teal)' : 'var(--red)';
   el.textContent = msg;
 }
@@ -3038,12 +3037,12 @@ function renderNWTab() {
             {
               label: 'Net worth',
               data: nwData,
-              borderColor: '#00C896',
-              backgroundColor: 'rgba(0,200,150,0.08)',
+              borderColor: 'var(--money)',
+              backgroundColor: 'rgba(43,182,125,0.08)',
               borderWidth: 2,
               pointRadius: 3,
               pointHoverRadius: 5,
-              pointBackgroundColor: '#00C896',
+              pointBackgroundColor: 'var(--money)',
               tension: 0.4,
               fill: true,
             },
@@ -3114,7 +3113,7 @@ function renderNWTab() {
       const reached = nw >= m;
       const isNext  = !reached && milestones.slice(0, i).every((prev, pi) => nw >= prev);
       const pct     = isNext && i > 0 ? Math.min(100, Math.round(((nw - milestones[i-1]) / (m - milestones[i-1])) * 100)) : 0;
-      return `<div style="background:${reached ? 'rgba(0,200,150,0.08)' : isNext ? 'rgba(245,166,35,0.07)' : 'rgba(255,255,255,0.03)'};border:1px solid ${reached ? 'rgba(0,200,150,0.2)' : isNext ? 'rgba(245,166,35,0.2)' : 'rgba(255,255,255,0.06)'};border-radius:10px;padding:10px 14px;min-width:90px;flex:1;">
+      return `<div style="background:${reached ? 'rgba(43,182,125,0.08)' : isNext ? 'rgba(245,166,35,0.07)' : 'rgba(255,255,255,0.03)'};border:1px solid ${reached ? 'rgba(43,182,125,0.2)' : isNext ? 'rgba(245,166,35,0.2)' : 'rgba(255,255,255,0.06)'};border-radius:10px;padding:10px 14px;min-width:90px;flex:1;">
         <div style="font-size:10px;color:${reached ? 'var(--teal)' : isNext ? 'var(--amber)' : 'var(--text3)'};margin-bottom:3px;">${reached ? '✓' : isNext ? '→' : '○'} ${labels_ms[i]}</div>
         <div style="font-size:11px;color:var(--text3);">${reached ? 'Reached' : isNext ? pct + '% there' : 'Locked'}</div>
         ${isNext ? `<div style="height:3px;background:rgba(255,255,255,0.06);border-radius:2px;margin-top:5px;overflow:hidden;"><div style="height:100%;width:${pct}%;background:var(--amber);border-radius:2px;"></div></div>` : ''}

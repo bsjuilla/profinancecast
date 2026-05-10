@@ -22,17 +22,16 @@
 <meta name="twitter:description" content="A real comparison of avalanche and snowball, with a worked example showing where snowball wins, where avalanche wins, and where a hybrid makes sense.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
 <style>
-  :root{--bg:#080C12;--bg2:#0D1320;--bg3:#111827;--card:#0F1923;--border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);--teal:#00C896;--teal-dim:rgba(0,200,150,0.1);--text:#F0F4F8;--text2:#8A9BB0;--text3:#4A5A6E;--amber:#F5A623;--red:#E05252;--blue:#3B82F6;--r:12px;--r-sm:8px;}
+  :root{--bg:var(--canvas);--bg2:#0D1320;--bg3:#111827;--card:#0F1923;--border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);--teal:var(--money);--teal-dim:rgba(43,182,125,0.1);--text:#F0F4F8;--text2:#8A9BB0;--text3:#4A5A6E;--amber:#F5A623;--red:#E05252;--blue:#3B82F6;--r:12px;--r-sm:8px;}
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-  body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);line-height:1.7;}
+  body{font-family:var(--font-body);background:var(--bg);color:var(--text);line-height:1.7;}
   nav{position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:0 6%;height:60px;background:rgba(8,12,18,0.92);border-bottom:1px solid var(--border);backdrop-filter:blur(16px);}
-  .nav-logo{display:flex;align-items:center;gap:9px;font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:var(--text);text-decoration:none;}
-  .logo-mark{width:26px;height:26px;background:var(--teal);border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#080C12;}
+  .nav-logo{display:flex;align-items:center;gap:9px;font-family:var(--font-display);font-size:15px;font-weight:700;color:var(--text);text-decoration:none;}
+  .logo-mark{width:26px;height:26px;background:var(--teal);border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:var(--canvas);}
   .nav-right{display:flex;align-items:center;gap:16px;}
   .nav-right a{font-size:13px;color:var(--text2);text-decoration:none;}
-  .nav-cta-btn{padding:7px 16px;background:var(--teal);color:#080C12;border:none;border-radius:var(--r-sm);font-size:13px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;text-decoration:none;}
+  .nav-cta-btn{padding:7px 16px;background:var(--teal);color:var(--canvas);border:none;border-radius:var(--r-sm);font-size:13px;font-weight:600;font-family:var(--font-body);cursor:pointer;text-decoration:none;}
 
   .article-wrap{max-width:740px;margin:0 auto;padding:48px 24px 80px;}
 
@@ -44,19 +43,19 @@
 
   /* ARTICLE HEADER */
   .art-tag{display:inline-block;font-size:11px;font-weight:700;padding:3px 10px;border-radius:6px;margin-bottom:14px;background:rgba(224,82,82,0.1);color:#F08080;letter-spacing:.04em;text-transform:uppercase;}
-  h1{font-family:'Syne',sans-serif;font-size:clamp(26px,4vw,40px);font-weight:800;line-height:1.2;letter-spacing:-0.3px;margin-bottom:16px;}
+  h1{font-family:var(--font-display);font-size:clamp(26px,4vw,40px);font-weight:800;line-height:1.2;letter-spacing:-0.3px;margin-bottom:16px;}
   .article-meta{display:flex;align-items:center;gap:14px;font-size:13px;color:var(--text3);margin-bottom:28px;flex-wrap:wrap;}
   .meta-dot{width:3px;height:3px;border-radius:50%;background:var(--text3);}
 
   /* TL;DR BOX */
-  .tldr{background:var(--teal-dim);border:1px solid rgba(0,200,150,0.25);border-radius:var(--r-sm);padding:18px 20px;margin-bottom:36px;}
+  .tldr{background:var(--teal-dim);border:1px solid rgba(43,182,125,0.25);border-radius:var(--r-sm);padding:18px 20px;margin-bottom:36px;}
   .tldr strong{display:block;font-size:13px;font-weight:700;color:var(--teal);margin-bottom:8px;letter-spacing:.04em;text-transform:uppercase;}
   .tldr ul{padding-left:18px;display:flex;flex-direction:column;gap:6px;}
   .tldr li{font-size:14px;color:var(--text2);line-height:1.5;}
 
   /* ARTICLE BODY */
-  .article-body h2{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;margin:36px 0 12px;letter-spacing:-0.2px;}
-  .article-body h3{font-family:'Syne',sans-serif;font-size:17px;font-weight:700;margin:24px 0 10px;}
+  .article-body h2{font-family:var(--font-display);font-size:22px;font-weight:800;margin:36px 0 12px;letter-spacing:-0.2px;}
+  .article-body h3{font-family:var(--font-display);font-size:17px;font-weight:700;margin:24px 0 10px;}
   .article-body p{font-size:15.5px;color:var(--text2);margin-bottom:16px;line-height:1.75;}
   .article-body strong{color:var(--text);font-weight:600;}
   .article-body ul,.article-body ol{padding-left:22px;margin-bottom:16px;display:flex;flex-direction:column;gap:8px;}
@@ -64,7 +63,7 @@
 
   /* CALLOUT */
   .callout{border-radius:var(--r-sm);padding:16px 18px;margin:24px 0;}
-  .callout-tip{background:rgba(0,200,150,0.07);border-left:3px solid var(--teal);}
+  .callout-tip{background:rgba(43,182,125,0.07);border-left:3px solid var(--teal);}
   .callout-warn{background:rgba(245,166,35,0.07);border-left:3px solid var(--amber);}
   .callout-label{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px;}
   .callout-tip .callout-label{color:var(--teal);}
@@ -81,20 +80,20 @@
 
   /* INTERACTIVE CALCULATOR */
   .calc-box{background:var(--card);border:1px solid var(--border2);border-radius:var(--r);padding:24px;margin:32px 0;}
-  .calc-box h3{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;margin-bottom:16px;}
+  .calc-box h3{font-family:var(--font-display);font-size:16px;font-weight:700;margin-bottom:16px;}
   .calc-debts{display:flex;flex-direction:column;gap:10px;margin-bottom:16px;}
   .calc-debt-row{display:grid;grid-template-columns:1fr 90px 80px;gap:8px;align-items:center;}
-  .calc-debt-row input{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;transition:border-color .15s;}
-  .calc-debt-row input:focus{border-color:rgba(0,200,150,.4);}
+  .calc-debt-row input{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;color:var(--text);font-family:var(--font-body);outline:none;transition:border-color .15s;}
+  .calc-debt-row input:focus{border-color:rgba(43,182,125,.4);}
   .calc-debt-row input::placeholder{color:var(--text3);}
   .calc-debt-label{font-size:11px;color:var(--text3);text-align:center;}
   .calc-field{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
   .calc-field label{font-size:13px;color:var(--text2);min-width:180px;}
-  .calc-field input{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);padding:8px 12px;font-size:13px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;width:100px;}
-  .calc-btn{padding:10px 22px;background:var(--teal);border:none;border-radius:var(--r-sm);font-size:14px;font-weight:600;color:#080C12;font-family:'DM Sans',sans-serif;cursor:pointer;margin-bottom:16px;}
+  .calc-field input{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);padding:8px 12px;font-size:13px;color:var(--text);font-family:var(--font-body);outline:none;width:100px;}
+  .calc-btn{padding:10px 22px;background:var(--teal);border:none;border-radius:var(--r-sm);font-size:14px;font-weight:600;color:var(--canvas);font-family:var(--font-body);cursor:pointer;margin-bottom:16px;}
   .calc-results{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
   .calc-result-card{border-radius:var(--r-sm);padding:14px 16px;border:1px solid var(--border);}
-  .calc-result-card.av{background:rgba(0,200,150,0.06);border-color:rgba(0,200,150,0.2);}
+  .calc-result-card.av{background:rgba(43,182,125,0.06);border-color:rgba(43,182,125,0.2);}
   .calc-result-card.sw{background:rgba(59,130,246,0.06);border-color:rgba(59,130,246,0.2);}
   .calc-result-title{font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;margin-bottom:10px;}
   .calc-result-card.av .calc-result-title{color:var(--teal);}
@@ -102,18 +101,18 @@
   .calc-stat{display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;}
   .calc-stat-label{color:var(--text2);}
   .calc-stat-val{font-weight:600;color:var(--text);}
-  .calc-winner-msg{background:rgba(0,200,150,0.08);border:1px solid rgba(0,200,150,0.2);border-radius:var(--r-sm);padding:12px 14px;font-size:13.5px;color:var(--text2);line-height:1.55;margin-top:12px;}
+  .calc-winner-msg{background:rgba(43,182,125,0.08);border:1px solid rgba(43,182,125,0.2);border-radius:var(--r-sm);padding:12px 14px;font-size:13.5px;color:var(--text2);line-height:1.55;margin-top:12px;}
   .calc-winner-msg strong{color:var(--teal);}
 
   /* CTA BLOCK */
-  .article-cta{background:linear-gradient(135deg,rgba(0,200,150,0.08),rgba(59,130,246,0.05));border:1px solid rgba(0,200,150,0.2);border-radius:var(--r);padding:28px;margin:36px 0;text-align:center;}
-  .article-cta h3{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;margin-bottom:8px;}
+  .article-cta{background:linear-gradient(135deg,rgba(43,182,125,0.08),rgba(59,130,246,0.05));border:1px solid rgba(43,182,125,0.2);border-radius:var(--r);padding:28px;margin:36px 0;text-align:center;}
+  .article-cta h3{font-family:var(--font-display);font-size:20px;font-weight:800;margin-bottom:8px;}
   .article-cta p{font-size:14px;color:var(--text2);margin-bottom:20px;}
-  .article-cta a{display:inline-block;padding:12px 28px;background:var(--teal);color:#080C12;border:none;border-radius:var(--r-sm);font-size:14px;font-weight:700;font-family:'DM Sans',sans-serif;text-decoration:none;}
+  .article-cta a{display:inline-block;padding:12px 28px;background:var(--teal);color:var(--canvas);border:none;border-radius:var(--r-sm);font-size:14px;font-weight:700;font-family:var(--font-body);text-decoration:none;}
 
   /* RELATED ARTICLES */
   .related{margin-top:48px;}
-  .related h3{font-family:'Syne',sans-serif;font-size:18px;font-weight:700;margin-bottom:16px;}
+  .related h3{font-family:var(--font-display);font-size:18px;font-weight:700;margin-bottom:16px;}
   .related-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
   .related-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px 16px;text-decoration:none;color:inherit;transition:border-color .2s;}
   .related-card:hover{border-color:var(--border2);}

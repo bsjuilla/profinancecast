@@ -23,25 +23,24 @@
   <meta name="twitter:description" content="Compare avalanche, snowball, and custom debt-payoff strategies with month-by-month projections.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js" integrity="sha384-bs/nf9FbdNouRbMiFcrcZfLXYPKiPaGVGplVbv7dLGECccEXDW+S3zjqSKR5ZEaD" crossorigin="anonymous"></script>
 <style>
   :root {
-    --bg:#080C12; --bg2:#0D1320; --bg3:#111827; --card:#0F1923;
+    --bg:var(--canvas); --bg2:#0D1320; --bg3:#111827; --card:#0F1923;
     --border:rgba(255,255,255,0.07); --border2:rgba(255,255,255,0.13);
-    --teal:#00C896; --teal-dim:rgba(0,200,150,0.12);
+    --teal:var(--money); --teal-dim:rgba(43,182,125,0.12);
     --text:#F0F4F8; --text2:#8A9BB0; --text3:#4A5A6E;
     --amber:#F5A623; --red:#E05252; --blue:#3B82F6;
     --purple:#A78BFA; --green:#22C55E; --r:12px; --r-sm:8px;
   }
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
   html,body{height:100%;}
-  body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);display:flex;overflow:hidden;}
+  body{font-family:var(--font-body);background:var(--bg);color:var(--text);display:flex;overflow:hidden;}
 
   /* SIDEBAR */
   .sidebar{width:240px;flex-shrink:0;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;height:100vh;overflow-y:auto;}
-  .sidebar-logo{display:flex;align-items:center;gap:10px;padding:22px 20px 18px;border-bottom:1px solid var(--border);font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:var(--text);text-decoration:none;}
-  .logo-mark{width:30px;height:30px;background:var(--teal);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#080C12;font-family:'Syne',sans-serif;flex-shrink:0;}
+  .sidebar-logo{display:flex;align-items:center;gap:10px;padding:22px 20px 18px;border-bottom:1px solid var(--border);font-family:var(--font-display);font-size:15px;font-weight:700;color:var(--text);text-decoration:none;}
+  .logo-mark{width:30px;height:30px;background:var(--teal);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:var(--canvas);font-family:var(--font-display);flex-shrink:0;}
   .sidebar-section{padding:18px 12px 8px;font-size:10px;font-weight:600;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;}
   .nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--r-sm);margin:1px 8px;font-size:13.5px;color:var(--text2);cursor:pointer;transition:background .15s,color .15s;text-decoration:none;}
   .nav-item:hover{background:rgba(255,255,255,0.05);color:var(--text);}
@@ -52,7 +51,7 @@
   .sidebar-footer{margin-top:auto;padding:16px 12px;border-top:1px solid var(--border);}
   .user-pill{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:var(--r-sm);cursor:pointer;transition:background .15s;}
   .user-pill:hover{background:rgba(255,255,255,0.05);}
-  .user-avatar{width:32px;height:32px;border-radius:50%;background:var(--teal);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#080C12;font-family:'Syne',sans-serif;flex-shrink:0;}
+  .user-avatar{width:32px;height:32px;border-radius:50%;background:var(--teal);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--canvas);font-family:var(--font-display);flex-shrink:0;}
   .user-name{font-size:13px;font-weight:500;}
   .user-plan{font-size:11px;color:var(--text3);}
 
@@ -62,12 +61,12 @@
   /* TOPBAR */
   .topbar{display:flex;align-items:center;justify-content:space-between;padding:0 28px;height:64px;flex-shrink:0;border-bottom:1px solid var(--border);background:rgba(8,12,18,0.9);position:sticky;top:0;z-index:10;backdrop-filter:blur(12px);}
   .topbar-left{display:flex;flex-direction:column;}
-  .topbar-title{font-family:'Syne',sans-serif;font-size:17px;font-weight:700;}
+  .topbar-title{font-family:var(--font-display);font-size:17px;font-weight:700;}
   .topbar-sub{font-size:12px;color:var(--text3);margin-top:1px;}
   .topbar-right{display:flex;align-items:center;gap:12px;}
-  .topbar-btn{display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--r-sm);font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;border:1px solid var(--border2);background:transparent;color:var(--text2);transition:all .15s;}
+  .topbar-btn{display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--r-sm);font-size:13px;font-family:var(--font-body);cursor:pointer;border:1px solid var(--border2);background:transparent;color:var(--text2);transition:all .15s;}
   .topbar-btn:hover{color:var(--text);border-color:rgba(255,255,255,0.2);}
-  .topbar-btn.primary{background:var(--teal);color:#080C12;border-color:var(--teal);font-weight:600;}
+  .topbar-btn.primary{background:var(--teal);color:var(--canvas);border-color:var(--teal);font-weight:600;}
   .topbar-btn.primary:hover{opacity:.88;}
 
   /* CONTENT */
@@ -75,24 +74,24 @@
 
   /* CARDS */
   .card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:20px 22px;}
-  .card-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;margin-bottom:4px;}
+  .card-title{font-family:var(--font-display);font-size:14px;font-weight:700;margin-bottom:4px;}
   .card-sub{font-size:12px;color:var(--text3);}
 
   /* SUMMARY STRIP */
   .summary-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px;}
   .metric-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px 20px;position:relative;overflow:hidden;}
   .metric-label{font-size:11px;color:var(--text3);margin-bottom:5px;font-weight:500;letter-spacing:.02em;}
-  .metric-val{font-family:'Syne',sans-serif;font-size:22px;font-weight:700;margin-bottom:2px;}
+  .metric-val{font-family:var(--font-display);font-size:22px;font-weight:700;margin-bottom:2px;}
   .metric-hint{font-size:11.5px;color:var(--text3);}
   .metric-accent{position:absolute;bottom:0;left:0;right:0;height:2px;}
 
   /* STRATEGY TOGGLE */
   .strategy-row{display:flex;gap:10px;margin-bottom:20px;}
-  .strat-btn{flex:1;padding:14px 16px;border-radius:var(--r);border:1px solid var(--border2);background:var(--bg2);cursor:pointer;transition:all .18s;font-family:'DM Sans',sans-serif;text-align:left;}
-  .strat-btn:hover{border-color:rgba(0,200,150,0.3);}
+  .strat-btn{flex:1;padding:14px 16px;border-radius:var(--r);border:1px solid var(--border2);background:var(--bg2);cursor:pointer;transition:all .18s;font-family:var(--font-body);text-align:left;}
+  .strat-btn:hover{border-color:rgba(43,182,125,0.3);}
   .strat-btn.active{border-color:var(--teal);background:var(--teal-dim);}
   .strat-btn.active .strat-title{color:var(--teal);}
-  .strat-title{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;margin-bottom:3px;color:var(--text);}
+  .strat-title{font-family:var(--font-display);font-size:13px;font-weight:700;margin-bottom:3px;color:var(--text);}
   .strat-desc{font-size:12px;color:var(--text3);line-height:1.5;}
   .strat-badge{display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:5px;margin-bottom:6px;}
 
@@ -104,7 +103,7 @@
   .slider-track::-webkit-slider-thumb:hover{transform:scale(1.2);}
   .extra-impact{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px;}
   .impact-box{background:var(--bg3);border-radius:var(--r-sm);padding:10px 14px;text-align:center;}
-  .impact-val{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;margin-bottom:2px;}
+  .impact-val{font-family:var(--font-display);font-size:16px;font-weight:700;margin-bottom:2px;}
   .impact-label{font-size:11px;color:var(--text3);}
 
   /* DEBT TABLE */
@@ -134,12 +133,12 @@
   .modal-overlay.open{display:flex;}
   .modal-box{background:var(--bg2);border:1px solid var(--border2);border-radius:16px;width:100%;max-width:460px;overflow:hidden;}
   .modal-head{padding:18px 22px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
-  .modal-title{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;}
+  .modal-title{font-family:var(--font-display);font-size:16px;font-weight:700;}
   .modal-close{width:28px;height:28px;border-radius:50%;background:var(--bg3);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2);font-size:15px;}
   .modal-body{padding:20px 22px;}
   .field-label{font-size:12px;color:var(--text2);display:block;margin-bottom:5px;}
-  .field-input{width:100%;padding:10px 13px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;transition:border-color .15s;}
-  .field-input:focus{border-color:rgba(0,200,150,0.4);}
+  .field-input{width:100%;padding:10px 13px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:var(--font-body);outline:none;transition:border-color .15s;}
+  .field-input:focus{border-color:rgba(43,182,125,0.4);}
   .field-input::placeholder{color:var(--text3);}
   .field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
 
@@ -161,7 +160,7 @@
   ::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:2px;}
 
   /* TOAST */
-  .toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:var(--card);border:1px solid rgba(0,200,150,0.3);border-radius:10px;padding:12px 20px;font-size:13.5px;color:var(--text);z-index:200;white-space:nowrap;animation:toastIn .25s ease;pointer-events:none;}
+  .toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:var(--card);border:1px solid rgba(43,182,125,0.3);border-radius:10px;padding:12px 20px;font-size:13.5px;color:var(--text);z-index:200;white-space:nowrap;animation:toastIn .25s ease;pointer-events:none;}
   @keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(8px);}to{opacity:1;transform:translateX(-50%) translateY(0);}}
   @keyframes cardIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
   @keyframes spin{to{transform:rotate(360deg);}}
@@ -326,7 +325,7 @@
             <div class="card-title">Extra monthly payment</div>
             <div class="card-sub">Drag to see the impact instantly</div>
           </div>
-          <div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:700;color:var(--teal);" id="extra-val">+$0</div>
+          <div style="font-family:var(--font-display);font-size:22px;font-weight:700;color:var(--teal);" id="extra-val">+$0</div>
         </div>
         <input class="slider-track" type="range" id="extra-slider" min="0" max="1000" step="25" value="0"
           oninput="updateExtra(this.value)">
@@ -356,14 +355,14 @@
             <div class="card-title">Your debts</div>
             <div class="card-sub" id="debt-order-hint">Ordered by payoff priority</div>
           </div>
-          <button onclick="openAddDebt()" style="padding:6px 13px;background:transparent;border:1px dashed rgba(0,200,150,0.3);border-radius:var(--r-sm);font-size:12px;color:var(--teal);cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;" onmouseover="this.style.background='var(--teal-dim)'" onmouseout="this.style.background='transparent'">+ Add debt</button>
+          <button onclick="openAddDebt()" style="padding:6px 13px;background:transparent;border:1px dashed rgba(43,182,125,0.3);border-radius:var(--r-sm);font-size:12px;color:var(--teal);cursor:pointer;font-family:var(--font-body);transition:all .15s;" onmouseover="this.style.background='var(--teal-dim)'" onmouseout="this.style.background='transparent'">+ Add debt</button>
         </div>
         <div id="debt-list">
           <div class="empty-debts" id="empty-debts">
             <div class="empty-debts-icon">
-              <svg width="28" height="28" viewBox="0 0 28 28" fill="none"><path d="M14 4v12M8 10l6-6 6 6" stroke="#00C896" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 20h20" stroke="#4A5A6E" stroke-width="1.5" stroke-linecap="round"/><path d="M7 24h14" stroke="#4A5A6E" stroke-width="1.5" stroke-linecap="round"/></svg>
+              <svg width="28" height="28" viewBox="0 0 28 28" fill="none"><path d="M14 4v12M8 10l6-6 6 6" stroke="#2BB67D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 20h20" stroke="#4A5A6E" stroke-width="1.5" stroke-linecap="round"/><path d="M7 24h14" stroke="#4A5A6E" stroke-width="1.5" stroke-linecap="round"/></svg>
             </div>
-            <div style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700;margin-bottom:6px;">No debts added yet</div>
+            <div style="font-family:var(--font-display);font-size:15px;font-weight:700;margin-bottom:6px;">No debts added yet</div>
             <div style="font-size:13px;color:var(--text3);margin-bottom:18px;">Add your loans, credit cards, and any other debts to see your optimised payoff plan.</div>
             <button onclick="openAddDebt()" class="topbar-btn primary" style="padding:9px 20px;">Add your first debt</button>
           </div>
@@ -416,7 +415,7 @@
             <div class="card-sub">Exact payoff dates per debt</div>
           </div>
           <div style="display:flex;gap:6px;">
-            <button onclick="exportScheduleCSV()" style="padding:5px 11px;background:transparent;border:1px solid var(--border2);border-radius:var(--r-sm);font-size:11.5px;color:var(--text2);cursor:pointer;font-family:'DM Sans',sans-serif;">Export CSV</button>
+            <button onclick="exportScheduleCSV()" style="padding:5px 11px;background:transparent;border:1px solid var(--border2);border-radius:var(--r-sm);font-size:11.5px;color:var(--text2);cursor:pointer;font-family:var(--font-body);">Export CSV</button>
           </div>
         </div>
         <div style="max-height:280px;overflow-y:auto;">
@@ -506,22 +505,22 @@
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center;">
           <div>
             <div style="font-size:10px;color:var(--text3);margin-bottom:3px;">Monthly interest</div>
-            <div style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:var(--red);" id="m-monthly-int">—</div>
+            <div style="font-family:var(--font-display);font-size:15px;font-weight:700;color:var(--red);" id="m-monthly-int">—</div>
           </div>
           <div style="border-left:1px solid var(--border);border-right:1px solid var(--border);">
             <div style="font-size:10px;color:var(--text3);margin-bottom:3px;">Months to payoff</div>
-            <div style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:var(--text);" id="m-payoff-mo">—</div>
+            <div style="font-family:var(--font-display);font-size:15px;font-weight:700;color:var(--text);" id="m-payoff-mo">—</div>
           </div>
           <div>
             <div style="font-size:10px;color:var(--text3);margin-bottom:3px;">Total interest</div>
-            <div style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:var(--amber);" id="m-total-int">—</div>
+            <div style="font-family:var(--font-display);font-size:15px;font-weight:700;color:var(--amber);" id="m-total-int">—</div>
           </div>
         </div>
       </div>
 
       <div style="display:flex;gap:10px;">
-        <button onclick="saveDebt()" style="flex:1;padding:11px;background:var(--teal);border:none;border-radius:var(--r-sm);font-size:14px;font-weight:700;color:#080C12;font-family:'DM Sans',sans-serif;cursor:pointer;">Save debt</button>
-        <button onclick="closeModal()" style="padding:11px 18px;background:transparent;border:1px solid var(--border2);border-radius:var(--r-sm);font-size:13px;color:var(--text2);font-family:'DM Sans',sans-serif;cursor:pointer;">Cancel</button>
+        <button onclick="saveDebt()" style="flex:1;padding:11px;background:var(--teal);border:none;border-radius:var(--r-sm);font-size:14px;font-weight:700;color:var(--canvas);font-family:var(--font-body);cursor:pointer;">Save debt</button>
+        <button onclick="closeModal()" style="padding:11px 18px;background:transparent;border:1px solid var(--border2);border-radius:var(--r-sm);font-size:13px;color:var(--text2);font-family:var(--font-body);cursor:pointer;">Cancel</button>
       </div>
     </div>
   </div>
@@ -805,13 +804,13 @@ function renderDebtList(opt, sym) {
         </div>
       </div>
       <div style="text-align:right;flex-shrink:0;">
-        <div style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:${tc.color};">${sym}${Math.round(d.balance).toLocaleString()}</div>
+        <div style="font-family:var(--font-display);font-size:15px;font-weight:700;color:${tc.color};">${sym}${Math.round(d.balance).toLocaleString()}</div>
         <div style="font-size:11px;color:var(--text3);margin-bottom:5px;">${sym}${monthlyInt}/mo interest</div>
         <div class="debt-payoff-badge" style="background:${tc.color}22;color:${tc.color};">↳ ${clearDate}</div>
       </div>
       <div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0;">
-        <button onclick="editDebt(${d.origIdx})" style="padding:5px 10px;background:transparent;border:1px solid var(--border2);border-radius:var(--r-sm);font-size:11px;color:var(--text2);cursor:pointer;font-family:'DM Sans',sans-serif;">Edit</button>
-        <button onclick="deleteDebt(${d.origIdx})" style="padding:5px 10px;background:transparent;border:1px solid rgba(224,82,82,0.2);border-radius:var(--r-sm);font-size:11px;color:var(--red);cursor:pointer;font-family:'DM Sans',sans-serif;">Delete</button>
+        <button onclick="editDebt(${d.origIdx})" style="padding:5px 10px;background:transparent;border:1px solid var(--border2);border-radius:var(--r-sm);font-size:11px;color:var(--text2);cursor:pointer;font-family:var(--font-body);">Edit</button>
+        <button onclick="deleteDebt(${d.origIdx})" style="padding:5px 10px;background:transparent;border:1px solid rgba(224,82,82,0.2);border-radius:var(--r-sm);font-size:11px;color:var(--red);cursor:pointer;font-family:var(--font-body);">Delete</button>
       </div>
     </div>`;
   }).join('');
@@ -862,8 +861,8 @@ function renderChart(opt, base) {
         {
           label: 'Optimised',
           data: optData,
-          borderColor: '#00C896',
-          backgroundColor: 'rgba(0,200,150,0.08)',
+          borderColor: 'var(--money)',
+          backgroundColor: 'rgba(43,182,125,0.08)',
           borderWidth: 2,
           pointRadius: 0,
           tension: 0.3,
