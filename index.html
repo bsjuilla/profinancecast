@@ -798,6 +798,124 @@
   @media (min-width: 541px) {
     body[data-sticky-cta="show"] .pfc-sticky-cta-wrap { display: none; }
   }
+
+  /* ── HERO AURORA MESH ────────────────────────────────────────────────
+     Three large blurred radial gradients drifting on slow GPU loops
+     (transform-only, no layout). Sits behind hero text only. Pauses
+     entirely under prefers-reduced-motion. */
+  .hero { isolation: isolate; }
+  .hero-mesh {
+    position: absolute; inset: 0;
+    overflow: hidden; pointer-events: none;
+    z-index: 0;
+  }
+  .hero-mesh .mesh-blob {
+    position: absolute;
+    width: 56vw; height: 56vw;
+    max-width: 720px; max-height: 720px;
+    min-width: 360px; min-height: 360px;
+    border-radius: 50%;
+    filter: blur(120px);
+    opacity: 0.18;
+    will-change: transform;
+    transform: translate3d(0,0,0);
+  }
+  .hero-mesh .mesh-blob-1 {
+    background: var(--money);
+    top: -12%; left: -12%;
+    animation: mesh-drift-1 42s ease-in-out infinite;
+  }
+  .hero-mesh .mesh-blob-2 {
+    background: var(--gold);
+    bottom: -18%; right: -10%;
+    opacity: 0.14;
+    animation: mesh-drift-2 52s ease-in-out infinite;
+  }
+  .hero-mesh .mesh-blob-3 {
+    background: rgba(43,182,125,0.40);
+    top: 38%; left: 28%;
+    opacity: 0.12;
+    animation: mesh-drift-3 46s ease-in-out infinite;
+  }
+  @keyframes mesh-drift-1 {
+    0%,100% { transform: translate3d(0, 0, 0); }
+    50%     { transform: translate3d(38vw, 22vh, 0); }
+  }
+  @keyframes mesh-drift-2 {
+    0%,100% { transform: translate3d(0, 0, 0); }
+    50%     { transform: translate3d(-28vw, -18vh, 0); }
+  }
+  @keyframes mesh-drift-3 {
+    0%,100% { transform: translate3d(0, 0, 0); }
+    50%     { transform: translate3d(18vw, -22vh, 0); }
+  }
+  /* Hero contents must sit above the mesh */
+  .hero > *:not(.hero-mesh) { position: relative; z-index: 1; }
+
+  /* ── SECTION DIVIDER (animated hairline) ─────────────────────────────
+     Stroke-dashoffset draws on first time in viewport. The plus-mark
+     centre node fades in just after. Editorial, not flashy. */
+  .section-divider {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 8px 24px 0;
+    display: block;
+    pointer-events: none;
+  }
+  .section-divider svg {
+    width: 100%;
+    height: 14px;
+    overflow: visible;
+  }
+  .section-divider .divider-line {
+    stroke: var(--gold);
+    stroke-width: 1;
+    stroke-dasharray: 800;
+    stroke-dashoffset: 800;
+    opacity: 0.55;
+    transition: stroke-dashoffset 1.8s var(--ease-out, cubic-bezier(.2,.7,.2,1));
+  }
+  .section-divider.in-view .divider-line { stroke-dashoffset: 0; }
+  .section-divider .divider-mark {
+    fill: var(--gold);
+    opacity: 0;
+    transform-origin: center;
+    transition: opacity 600ms ease 1100ms;
+  }
+  .section-divider.in-view .divider-mark { opacity: 0.75; }
+
+  /* ── BENTO AMBIENT PULSE ─────────────────────────────────────────────
+     A very subtle box-shadow breath on feature cards. Cycle 6s. The
+     existing cursor-tracking glow (.bento-card::before) is untouched —
+     this is a separate ambient shadow that only shows when the section
+     is in view (controlled via .features-active on the body to avoid
+     repainting offscreen cards). */
+  .bento-card {
+    box-shadow: 0 0 0 0 rgba(43,182,125,0); /* baseline for transition */
+    transition:
+      border-color var(--t-base) var(--ease-out),
+      transform var(--t-base) var(--ease-out),
+      box-shadow var(--t-slow) var(--ease-out);
+  }
+  body.features-in-view .bento-card {
+    animation: bento-breath 6s ease-in-out infinite;
+  }
+  body.features-in-view .bento-card:nth-child(2n) { animation-delay: -2s; }
+  body.features-in-view .bento-card:nth-child(3n) { animation-delay: -4s; }
+  @keyframes bento-breath {
+    0%,100% { box-shadow: 0 0 0 0 rgba(43,182,125,0); }
+    50%     { box-shadow: 0 0 36px -8px rgba(43,182,125,0.10); }
+  }
+  .bento-card:hover { border-color: var(--gold-soft); }
+
+  /* ── REDUCED MOTION ──────────────────────────────────────────────────
+     Static, elegant fallback. No drift, no breath, hairline drawn full. */
+  @media (prefers-reduced-motion: reduce) {
+    .hero-mesh .mesh-blob { animation: none !important; }
+    .section-divider .divider-line { stroke-dashoffset: 0 !important; transition: none !important; }
+    .section-divider .divider-mark { opacity: 0.75 !important; transition: none !important; }
+    body.features-in-view .bento-card { animation: none !important; }
+  }
 </style>
   <script src="js/pfc-sentry-scrub.js" defer></script>
   <script src="https://js.sentry-cdn.com/9b8b34d46908bd9f79a16cf18322ac70.min.js" crossorigin="anonymous" defer></script>
@@ -843,6 +961,13 @@
 
 <!-- ─────────── HERO ─────────── -->
 <section class="hero" aria-labelledby="hero-headline">
+  <!-- Aurora mesh: 3 drifting blurred blobs behind the hero copy.
+       Pure CSS, GPU-only transforms, paused under prefers-reduced-motion. -->
+  <div class="hero-mesh" aria-hidden="true">
+    <div class="mesh-blob mesh-blob-1"></div>
+    <div class="mesh-blob mesh-blob-2"></div>
+    <div class="mesh-blob mesh-blob-3"></div>
+  </div>
   <div class="eyebrow reveal">
     <span class="dot" aria-hidden="true"></span> A FORECASTING TOOL FOR YOUR PERSONAL FINANCES
   </div>
@@ -1018,6 +1143,14 @@
   </div>
 </section>
 
+<!-- Animated hairline divider — drawn in via IntersectionObserver -->
+<div class="section-divider" data-divider aria-hidden="true">
+  <svg viewBox="0 0 800 12" preserveAspectRatio="none">
+    <line class="divider-line" x1="0" y1="6" x2="800" y2="6" stroke-linecap="round"/>
+    <circle class="divider-mark" cx="400" cy="6" r="2.4"/>
+  </svg>
+</div>
+
 <!-- ─────────── FEATURES ─────────── -->
 <section id="features">
   <div class="section-head reveal">
@@ -1089,6 +1222,14 @@
     </div>
   </div>
 </section>
+
+<!-- Animated hairline divider — drawn in via IntersectionObserver -->
+<div class="section-divider" data-divider aria-hidden="true">
+  <svg viewBox="0 0 800 12" preserveAspectRatio="none">
+    <line class="divider-line" x1="0" y1="6" x2="800" y2="6" stroke-linecap="round"/>
+    <circle class="divider-mark" cx="400" cy="6" r="2.4"/>
+  </svg>
+</div>
 
 <!-- ─────────── PRICING ─────────── -->
 <section id="pricing">
@@ -1415,10 +1556,41 @@
     recompute();
   }
 
+  // ── 4. AMBIENT BACKGROUND ANIMATIONS ──
+  // Section dividers draw in once on first viewport entry (one-shot).
+  // Bento ambient pulse only runs while #features is on screen.
+  function initAmbient() {
+    if (!('IntersectionObserver' in window)) {
+      // Fallback: just show dividers in their final state.
+      document.querySelectorAll('[data-divider]').forEach(d => d.classList.add('in-view'));
+      return;
+    }
+    const dividerIO = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.classList.add('in-view');
+          dividerIO.unobserve(e.target); // one-shot
+        }
+      });
+    }, { threshold: 0.3, rootMargin: '0px 0px -10% 0px' });
+    document.querySelectorAll('[data-divider]').forEach(d => dividerIO.observe(d));
+
+    const features = document.getElementById('features');
+    if (features) {
+      const featuresIO = new IntersectionObserver((entries) => {
+        entries.forEach(e => {
+          document.body.classList.toggle('features-in-view', e.isIntersecting);
+        });
+      }, { threshold: 0.05 });
+      featuresIO.observe(features);
+    }
+  }
+
   function ready() {
     initMotion();
     initBentoCursor();
     initForecast();
+    initAmbient();
     refreshFoundersCount();
   }
   async function refreshFoundersCount() {
