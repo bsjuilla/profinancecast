@@ -61,12 +61,15 @@ const PFCStorage = (() => {
       const tail = guestKey.substring(guestPrefix.length);
       const userKey = userPrefix + tail;
       const guestVal = localStorage.getItem(guestKey);
-      // Don't overwrite real-user data with stale guest data
+      // Don't overwrite real-user data with stale guest data.
+      // Only delete the guest copy when adoption SUCCEEDS — otherwise the
+      // unconditional removeItem silently destroyed fresh guest data whenever
+      // a stale userKey already existed, which is the dashboard data-loss path.
       if (localStorage.getItem(userKey) === null && guestVal !== null) {
         localStorage.setItem(userKey, guestVal);
+        localStorage.removeItem(guestKey);
         adopted++;
       }
-      localStorage.removeItem(guestKey);
     });
     if (adopted > 0) console.log(`[PFCStorage] Adopted ${adopted} guest key(s) → pfc:${userId}:*`);
   }

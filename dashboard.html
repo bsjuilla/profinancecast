@@ -2866,6 +2866,35 @@ updateAllCards();
 loadGoals();
 refreshInflBoxes();
 
+// ── AUTH-AWARE RE-HYDRATION ──
+// loadUser() ran synchronously at script-tag time, before PFCAuth resolved the
+// real userId — so the in-memory USER reflects whatever was in pfc:guest:user
+// (often empty → DEFAULT_USER zeros). Once auth resolves and pfc-storage.js
+// finishes adoptGuestData, re-read from the now-correct namespace.
+function _rehydrateUserFromStorage() {
+  const fresh = loadUser();
+  USER = fresh;
+  updateAllCards();
+  loadGoals();
+  refreshInflBoxes();
+  if (typeof chart !== 'undefined' && chart) {
+    const d = buildData();
+    chart.data.datasets[0].data = d.base;
+    chart.data.datasets[1].data = d.opt;
+    chart.data.datasets[2].data = d.cons;
+    chart.update('none');
+  }
+}
+if (typeof PFCAuth !== 'undefined') {
+  PFCAuth.onReady(() => {
+    const fresh = loadUser();
+    // Avoid a guest-mode flicker: only re-render if storage actually differs
+    if (JSON.stringify(fresh) !== JSON.stringify(USER)) _rehydrateUserFromStorage();
+  });
+  // Sign-in / sign-out / account-switch after page load
+  PFCAuth.onAuthChange(_rehydrateUserFromStorage);
+}
+
 // ── NET WORTH AUTO-LOGGER ──
 // Silently logs today's snapshot so the Net Worth Timeline page has data.
 // ── NET WORTH TAB RENDERER ──
