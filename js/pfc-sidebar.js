@@ -52,8 +52,12 @@
         try { name = (JSON.parse(raw).name || '').trim(); } catch (_) {}
       }
     }
-    if (nameEl) nameEl.textContent = name || 'Your account';
-    if (avatarEl) avatarEl.textContent = (name ? name[0] : 'U').toUpperCase();
+    const nextName = name || 'Your account';
+    const nextAvatar = (name ? name[0] : 'U').toUpperCase();
+    // Idempotent: skip DOM writes when the value hasn't changed (avoids
+    // a visible flicker/relayout on the auth-ready re-hydrate below).
+    if (nameEl && nameEl.textContent !== nextName) nameEl.textContent = nextName;
+    if (avatarEl && avatarEl.textContent !== nextAvatar) avatarEl.textContent = nextAvatar;
   }
 
   function injectMobileChrome(sidebar) {
@@ -110,6 +114,14 @@
     if (!sidebar) return;
     activeLink(sidebar);
     hydrateUserPill(sidebar);
+    // WHY: PFCStorage namespaces by userId, but at DOMContentLoaded the
+    // Supabase session may not be restored yet — so the first read can hit
+    // pfc:guest:user and paint the default. Re-hydrate once auth resolves
+    // (and on any subsequent sign-in/sign-out) to land on the correct value.
+    if (typeof PFCAuth !== 'undefined') {
+      PFCAuth.onReady(() => hydrateUserPill(sidebar));
+      PFCAuth.onAuthChange(() => hydrateUserPill(sidebar));
+    }
     wireMobileToggle(sidebar);
   }
 
