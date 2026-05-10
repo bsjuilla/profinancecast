@@ -716,7 +716,9 @@ function clearHistory(){if(!confirm('Clear all report history?'))return;PFCStora
 function downloadCard(){
   const card=document.getElementById('rc-canvas');
   showToast('Generating image\u2026');
-  html2canvas(card,{backgroundColor:'var(--canvas)',scale:2.5,useCORS:true,logging:false}).then(canvas=>{
+  // html2canvas does NOT resolve CSS vars \u2014 must pass a literal color.
+  const canvasBg = getComputedStyle(document.documentElement).getPropertyValue('--canvas').trim() || '#0F1410';
+  html2canvas(card,{backgroundColor:canvasBg,scale:2.5,useCORS:true,logging:false}).then(canvas=>{
     const a=document.createElement('a');
     const name=(U.name||'user').toLowerCase().replace(/\s+/g,'-');
     a.download=`pfc-report-${name}-${new Date().toISOString().slice(0,10)}.png`;

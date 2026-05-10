@@ -1560,9 +1560,21 @@ function saveScenario() {
   const name = document.getElementById('sc-name').value.trim();
   if (!name) { showToast('⚠ Please enter a scenario name'); return; }
 
-  if (!editingId && SCENARIOS.length >= 5) {
-    showToast('⚠ Maximum 5 scenarios reached');
-    return;
+  // Plan-aware cap: Free=1, Pro/Premium=unlimited (soft cap 50 to prevent runaway).
+  // The pricing contract (pricing.md) is the source of truth.
+  if (!editingId) {
+    const plan = (typeof PFCPlan !== 'undefined' && PFCPlan.get) ? PFCPlan.get() : 'free';
+    const isPro = plan === 'pro' || plan === 'premium' || plan === 'owner_override';
+    const cap = isPro ? 50 : 1;
+    if (SCENARIOS.length >= cap) {
+      if (!isPro) {
+        showToast('Free includes 1 saved scenario — upgrade to Pro for unlimited.');
+        setTimeout(() => { window.location.href = 'billing.html?from=scenarios&trigger=save-cap'; }, 1400);
+      } else {
+        showToast('Maximum ' + cap + ' scenarios reached');
+      }
+      return;
+    }
   }
 
   const data = getModalData();
