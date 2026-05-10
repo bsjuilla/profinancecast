@@ -139,6 +139,10 @@
 </noscript>
 <script>
   // Watchdog: if GSAP hasn't initialised within 1.5s, force-reveal everything.
+  // Also covers the degenerate-animation case where GSAP loaded fine but an
+  // element is still at computed opacity:0 (e.g. a misconfigured gsap.from
+  // animating opacity:0 -> CSS opacity:0). Either failure mode leaves users
+  // staring at an empty hero — both are caught here.
   window.addEventListener('load', function () {
     setTimeout(function () {
       if (!window.gsap) {
@@ -146,7 +150,15 @@
           el.style.opacity = '1';
           el.style.transform = 'none';
         });
+        return;
       }
+      document.querySelectorAll('.reveal, .reveal-stagger > *').forEach(function (el) {
+        var s = window.getComputedStyle(el);
+        if (s && parseFloat(s.opacity) === 0) {
+          el.style.opacity = '1';
+          el.style.transform = 'none';
+        }
+      });
     }, 1500);
   });
 </script>
@@ -1422,7 +1434,13 @@
     }
     if (window.ScrollTrigger) gsap.registerPlugin(ScrollTrigger);
 
-    gsap.from('.hero .reveal', { y: 32, opacity: 0, duration: 0.9, stagger: 0.08, ease: 'power3.out', delay: 0.1 });
+    // Hero entrance: explicit start + end states. gsap.from() would animate
+    // FROM opacity:0 TO the CSS opacity:0 (degenerate, hero stays invisible).
+    gsap.set('.hero .reveal', { opacity: 0, y: 30 });
+    gsap.to('.hero .reveal', {
+      opacity: 1, y: 0,
+      duration: 0.9, stagger: 0.08, ease: 'power3.out', delay: 0.1,
+    });
 
     document.querySelectorAll('section .reveal').forEach((el) => {
       if (el.closest('.hero')) return;
