@@ -19,15 +19,18 @@
   'use strict';
 
   function activeLink(sidebar) {
-    const here = location.pathname.replace(/\/$/, '') || '/';
+    // Vercel serves clean URLs, so location.pathname is "/recurring" while
+    // hrefs are "recurring.html" — strip the trailing .html on both sides.
+    const stripHtml = (s) => s.replace(/\.html$/, '');
+    const here = stripHtml(location.pathname.replace(/\/$/, '') || '/');
     const links = sidebar.querySelectorAll('a.nav-item[href]');
     let best = null;
-    let bestScore = -1;
+    let bestScore = 0;
     for (const a of links) {
       // Compare on pathname so query/hash don't confuse the match.
       let p;
       try { p = new URL(a.href, location.origin).pathname; } catch (_) { continue; }
-      const norm = p.replace(/\/$/, '') || '/';
+      const norm = stripHtml(p.replace(/\/$/, '') || '/');
       // Score: exact match wins; otherwise pick the longest prefix match so
       // sub-pages (if any are added later) still light up the parent.
       let score = 0;
@@ -61,6 +64,8 @@
   }
 
   function injectMobileChrome(sidebar) {
+    // Only inject mobile chrome on pages using the new responsive layout (pfc-sidebar / body.pfc-app). Legacy .sidebar pages keep the always-visible desktop sidebar at all viewports — no toggle needed.
+    if (!sidebar.classList.contains('pfc-sidebar') && !document.body.classList.contains('pfc-app')) return;
     if (document.querySelector('[data-sidebar-toggle]')) return;
     const btn = document.createElement('button');
     btn.className = 'pfc-sidebar-toggle';
