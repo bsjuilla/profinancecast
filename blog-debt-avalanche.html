@@ -141,6 +141,7 @@
 {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is the debt avalanche method?","acceptedAnswer":{"@type":"Answer","text":"List your debts from highest to lowest interest rate. Pay the minimum on all of them except the highest-rate one, which you attack with every spare dollar. Once it's cleared, you roll that payment into the next highest-rate debt. This minimises total interest paid."}},{"@type":"Question","name":"What is the debt snowball method?","acceptedAnswer":{"@type":"Answer","text":"List your debts from smallest to largest balance, regardless of interest rate, and pay off the smallest first. Once cleared, you roll that payment into the next smallest. Each cleared debt builds psychological momentum."}},{"@type":"Question","name":"Which method saves more money?","acceptedAnswer":{"@type":"Answer","text":"Avalanche almost always saves more interest and gets you debt-free faster — typically by $200 to $1,500 or more. The gap grows when interest rate differences between your debts are large."}},{"@type":"Question","name":"When is snowball the better choice?","acceptedAnswer":{"@type":"Answer","text":"Snowball is better when you've tried debt payoff before and given up, when you have several small debts you could clear in 3 to 6 months, or when you need quick psychological wins to stay committed. Consistency beats optimisation."}},{"@type":"Question","name":"Can I combine avalanche and snowball?","acceptedAnswer":{"@type":"Answer","text":"Yes. A common hybrid is to clear any genuinely tiny debts under $300 first for a quick win, then switch to avalanche for the remaining larger debts. This combines the psychological benefits of snowball with the mathematical efficiency of avalanche."}}]}
 </script>
   <link rel="stylesheet" href="css/pfc-tokens.css">
+  <link rel="stylesheet" href="css/pfc-footer.css">
   <script src="js/pfc-export.js" defer></script>
   <!-- Supabase SDK + auth/storage/entitlements (must load before any inline script that uses them) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -415,5 +416,48 @@ function calcDebts() {
 
 calcDebts();
 </script>
+
+<footer class="site-footer" role="contentinfo">
+  <div class="footer-grid">
+    <div class="footer-col">
+      <h4>Product</h4>
+      <ul>
+        <li><a href="/">Forecast</a></li>
+        <li><a href="blog.html">Journal</a></li>
+        <li><a href="billing.html">Pricing</a></li>
+        <li><a href="tools/take-home-pay.html">Take-home pay</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Company</h4>
+      <ul>
+        <li><a href="about.html">About</a></li>
+        <li><a href="about.html#methodology">Methodology</a></li>
+        <li><a href="llms.txt">For language models</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Resources</h4>
+      <ul>
+        <li><a href="help.html">Help</a></li>
+        <li><a href="blog.html">Articles</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Trust</h4>
+      <ul>
+        <li><a href="about.html#methodology">Methodology</a></li>
+        <li><a href="about.html">Changelog</a></li>
+        <li><a href="privacy.html">Data handling</a></li>
+        <li><a href="about.html">What we are not</a></li>
+        <li><a href="about.html">Status</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-stamp">
+    <span>© 2026 ProFinanceCast — Built in Europe</span>
+    <span>Last shipped <time datetime="2026-05-10">2026-05-10</time></span>
+  </div>
+</footer>
 </body>
 </html>
