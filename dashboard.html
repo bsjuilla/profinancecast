@@ -2015,13 +2015,11 @@ let editingGoalIdx = -1;
 let selectedGoalColor = 'var(--teal)';
 
 function loadGoals() {
+  // Honor whatever onboarding persisted to pfc:goals; render empty-state
+  // when nothing is saved (no more legacy fake-goal seeds — UX §6.16).
   try {
     const saved = PFCStorage.get('goals');
-    GOALS = saved ? JSON.parse(saved) : [
-      { name:'Emergency fund', current:12600, target:15000, color:'var(--teal)' },
-      { name:'Home deposit',   current:4200,  target:25000, color:'var(--blue)' },
-      { name:'Holiday fund',   current:1140,  target:2000,  color:'var(--amber)' }
-    ];
+    GOALS = saved ? JSON.parse(saved) : [];
   } catch(e) {
     GOALS = [];
   }

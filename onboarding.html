@@ -225,39 +225,10 @@
   <div class="step-panel" id="step-1">
     <div class="step-eyebrow">About you</div>
     <h2 class="step-heading">First, tell us about yourself</h2>
-    <p class="step-sub">This helps Sage give you advice that's relevant to your life situation.</p>
-    <div class="field-2">
-      <div class="field">
-        <div class="field-label"><label>First name</label></div>
-        <input type="text" class="pfc-input--bottom" id="f-fname" placeholder="Alex" oninput="syncName()">
-      </div>
-      <div class="field">
-        <div class="field-label"><label>Last name</label></div>
-        <input type="text" class="pfc-input--bottom" id="f-lname" placeholder="Smith">
-      </div>
-    </div>
+    <p class="step-sub">Just your name and currency. Age and employment status move to a progressive prompt on the dashboard — you can answer when it's relevant.</p>
     <div class="field">
-      <div class="field-label"><label>Age range</label></div>
-      <select class="pfc-input--bottom" id="f-age">
-        <option value="">Select your age range</option>
-        <option value="18-24">18 – 24</option>
-        <option value="25-34">25 – 34</option>
-        <option value="35-44">35 – 44</option>
-        <option value="45-54">45 – 54</option>
-        <option value="55+">55 or older</option>
-      </select>
-    </div>
-    <div class="field">
-      <div class="field-label"><label>Employment status</label></div>
-      <select class="pfc-input--bottom" id="f-employment">
-        <option value="">Select your employment status</option>
-        <option value="employed">Employed full-time</option>
-        <option value="part-time">Employed part-time</option>
-        <option value="self-employed">Self-employed / freelance</option>
-        <option value="student">Student</option>
-        <option value="unemployed">Currently looking for work</option>
-        <option value="retired">Retired</option>
-      </select>
+      <div class="field-label"><label for="f-fullname">Full name</label></div>
+      <input type="text" class="pfc-input--bottom" id="f-fullname" placeholder="Alex Smith" autocomplete="name" inputmode="text" enterkeyhint="next" oninput="syncName()">
     </div>
     <div class="field">
       <div class="field-label"><label>Currency</label></div>
@@ -552,9 +523,11 @@ function updateCurrency() {
 }
 
 function syncName() {
-  const name = document.getElementById('f-fname').value.trim();
+  const name = document.getElementById('f-fullname').value.trim();
   if (name) {
-    document.getElementById('complete-name').textContent = `You're all set, ${name}!`;
+    // First-name-only feels warmer on the completion card.
+    const first = name.split(/\s+/)[0];
+    document.getElementById('complete-name').textContent = `You're all set, ${first}.`;
   }
 }
 
@@ -659,8 +632,8 @@ function prevStep() {
 
 function validateStep(step) {
   if (step === 1) {
-    const fname = document.getElementById('f-fname').value.trim();
-    if (!fname) { shake('f-fname'); showToast('Please enter your first name'); return false; }
+    const fullname = document.getElementById('f-fullname').value.trim();
+    if (!fullname) { shake('f-fullname'); showToast('Please enter your name'); return false; }
   }
   if (step === 2) {
     const income = n('f-income');
@@ -711,9 +684,7 @@ function buildComplete() {
   const nw12    = (savings + investments - debt) + (surplus * 12 * 0.9);
   const score   = calcScore(surplus, totalIncome, debt, savings);
 
-  const fname = document.getElementById('f-fname').value.trim();
-  const lname = document.getElementById('f-lname').value.trim();
-  const name  = (fname + ' ' + lname).trim() || 'User';
+  const name = document.getElementById('f-fullname').value.trim() || 'User';
 
   // Update completion screen display values
   document.getElementById('cm-networth').textContent = currencySymbol + Math.round(nw12).toLocaleString();
@@ -743,6 +714,25 @@ function buildComplete() {
 
   try {
     PFCStorage.setJSON('user', userData);
+    // Persist selectedGoals (UX §6.16) so dashboard's loadGoals() shows the
+    // user's real picks instead of the legacy fake-goals injection at
+    // dashboard.html:2018-2025. Each goal carries a sensible default target;
+    // current = 0 because nothing has been saved toward it yet.
+    const GOAL_DEFAULTS = {
+      emergency: { name: 'Emergency fund', target: Math.max(3 * (totalExpenses + debtPay), 5000) },
+      debt:      { name: 'Pay off debt',   target: debt || 1000 },
+      home:      { name: 'Home deposit',   target: 50000 },
+      invest:    { name: 'Investing',      target: 25000 },
+      retire:    { name: 'Retire early',   target: 500000 },
+      travel:    { name: 'Travel fund',    target: 5000 },
+    };
+    const goalsArray = Array.from(selectedGoals).map(key => ({
+      key,
+      name: (GOAL_DEFAULTS[key] || {}).name || key,
+      target: (GOAL_DEFAULTS[key] || {}).target || 1000,
+      current: 0,
+    }));
+    PFCStorage.setJSON('goals', goalsArray);
   } catch (e) {
     console.error('Could not save user data to localStorage:', e);
   }
