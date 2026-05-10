@@ -56,7 +56,23 @@
     if (avatarEl) avatarEl.textContent = (name ? name[0] : 'U').toUpperCase();
   }
 
+  function injectMobileChrome(sidebar) {
+    if (document.querySelector('[data-sidebar-toggle]')) return;
+    const btn = document.createElement('button');
+    btn.className = 'pfc-sidebar-toggle';
+    btn.setAttribute('data-sidebar-toggle', '');
+    btn.setAttribute('aria-label', 'Open menu');
+    btn.setAttribute('aria-controls', sidebar.id || '');
+    btn.innerHTML = '<svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true"><path d="M3 6h16M3 11h16M3 16h16" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>';
+    document.body.insertBefore(btn, document.body.firstChild);
+
+    const backdrop = document.createElement('div');
+    backdrop.className = 'pfc-sidebar-backdrop';
+    document.body.insertBefore(backdrop, sidebar);
+  }
+
   function wireMobileToggle(sidebar) {
+    injectMobileChrome(sidebar);
     const toggles = document.querySelectorAll('[data-sidebar-toggle]');
     if (!toggles.length) return;
     const close = () => {

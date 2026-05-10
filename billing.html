@@ -396,6 +396,40 @@
     border-left: 6px solid rgba(140, 110, 50, 0.6);
     border-bottom: 6px solid transparent;
   }
+  .sash-annual {
+    position: absolute;
+    top: -16px; left: var(--space-5); right: var(--space-5);
+    background: var(--pfc-ivory);
+    color: var(--pfc-canvas);
+    font-family: var(--pfc-body);
+    font-size: 12px;
+    font-weight: 500;
+    padding: 6px var(--space-4);
+    border-radius: var(--radius-xs);
+    box-shadow: var(--elev-1);
+    text-align: center;
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 6px;
+  }
+  .sash-annual[hidden] { display: none; }
+  .sash-annual-lead {
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    font-size: 11px;
+  }
+  .sash-annual-detail {
+    font-weight: 400;
+    color: var(--pfc-ink-soft);
+    font-size: 12px;
+  }
+  .sash-annual .num {
+    font-family: var(--pfc-mono);
+    font-feature-settings: "tnum";
+    font-weight: 500;
+  }
   .sash--ivory {
     background: var(--pfc-ink-strong);
     color: var(--pfc-ivory);
@@ -1158,6 +1192,10 @@
       <!-- PRO (recommended) -->
       <div class="plan-card plan-card--pro" id="card-pro">
         <div class="sash">Recommended</div>
+        <div class="sash-annual" id="sash-annual" hidden>
+          <span class="sash-annual-lead">Save $39 a year</span>
+          <span class="sash-annual-detail">— <span class="num">$5.75</span> a month, billed annually</span>
+        </div>
         <div class="plan-eyebrow">Pro</div>
         <div class="plan-price">
           <span class="plan-price-num" id="pro-price-num">$69</span>
@@ -1451,12 +1489,15 @@ function setBillingInterval(interval) {
 
   const num    = document.getElementById('pro-price-num');
   const suffix = document.getElementById('pro-price-suffix');
+  const sash   = document.getElementById('sash-annual');
   if (billingInterval === 'monthly') {
     num.textContent    = '$9';
     suffix.textContent = '· /month';
+    if (sash) sash.hidden = true;
   } else {
     num.textContent    = '$69';
     suffix.textContent = '· /year';
+    if (sash) sash.hidden = false;
   }
 }
 

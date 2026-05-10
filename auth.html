@@ -920,10 +920,17 @@ function checkPwStrength(pw) {
 }
 
 // ── LOADING STATE ──
+// Mirrors the visual disabled state into the assistive-tech contract:
+// aria-busy tells screen readers a region is being updated; aria-disabled
+// belt-and-suspenders the native `disabled` for any UA that ignores it on
+// non-button elements (we use `disabled` here, but a future <a class="btn">
+// needs the aria fallback).
 function setLoading(btnId, spinnerId, loading) {
   const btn = document.getElementById(btnId);
   const sp  = document.getElementById(spinnerId);
   btn.disabled = loading;
+  btn.setAttribute('aria-busy', loading ? 'true' : 'false');
+  btn.setAttribute('aria-disabled', loading ? 'true' : 'false');
   btn.querySelector('span').style.opacity = loading ? '0' : '1';
   sp.style.display = loading ? 'block' : 'none';
 }
