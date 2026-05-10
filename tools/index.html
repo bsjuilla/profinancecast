@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Free Tools for European Savers | ProFinanceCast</title>
+  <meta name="description" content="Free, no-signup browser tools from ProFinanceCast: a take-home pay calculator across UK, IE, FR, DE and a debt avalanche-vs-snowball comparator. No affiliates, no tracking.">
+  <link rel="canonical" href="https://profinancecast.com/tools/">
+  <meta name="robots" content="index,follow">
+
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Free Tools for European Savers — ProFinanceCast">
+  <meta property="og:description" content="Calm, no-signup browser tools from a boutique European forecasting house. Take-home pay across four jurisdictions; avalanche vs snowball debt payoff.">
+  <meta property="og:url" content="https://profinancecast.com/tools/">
+  <meta property="og:image" content="https://profinancecast.com/api/og?title=Free+tools+for+European+savers.&eyebrow=Tools&subtitle=No+signup.+No+affiliates.+Run+entirely+in+your+browser.">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:image" content="https://profinancecast.com/api/og?title=Free+tools+for+European+savers.&eyebrow=Tools&subtitle=No+signup.+No+affiliates.+Run+entirely+in+your+browser.">
+  <meta property="og:site_name" content="ProFinanceCast">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Free Tools for European Savers">
+  <meta name="twitter:description" content="Take-home pay across UK, IE, FR, DE. Avalanche vs snowball debt payoff. Free, no signup.">
+
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../css/pfc-tokens.css">
+  <link rel="stylesheet" href="../css/pfc-footer.css">
+  <link rel="stylesheet" href="../css/pfc-app.css">
+  <link rel="stylesheet" href="../css/pfc-reskin.css">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebPage",
+        "name": "Free tools for European savers",
+        "url": "https://profinancecast.com/tools/",
+        "description": "Two free, browser-only utilities from ProFinanceCast: a take-home pay calculator covering UK, IE, FR, DE and a debt avalanche-vs-snowball comparator. No signup, no affiliate links.",
+        "isPartOf": { "@type": "WebSite", "name": "ProFinanceCast", "url": "https://profinancecast.com" },
+        "breadcrumb": {
+          "@type": "BreadcrumbList",
+          "itemListElement": [
+            { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://profinancecast.com/" },
+            { "@type": "ListItem", "position": 2, "name": "Tools", "item": "https://profinancecast.com/tools/" }
+          ]
+        },
+        "hasPart": [
+          {
+            "@type": "WebApplication",
+            "name": "Take-home pay calculator",
+            "url": "https://profinancecast.com/tools/take-home-pay.html",
+            "applicationCategory": "FinanceApplication",
+            "operatingSystem": "Web",
+            "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" }
+          },
+          {
+            "@type": "WebApplication",
+            "name": "Debt strategy comparator",
+            "url": "https://profinancecast.com/tools/debt-strategy.html",
+            "applicationCategory": "FinanceApplication",
+            "operatingSystem": "Web",
+            "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" }
+          }
+        ]
+      }
+    ]
+  }
+  </script>
+
+  <style>
+    /* Static-page baseline. Mirrors privacy.html lines 29-58. */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: var(--font-body); background: var(--canvas); color: var(--ink-2); line-height: 1.7; -webkit-font-smoothing: antialiased; }
+    .skip-link { position: absolute; top: -40px; left: 0; padding: 8px 16px; background: var(--canvas); color: var(--ink); border: 1px solid var(--gold); border-radius: var(--r-xs); font-size: 13px; z-index: 200; text-decoration: none; }
+    .skip-link:focus { top: 8px; left: 8px; }
+    nav.tools-nav { position: sticky; top: 0; z-index: 100; display: flex; align-items: center; justify-content: space-between; padding: 0 var(--space-6); height: 64px; background: rgba(11,20,16,0.85); border-bottom: 1px solid var(--line); backdrop-filter: blur(16px) saturate(140%); }
+    .nav-logo { display: flex; align-items: center; gap: var(--space-2); font-family: var(--font-display); font-style: italic; font-size: 18px; font-weight: 500; color: var(--ink); text-decoration: none; }
+    .logo-mark { width: 28px; height: 28px; background: var(--money); border-radius: var(--r-xs); display: flex; align-items: center; justify-content: center; font-family: var(--font-body); font-style: normal; font-size: 11px; font-weight: 700; color: var(--canvas); }
+    .nav-back { font-size: 13px; color: var(--ink-3); text-decoration: none; transition: color 160ms ease-out; }
+    .nav-back:hover { color: var(--ink-2); }
+
+    .content { max-width: 1080px; margin: 0 auto; padding: var(--space-9) var(--space-5); }
+    .page-tag { display: inline-block; font-family: var(--font-mono); font-size: 11px; font-weight: 500; padding: 3px 10px; border-radius: var(--r-pill); margin-bottom: var(--space-3); background: var(--gold-soft); color: var(--gold); letter-spacing: 0.08em; text-transform: uppercase; }
+    h1 { font-family: var(--font-display); font-style: italic; font-size: clamp(36px, 5vw, 56px); font-weight: 500; line-height: 1.05; letter-spacing: -0.01em; color: var(--ink); margin-bottom: var(--space-4); max-width: 18ch; }
+    p.lead { font-family: var(--font-display); font-style: italic; font-size: 20px; color: var(--ink); line-height: 1.5; margin-bottom: var(--space-7); max-width: 56ch; }
+
+    .tools-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-6); margin-top: var(--space-7); }
+    @media (max-width: 720px) { .tools-grid { grid-template-columns: 1fr; } }
+
+    .tool-card { background: rgba(244,239,229,0.03); border: 1px solid var(--line-2); border-radius: var(--r-md); padding: var(--space-6); display: flex; flex-direction: column; gap: var(--space-3); box-shadow: var(--elev-2); transition: border-color 160ms ease-out, transform 160ms ease-out; }
+    .tool-card:hover { border-color: rgba(212,175,106,0.35); transform: translateY(-1px); }
+    .tool-card .eyebrow { display: inline-block; align-self: flex-start; font-family: var(--font-mono); font-size: 11px; font-weight: 500; padding: 3px 10px; border-radius: var(--r-pill); background: var(--money-soft, rgba(43,182,125,0.10)); color: var(--money); letter-spacing: 0.08em; text-transform: uppercase; }
+    .tool-card h3 { font-family: var(--font-display); font-style: italic; font-size: 26px; font-weight: 500; color: var(--ink); line-height: 1.15; margin: 0; }
+    .tool-card p { font-size: 15px; color: var(--ink-2); margin: 0; line-height: 1.6; max-width: 48ch; }
+    .tool-card .open-link { margin-top: auto; padding-top: var(--space-4); }
+    .tool-card a.btn-open { display: inline-flex; align-items: center; gap: 8px; padding: var(--space-3) var(--space-5); background: var(--money); color: var(--canvas); border-radius: var(--r-xs); font-family: var(--font-body); font-size: 14px; font-weight: 600; text-decoration: none; transition: box-shadow 160ms ease-out; }
+    .tool-card a.btn-open:hover { box-shadow: 0 0 0 1px rgba(212,175,106,0.45) inset; }
+
+    @media (max-width: 600px) { .content { padding: var(--space-7) var(--space-4); } nav.tools-nav { padding: 0 var(--space-4); } }
+  </style>
+
+  <script src="https://js.sentry-cdn.com/9b8b34d46908bd9f79a16cf18322ac70.min.js" crossorigin="anonymous"></script>
+  <script>
+    Sentry.onLoad(function () {
+      Sentry.init({
+        environment: location.hostname === 'profinancecast.com' ? 'production' : 'preview',
+      });
+    });
+  </script>
+  <!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "37cb784ad53047a9921bfd79e9835310"}'></script><!-- End Cloudflare Web Analytics -->
+</head>
+<body>
+
+<a href="#main" class="skip-link">Skip to content</a>
+
+<nav class="tools-nav" role="banner">
+  <a href="/" class="nav-logo"><div class="logo-mark">PF</div>ProFinanceCast</a>
+  <a href="/" class="nav-back">← Back to home</a>
+</nav>
+
+<main id="main" class="content" aria-labelledby="tools-headline">
+  <span class="page-tag">Tools</span>
+  <h1 id="tools-headline">Free tools for European savers.</h1>
+  <p class="lead">Two browser-only utilities from a boutique European forecasting house. No signup, no affiliate links, and the math runs entirely on the reader's device.</p>
+
+  <section class="tools-grid" aria-label="Available tools">
+    <article class="tool-card">
+      <span class="eyebrow">Salary</span>
+      <h3>Take-home pay calculator</h3>
+      <p>Project net pay after income tax, National Insurance or social charges, and pension contributions across the United Kingdom, Ireland, France, and Germany. Built on 2026 brackets.</p>
+      <div class="open-link"><a href="take-home-pay.html" class="btn-open">Open tool →</a></div>
+    </article>
+
+    <article class="tool-card">
+      <span class="eyebrow">Debt</span>
+      <h3>Debt strategy comparator</h3>
+      <p>Run avalanche against snowball on the same balances. See how many months earlier each strategy clears the books and how much interest is saved over the payoff horizon.</p>
+      <div class="open-link"><a href="debt-strategy.html" class="btn-open">Open tool →</a></div>
+    </article>
+  </section>
+</main>
+
+<footer class="site-footer" role="contentinfo">
+  <div class="footer-grid">
+    <div class="footer-col">
+      <h4>Product</h4>
+      <ul>
+        <li><a href="/">Forecast</a></li>
+        <li><a href="/blog.html">Journal</a></li>
+        <li><a href="/billing.html">Pricing</a></li>
+        <li><a href="/tools/take-home-pay.html">Take-home pay</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Company</h4>
+      <ul>
+        <li><a href="/about.html">About</a></li>
+        <li><a href="/about.html#methodology">Methodology</a></li>
+        <li><a href="/llms.txt">For language models</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Resources</h4>
+      <ul>
+        <li><a href="/help.html">Help</a></li>
+        <li><a href="/blog.html">Articles</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Trust</h4>
+      <ul>
+        <li><a href="/about.html#methodology">Methodology</a></li>
+        <li><a href="/about.html">Changelog</a></li>
+        <li><a href="/privacy.html">Data handling</a></li>
+        <li><a href="/about.html">What we are not</a></li>
+        <li><a href="/about.html">Status</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-stamp">
+    <span>© 2026 ProFinanceCast — Built in Europe</span>
+    <span>Last shipped <time datetime="2026-05-10">2026-05-10</time></span>
+  </div>
+</footer>
+
+</body>
+</html>
