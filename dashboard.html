@@ -1746,12 +1746,12 @@ function initChart() {
       scales: {
         x: {
           grid: { color: 'rgba(255,255,255,0.04)' },
-          ticks: { color: '#4A5A6E', font: { size: 11, family: var(--font-body) } }
+          ticks: { color: '#4A5A6E', font: { size: 11, family: "'Inter', system-ui, sans-serif" } }
         },
         y: {
           grid: { color: 'rgba(255,255,255,0.04)' },
           ticks: {
-            color: '#4A5A6E', font: { size: 11, family: var(--font-body) },
+            color: '#4A5A6E', font: { size: 11, family: "'Inter', system-ui, sans-serif" },
             callback: v => '$' + Math.round(v / 1000) + 'k'
           }
         }
