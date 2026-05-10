@@ -163,13 +163,9 @@
       });
     });
 
-    // 8. scenario_gallery_view
+    // 8. scenario_gallery_view — only for Free users seeing the editorial preview.
     onceVisible('.scenarios-preview', () => {
-      let plan = 'free';
-      if (typeof PFCPlan !== 'undefined' && PFCPlan.get) {
-        const p = PFCPlan.get();
-        if (p && p.plan) plan = p.plan;
-      }
+      const plan = (typeof PFCPlan !== 'undefined' && PFCPlan.get) ? PFCPlan.get() : 'free';
       if (plan !== 'free') return;
       track('scenario_gallery_view', { plan: 'free', preview_count: 2 });
     });

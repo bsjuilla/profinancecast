@@ -132,6 +132,74 @@
   /* SHARE */
   .share-row{display:flex;gap:10px;flex-wrap:wrap}
   .share-btn{flex:1;min-width:110px;display:flex;align-items:center;justify-content:center;gap:7px;padding:11px 14px;border-radius:var(--r-sm);font-size:13px;font-weight:500;font-family:'DM Sans',sans-serif;cursor:pointer;border:none;transition:all .15s;text-decoration:none}
+  /* ── EDITORIAL PREVIEW (Free users) ──────────────────────────────────
+     Watermark overlay on #rc-canvas + invitation block + greyed share.
+     #rc-canvas already has position:relative at the canonical rule above;
+     the watermark stack uses that as its containing block. */
+  body[data-pfc-plan="free"] .rc-watermark {
+    position: absolute; inset: 0; z-index: 2; pointer-events: none;
+    display: flex; align-items: center; justify-content: center;
+    background: repeating-linear-gradient(135deg, rgba(212,175,106,0.04) 0 18px, transparent 18px 36px);
+    border-radius: inherit;
+  }
+  body[data-pfc-plan="free"] .rc-watermark .stamp {
+    font-family: var(--font-mono, 'JetBrains Mono', monospace);
+    font-size: 11px; letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--gold, #D4AF6A);
+    background: rgba(11,20,16,0.85);
+    padding: 8px 16px; border-radius: 999px;
+    border: 1px solid rgba(212,175,106,0.4);
+  }
+  body:not([data-pfc-plan="free"]) .rc-watermark { display: none; }
+
+  body[data-pfc-plan="free"] .share-btn,
+  body[data-pfc-plan="free"] .dl-btn {
+    opacity: 0.45; cursor: not-allowed;
+  }
+  body[data-pfc-plan="free"] .share-btn[disabled],
+  body[data-pfc-plan="free"] .dl-btn[disabled] {
+    pointer-events: none;
+  }
+
+  .rc-invitation { display: none; }
+  body[data-pfc-plan="free"] .rc-invitation { display: block; }
+  .rc-invitation {
+    background: var(--card, rgba(244,239,229,0.04));
+    border: 1px solid var(--line, rgba(244,239,229,0.08));
+    border-radius: var(--r, 12px);
+    padding: 24px 28px;
+    margin-top: 16px;
+  }
+  .rc-invitation .eyebrow {
+    font-family: var(--font-mono, 'JetBrains Mono', monospace);
+    font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--gold, #D4AF6A);
+    margin-bottom: 8px;
+  }
+  .rc-invitation .headline {
+    font-family: var(--font-display, 'Cormorant Garamond', serif);
+    font-style: italic; font-size: 22px; font-weight: 500;
+    color: var(--ink, #F4EFE5); margin: 0 0 8px;
+  }
+  .rc-invitation .copy {
+    font-size: 14px; color: var(--ink-2, var(--text2));
+    line-height: 1.6; max-width: 56ch; margin-bottom: 14px;
+  }
+  .rc-invitation .cta-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .rc-invitation .cta-primary {
+    background: var(--gold, #D4AF6A); color: #0B1410;
+    padding: 11px 22px; border-radius: var(--r-sm, 6px);
+    font-family: var(--font-body, sans-serif);
+    font-size: 14px; font-weight: 600;
+    text-decoration: none; display: inline-flex; align-items: center; gap: 6px;
+    transition: opacity .15s;
+  }
+  .rc-invitation .cta-primary:hover { opacity: .9; }
+  .rc-invitation .cta-secondary {
+    color: var(--ink-2, var(--text2));
+    font-size: 13px; text-decoration: underline; text-underline-offset: 3px;
+  }
   .share-dl{background:var(--teal);color:#080C12}
   .share-dl:hover{opacity:.88}
   .share-copy{background:var(--bg3);border:1px solid var(--border2)!important;color:var(--text2)}
@@ -162,10 +230,15 @@
   <script src="js/pfc-auth.js"></script>
   <script src="js/pfc-storage.js"></script>
   <script src="js/pfc-entitlements.js"></script>
-  <!-- Synchronous Pro guard: hides body before parser hits inline init scripts (audit C3) -->
+  <!-- Auth guard. Pro gating moved to in-page editorial preview (UX §6.26);
+       set window.PFC_PREVIEW_GALLERY=false above this script to restore the
+       legacy redirect for rollback. -->
   <script>
-    if (typeof PFCPlan !== 'undefined') PFCPlan.requirePlan(['pro','premium']);
-    else if (typeof PFCAuth !== 'undefined') PFCAuth.requireAuth();
+    if (window.PFC_PREVIEW_GALLERY === false && typeof PFCPlan !== 'undefined') {
+      PFCPlan.requirePlan(['pro','premium']);
+    } else if (typeof PFCAuth !== 'undefined') {
+      PFCAuth.requireAuth();
+    }
   </script>
   <!-- v3 reskin: new fonts + emerald palette overrides -->
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -260,6 +333,7 @@
       <div>
         <!-- SHAREABLE CARD -->
         <div id="rc-canvas">
+          <div class="rc-watermark" aria-hidden="true"><span class="stamp">Pro preview</span></div>
           <div class="rc-header">
             <div>
               <div class="rc-brand">
@@ -336,6 +410,17 @@
           </div>
         </div>
 
+        <!-- Editorial preview invitation (Free users only). -->
+        <section class="rc-invitation" aria-labelledby="rc-invite-headline">
+          <div class="eyebrow">Pro preview</div>
+          <h2 id="rc-invite-headline" class="headline">Download and share your real report card with Pro.</h2>
+          <p class="copy">The card above renders against your numbers. Pro removes the watermark, lets you download the PNG and post it anywhere, and unlocks the historical card archive so you can watch your grade move quarter to quarter.</p>
+          <div class="cta-row">
+            <a class="cta-primary" data-cta="pro-pill" href="billing.html?from=report-card">See Pro plans →</a>
+            <a class="cta-secondary" href="dashboard.html">Back to dashboard</a>
+          </div>
+        </section>
+
         <!-- HISTORY -->
         <div class="card">
           <div class="card-header">
@@ -371,6 +456,32 @@
 </main>
 
 <script>
+// Plan gate (UX §6.26): mirror PFCPlan onto body[data-pfc-plan] so the
+// watermark + invitation + greyed-buttons CSS toggle for Free users. Also
+// toggle the [disabled] attribute on the share/download buttons so keyboard
+// users can't bypass the visual gating via Enter/Space.
+(function () {
+  function apply() {
+    const plan = (typeof PFCPlan !== 'undefined' && PFCPlan.get) ? PFCPlan.get() : 'free';
+    document.body.setAttribute('data-pfc-plan', plan);
+    const isFree = plan === 'free';
+    document.querySelectorAll('.share-btn, .dl-btn').forEach(btn => {
+      if (isFree) {
+        btn.setAttribute('disabled', '');
+        btn.setAttribute('aria-disabled', 'true');
+      } else {
+        btn.removeAttribute('disabled');
+        btn.removeAttribute('aria-disabled');
+      }
+    });
+  }
+  apply();
+  if (typeof PFCPlan !== 'undefined') {
+    PFCPlan.onChange(apply);
+    PFCPlan.refresh().then(apply);
+  }
+})();
+
 const DEF={income:3000,otherIncome:0,housing:1200,food:540,transport:310,otherExp:380,savings:11580,investments:0,debt:8000,debtPay:550,currency:'$',name:'User'};
 function loadUser(){try{const s=PFCStorage.get('user');return s?{...DEF,...JSON.parse(s)}:{...DEF}}catch(e){return{...DEF}}}
 const U=loadUser();const C=U.currency||'$';
