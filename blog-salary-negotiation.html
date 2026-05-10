@@ -38,6 +38,28 @@
   <meta name="twitter:image" content="https://profinancecast.com/api/og?title=Salary+negotiation%2C+in+three+honest+moves&eyebrow=Blog+%C2%B7+Salary&subtitle=Anchor%2C+justify%2C+hold.+The+three+moves+that+do+most+of+the+work+in+a+salary+negotiation.">
 </head>
 <body>
+<!-- Context-aware back affordance: shows "Back to Journal" if user came from /journal, otherwise "All articles" -->
+<div id="blog-back-bar" style="position:sticky;top:64px;z-index:50;display:flex;justify-content:flex-start;padding:12px 24px;background:rgba(11,20,16,0.85);backdrop-filter:blur(12px);border-bottom:1px solid var(--line,rgba(255,255,255,0.08));font-family:'Inter Tight','Inter',sans-serif;font-size:13px;">
+  <a id="blog-back-link" href="blog.html" style="color:var(--ink-3,#8A9BB0);text-decoration:none;display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border:1px solid var(--line,rgba(255,255,255,0.08));border-radius:999px;transition:color 160ms,border-color 160ms;">
+    ← All articles
+  </a>
+</div>
+<script>
+  (function () {
+    if (!document.getElementById('blog-back-bar')) return;
+    var ref = document.referrer || '';
+    try {
+      var refPath = new URL(ref || 'about:blank', location.href).pathname || '';
+      if (/\/journal(\.html)?$/.test(refPath)) {
+        var link = document.getElementById('blog-back-link');
+        if (link) {
+          link.href = 'journal.html';
+          link.textContent = '← Back to Journal';
+        }
+      }
+    } catch (e) {}
+  })();
+</script>
 <header class="pfc-header"><div class="pfc-header-inner">
   <a href="/" class="pfc-logo">Pro<span>Finance</span>Cast</a>
   <nav class="pfc-nav"><a href="/blog.html">Blog</a><a href="/billing.html">Pricing</a><a href="/auth.html" class="pfc-cta">Try free</a></nav>
