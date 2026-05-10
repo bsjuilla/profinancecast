@@ -131,6 +131,31 @@
   .empty-state{text-align:center;padding:60px 24px;}
   .empty-icon{width:72px;height:72px;background:var(--teal-dim);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 18px;}
 
+  /* EDITORIAL HERO (page differentiator vs dashboard) */
+  .nw-hero{padding:8px 0 28px;border-bottom:1px solid var(--border);margin-bottom:28px;display:flex;flex-direction:column;gap:14px;}
+  .nw-hero-eyebrow{font-size:11px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);}
+  .nw-hero-headline{font-family:var(--font-display);font-style:italic;font-weight:500;font-size:34px;line-height:1.15;color:var(--ink);max-width:680px;letter-spacing:-0.01em;}
+  .nw-hero-lede{font-size:14px;line-height:1.65;color:var(--ink-2);max-width:620px;}
+  .nw-hero-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:4px;}
+
+  /* ARCHIVAL EMPTY STATE — gold-accented, single focal CTA */
+  .archive-empty{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:64px 28px;text-align:center;position:relative;overflow:hidden;margin-bottom:24px;}
+  .archive-empty::before{content:"";position:absolute;inset:0 0 auto 0;height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent);opacity:.55;}
+  .archive-empty-mark{width:84px;height:84px;border-radius:50%;background:var(--gold-soft);border:1px solid rgba(212,175,106,0.25);display:flex;align-items:center;justify-content:center;margin:0 auto 22px;color:var(--gold);}
+  .archive-empty-eyebrow{font-size:11px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin-bottom:10px;}
+  .archive-empty-title{font-family:var(--font-display);font-style:italic;font-weight:500;font-size:26px;line-height:1.2;color:var(--ink);margin-bottom:12px;max-width:520px;margin-inline:auto;}
+  .archive-empty-body{font-size:14px;line-height:1.65;color:var(--ink-2);max-width:480px;margin:0 auto 24px;}
+  .archive-cta{display:inline-flex;align-items:center;gap:8px;padding:11px 22px;border-radius:var(--r-sm);background:var(--gold);color:var(--canvas);border:1px solid var(--gold);font-family:var(--font-body);font-size:14px;font-weight:600;cursor:pointer;transition:opacity .15s, transform .15s;}
+  .archive-cta:hover{opacity:.9;transform:translateY(-1px);}
+  .archive-empty-meta{margin-top:18px;font-size:12px;color:var(--ink-3);}
+
+  /* METHODOLOGY CALLOUT — editorial substance, populated state only */
+  .methodology-note{display:flex;gap:14px;padding:16px 20px;border:1px solid var(--border);border-left:2px solid var(--gold);border-radius:var(--r-sm);background:var(--gold-soft);margin-bottom:20px;align-items:flex-start;}
+  .methodology-note-body{font-size:13px;line-height:1.65;color:var(--ink-2);flex:1;}
+  .methodology-note-body strong{color:var(--ink);font-weight:600;}
+  .methodology-note a{color:var(--gold);text-decoration:none;font-weight:500;white-space:nowrap;}
+  .methodology-note a:hover{text-decoration:underline;}
+
   /* MANUAL ENTRY MODAL */
   .modal-overlay{display:none;position:fixed;inset:0;background:rgba(4,6,10,0.85);backdrop-filter:blur(6px);z-index:100;align-items:center;justify-content:center;padding:20px;}
   .modal-overlay.open{display:flex;}
@@ -264,8 +289,8 @@
 <div class="main">
   <div class="topbar">
     <div class="topbar-left">
-      <div class="topbar-title">Net Worth Timeline</div>
-      <div class="topbar-sub" id="topbar-sub">Your personal wealth tracker</div>
+      <div class="topbar-title" style="font-size:13px;font-weight:500;color:var(--text2);letter-spacing:.04em;text-transform:uppercase;">The Archive</div>
+      <div class="topbar-sub" id="topbar-sub">Your wealth, recorded</div>
     </div>
     <div class="topbar-right">
       <button class="btn" onclick="openManualEntry()">
@@ -282,8 +307,38 @@
 
   <div class="content">
 
+    <!-- EDITORIAL HERO -->
+    <section class="nw-hero" aria-labelledby="nw-hero-headline">
+      <div class="nw-hero-eyebrow">The archive · Net worth</div>
+      <h1 class="nw-hero-headline" id="nw-hero-headline">The story of your wealth, month by month.</h1>
+      <p class="nw-hero-lede">
+        The dashboard projects forward; this page records what already happened. Each daily snapshot is auto-logged the moment you open ProFinanceCast, so the longer you use it, the richer this view becomes.
+      </p>
+    </section>
+
+    <!-- ARCHIVAL EMPTY STATE — shown when no history exists -->
+    <section class="archive-empty" id="archive-empty" style="display:none;" aria-live="polite">
+      <div class="archive-empty-mark" aria-hidden="true">
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none">
+          <path d="M4 19V5a1 1 0 0 1 1-1h11l4 4v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+          <path d="M16 4v4h4" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+          <path d="M8 13h8M8 16h5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="archive-empty-eyebrow">Empty ledger</div>
+      <div class="archive-empty-title">Your timeline starts the moment you log your first snapshot.</div>
+      <div class="archive-empty-body">
+        From there, ProFinanceCast records a daily data point each time you visit your dashboard. Or seed the archive yourself with a historical entry below.
+      </div>
+      <button class="archive-cta" onclick="openManualEntry()">
+        Log your first snapshot
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <div class="archive-empty-meta">Auto-logging activates after your first entry.</div>
+    </section>
+
     <!-- SUMMARY STRIP -->
-    <div class="strip">
+    <div class="strip" id="nw-strip">
       <div class="metric-card">
         <div class="metric-accent" style="background:var(--teal);"></div>
         <div class="metric-label">Current net worth</div>
@@ -311,7 +366,7 @@
     </div>
 
     <!-- MAIN CHART -->
-    <div class="chart-card">
+    <div class="chart-card" id="nw-chart-card">
       <div class="chart-header">
         <div>
           <div class="chart-title">Net Worth Over Time</div>
@@ -350,8 +405,17 @@
       </div>
     </div>
 
+    <!-- METHODOLOGY CALLOUT — populated state only -->
+    <aside class="methodology-note" id="nw-methodology" role="note">
+      <div class="methodology-note-body">
+        <strong>How this is calculated.</strong>
+        Net worth is your total assets (cash, savings, investments) minus your total liabilities (all outstanding debts). Each row in the archive is a snapshot of that equation on a specific date — auto-logged when you open your dashboard, or entered manually for historical context.
+        &nbsp;<a href="about.html#methodology">Read methodology →</a>
+      </div>
+    </aside>
+
     <!-- BREAKDOWN + MILESTONES -->
-    <div class="breakdown-grid">
+    <div class="breakdown-grid" id="nw-breakdown">
 
       <!-- Asset breakdown -->
       <div class="card">
@@ -403,7 +467,7 @@
     </div>
 
     <!-- MONTHLY CHANGE TABLE + PROJECTED GROWTH -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+    <div id="nw-history-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
 
       <!-- History table -->
       <div class="card" style="padding:0;overflow:hidden;">
@@ -546,8 +610,34 @@ function logTodaySnapshot() {
   PFCStorage.setJSON('nw_history', HISTORY);
 }
 
+// ── EMPTY vs POPULATED STATE TOGGLE ──
+// When HISTORY is empty, the page collapses to a single focal CTA (the archival
+// hero card). When even one entry exists, the full timeline UI returns. This is
+// the core differentiator that prevents /net-worth from reading as "another
+// dashboard" with broken-looking placeholder cards.
+function applyEmptyOrPopulatedState() {
+  const isEmpty = !HISTORY.length;
+  const archiveEmpty = document.getElementById('archive-empty');
+  const populatedIds = ['nw-strip', 'nw-chart-card', 'nw-methodology', 'nw-breakdown', 'nw-history-grid'];
+
+  if (archiveEmpty) archiveEmpty.style.display = isEmpty ? 'block' : 'none';
+  populatedIds.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (isEmpty) {
+      el.style.display = 'none';
+    } else {
+      // Restore each element's natural display value (grid for the two grids,
+      // block for the rest — "" lets the stylesheet decide).
+      el.style.display = '';
+    }
+  });
+}
+
 // ── RENDER ALL ──
 function renderAll() {
+  applyEmptyOrPopulatedState();
+
   const sym = USER.currency || '$';
   const fmt = v => (v < 0 ? '-' : '') + sym + Math.abs(Math.round(v)).toLocaleString();
 
@@ -585,7 +675,7 @@ function renderAll() {
     // Breakdown
     renderBreakdown(latest, sym, fmt, prev);
   } else {
-    document.getElementById('topbar-sub').textContent = 'No entries yet — visit your dashboard to auto-log';
+    document.getElementById('topbar-sub').textContent = 'No entries yet';
     ['m-current','m-assets','m-liabilities','m-growth'].forEach(id => document.getElementById(id).textContent = '—');
   }
 
