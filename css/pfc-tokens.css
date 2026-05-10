@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500;1,9..144,600&family=Inter+Tight:wght@300;400;500;600;700&display=swap');
+
 /* ════════════════════════════════════════════════════════════════════════
    ProFinanceCast — Design Tokens · v3 "Modern Fintech"
    Deep emerald-black + ivory + champagne gold + vivid emerald.
@@ -44,8 +46,8 @@
 
   /* ── Typography ───────────────────────────────────────────────────────── */
   /* Fonts loaded by each page from Google Fonts — see Wave 3 boilerplate */
-  --font-display:  'Cormorant Garamond', 'Playfair Display', Georgia, serif;
-  --font-body:     'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-display:  'Fraunces', 'Cormorant Garamond', 'Playfair Display', Georgia, serif;
+  --font-body:     'Inter Tight', 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   --font-mono:     'JetBrains Mono', 'SF Mono', ui-monospace, monospace;
 
   /* Type scale — modular 1.25 ratio, 16px base */

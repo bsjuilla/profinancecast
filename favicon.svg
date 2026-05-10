@@ -1,17 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
-  <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#0B1410"/>
-      <stop offset="1" stop-color="#143524"/>
-    </linearGradient>
-  </defs>
-  <rect width="32" height="32" rx="8" fill="url(#bg)"/>
-  <rect x="0.5" y="0.5" width="31" height="31" rx="7.5" fill="none" stroke="#2BB67D" stroke-opacity="0.22"/>
-  <!-- Compound-growth curve in champagne gold -->
-  <path d="M5 22 L11 19.5 L17 14.5 L23 7"
+  <rect width="32" height="32" rx="6" fill="#0B1410"/>
+  <!-- Calm upward arc — boutique-archive growth, not day-trading candle -->
+  <path d="M6 22 L13 16 L19 18 L26 9"
         fill="none" stroke="#D4AF6A" stroke-width="2.2"
         stroke-linecap="round" stroke-linejoin="round"/>
-  <!-- Endpoint pulse — the moment your money compounds -->
-  <circle cx="23" cy="7" r="3.5" fill="#D4AF6A" fill-opacity="0.22"/>
-  <circle cx="23" cy="7" r="2" fill="#D4AF6A"/>
+  <!-- Apex dot: the latest data point -->
+  <circle cx="26" cy="9" r="1.5" fill="#D4AF6A"/>
 </svg>
