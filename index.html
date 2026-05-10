@@ -130,6 +130,27 @@
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer integrity="sha384-g4NTh/Iv5PPU4xPyhEWqPcwtNXOvdaDI8LLnyYfyNZOjKJeYQyjzQ9X5275eBjpt" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js" defer integrity="sha384-Z3REaz79l2IaAZqJsSABtTbhjgOUYyV3p90XNnAPCSHg3EMTz1fouunq9WZRtj3d" crossorigin="anonymous"></script>
 
+<!-- Hard fallback: if GSAP fails to load (CDN block, SRI mismatch, network error),
+     reveal all .reveal elements within 1.5s so the page never stays invisibly empty. -->
+<noscript>
+  <style>
+    .reveal, .reveal-stagger > * { opacity: 1 !important; transform: none !important; }
+  </style>
+</noscript>
+<script>
+  // Watchdog: if GSAP hasn't initialised within 1.5s, force-reveal everything.
+  window.addEventListener('load', function () {
+    setTimeout(function () {
+      if (!window.gsap) {
+        document.querySelectorAll('.reveal, .reveal-stagger > *').forEach(function (el) {
+          el.style.opacity = '1';
+          el.style.transform = 'none';
+        });
+      }
+    }, 1500);
+  });
+</script>
+
 <!-- PFC modules (must load before page logic that uses them) -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.105.4" integrity="sha384-4eCDoMN/7A46qQ5Tj0rZ/D2VEolFGNIINDTLAcWZcvhkRSsvTfqNfaBMlRRoGEZ5" crossorigin="anonymous"></script>
 <script src="js/pfc-config.js"></script>
@@ -458,7 +479,7 @@
 
   /* ── SECTION TEMPLATE ───────────────────────────────────────────── */
   section {
-    padding: 140px 24px;
+    padding: 96px 24px;
     max-width: 1240px;
     margin: 0 auto;
     position: relative;
@@ -1184,7 +1205,7 @@
 </section>
 
 <!-- ─────────── CTA ─────────── -->
-<section style="padding: 60px 0 120px;">
+<section style="padding: 48px 0 96px;">
   <div class="cta-strip reveal">
     <h2>Stop guessing about <em>your money.</em></h2>
     <p>Five minutes to drop in your numbers. Twelve months of clarity. Free, forever.</p>
@@ -1244,8 +1265,20 @@
 <script>
 (function () {
   // ── 1. GSAP REVEALS ──
+  var __gsapTries = 0;
   function initMotion() {
-    if (!window.gsap) { setTimeout(initMotion, 100); return; }
+    if (!window.gsap) {
+      if (++__gsapTries > 15) {
+        // GSAP never loaded — force-reveal so the page isn't an empty void.
+        document.querySelectorAll('.reveal, .reveal-stagger > *').forEach(function (el) {
+          el.style.opacity = '1';
+          el.style.transform = 'none';
+        });
+        return;
+      }
+      setTimeout(initMotion, 100);
+      return;
+    }
     if (window.ScrollTrigger) gsap.registerPlugin(ScrollTrigger);
 
     gsap.from('.hero .reveal', { y: 32, opacity: 0, duration: 0.9, stagger: 0.08, ease: 'power3.out', delay: 0.1 });
