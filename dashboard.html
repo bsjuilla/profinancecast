@@ -26,34 +26,19 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <style>
+  /* All design tokens come from pfc-tokens.css (loaded below).
+     Local-only aliases stay here for code that hasn't migrated yet. */
   :root {
-    --bg:    var(--canvas);
-    --bg2:   #0D1320;
-    --bg3:   #111827;
-    --card:  #0F1923;
-    --border: rgba(255,255,255,0.07);
-    --border2: rgba(255,255,255,0.13);
-    --teal:  var(--money);
     --teal-dim: rgba(43,182,125,0.12);
-    --text:  #F0F4F8;
-    --text2: #8A9BB0;
-    --text3: #4A5A6E;
-    --amber: #F5A623;
-    --red:   #E05252;
-    --blue:  #3B82F6;
-    --purple:#A78BFA;
-    --green: #22C55E;
-    --r:     12px;
-    --r-sm:  8px;
   }
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   html, body { height: 100%; }
   body {
     font-family: var(--font-body);
-    background: var(--bg);
-    color: var(--text);
+    background: var(--canvas);
+    color: var(--ink);
     display: flex;
-    overflow: hidden;
+    overflow-x: hidden;
   }
 
   /* ── SIDEBAR ── */
@@ -516,7 +501,7 @@
   <!-- TOPBAR -->
   <div class="topbar">
     <div class="topbar-left">
-      <div class="topbar-title">My Dashboard <span id="masthead-month" style="display:inline-block;font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:500;color:var(--gold,#D4AF6A);margin-left:8px;font-size:15px;">—</span></div>
+      <div class="topbar-title">My Dashboard <span id="masthead-month" style="display:inline-block;font-family:var(--font-display);font-style:italic;font-weight:500;color:var(--gold);margin-left:8px;font-size:15px;">—</span></div>
       <div class="topbar-sub" id="topbar-date">Last updated · just now · <span id="today-date"></span></div>
     </div>
     <div class="topbar-right">
@@ -547,30 +532,7 @@
       <span style="font-size:12px;color:var(--teal);cursor:pointer;" onclick="markAllRead()">Mark all read</span>
     </div>
     <div id="notif-list" style="max-height:320px;overflow-y:auto;">
-      <div class="notif-item unread" onclick="markRead(this)">
-        <div class="notif-dot-sm"></div>
-        <div>
-          <div class="notif-title">Your weekly forecast is ready</div>
-          <div class="notif-body">Your net worth is projected to grow $8,220 over the next 12 months.</div>
-          <div class="notif-time">Just now</div>
-        </div>
-      </div>
-      <div class="notif-item unread" onclick="markRead(this)">
-        <div class="notif-dot-sm"></div>
-        <div>
-          <div class="notif-title">Debt payoff milestone</div>
-          <div class="notif-body">You're 38% of the way to being completely debt-free. Keep going!</div>
-          <div class="notif-time">2 hours ago</div>
-        </div>
-      </div>
-      <div class="notif-item" onclick="markRead(this)">
-        <div class="notif-dot-sm" style="opacity:0;"></div>
-        <div>
-          <div class="notif-title">Sage has a tip for you</div>
-          <div class="notif-body">Paying an extra $100/mo toward your credit card saves $180 in interest.</div>
-          <div class="notif-time">Yesterday</div>
-        </div>
-      </div>
+      <div class="notif-empty" style="padding:32px 18px;text-align:center;color:var(--text3);font-size:13px;">No notifications</div>
     </div>
     <div style="padding:12px 18px;border-top:1px solid var(--border);text-align:center;">
       <span style="font-size:12px;color:var(--text3);">Upgrade to Pro for weekly email digests</span>
@@ -764,37 +726,31 @@
     <!-- ═══ OVERVIEW PANEL ═══ -->
     <div class="tab-panel active" id="panel-overview">
 
-    <!-- METRICS -->
+    <!-- METRICS — initial '—' placeholders; recalcForecast() hydrates from real USER data after auth -->
     <div class="metrics">
       <div class="metric pfc-card--elev">
         <div class="metric-label">Projected net worth (12mo)</div>
-        <div class="metric-val num" style="color:var(--teal);" id="m-networth">$24,840</div>
-        <div class="metric-change up">
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 2v8M2 6l4-4 4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          +$8,220 over 12 months
-        </div>
-        <div class="metric-bar"><div class="metric-bar-fill" style="width:72%;background:var(--teal);"></div></div>
+        <div class="metric-val num" style="color:var(--teal);" id="m-networth">—</div>
+        <div class="metric-change up" id="m-networth-change">—</div>
+        <div class="metric-bar"><div class="metric-bar-fill" style="width:0%;background:var(--teal);"></div></div>
       </div>
       <div class="metric pfc-card--elev">
         <div class="metric-label">Monthly savings</div>
-        <div class="metric-val num" id="m-savings">$570</div>
-        <div class="metric-change neutral">19% of income · good rate</div>
-        <div class="metric-bar"><div class="metric-bar-fill" style="width:55%;background:var(--blue);"></div></div>
+        <div class="metric-val num" id="m-savings">—</div>
+        <div class="metric-change neutral" id="m-savings-change">—</div>
+        <div class="metric-bar"><div class="metric-bar-fill" style="width:0%;background:var(--blue);"></div></div>
       </div>
       <div class="metric pfc-card--elev">
         <div class="metric-label">Debt payoff</div>
-        <div class="metric-val num" id="m-debt">14 mo</div>
-        <div class="metric-change neutral">at $550/mo payment</div>
-        <div class="metric-bar"><div class="metric-bar-fill" style="width:42%;background:var(--amber);"></div></div>
+        <div class="metric-val num" id="m-debt">—</div>
+        <div class="metric-change neutral" id="m-debt-change">—</div>
+        <div class="metric-bar"><div class="metric-bar-fill" style="width:0%;background:var(--amber);"></div></div>
       </div>
       <div class="metric pfc-card--elev">
         <div class="metric-label">Financial health score</div>
-        <div class="metric-val num" style="color:var(--amber);" id="m-score">74</div>
-        <div class="metric-change up">
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 2v8M2 6l4-4 4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          +3 this week · Good
-        </div>
-        <div class="metric-bar"><div class="metric-bar-fill" style="width:74%;background:var(--amber);"></div></div>
+        <div class="metric-val num" style="color:var(--amber);" id="m-score">—</div>
+        <div class="metric-change up" id="m-score-change">—</div>
+        <div class="metric-bar"><div class="metric-bar-fill" style="width:0%;background:var(--amber);"></div></div>
       </div>
     </div>
 
@@ -807,7 +763,6 @@
             <div class="card-title">12-month net worth forecast</div>
             <div class="card-sub">Based on your current income, expenses &amp; debts</div>
           </div>
-          <span class="card-badge badge-teal">Live</span>
         </div>
         <div class="chart-legend">
           <div class="legend-item"><div class="legend-line" style="background:var(--teal);"></div>Projected</div>
@@ -835,7 +790,7 @@
               stroke-dasharray="339" stroke-dashoffset="89"
               stroke-linecap="round" transform="rotate(-90 65 65)"
               style="transition:stroke-dashoffset 1s ease;"/>
-            <text x="65" y="62" text-anchor="middle" font-family="Syne,sans-serif" font-size="28" font-weight="800" fill="#F0F4F8">74</text>
+            <text x="65" y="62" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="28" font-weight="800" fill="#F0F4F8">74</text>
             <text x="65" y="78" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#8A9BB0">out of 100</text>
           </svg>
         </div>
@@ -1299,7 +1254,7 @@
 
           <div style="margin-bottom:14px;">
             <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px;">
-              <span style="color:var(--text3);">💰 Cash &amp; savings</span>
+              <span style="color:var(--text3);">Cash &amp; savings</span>
               <span id="nw-tab-savings-val" style="color:var(--text2);font-weight:500;">—</span>
             </div>
             <div style="height:6px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden;">
@@ -1309,7 +1264,7 @@
 
           <div style="margin-bottom:14px;">
             <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px;">
-              <span style="color:var(--text3);">📈 Investments</span>
+              <span style="color:var(--text3);">Investments</span>
               <span id="nw-tab-inv-val" style="color:var(--text2);font-weight:500;">—</span>
             </div>
             <div style="height:6px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden;">
@@ -1640,7 +1595,7 @@ function recalcForecast() {
   const ringArc = document.querySelector('circle[stroke-linecap="round"]');
   if (ringArc) {
     ringArc.setAttribute('stroke-dashoffset', Math.round(339 - (339 * score / 100)));
-    ringArc.setAttribute('stroke', score >= 70 ? 'var(--money)' : score >= 40 ? '#F5A623' : '#E05252');
+    ringArc.setAttribute('stroke', score >= 70 ? '#2BB67D' : score >= 40 ? '#F5A623' : '#E05252');
   }
   const ringNum = document.querySelector('text[font-size="28"]');
   if (ringNum) ringNum.textContent = score;
@@ -1716,9 +1671,9 @@ function initChart() {
       datasets: [
         {
           label: 'Projected', data: d.base,
-          borderColor: 'var(--money)', backgroundColor: 'rgba(43,182,125,0.07)',
+          borderColor: '#2BB67D', backgroundColor: 'rgba(43,182,125,0.07)',
           borderWidth: 2.5, tension: 0.4, fill: true,
-          pointRadius: 3, pointBackgroundColor: 'var(--money)', pointBorderColor: '#0D1320', pointBorderWidth: 2
+          pointRadius: 3, pointBackgroundColor: '#2BB67D', pointBorderColor: '#0D1320', pointBorderWidth: 2
         },
         {
           label: 'Optimistic', data: d.opt,
@@ -1797,17 +1752,15 @@ function setTab(btn, tab) {
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   const panel = document.getElementById('panel-' + tab);
   if (panel) panel.classList.add('active');
-  // Sync sidebar active state
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  // Sync sidebar active state — all tabs are sub-views of dashboard.html,
+  // so the Dashboard sidebar link stays active across all tabs. Match by
+  // href (not textContent) so injected sidebar items don't false-match.
   document.querySelectorAll('.nav-item').forEach(n => {
-    const txt = n.textContent.trim().toLowerCase();
-    if ((tab === 'overview'  && txt === 'dashboard') ||
-        (tab === 'forecast'  && txt === 'forecast') ||
-        (tab === 'debts'     && txt === 'debt planner') ||
-        (tab === 'goals'     && txt === 'goals') ||
-        (tab === 'networth'  && txt === 'net worth')) {
-      n.classList.add('active');
-    }
+    const href = (n.getAttribute('href') || '').replace(/^\//,'').replace(/\.html$/i,'');
+    const isDashboard = href === 'dashboard';
+    n.classList.toggle('active', isDashboard);
+    if (isDashboard) n.setAttribute('aria-current', 'page');
+    else n.removeAttribute('aria-current');
   });
   // Render Net Worth tab content when switching to it
   if (tab === 'networth') renderNWTab();
@@ -1971,7 +1924,7 @@ function updateAllCards() {
   if (ringArc) {
     const dashOff = Math.round(339 - (339 * score / 100));
     ringArc.setAttribute('stroke-dashoffset', dashOff);
-    ringArc.setAttribute('stroke', score >= 70 ? 'var(--money)' : score >= 40 ? '#F5A623' : '#E05252');
+    ringArc.setAttribute('stroke', score >= 70 ? '#2BB67D' : score >= 40 ? '#F5A623' : '#E05252');
   }
 
   // Score breakdown bars
@@ -2070,7 +2023,7 @@ function renderGoals() {
         </div>
         <div class="progress-bar"><div class="progress-fill" style="width:${pct}%;background:${barColor};"></div></div>
         <div style="font-size:11px;color:var(--text3);margin-top:4px;">
-          ${pct >= 100 ? '🎉 Goal reached!' : months ? `~${months} month${months===1?'':'s'} to reach goal` : 'Increase your surplus to reach this goal'}
+          ${pct >= 100 ? 'Goal reached.' : months ? `~${months} month${months===1?'':'s'} to reach goal` : 'Increase your surplus to reach this goal'}
         </div>
       </div>`;
   }).join('');
@@ -2242,7 +2195,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // ── Category definitions ──
 const CAT_META = {
-  income:        { label: 'Income',        color: 'var(--money)', bg: 'rgba(43,182,125,0.12)' },
+  income:        { label: 'Income',        color: '#2BB67D', bg: 'rgba(43,182,125,0.12)' },
   housing:       { label: 'Housing',       color: '#3B82F6', bg: 'rgba(59,130,246,0.12)' },
   food:          { label: 'Food',          color: '#F5A623', bg: 'rgba(245,166,35,0.12)' },
   transport:     { label: 'Transport',     color: '#F97316', bg: 'rgba(249,115,22,0.12)' },
@@ -2729,25 +2682,9 @@ document.getElementById('today-date').textContent = new Date().toLocaleDateStrin
   }
 })();
 
-// ── KPI NUMBER COUNTERS (animate when scrolled into view) ──
-(function () {
-  if (!window.PFCMotion) return;
-  const moneyFmt = (n) => '$' + Math.round(n).toLocaleString();
-  const targets = [
-    { id: 'm-networth', to: 24840, fmt: moneyFmt },
-    { id: 'm-savings',  to:   570, fmt: moneyFmt },
-    { id: 'm-debt',     to:    14, fmt: (n) => Math.round(n) + ' mo' },
-    { id: 'm-score',    to:    74, fmt: (n) => String(Math.round(n)) },
-  ];
-  targets.forEach(t => {
-    const el = document.getElementById(t.id);
-    if (!el) return;
-    el.textContent = t.fmt(0);
-    window.PFCMotion.observe(el, () => {
-      window.PFCMotion.countTo(el, 0, t.to, { duration: 1100, formatter: t.fmt });
-    });
-  });
-})();
+// KPI counter IIFE removed — values now come from recalcForecast() with real
+// USER data, so animating to hardcoded targets (24840/570/14/74) was both
+// misleading and would race with the real-data write.
 
 // ── INFLATION LIVE RATE ──
 function openInflCountry() {
@@ -2993,12 +2930,12 @@ function renderNWTab() {
             {
               label: 'Net worth',
               data: nwData,
-              borderColor: 'var(--money)',
+              borderColor: '#2BB67D',
               backgroundColor: 'rgba(43,182,125,0.08)',
               borderWidth: 2,
               pointRadius: 3,
               pointHoverRadius: 5,
-              pointBackgroundColor: 'var(--money)',
+              pointBackgroundColor: '#2BB67D',
               tension: 0.4,
               fill: true,
             },
