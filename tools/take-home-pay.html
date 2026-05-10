@@ -147,6 +147,11 @@
   <script src="../js/pfc-analytics.js" defer></script>
   <script src="../js/pfc-sidebar.js" defer></script>
   <script src="../js/pfc-tax-engine.js" defer></script>
+  <!-- Global tax library: data files MUST load before the API so it closes over a populated countries map. -->
+  <script src="../js/tax-library/europe.js" defer></script>
+  <script src="../js/tax-library/americas.js" defer></script>
+  <script src="../js/tax-library/asia-pacific-mea.js" defer></script>
+  <script src="../js/pfc-tax-library.js" defer></script>
 </head>
 <body>
 
@@ -230,7 +235,7 @@
   <div class="topbar">
     <div class="topbar-left">
       <div class="topbar-title">Take-home pay calculator</div>
-      <div class="topbar-sub">What you actually keep after federal, state, and FICA (US) or income tax and NI (UK). 2026 brackets.</div>
+      <div class="topbar-sub">What you actually keep after income tax, social contributions and regional tax — global coverage, 2026 brackets.</div>
     </div>
   </div>
 
@@ -239,100 +244,21 @@
       <h2 id="calc-heading" style="position:absolute;left:-9999px;">Calculator</h2>
 
       <div class="card">
-        <div class="tabs" role="tablist" aria-label="Country">
-          <button class="tab" role="tab" id="tab-us" aria-selected="true" aria-controls="panel-us" data-country="US">United States</button>
-          <button class="tab" role="tab" id="tab-uk" aria-selected="false" aria-controls="panel-uk" data-country="UK">United Kingdom</button>
+        <div class="field">
+          <label for="country">Country</label>
+          <select id="country" aria-label="Country">
+            <option value="">Loading countries…</option>
+          </select>
+          <div class="field-note">~60 countries: bracket-accurate for the major economies, flat-rate approximations elsewhere.</div>
         </div>
-
-        <div role="tabpanel" id="panel-us" aria-labelledby="tab-us">
-          <div class="field">
-            <label for="us-gross">Gross annual salary (USD)</label>
-            <input class="num-input" type="number" id="us-gross" inputmode="decimal" min="0" step="1000" value="85000">
-          </div>
-          <div class="field">
-            <label for="us-state">State</label>
-            <select id="us-state">
-              <optgroup label="United States">
-                <option value="AL">Alabama</option>
-                <option value="AK">Alaska (no state tax)</option>
-                <option value="AZ">Arizona</option>
-                <option value="AR">Arkansas</option>
-                <option value="CA" selected>California</option>
-                <option value="CO">Colorado</option>
-                <option value="CT">Connecticut</option>
-                <option value="DE">Delaware</option>
-                <option value="FL">Florida (no state tax)</option>
-                <option value="GA">Georgia</option>
-                <option value="HI">Hawaii</option>
-                <option value="ID">Idaho</option>
-                <option value="IL">Illinois</option>
-                <option value="IN">Indiana</option>
-                <option value="IA">Iowa</option>
-                <option value="KS">Kansas</option>
-                <option value="KY">Kentucky</option>
-                <option value="LA">Louisiana</option>
-                <option value="ME">Maine</option>
-                <option value="MD">Maryland</option>
-                <option value="MA">Massachusetts</option>
-                <option value="MI">Michigan</option>
-                <option value="MN">Minnesota</option>
-                <option value="MS">Mississippi</option>
-                <option value="MO">Missouri</option>
-                <option value="MT">Montana</option>
-                <option value="NE">Nebraska</option>
-                <option value="NV">Nevada (no state tax)</option>
-                <option value="NH">New Hampshire (interest/dividends only)</option>
-                <option value="NJ">New Jersey</option>
-                <option value="NM">New Mexico</option>
-                <option value="NY">New York</option>
-                <option value="NC">North Carolina</option>
-                <option value="ND">North Dakota</option>
-                <option value="OH">Ohio</option>
-                <option value="OK">Oklahoma</option>
-                <option value="OR">Oregon</option>
-                <option value="PA">Pennsylvania</option>
-                <option value="RI">Rhode Island</option>
-                <option value="SC">South Carolina</option>
-                <option value="SD">South Dakota (no state tax)</option>
-                <option value="TN">Tennessee (interest/dividends only)</option>
-                <option value="TX">Texas (no state tax)</option>
-                <option value="UT">Utah</option>
-                <option value="VT">Vermont</option>
-                <option value="VA">Virginia</option>
-                <option value="WA">Washington (no state tax)</option>
-                <option value="WV">West Virginia</option>
-                <option value="WI">Wisconsin</option>
-                <option value="WY">Wyoming (no state tax)</option>
-              </optgroup>
-            </select>
-            <div class="field-note">State income tax is approximated as a flat effective rate. For exact filing, see a tax professional.</div>
-          </div>
-          <div class="field">
-            <label for="us-status">Filing status</label>
-            <select id="us-status">
-              <option value="single">Single</option>
-              <option value="mfj">Married filing jointly</option>
-            </select>
-          </div>
+        <div class="field">
+          <label for="gross" id="gross-label">Gross annual salary</label>
+          <input class="num-input" type="number" id="gross" inputmode="decimal" min="0" step="1000" value="85000">
         </div>
-
-        <div role="tabpanel" id="panel-uk" aria-labelledby="tab-uk" hidden>
-          <div class="field">
-            <label for="uk-gross">Gross annual salary (GBP)</label>
-            <input class="num-input" type="number" id="uk-gross" inputmode="decimal" min="0" step="1000" value="45000">
-          </div>
-          <div class="field">
-            <label for="uk-region">Region</label>
-            <select id="uk-region">
-              <optgroup label="United Kingdom">
-                <option value="ENG" selected>England</option>
-                <option value="SCT">Scotland</option>
-                <option value="WLS">Wales</option>
-                <option value="NIR">Northern Ireland</option>
-              </optgroup>
-            </select>
-            <div class="field-note">Scotland uses its own income-tax bands (19% / 20% / 21% / 42% / 45% / 48%). England, Wales and NI share the rUK bands (20% / 40% / 45%).</div>
-          </div>
+        <div class="field" id="region-row" hidden>
+          <label for="region" id="region-label">Region</label>
+          <select id="region"></select>
+          <div class="field-note" id="region-note">Regional taxes are added on top of national income tax.</div>
         </div>
       </div>
 
@@ -360,16 +286,10 @@
         <table class="breakdown">
           <thead><tr><th>Line</th><th style="text-align:right">Annual</th></tr></thead>
           <tbody id="breakdown-body">
-            <tr><td>Gross income</td><td class="num" id="b-gross">$0</td></tr>
-            <tr id="b-row-fed"><td>Federal income tax</td><td class="num" id="b-fed">$0</td></tr>
-            <tr id="b-row-fica"><td>FICA (Social Security + Medicare)</td><td class="num" id="b-fica">$0</td></tr>
-            <tr id="b-row-state"><td>State tax</td><td class="num" id="b-state">$0</td></tr>
-            <tr id="b-row-uk-inc" hidden><td>UK income tax</td><td class="num" id="b-uk-inc">£0</td></tr>
-            <tr id="b-row-uk-ni" hidden><td>National Insurance</td><td class="num" id="b-uk-ni">£0</td></tr>
-            <tr class="total"><td>Take-home</td><td class="num" id="b-takehome">$0</td></tr>
+            <!-- Rows are rendered by the script from PFCTaxLibrary.calculate(...).breakdown -->
           </tbody>
         </table>
-        <p class="disclaimer">All math runs in your browser. Numbers are estimates for planning, not tax advice. State income tax outside CA / NY / IL is a flat-rate approximation of the typical middle bracket — exact figures vary by deductions, locality, and credits.</p>
+        <p class="disclaimer">All math runs in your browser. Numbers are estimates for planning, not tax advice. Where a country uses a flat-rate approximation, exact figures vary by deductions, locality, credits and filing status — consult a qualified accountant for filing.</p>
       </div>
     </section>
 
@@ -377,19 +297,19 @@
       <h2>Questions</h2>
       <details>
         <summary>How accurate is this?</summary>
-        <p>It uses projected 2026 US federal brackets and the 2026/27 UK rates with standard deduction and personal allowance baked in. State tax is a flat effective-rate approximation across all 50 states; Scotland uses its own income-tax bands. For tax filing use a qualified accountant; for forecasting it sits within a few percent of payroll.</p>
+        <p>It uses 2026 brackets where published and the most recent enacted rates elsewhere, with the standard personal allowance / standard deduction baked in. For tax filing, use a qualified accountant; for forecasting, the figures sit within a few percent of actual payroll for a typical earner.</p>
       </details>
       <details>
-        <summary>Which states and UK regions are covered?</summary>
-        <p>All 50 US states (with the eight no-income-tax states correctly zeroed out), plus England, Scotland, Wales, and Northern Ireland. Scottish residents see their own band structure; rUK residents share the 20% / 40% / 45% bands.</p>
+        <summary>Which countries are covered?</summary>
+        <p>The library now covers roughly 60 countries. The largest economies — United States, United Kingdom, Germany, France, Canada, Australia, Japan, India and similar — use bracket-accurate progressive calculations, with sub-national breakdowns where they materially change the result (US states, Canadian provinces, UK regions, Swiss cantons). Smaller jurisdictions use flat-rate approximations of the typical middle band. If your country is missing or you'd like a sharper figure for one we already cover, send us a request.</p>
       </details>
       <details>
-        <summary>Does this account for 401(k), HSA, or pension contributions?</summary>
-        <p>Not in this version. The calculator assumes no pre-tax deductions so the gross figure is what you and your employer agreed. To model 401(k) or pension across a full forecast, use the Pro scenarios planner.</p>
+        <summary>Does this account for 401(k), HSA, pension or other pre-tax contributions?</summary>
+        <p>Not in this version. The calculator assumes no pre-tax deductions, so the gross figure is what you and your employer agreed. To model retirement or pension contributions across a full forecast, use the Pro scenarios planner.</p>
       </details>
       <details>
-        <summary>Why a flat rate per state?</summary>
-        <p>Most states use progressive brackets, but for a planning estimate a single effective rate is within ~1% of the bracketed figure for typical W-2 earners. We trade pinpoint accuracy for a clean comparison across all 50 states.</p>
+        <summary>Why a flat rate for some countries?</summary>
+        <p>Most income-tax systems are progressive, but for a planning estimate a single effective rate is within ~1% of the bracketed figure for a typical middle-income earner. We use bracket-accurate maths for the major economies and flat approximations for smaller jurisdictions where the day-to-day variance from deductions, credits and locality dwarfs the bracket effect.</p>
       </details>
       <details>
         <summary>Is my salary data shared anywhere?</summary>
@@ -452,53 +372,53 @@
 <script>
 (function () {
   'use strict';
-  function start() {
-    var Engine = window.PFCTaxEngine;
-    if (!Engine) { console.error('PFCTaxEngine not loaded'); return; }
 
-    var country = 'US';
-    var debounceTimer = null;
+  // Default country code on first load. Falls back to first available if 'US' isn't loaded.
+  var DEFAULT_COUNTRY = 'US';
+  // Default region per country when first switching (otherwise we leave the dropdown's first item).
+  var DEFAULT_REGIONS = { US: 'CA', GB: 'ENG', UK: 'ENG', CA: 'ON', CH: 'ZH' };
+
+  var debounceTimer = null;
+  var lastGaugePct = 0;
+
+  function ready() {
+    var Lib = window.PFCTaxLibrary;
+    if (!Lib || typeof Lib.calculate !== 'function') {
+      console.error('PFCTaxLibrary not loaded');
+      return;
+    }
+    if (!Lib.countries || Object.keys(Lib.countries).length === 0) {
+      console.error('PFCTaxLibrary.countries is empty — data files did not load.');
+      return;
+    }
 
     var els = {
-      tabs: document.querySelectorAll('.tab'),
-      panelUS: document.getElementById('panel-us'),
-      panelUK: document.getElementById('panel-uk'),
-      usGross: document.getElementById('us-gross'),
-      usState: document.getElementById('us-state'),
-      usStatus: document.getElementById('us-status'),
-      ukGross: document.getElementById('uk-gross'),
-      ukRegion: document.getElementById('uk-region'),
-      takeHome: document.getElementById('r-takehome'),
-      monthly: document.getElementById('r-monthly'),
-      hourly: document.getElementById('r-hourly'),
-      effective: document.getElementById('r-effective'),
-      gaugeSvg: document.getElementById('gauge'),
-      gaugeFill: document.getElementById('gauge-fill'),
-      gaugeNeedle: document.getElementById('gauge-needle'),
+      country:    document.getElementById('country'),
+      gross:      document.getElementById('gross'),
+      grossLabel: document.getElementById('gross-label'),
+      regionRow:  document.getElementById('region-row'),
+      region:     document.getElementById('region'),
+      takeHome:   document.getElementById('r-takehome'),
+      monthly:    document.getElementById('r-monthly'),
+      hourly:     document.getElementById('r-hourly'),
+      effective:  document.getElementById('r-effective'),
+      gaugeSvg:   document.getElementById('gauge'),
+      gaugeFill:  document.getElementById('gauge-fill'),
+      gaugeNeedle:document.getElementById('gauge-needle'),
       gaugeLabel: document.getElementById('r-gauge-label'),
-      pull: document.getElementById('r-pull'),
-      bGross: document.getElementById('b-gross'),
-      bFed: document.getElementById('b-fed'),
-      bFica: document.getElementById('b-fica'),
-      bState: document.getElementById('b-state'),
-      bUkInc: document.getElementById('b-uk-inc'),
-      bUkNi: document.getElementById('b-uk-ni'),
-      bTakeHome: document.getElementById('b-takehome'),
-      rowFed: document.getElementById('b-row-fed'),
-      rowFica: document.getElementById('b-row-fica'),
-      rowState: document.getElementById('b-row-state'),
-      rowUkInc: document.getElementById('b-row-uk-inc'),
-      rowUkNi: document.getElementById('b-row-uk-ni')
+      pull:       document.getElementById('r-pull'),
+      tbody:      document.getElementById('breakdown-body')
     };
 
-    function fmt(n, currency) {
-      var sym = currency === 'GBP' ? '£' : '$';
-      var v = Math.round(Number(n) || 0);
-      return sym + v.toLocaleString('en-US');
+    // ----- Formatting helpers -----
+    function fmt(symbol, n) {
+      var sign = n < 0 ? '−' : '';
+      var v = Math.round(Math.abs(Number(n) || 0));
+      return sign + (symbol || '') + v.toLocaleString('en-US');
     }
     function pct(r) { return (Math.round(Number(r) * 1000) / 10).toFixed(1) + '%'; }
 
-    var lastGaugePct = 0;
+    // ----- Gauge -----
     function setGauge(ratio) {
       ratio = Math.max(0, Math.min(1, Number(ratio) || 0));
       var fillCirc = 251.3;
@@ -515,72 +435,125 @@
       lastGaugePct = p;
     }
 
-    function setUSRows(show) {
-      els.rowFed.hidden = !show; els.rowFica.hidden = !show; els.rowState.hidden = !show;
-      els.rowUkInc.hidden = show; els.rowUkNi.hidden = show;
+    // ----- Country / region dropdown population -----
+    function populateCountries() {
+      var list = Lib.listCountries();
+      els.country.innerHTML = '';
+      list.forEach(function (c) {
+        var opt = document.createElement('option');
+        opt.value = c.code;
+        opt.textContent = c.name;
+        els.country.appendChild(opt);
+      });
+      // Choose default — preferred code if present, otherwise first.
+      var defaultCode = (Lib.getCountry(DEFAULT_COUNTRY) ? DEFAULT_COUNTRY : (list[0] && list[0].code) || '');
+      if (defaultCode) els.country.value = defaultCode;
     }
 
-    function recompute() {
-      if (country === 'US') {
-        var gross = Number(els.usGross.value) || 0;
-        var state = els.usState.value;
-        var status = els.usStatus.value;
-        var r = Engine.calculateUS({ grossAnnual: gross, state: state, filingStatus: status });
-        setUSRows(true);
-        els.takeHome.textContent = fmt(r.takeHome, 'USD');
-        els.monthly.textContent = fmt(r.takeHomeMonthly, 'USD');
-        els.hourly.textContent = fmt(r.takeHomePerHour, 'USD');
-        els.effective.textContent = pct(r.effectiveRate);
-        els.bGross.textContent = fmt(r.gross, 'USD');
-        els.bFed.textContent = '−' + fmt(r.federal.tax, 'USD');
-        els.bFica.textContent = '−' + fmt(r.fica.total, 'USD');
-        els.bState.textContent = '−' + fmt(r.state.tax, 'USD');
-        els.bTakeHome.textContent = fmt(r.takeHome, 'USD');
-        els.gaugeLabel.textContent = 'You keep ' + pct(r.takeHomeRatio) + ' of every dollar earned.';
-        els.pull.textContent = 'After tax, you keep ' + fmt(r.takeHome, 'USD') + ' for every ' + fmt(r.gross, 'USD') + ' earned.';
-        setGauge(r.takeHomeRatio);
-      } else {
-        var ukGross = Number(els.ukGross.value) || 0;
-        var region = els.ukRegion ? els.ukRegion.value : 'ENG';
-        var u = Engine.calculateUK({ grossAnnual: ukGross, region: region });
-        setUSRows(false);
-        els.takeHome.textContent = fmt(u.takeHome, 'GBP');
-        els.monthly.textContent = fmt(u.takeHomeMonthly, 'GBP');
-        els.hourly.textContent = fmt(u.takeHomePerHour, 'GBP');
-        els.effective.textContent = pct(u.effectiveRate);
-        els.bGross.textContent = fmt(u.gross, 'GBP');
-        els.bUkInc.textContent = '−' + fmt(u.incomeTax.tax, 'GBP');
-        els.bUkNi.textContent = '−' + fmt(u.ni.ni, 'GBP');
-        els.bTakeHome.textContent = fmt(u.takeHome, 'GBP');
-        els.gaugeLabel.textContent = 'You keep ' + pct(u.takeHomeRatio) + ' of every pound earned.';
-        els.pull.textContent = 'After tax, you keep ' + fmt(u.takeHome, 'GBP') + ' for every ' + fmt(u.gross, 'GBP') + ' earned.';
-        setGauge(u.takeHomeRatio);
+    function populateRegions(countryCode) {
+      var country = Lib.getCountry(countryCode);
+      els.region.innerHTML = '';
+      if (!country || !country.hasRegions) {
+        els.regionRow.hidden = true;
+        return;
       }
+      els.regionRow.hidden = false;
+      var regions = Lib.listRegions(countryCode);
+      regions.forEach(function (r) {
+        var opt = document.createElement('option');
+        opt.value = r.code;
+        opt.textContent = r.name;
+        els.region.appendChild(opt);
+      });
+      // Pick a sensible default if we know one for this country.
+      var pref = DEFAULT_REGIONS[countryCode];
+      if (pref && regions.some(function (r) { return r.code === pref; })) {
+        els.region.value = pref;
+      }
+    }
+
+    // ----- Salary label reflects currency -----
+    function refreshSalaryLabel(countryCode) {
+      var country = Lib.getCountry(countryCode);
+      if (!country) return;
+      els.grossLabel.textContent = 'Gross annual salary (' + (country.currency || '') + ')';
+    }
+
+    // ----- Render the breakdown rows from the library result -----
+    function renderBreakdown(result) {
+      els.tbody.innerHTML = '';
+      result.breakdown.forEach(function (row) {
+        var tr = document.createElement('tr');
+        if (row.kind === 'net') tr.className = 'total';
+        var th = document.createElement('td');
+        th.textContent = row.label;
+        var td = document.createElement('td');
+        td.className = 'num';
+        td.textContent = fmt(result.symbol, row.amount);
+        tr.appendChild(th);
+        tr.appendChild(td);
+        els.tbody.appendChild(tr);
+      });
+    }
+
+    // ----- Recompute & paint everything -----
+    function recompute() {
+      var countryCode = els.country.value;
+      var country = Lib.getCountry(countryCode);
+      if (!country) return;
+      var regionCode = (country.hasRegions && els.region) ? els.region.value : null;
+      var salary = Number(els.gross.value) || 0;
+
+      var r;
+      try {
+        r = Lib.calculate({ countryCode: countryCode, regionCode: regionCode, salary: salary });
+      } catch (e) {
+        console.error(e);
+        return;
+      }
+
+      var sym = r.symbol || '';
+      var keptRatio = 1 - r.effectiveRate;
+      var monthly = r.takeHome / 12;
+      var hourly  = r.takeHome / 2080;
+
+      els.takeHome.textContent  = fmt(sym, r.takeHome);
+      els.monthly.textContent   = fmt(sym, monthly);
+      els.hourly.textContent    = fmt(sym, hourly);
+      els.effective.textContent = pct(r.effectiveRate);
+      els.gaugeLabel.textContent = 'You keep ' + pct(keptRatio) + ' of every ' + (country.currency || 'unit') + ' earned.';
+      els.pull.textContent = 'After tax, you keep ' + fmt(sym, r.takeHome) + ' for every ' + fmt(sym, salary) + ' earned.';
+
+      renderBreakdown(r);
+      setGauge(keptRatio);
     }
 
     function debounce() { clearTimeout(debounceTimer); debounceTimer = setTimeout(recompute, 200); }
 
-    els.tabs.forEach(function (tab) {
-      tab.addEventListener('click', function () {
-        els.tabs.forEach(function (t) { t.setAttribute('aria-selected', t === tab ? 'true' : 'false'); });
-        country = tab.dataset.country;
-        els.panelUS.hidden = country !== 'US';
-        els.panelUK.hidden = country !== 'UK';
-        recompute();
-      });
-    });
+    // ----- Wire up -----
+    populateCountries();
+    populateRegions(els.country.value);
+    refreshSalaryLabel(els.country.value);
 
-    ['input', 'change'].forEach(function (evt) {
-      [els.usGross, els.usState, els.usStatus, els.ukGross, els.ukRegion].forEach(function (el) {
-        if (el) el.addEventListener(evt, debounce);
-      });
+    els.country.addEventListener('change', function () {
+      populateRegions(els.country.value);
+      refreshSalaryLabel(els.country.value);
+      recompute();
     });
+    els.region.addEventListener('change', recompute);
+    els.gross.addEventListener('input', debounce);
+    els.gross.addEventListener('change', debounce);
 
     recompute();
   }
 
-  if (window.PFCTaxEngine) start();
-  else window.addEventListener('load', start);
+  // The data files + library are deferred, so they evaluate after parse but
+  // potentially after this inline script. Wait for window 'load' to be safe.
+  if (window.PFCTaxLibrary && window.PFCTaxLibrary.countries && Object.keys(window.PFCTaxLibrary.countries).length > 0) {
+    ready();
+  } else {
+    window.addEventListener('load', ready);
+  }
 })();
 </script>
 
