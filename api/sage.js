@@ -32,7 +32,14 @@ function _rateLimit(key, max = 5, windowMs = 10_000) {
   return true;
 }
 
-const PLAN_LIMITS = { free: 5, pro: 60, premium: 150 };
+// Single source of truth — must match pricing.md and api/subscription/status.js.
+const PLAN_LIMITS = { free: 10, pro: 200, premium: 500 };
+
+// Owner override: env-driven (OWNER_EMAILS=comma,separated). These emails
+// skip both the quota check and the usage increment so the owner can verify
+// Pro behaviour without burning their own counter.
+const OWNER_EMAILS = (process.env.OWNER_EMAILS || '')
+  .split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
@@ -58,6 +65,8 @@ export default async function handler(req, res) {
   const { data: userData, error: userErr } = await supabase.auth.getUser(token);
   if (userErr || !userData?.user) return res.status(401).json({ error: 'Session expired — please sign in again.' });
   const userId = userData.user.id;
+  const userEmail = (userData.user.email || '').toLowerCase();
+  const isOwner = userEmail && OWNER_EMAILS.includes(userEmail);
 
   // Per-user rate limit (audit M4 primary): 20 req/min/user, well above interactive use.
   if (!_rateLimit('user:' + userId, 20, 60_000)) {
@@ -70,8 +79,8 @@ export default async function handler(req, res) {
   const limit = csvMode ? 8000 : 500;
   if (message.length > limit) return res.status(400).json({ error: 'Message too long' });
 
-  // ── Plan-aware quota check (skipped for csvMode batch parsing) ──────────
-  if (!csvMode) {
+  // ── Plan-aware quota check (skipped for csvMode batch parsing AND owner) ─
+  if (!csvMode && !isOwner) {
     const { data: profile } = await supabase
       .from('profiles')
       .select('plan, ai_queries_used, ai_queries_limit, ai_queries_reset_at')
@@ -161,9 +170,12 @@ export default async function handler(req, res) {
     // Fallback removed — the RPC is created in 20260508_subscriptions_fixup.sql
     // and the SELECT-then-UPDATE fallback raced under concurrent calls,
     // letting Free users exceed their monthly cap.
-    supabase.rpc('increment_ai_queries', { p_user_id: userId })
-      .then(({ error }) => { if (error) console.error('[sage] increment_ai_queries:', error); })
-      .catch(e => console.error('[sage] increment_ai_queries threw:', e));
+    // Owner is exempt — testing shouldn't burn their own counter.
+    if (!isOwner) {
+      supabase.rpc('increment_ai_queries', { p_user_id: userId })
+        .then(({ error }) => { if (error) console.error('[sage] increment_ai_queries:', error); })
+        .catch(e => console.error('[sage] increment_ai_queries threw:', e));
+    }
 
     return res.status(200).json({ reply });
 

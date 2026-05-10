@@ -39,36 +39,38 @@ export default async function handler(req, res) {
   const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
   if (!token) return res.status(401).json({ error: 'Missing token' });
 
-  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY) {
+  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
     console.error('forecast/save: missing Supabase env');
     return res.status(200).json({ first_run: false });
   }
 
+  // Service-role client (matches status.js / sage.js convention). Bypasses
+  // RLS — we MUST scope the update explicitly via .eq('id', userId) below,
+  // or any row whose first_forecast_at is NULL would be updated.
   const supabase = createClient(
     process.env.SUPABASE_URL,
-    process.env.SUPABASE_ANON_KEY,
-    {
-      auth: { persistSession: false, autoRefreshToken: false },
-      global: { headers: { Authorization: `Bearer ${token}` } },
-    }
+    process.env.SUPABASE_SERVICE_ROLE_KEY,
+    { auth: { persistSession: false, autoRefreshToken: false } }
   );
 
-  // Conditional update: RLS policy enforces id = auth.uid() and
-  // first_forecast_at is null, so the update is a no-op when either
-  // condition fails. Returning the row lets us tell the caller whether
-  // they were the first to flip it.
+  // Resolve the caller from the JWT (validates signature + freshness).
+  const { data: userData, error: userErr } = await supabase.auth.getUser(token);
+  if (userErr || !userData?.user) {
+    return res.status(401).json({ error: 'Invalid token' });
+  }
+  const userId = userData.user.id;
+
+  // Conditional update scoped to the caller's own row. The .is() filter
+  // makes this idempotent — second + Nth saves return zero rows.
   const nowIso = new Date().toISOString();
   const { data, error } = await supabase
     .from('profiles')
     .update({ first_forecast_at: nowIso })
+    .eq('id', userId)
     .is('first_forecast_at', null)
     .select('id');
 
   if (error) {
-    // 401 if the token didn't validate; everything else is fail-closed.
-    if (error.code === 'PGRST301' || error.status === 401) {
-      return res.status(401).json({ error: 'Invalid token' });
-    }
     console.error('forecast/save: update error:', error);
     return res.status(200).json({ first_run: false });
   }

@@ -8,6 +8,8 @@ Single product, three tiers. No upsells beyond them.
 | Pro | $9 / month or $69 / year | 200 messages / month | Unlimited | Longer memory. Deeper analysis. Cancel any time. |
 | Founders Lifetime | $149 once | 200 messages / month | Unlimited | Lifetime Pro entitlement. Limited to 500 seats. |
 
+> **Heads-up on renewal:** Pro is currently sold as an access pass — at the end of the period, you re-purchase manually from the billing page to extend. Auto-renewal is on the roadmap for Q2. Founders Lifetime is unaffected.
+
 ## Free tier — what's included
 
 - Ten-year net-worth forecast (full horizon, full resolution)

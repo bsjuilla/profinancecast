@@ -9,8 +9,12 @@
 //   401 if no/invalid auth token
 //
 // Required env: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
+// Optional env: OWNER_EMAILS (comma-separated) — these emails get unlimited Pro
 
 import { createClient } from '@supabase/supabase-js';
+
+const OWNER_EMAILS = (process.env.OWNER_EMAILS || '')
+  .split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
@@ -29,6 +33,21 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: 'Invalid auth token' });
   }
   const userId = userData.user.id;
+  const userEmail = (userData.user.email || '').toLowerCase();
+
+  // Owner override: env-driven, server-side. Single source of truth — every
+  // gate downstream reads from this endpoint, so flipping the env propagates.
+  if (userEmail && OWNER_EMAILS.includes(userEmail)) {
+    return res.status(200).json({
+      plan: 'pro',
+      status: 'owner_override',
+      currentPeriodEnd: null,
+      cancelAtPeriodEnd: false,
+      cancelledAt: null,
+      provider: null,
+      queries: { used: 0, limit: 999999, resetsAt: null },
+    });
+  }
 
   // Look up active subscription. If none, return free.
   const { data: sub, error: subErr } = await supabase
@@ -67,7 +86,7 @@ export default async function handler(req, res) {
     provider: sub?.provider || null,
     queries: profile ? {
       used: profile.ai_queries_used || 0,
-      limit: profile.ai_queries_limit || (plan === 'premium' ? 150 : plan === 'pro' ? 60 : 5),
+      limit: profile.ai_queries_limit || (plan === 'premium' ? 500 : plan === 'pro' ? 200 : 10),
       resetsAt: profile.ai_queries_reset_at,
     } : null,
   });
