@@ -159,6 +159,47 @@
   <script src="js/pfc-analytics.js" defer></script>
 </head>
 <body>
+<style>
+/* In-app context: hide public-only CTAs when arriving from authenticated app */
+body.pfc-inapp .public-only-cta,
+body.pfc-inapp [data-public-only],
+body.pfc-inapp .nav-cta-btn,
+body.pfc-inapp .nav-cta,
+body.pfc-inapp a.pfc-cta,
+body.pfc-inapp .calc-cta,
+body.pfc-inapp .newsletter,
+body.pfc-inapp a[href*="auth.html"]:not(.footer-col a),
+body.pfc-inapp a[href="#pricing"]:not(.footer-col a),
+body.pfc-inapp a[href="index.html#pricing"]:not(.footer-col a) {
+  display: none !important;
+}
+</style>
+<script>
+  (function () {
+    if (document.body.classList.contains('pfc-inapp')) return;
+    var ref = document.referrer || '';
+    var inApp = false;
+    try {
+      var refPath = new URL(ref || 'about:blank', location.href).pathname || '';
+      if (/\/(journal|dashboard|net-worth|goals|recurring|settings|billing|history|tools|salary-calculator|debt-optimizer|sage|scenarios|report-card)(\.html)?$/.test(refPath)) {
+        inApp = true;
+      }
+    } catch (e) {}
+    if (typeof PFCAuth !== 'undefined' && PFCAuth.isLoggedIn && PFCAuth.isLoggedIn()) {
+      inApp = true;
+    }
+    if (inApp) {
+      document.body.classList.add('pfc-inapp');
+      document.querySelectorAll('a').forEach(function (a) {
+        if (a.classList.contains('footer-col') || a.closest('footer')) return;
+        if (/^\s*Blog\s*$/.test(a.textContent || '') && /\/?blog\.html?$/.test(a.getAttribute('href') || '')) {
+          a.setAttribute('href', 'journal.html');
+          a.textContent = 'Journal';
+        }
+      });
+    }
+  })();
+</script>
 
 <nav>
   <a href="index.html" class="nav-logo"><div class="logo-mark">PF</div>ProFinanceCast</a>

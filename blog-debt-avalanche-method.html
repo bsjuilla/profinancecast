@@ -112,6 +112,78 @@
     } catch (e) {}
   })();
 </script>
+<style>
+/* In-app context: hide public-only CTAs when arriving from authenticated app */
+body.pfc-inapp .public-only-cta,
+body.pfc-inapp [data-public-only],
+body.pfc-inapp .nav-cta-btn,
+body.pfc-inapp a.pfc-cta,
+body.pfc-inapp .pfc-callout--cta,
+body.pfc-inapp a[href*="auth.html"]:not(#blog-back-link):not(.footer-col a),
+body.pfc-inapp a[href="#pricing"]:not(.footer-col a) {
+  display: none !important;
+}
+/* Reading progress bar */
+.reading-progress { position: fixed; top: 0; left: 0; height: 2px; width: 0; background: var(--gold, #D4AF6A); z-index: 200; transition: width 60ms linear; pointer-events: none; }
+@media (prefers-reduced-motion: reduce) { .reading-progress { transition: none; } }
+/* Editorial polish: tighten the reading column and lift typography */
+article { max-width: 700px; }
+article h1 { line-height: 1.12; }
+article p { line-height: 1.7; font-size: 1rem; }
+article h2 { position: relative; font-size: 1.7rem; line-height: 1.3; margin: 3.6rem 0 1.4rem; padding-top: 1.1rem; }
+article h2::before { content: ""; position: absolute; top: 0; left: 0; width: 32px; height: 2px; background: var(--gold, #D4AF6A); opacity: 0.85; }
+article h3 { font-family: 'Cormorant Garamond', 'Fraunces', serif; font-style: normal; font-weight: 500; font-size: 1.18rem; line-height: 1.35; margin: 2rem 0 0.6rem; letter-spacing: 0; }
+article h4 { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.78rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--gold, #D4AF6A); margin: 1.6rem 0 0.55rem; font-weight: 500; }
+article blockquote { margin: 2.4rem 0; padding-left: 1.5rem; border-left: 2px solid var(--gold, #D4AF6A); font-size: 1.32rem; line-height: 1.5; }
+article code, article p code, article li code { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.92em; background: rgba(255,255,255,0.04); padding: 1px 5px; border-radius: 3px; border: 0; color: var(--pfc-ink, #f3efe6); }
+article ul { list-style: none; padding-left: 0; }
+article ul li { position: relative; padding-left: 1.4rem; margin-bottom: 0.75rem; line-height: 1.65; }
+article ul li::before { content: "•"; position: absolute; left: 0.25rem; top: 0; color: var(--gold, #D4AF6A); font-weight: 600; }
+article ol { padding-left: 1.4rem; }
+article ol li { margin-bottom: 0.75rem; line-height: 1.65; }
+article ol li::marker { color: var(--gold, #D4AF6A); font-family: 'JetBrains Mono', monospace; font-size: 0.92em; }
+.pfc-lede + p::first-letter { font-size: 3.6em; line-height: 0.88; padding: 0.08em 0.1em 0 0; color: var(--gold, #D4AF6A); }
+</style>
+<div class="reading-progress" id="reading-progress"></div>
+<script>
+  (function () {
+    if (document.body.classList.contains('pfc-inapp')) return;
+    var ref = document.referrer || '';
+    var inApp = false;
+    try {
+      var refPath = new URL(ref || 'about:blank', location.href).pathname || '';
+      if (/\/(journal|dashboard|net-worth|goals|recurring|settings|billing|history|tools|salary-calculator|debt-optimizer|sage|scenarios|report-card)(\.html)?$/.test(refPath)) {
+        inApp = true;
+      }
+    } catch (e) {}
+    if (typeof PFCAuth !== 'undefined' && PFCAuth.isLoggedIn && PFCAuth.isLoggedIn()) {
+      inApp = true;
+    }
+    if (inApp) {
+      document.body.classList.add('pfc-inapp');
+      document.querySelectorAll('a').forEach(function (a) {
+        if (a.classList.contains('footer-col') || a.closest('footer')) return;
+        if (/^\s*Blog\s*$/.test(a.textContent || '') && /\/?blog\.html?$/.test(a.getAttribute('href') || '')) {
+          a.setAttribute('href', 'journal.html');
+          a.textContent = 'Journal';
+        }
+      });
+    }
+  })();
+  (function () {
+    var bar = document.getElementById('reading-progress');
+    if (!bar) return;
+    function update() {
+      var h = document.documentElement;
+      var max = (h.scrollHeight - h.clientHeight) || 1;
+      var pct = Math.min(100, Math.max(0, (h.scrollTop / max) * 100));
+      bar.style.width = pct + '%';
+    }
+    window.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update);
+    update();
+  })();
+</script>
 
 <header class="pfc-header"><div class="pfc-header-inner">
   <a href="/" class="pfc-logo">Pro<span>Finance</span>Cast</a>
