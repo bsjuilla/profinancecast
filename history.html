@@ -414,20 +414,25 @@ function fmtMoney(v, sym) {
 
 // ── INIT ──
 function init() {
-  try { USER        = PFCStorage.getJSON('user') || {}; }            catch(e) { USER = {}; }
-  try { NW_HISTORY  = PFCStorage.getJSON('nw_history') || []; }      catch(e) { NW_HISTORY = []; }
-  try { BILLING     = PFCStorage.getJSON('billing_history') || []; } catch(e) { BILLING = []; }
-  try { REPORTS     = PFCStorage.getJSON('reports') || []; }         catch(e) { REPORTS = []; }
-  try { SAGE        = PFCStorage.getJSON('sage_history') || []; }    catch(e) { SAGE = []; }
+  USER       = PFCStorage.getJSON('user') || {};
+  NW_HISTORY = PFCStorage.getJSON('nw_history') || [];
+  BILLING    = PFCStorage.getJSON('billing_history') || [];
+  REPORTS    = PFCStorage.getJSON('reports') || [];
+  SAGE       = PFCStorage.getJSON('sage_history') || [];
 
   bindTabs();
-  renderNetWorth();
-  renderBilling();
-  renderReports();
-  renderSage();
+  activateTab('networth');
 }
 
 // ── TAB SWITCHING ──
+const PANE_RENDERERS = {
+  networth: () => renderNetWorth(),
+  billing:  () => renderBilling(),
+  reports:  () => renderReports(),
+  sage:     () => renderSage(),
+};
+const renderedPanes = new Set();
+
 function bindTabs() {
   document.querySelectorAll('.tab-btn[data-tab]').forEach(btn => {
     btn.addEventListener('click', () => activateTab(btn.dataset.tab));
@@ -443,8 +448,10 @@ function activateTab(name) {
   document.querySelectorAll('.tab-pane[data-pane]').forEach(p => {
     p.classList.toggle('active', p.dataset.pane === name);
   });
-  // Resize chart when net-worth pane becomes visible
-  if (name === 'networth' && nwHistoryChart) {
+  if (!renderedPanes.has(name)) {
+    PANE_RENDERERS[name]?.();
+    renderedPanes.add(name);
+  } else if (name === 'networth' && nwHistoryChart) {
     setTimeout(() => nwHistoryChart.resize(), 50);
   }
 }
@@ -571,9 +578,8 @@ function renderBilling() {
     const plan   = b.plan || b.product || '—';
     const amount = (b.amount != null) ? fmtMoney(b.amount, b.currency || sym) : '—';
     const status = (b.status || 'paid').toLowerCase();
-    const pillClass = status === 'paid' ? '' :
-                      status === 'failed' ? 'red' :
-                      status === 'refunded' ? 'amber' : 'blue';
+    const STATUS_PILL = { paid: '', failed: 'red', refunded: 'amber' };
+    const pillClass = STATUS_PILL[status] ?? 'blue';
     return `<tr>
       <td style="padding:11px 22px;color:var(--text3);">${escapeHtml(formatDateShort(date))}</td>
       <td style="padding:11px 22px;color:var(--text);font-weight:500;">${escapeHtml(plan)}</td>
@@ -667,7 +673,11 @@ function renderSage() {
 }
 
 // ── START ──
-init();
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init, { once: true });
+} else {
+  init();
+}
 </script>
   <!-- Route guard: redirect unauthed users to sign-in -->
   <script>
