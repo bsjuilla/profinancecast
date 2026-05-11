@@ -33,7 +33,9 @@ function _rateLimit(key, max = 5, windowMs = 10_000) {
 }
 
 // Single source of truth — must match pricing.md and api/subscription/status.js.
-const PLAN_LIMITS = { free: 10, pro: 200, premium: 500 };
+// Sage is a Pro-tier feature; free accounts get zero quota and are redirected
+// at the browser by PFCPlan.requirePlan. Server enforces here as a backstop.
+const PLAN_LIMITS = { free: 0, pro: 200, premium: 500 };
 
 // Owner override: env-driven (OWNER_EMAILS=comma,separated). These emails
 // skip both the quota check and the usage increment so the owner can verify

@@ -47,6 +47,7 @@
   function hydrateUserPill(sidebar) {
     const nameEl = sidebar.querySelector('#sidebar-name');
     const avatarEl = sidebar.querySelector('#sidebar-avatar');
+    const pillEl = sidebar.querySelector('.user-pill');
     if (!nameEl && !avatarEl) return;
     let name = '';
     if (typeof PFCStorage !== 'undefined') {
@@ -55,12 +56,42 @@
         try { name = (JSON.parse(raw).name || '').trim(); } catch (_) {}
       }
     }
-    const nextName = name || 'Your account';
-    const nextAvatar = (name ? name[0] : 'U').toUpperCase();
-    // Idempotent: skip DOM writes when the value hasn't changed (avoids
-    // a visible flicker/relayout on the auth-ready re-hydrate below).
+    // Empty state: invite the user to complete their profile instead of the
+    // anonymous "Your account" fallback. Once a name is saved, the pill flips
+    // to first-letter avatar + name automatically.
+    const hasName = name.length > 0;
+    const nextName = hasName ? name : 'Set up profile';
+    const nextAvatar = (hasName ? name[0] : 'U').toUpperCase();
     if (nameEl && nameEl.textContent !== nextName) nameEl.textContent = nextName;
     if (avatarEl && avatarEl.textContent !== nextAvatar) avatarEl.textContent = nextAvatar;
+    if (pillEl) {
+      pillEl.dataset.empty = hasName ? '0' : '1';
+    }
+  }
+
+  // Mirror PFCPlan onto the user-pill so paid users get distinct styling.
+  // Free → default emerald avatar; Pro/Premium → gold accent + tiny crown.
+  function hydrateUserPillPlan(sidebar) {
+    const pillEl = sidebar.querySelector('.user-pill');
+    if (!pillEl) return;
+    const plan = (typeof PFCPlan !== 'undefined' && PFCPlan.get) ? PFCPlan.get() : 'free';
+    pillEl.dataset.plan = plan;
+  }
+
+  // Sage is a Pro-only surface as of Sprint 8. Rather than touch every
+  // app-page sidebar copy, mark the Ask Sage link here so:
+  //   1. PFCPlan.applyBadges() locks it for free users (redirect to billing)
+  //   2. A "Pro" pill renders next to the label (matches Scenarios / Report card)
+  function markSageAsPro(sidebar) {
+    const link = sidebar.querySelector('a.nav-item[href$="sage.html"]');
+    if (!link) return;
+    if (!link.hasAttribute('data-pro-only')) link.setAttribute('data-pro-only', '');
+    if (!link.querySelector('.nav-badge')) {
+      const badge = document.createElement('span');
+      badge.className = 'nav-badge';
+      badge.textContent = 'Pro';
+      link.appendChild(badge);
+    }
   }
 
   function wireUserPill(sidebar) {
@@ -107,6 +138,8 @@
         svg: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="2" y="3" width="12" height="10" rx="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M2 6h12" stroke="currentColor" stroke-width="1.4"/><circle cx="8" cy="9.5" r="1.4" stroke="currentColor" stroke-width="1.3"/></svg>' },
       { href: '/tools/debt-strategy.html', label: 'Debt comparator',
         svg: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 13L6 6l3 4 5-9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>' },
+      { href: '/cash-forecast.html', label: 'Cash forecast',
+        svg: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.3"/><path d="M8 2v6l4 2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>' },
       { href: '/journal.html', label: 'Journal',
         svg: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 2h7l3 3v9a1 1 0 01-1 1H3a1 1 0 01-1-1V3a1 1 0 011-1z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><path d="M5 8h6M5 11h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>' },
     ];
@@ -184,17 +217,22 @@
   function init() {
     const sidebar = document.querySelector('nav.sidebar, aside.sidebar');
     if (!sidebar) return;
+    markSageAsPro(sidebar);        // BEFORE applyBadges so Pro lock + badge wire up
     injectToolsSection(sidebar);   // BEFORE activeLink so the new links are eligible
     activeLink(sidebar);
     hydrateUserPill(sidebar);
+    hydrateUserPillPlan(sidebar);
     wireUserPill(sidebar);
     // WHY: PFCStorage namespaces by userId, but at DOMContentLoaded the
     // Supabase session may not be restored yet — so the first read can hit
     // pfc:guest:user and paint the default. Re-hydrate once auth resolves
     // (and on any subsequent sign-in/sign-out) to land on the correct value.
     if (typeof PFCAuth !== 'undefined') {
-      PFCAuth.onReady(() => hydrateUserPill(sidebar));
-      PFCAuth.onAuthChange(() => hydrateUserPill(sidebar));
+      PFCAuth.onReady(() => { hydrateUserPill(sidebar); hydrateUserPillPlan(sidebar); });
+      PFCAuth.onAuthChange(() => { hydrateUserPill(sidebar); hydrateUserPillPlan(sidebar); });
+    }
+    if (typeof PFCPlan !== 'undefined' && PFCPlan.onChange) {
+      PFCPlan.onChange(() => hydrateUserPillPlan(sidebar));
     }
     wireMobileToggle(sidebar);
   }

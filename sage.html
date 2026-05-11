@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -23,7 +23,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <style>
-  :root{--bg:var(--canvas);--bg2:#0D1320;--bg3:#111827;--card:#0F1923;--border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);--teal:var(--money);--teal-dim:rgba(43,182,125,0.1);--text:#F0F4F8;--text2:#8A9BB0;--text3:#4A5A6E;--amber:#F5A623;--red:#E05252;--blue:#3B82F6;--purple:#A78BFA;--r:12px;--r-sm:8px;}
+  :root{--bg:var(--canvas);--bg2:#0D1320;--bg3:#111827;--card:#0F1923;--border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);--teal:var(--money);--teal-dim:rgba(43,182,125,0.10);--text:#F0F4F8;--text2:#8A9BB0;--text3:#4A5A6E;--amber:#F5A623;--red:#E05252;--blue:#3B82F6;--purple:#A78BFA;--gold:#D4AF6A;--r:14px;--r-sm:10px;}
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
   html,body{height:100%;overflow:hidden;}
   body{font-family:var(--font-body);background:var(--bg);color:var(--text);display:flex;}
@@ -42,12 +42,16 @@
   .user-plan{font-size:11px;color:var(--text3);}
   ::-webkit-scrollbar{width:4px;}
   ::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:2px;}
-  .main{flex:1;display:flex;flex-direction:column;height:100vh;overflow:hidden;}
-  .topbar{display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:64px;flex-shrink:0;border-bottom:1px solid var(--border);background:rgba(8,12,18,0.9);backdrop-filter:blur(12px);}
+
+  /* ── MAIN COLUMN ── kept self-contained at 100vh so the page never scrolls.
+     Layout: topbar (fixed) · chat-body (flex:1) · input-area (fixed).
+     No marketing footer on this surface — the conversation IS the surface. */
+  .main{flex:1;display:flex;flex-direction:column;height:100vh;overflow:hidden;min-width:0;}
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:60px;flex-shrink:0;border-bottom:1px solid var(--border);background:rgba(8,12,18,0.9);backdrop-filter:blur(12px);}
   .topbar-sage{display:flex;align-items:center;gap:12px;}
-  .sage-avatar-top{width:36px;height:36px;border-radius:50%;background:var(--teal);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:14px;font-weight:800;color:var(--canvas);}
-  .sage-name-top{font-family:var(--font-display);font-size:16px;font-weight:700;}
-  .sage-status{font-size:12px;color:var(--teal);display:flex;align-items:center;gap:5px;}
+  .sage-avatar-top{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--teal) 0%,#1B7B57 100%);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:13px;font-weight:800;color:var(--canvas);}
+  .sage-name-top{font-family:var(--font-display);font-size:16px;font-weight:700;line-height:1.2;}
+  .sage-status{font-size:11.5px;color:var(--teal);display:flex;align-items:center;gap:5px;margin-top:1px;}
   .status-dot{width:6px;height:6px;border-radius:50%;background:var(--teal);animation:pulse 2s ease infinite;}
   @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.8)}}
   .topbar-right{display:flex;align-items:center;gap:10px;}
@@ -56,24 +60,28 @@
   .usage-bar-fill{height:100%;border-radius:2px;transition:width .3s;}
   .tb-btn{padding:7px 14px;border-radius:var(--r-sm);background:transparent;border:1px solid var(--border2);font-size:13px;color:var(--text2);cursor:pointer;font-family:var(--font-body);transition:all .15s;}
   .tb-btn:hover{color:var(--text);border-color:rgba(255,255,255,.2);}
-  .tb-btn.primary{background:var(--teal);color:var(--canvas);border-color:var(--teal);font-weight:500;}
-  .tb-btn.primary:hover{opacity:.88;}
-  .chat-body{flex:1;overflow:hidden;display:flex;}
-  .chat-col{flex:1;display:flex;flex-direction:column;overflow:hidden;border-right:1px solid var(--border);}
-  .messages{flex:1;overflow-y:auto;padding:24px;display:flex;flex-direction:column;gap:20px;}
-  .welcome{display:flex;flex-direction:column;align-items:center;text-align:center;padding:48px 20px 32px;gap:0;}
-  .welcome-avatar{width:56px;height:56px;border-radius:50%;background:var(--teal);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:22px;font-weight:800;color:var(--canvas);margin-bottom:18px;box-shadow:0 0 0 6px rgba(43,182,125,0.08),0 0 0 12px rgba(43,182,125,0.04);}
-  .welcome h2{font-family:var(--font-display);font-size:22px;font-weight:700;margin-bottom:8px;line-height:1.2;}
-  .welcome p{font-size:14px;color:var(--text2);max-width:420px;line-height:1.65;margin-bottom:24px;}
-  .starters{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%;max-width:520px;}
-  .starter{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);padding:12px 14px;font-size:13px;color:var(--text2);cursor:pointer;text-align:left;transition:all .15s;font-family:var(--font-body);display:flex;align-items:flex-start;gap:8px;}
-  .starter:hover{border-color:rgba(43,182,125,0.35);color:var(--teal);}
+  .pro-pill{display:inline-flex;align-items:center;gap:5px;font-family:var(--font-mono,monospace);font-size:10px;letter-spacing:.12em;padding:3px 9px;border-radius:12px;background:rgba(212,175,106,0.12);color:var(--gold);border:1px solid rgba(212,175,106,0.22);text-transform:uppercase;}
+
+  .chat-body{flex:1;overflow:hidden;display:flex;min-height:0;}
+  .chat-col{flex:1;display:flex;flex-direction:column;overflow:hidden;border-right:1px solid var(--border);min-width:0;}
+  .messages{flex:1;overflow-y:auto;padding:24px 28px;display:flex;flex-direction:column;gap:18px;}
+
+  /* ── Welcome state: compact hero + 2x3 starter grid that never overflows ── */
+  .welcome{display:flex;flex-direction:column;align-items:center;text-align:center;padding:18px 20px 8px;gap:0;max-width:680px;margin:0 auto;width:100%;}
+  .welcome-avatar{width:54px;height:54px;border-radius:50%;background:linear-gradient(135deg,var(--teal) 0%,#1B7B57 100%);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:21px;font-weight:800;color:var(--canvas);margin-bottom:14px;box-shadow:0 0 0 6px rgba(43,182,125,0.08),0 0 0 12px rgba(43,182,125,0.04);}
+  .welcome h2{font-family:var(--font-display);font-size:24px;font-weight:600;margin-bottom:6px;line-height:1.15;letter-spacing:-0.01em;}
+  .welcome-sub{font-size:13.5px;color:var(--text2);max-width:480px;line-height:1.55;margin-bottom:20px;}
+  .starters{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;width:100%;}
+  .starter{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);padding:11px 12px;font-size:12.5px;color:var(--text2);cursor:pointer;text-align:left;transition:all .15s;font-family:var(--font-body);display:flex;align-items:flex-start;gap:7px;line-height:1.35;}
+  .starter:hover{border-color:rgba(43,182,125,0.35);color:var(--teal);background:rgba(43,182,125,0.04);}
+  @media(max-width:780px){.starters{grid-template-columns:1fr 1fr;}}
+
   .msg-row{display:flex;gap:10px;align-items:flex-start;max-width:820px;}
   .msg-row.user{flex-direction:row-reverse;margin-left:auto;}
   .msg-avatar{width:30px;height:30px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;margin-top:2px;}
-  .msg-avatar.sage-av{background:var(--teal);color:var(--canvas);font-family:var(--font-display);font-size:12px;font-weight:800;}
+  .msg-avatar.sage-av{background:linear-gradient(135deg,var(--teal) 0%,#1B7B57 100%);color:var(--canvas);font-family:var(--font-display);font-size:12px;font-weight:800;}
   .msg-avatar.user-av{background:var(--bg3);border:1px solid var(--border2);color:var(--text2);}
-  .msg-content{flex:1;}
+  .msg-content{flex:1;min-width:0;}
   .msg-meta{display:flex;align-items:center;gap:8px;margin-bottom:5px;}
   .msg-row.user .msg-meta{flex-direction:row-reverse;}
   .msg-name{font-size:12px;font-weight:600;color:var(--text2);}
@@ -88,43 +96,42 @@
   .typing-dot:nth-child(2){animation-delay:.15s;}
   .typing-dot:nth-child(3){animation-delay:.3s;}
   @keyframes typingBounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-6px)}}
-  .input-area{border-top:1px solid var(--border);padding:16px 24px;background:rgba(8,12,18,0.5);flex-shrink:0;}
-  .input-wrap{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);padding:12px 14px;display:flex;gap:10px;align-items:flex-end;transition:border-color .15s;}
+
+  .input-area{border-top:1px solid var(--border);padding:14px 28px 16px;background:rgba(8,12,18,0.5);flex-shrink:0;}
+  .input-wrap{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);padding:11px 14px;display:flex;gap:10px;align-items:flex-end;transition:border-color .15s;}
   .input-wrap:focus-within{border-color:rgba(43,182,125,0.4);}
-  .msg-textarea{flex:1;background:none;border:none;outline:none;font-size:14px;color:var(--text);font-family:var(--font-body);resize:none;line-height:1.5;max-height:120px;overflow-y:auto;min-height:24px;}
+  .msg-textarea{flex:1;background:none;border:none;outline:none;font-size:14px;color:var(--text);font-family:var(--font-body);resize:none;line-height:1.5;max-height:120px;overflow-y:auto;min-height:22px;}
   .msg-textarea::placeholder{color:var(--text3);}
-  .send-btn{width:36px;height:36px;background:var(--teal);border:none;border-radius:9px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:opacity .15s,transform .1s;}
+  .send-btn{width:34px;height:34px;background:var(--teal);border:none;border-radius:9px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:opacity .15s,transform .1s;}
   .send-btn:hover{opacity:.85;}
   .send-btn:active{transform:scale(.95);}
   .send-btn:disabled{opacity:.35;cursor:default;}
-  .input-footer{display:flex;align-items:center;justify-content:space-between;margin-top:8px;font-size:12px;color:var(--text3);}
-  .context-panel{width:280px;flex-shrink:0;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:16px;}
+  .input-footer{display:flex;align-items:center;justify-content:space-between;margin-top:7px;font-size:11.5px;color:var(--text3);}
+
+  /* ── Context panel ── */
+  .context-panel{width:280px;flex-shrink:0;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:14px;background:rgba(13,19,32,0.4);}
   .ctx-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px;}
-  .ctx-title{font-family:var(--font-display);font-size:11px;font-weight:700;color:var(--text2);margin-bottom:12px;letter-spacing:.04em;text-transform:uppercase;}
+  .ctx-title{font-family:var(--font-display);font-size:11px;font-weight:700;color:var(--text2);margin-bottom:12px;letter-spacing:.05em;text-transform:uppercase;}
   .ctx-stat{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
   .ctx-stat:last-child{margin-bottom:0;}
   .ctx-stat-label{font-size:12.5px;color:var(--text2);}
-  .ctx-stat-val{font-size:13px;font-weight:500;color:var(--text);}
+  .ctx-stat-val{font-size:13px;font-weight:500;color:var(--text);font-family:var(--font-mono,monospace);font-feature-settings:"tnum" 1;}
   .ctx-topics{display:flex;flex-wrap:wrap;gap:6px;}
   .ctx-topic{font-size:12px;padding:5px 10px;border-radius:6px;background:var(--bg3);border:1px solid var(--border);color:var(--text2);cursor:pointer;transition:all .15s;font-family:var(--font-body);}
   .ctx-topic:hover{border-color:rgba(43,182,125,0.3);color:var(--teal);}
-  .upgrade-ctx{background:linear-gradient(135deg,rgba(43,182,125,0.07),rgba(59,130,246,0.05));border:1px solid rgba(43,182,125,0.18);border-radius:var(--r);padding:16px;}
-  .upgrade-ctx-title{font-family:var(--font-display);font-size:13px;font-weight:700;margin-bottom:6px;}
-  .upgrade-ctx-text{font-size:12.5px;color:var(--text2);line-height:1.55;margin-bottom:12px;}
-  .upgrade-ctx-btn{width:100%;padding:8px;background:var(--teal);color:var(--canvas);border:none;border-radius:var(--r-sm);font-size:13px;font-weight:600;font-family:var(--font-body);cursor:pointer;transition:opacity .15s;}
-  .upgrade-ctx-btn:hover{opacity:.88;}
   .history-item{padding:8px 10px;border-radius:var(--r-sm);background:var(--bg3);border:1px solid var(--border);margin-bottom:6px;cursor:pointer;transition:border-color .15s;}
   .history-item:hover{border-color:var(--border2);}
   .history-item:last-child{margin-bottom:0;}
   .history-q{font-size:12.5px;color:var(--text2);line-height:1.4;}
   .history-t{font-size:11px;color:var(--text3);margin-top:3px;}
-  .limit-wall{background:rgba(224,82,82,0.07);border:1px solid rgba(224,82,82,0.2);border-radius:var(--r);padding:16px 20px;margin:16px 24px;display:none;}
+
+  .limit-wall{background:rgba(212,175,106,0.07);border:1px solid rgba(212,175,106,0.25);border-radius:var(--r);padding:14px 18px;margin:14px 28px;display:none;}
   .limit-wall.show{display:block;}
-  .limit-wall-title{font-family:var(--font-display);font-size:14px;font-weight:700;margin-bottom:6px;}
-  .limit-wall-text{font-size:13px;color:var(--text2);line-height:1.55;margin-bottom:12px;}
-  .limit-wall-btn{background:var(--teal);color:var(--canvas);border:none;border-radius:var(--r-sm);padding:9px 20px;font-size:13px;font-weight:600;font-family:var(--font-body);cursor:pointer;}
+  .limit-wall-title{font-family:var(--font-display);font-size:14px;font-weight:700;margin-bottom:4px;color:var(--gold);}
+  .limit-wall-text{font-size:13px;color:var(--text2);line-height:1.55;}
+
   @media(max-width:1000px){.context-panel{display:none;}}
-  @media(max-width:700px){.sidebar{display:none;}}
+  @media(max-width:700px){.sidebar{display:none;} .input-area,.messages,.limit-wall{padding-left:16px;padding-right:16px;} .starters{grid-template-columns:1fr;}}
 </style>
   <link rel="stylesheet" href="css/pfc-tokens.css">
   <link rel="stylesheet" href="css/pfc-footer.css">
@@ -139,14 +146,20 @@
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/pfc-reskin.css">
 
-
-
   <script src="js/pfc-sentry-scrub.js" defer></script>
   <script src="https://js.sentry-cdn.com/9b8b34d46908bd9f79a16cf18322ac70.min.js" crossorigin="anonymous" defer></script>
   <script src="js/pfc-sentry.js" defer></script>
   <!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "37cb784ad53047a9921bfd79e9835310"}'></script><!-- End Cloudflare Web Analytics -->
   <script src="js/pfc-analytics.js" defer></script>
   <script src="js/pfc-sidebar.js" defer></script>
+
+  <!-- Pro-only gate: free users get redirected to billing before any UI paints.
+       Mirrors scenarios.html / report-card.html. -->
+  <script>
+    if (typeof PFCPlan !== 'undefined') {
+      PFCPlan.requirePlan(['pro','premium']);
+    }
+  </script>
 </head>
 <body>
 <nav class="sidebar" aria-label="Primary navigation">
@@ -189,9 +202,10 @@
   </a>
 
   <div class="sidebar-section">Insights</div>
-  <a href="sage.html" class="nav-item">
+  <a href="sage.html" class="nav-item" data-pro-only>
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 4h10M3 8h7M3 12h5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
     Ask Sage
+    <span class="nav-badge">Pro</span>
   </a>
   <a href="report-card.html" class="nav-item" data-pro-only>
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="3" y="2" width="10" height="12" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M5.5 6h5M5.5 8.5h5M5.5 11h3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
@@ -228,17 +242,16 @@
     <div class="topbar-sage">
       <div class="sage-avatar-top">S</div>
       <div>
-        <div class="sage-name-top">Sage</div>
-        <div class="sage-status"><div class="status-dot"></div>Online — ready to help</div>
+        <div class="sage-name-top">Sage <span class="pro-pill" aria-label="Pro feature">Pro</span></div>
+        <div class="sage-status"><div class="status-dot"></div>Online — grounded in your numbers</div>
       </div>
     </div>
     <div class="topbar-right">
-      <div class="usage-pill">
-        <span id="usage-label">0 / 10 queries</span>
+      <div class="usage-pill" id="usage-pill" style="display:none;">
+        <span id="usage-label">0 / 200 messages</span>
         <div class="usage-bar-track"><div class="usage-bar-fill" id="usage-bar" style="width:0%;background:var(--teal);"></div></div>
       </div>
       <button class="tb-btn" onclick="clearChat()">Clear chat</button>
-      <button class="tb-btn primary">Upgrade for more →</button>
     </div>
   </div>
 
@@ -247,13 +260,13 @@
       <div class="messages" id="messages">
         <div class="welcome" id="welcome-screen">
           <div class="welcome-avatar">S</div>
-          <h2>Hi, I'm Sage</h2>
-          <p>I'm your personal AI financial advisor. Once you've added your numbers, I'll work from your full picture — income, expenses, debt, savings goals, and your 12-month forecast. Ask me anything.</p>
+          <h2>What can Sage forecast for you today?</h2>
+          <p class="welcome-sub">Sage works from your real numbers — income, expenses, debt, goals, and your 12-month forecast. Ask anything; answers cite your data.</p>
           <div class="starters">
             <button class="starter" onclick="sendStarter('Can I afford a holiday in 3 months?')"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1v11M1 6.5h11" stroke="#8A9BB0" stroke-width="1.4" stroke-linecap="round"/></svg>Can I afford a holiday in 3 months?</button>
-            <button class="starter" onclick="sendStarter('When will I be completely debt-free?')"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 9l3-4 2.5 2L11 3" stroke="#8A9BB0" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>When will I be completely debt-free?</button>
+            <button class="starter" onclick="sendStarter('When will I be completely debt-free?')"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 9l3-4 2.5 2L11 3" stroke="#8A9BB0" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>When will I be debt-free?</button>
             <button class="starter" onclick="sendStarter('How does a 10% salary raise change my net worth forecast?')"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="5.5" r="2.5" stroke="#8A9BB0" stroke-width="1.3"/><path d="M1 12c0-2 2.5-3.5 5.5-3.5s5.5 1.5 5.5 3.5" stroke="#8A9BB0" stroke-width="1.3" stroke-linecap="round"/></svg>How does a 10% raise change my forecast?</button>
-            <button class="starter" onclick="sendStarter('Am I on track for my savings goals?')"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5l2.5 2.5L11 3" stroke="#8A9BB0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Am I on track for my savings goals?</button>
+            <button class="starter" onclick="sendStarter('Am I on track for my savings goals?')"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5l2.5 2.5L11 3" stroke="#8A9BB0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Am I on track for my goals?</button>
             <button class="starter" onclick="sendStarter('Should I pay off debt or save more money first?')"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><rect x="1.5" y="3" width="10" height="7" rx="1.5" stroke="#8A9BB0" stroke-width="1.3"/><path d="M4.5 3V2a2 2 0 014 0v1" stroke="#8A9BB0" stroke-width="1.3" stroke-linecap="round"/></svg>Pay off debt or save more first?</button>
             <button class="starter" onclick="sendStarter('What happens to my finances if inflation rises to 6%?')"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M3 10L10 3M7.5 3h2.5v2.5" stroke="#8A9BB0" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>What if inflation rises to 6%?</button>
           </div>
@@ -261,9 +274,8 @@
       </div>
 
       <div class="limit-wall" id="limit-wall">
-        <div class="limit-wall-title">You've used all 10 free queries this month</div>
-        <div class="limit-wall-text">Try Pro free for 14 days — 200 messages a month with deeper analysis. Your free limit resets on the 1st of each month.</div>
-        <a href="billing.html" class="limit-wall-btn" style="display:inline-block;">See Pro plans</a>
+        <div class="limit-wall-title">You've reached this month's Sage allowance</div>
+        <div class="limit-wall-text">Your quota resets on the 1st of next month. Need more headroom now? <a href="billing.html" style="color:var(--gold);text-decoration:underline;">See Premium</a>.</div>
       </div>
 
       <div class="input-area">
@@ -283,12 +295,12 @@
     <div class="context-panel">
       <div class="ctx-card" id="snapshot-card">
         <div class="ctx-title">Your financial snapshot</div>
-        <div id="snapshot-empty" style="font-family:var(--font-body);font-size:14px;color:var(--ink-3);line-height:1.55;padding:8px 0;">
-          Your numbers aren't in yet — finish onboarding to see your context.
-          <a href="onboarding.html" style="display:block;margin-top:8px;color:var(--money);font-size:13px;">Continue onboarding →</a>
+        <div id="snapshot-empty" style="font-family:var(--font-body);font-size:13px;color:var(--text2);line-height:1.55;padding:4px 0;">
+          Your numbers aren't in yet — finish onboarding to give Sage context.
+          <a href="onboarding.html" style="display:block;margin-top:8px;color:var(--teal);font-size:13px;">Continue onboarding →</a>
         </div>
         <div id="snapshot-stats" style="display:none;">
-          <div class="ctx-stat"><span class="ctx-stat-label">Net worth (now)</span><span class="ctx-stat-val" data-snap="netWorth">—</span></div>
+          <div class="ctx-stat"><span class="ctx-stat-label">Net worth</span><span class="ctx-stat-val" data-snap="netWorth">—</span></div>
           <div class="ctx-stat"><span class="ctx-stat-label">Monthly savings</span><span class="ctx-stat-val" data-snap="monthlySavings">—</span></div>
           <div class="ctx-stat"><span class="ctx-stat-label">Total debt</span><span class="ctx-stat-val" data-snap="debt">—</span></div>
           <div class="ctx-stat"><span class="ctx-stat-label">Health score</span><span class="ctx-stat-val" data-snap="healthScore">—</span></div>
@@ -306,34 +318,30 @@
           <button class="ctx-topic" onclick="sendStarter('Give me 3 tips to save more this month')">Save more</button>
         </div>
       </div>
-      <div class="upgrade-ctx">
-        <div class="upgrade-ctx-title">More questions on Pro</div>
-        <div class="upgrade-ctx-text">200 messages a month, longer conversation memory, and deeper analysis. $9 a month or $69 a year.</div>
-        <a href="billing.html" class="upgrade-ctx-btn" style="display:inline-block;">See Pro plans</a>
-      </div>
       <div class="ctx-card" id="history-card" style="display:none;">
         <div class="ctx-title">Recent questions</div>
         <div id="history-list"></div>
       </div>
     </div>
   </div>
+</main>
 
 <script>
-// Sprint 5: zero seeds. USER_CTX is built from real onboarding data
-// (window.PFC.user → PFCStorage('user') → null) by hydrateContext() below.
-// Until real data exists, the snapshot card renders the empty state.
+// Sprint 8: Sage is Pro-only. Free users never reach this script (PFCPlan
+// .requirePlan redirects them at the top of the page). USER_CTX is built
+// from real onboarding data; LIMITS only contains paid tiers.
 const USER_CTX = {
   name:'', income:0, expenses:0, savings:0,
   debt:0, debtPayment:0, healthScore:0, monthlySavings:0,
-  netWorth:0, forecast12mo:0, plan:'free',
+  netWorth:0, forecast12mo:0, plan:'pro',
   goals:[], debts:[]
 };
-const LIMITS = {free:10, pro:200};
+const LIMITS = { pro:200, premium:500 };
 
 function hydrateContext(){
   try {
     const stored = (window.PFC && window.PFC.user) ||
-                   (window.PFCStorage && window.PFCStorage.get && window.PFCStorage.get('user')) ||
+                   (window.PFCStorage && window.PFCStorage.get && window.PFCStorage.getJSON && window.PFCStorage.getJSON('user')) ||
                    null;
     if (!stored || !stored.income) return; // empty state stays
     Object.assign(USER_CTX, stored);
@@ -348,9 +356,17 @@ function hydrateContext(){
         el.textContent = (key === 'healthScore' ? v + ' / 100' : '$' + v.toLocaleString('en-US'));
       }
     });
-    // sidebar user-pill is hydrated by js/pfc-sidebar.js from PFCStorage
-    // ('user'); no per-page hydrate needed here.
   } catch(_) {}
+}
+function hydratePlanInfo(){
+  try {
+    const plan = (typeof PFCPlan !== 'undefined' && PFCPlan.get) ? PFCPlan.get() : 'pro';
+    USER_CTX.plan = (plan === 'premium' ? 'premium' : 'pro');
+    const limit = LIMITS[USER_CTX.plan];
+    const pill = document.getElementById('usage-pill');
+    if (pill) pill.style.display = '';
+    document.getElementById('usage-label').textContent = queryCount + ' / ' + limit + ' messages';
+  } catch(_){}
 }
 hydrateContext();
 let queryCount = 0, history = [], isTyping = false;
@@ -368,7 +384,7 @@ async function sendMessage(text) {
   const input = document.getElementById('msg-input');
   const msg   = text || input.value.trim();
   if (!msg || isTyping) return;
-  const limit = LIMITS[USER_CTX.plan] || 10;
+  const limit = LIMITS[USER_CTX.plan] || 200;
   if (queryCount >= limit) { document.getElementById('limit-wall').classList.add('show'); return; }
   const ws = document.getElementById('welcome-screen');
   if (ws) ws.style.display = 'none';
@@ -396,15 +412,6 @@ async function sendMessage(text) {
 }
 
 async function callSage(msg) {
-  /* ─────────────────────────────────────────────────────────
-     This calls /api/sage  — your Vercel serverless function.
-     The function holds your Gemini key safely on the server.
-     See sage-api.js (companion file) for the server code.
-
-     Audit C1 fix: include the Bearer token from PFCAuth so the
-     server can authenticate the user. Without this, every Sage
-     call returned 401 in production.
-  ───────────────────────────────────────────────────────── */
   const session = (typeof PFCAuth !== 'undefined') ? PFCAuth.getSession() : null;
   const headers = { 'Content-Type': 'application/json' };
   if (session?.access_token) headers.Authorization = 'Bearer ' + session.access_token;
@@ -427,15 +434,13 @@ function addUserBubble(text) {
   const t = now();
   const d = document.createElement('div');
   d.className = 'msg-row user';
-  d.innerHTML = `<div class="msg-avatar user-av">DK</div><div class="msg-content"><div class="msg-meta"><span class="msg-name">You</span><span class="msg-time">${t}</span></div><div class="bubble user-b">${esc(text)}</div></div>`;
+  const initial = (USER_CTX.name ? USER_CTX.name[0] : 'Y').toUpperCase();
+  d.innerHTML = `<div class="msg-avatar user-av">${esc(initial)}</div><div class="msg-content"><div class="msg-meta"><span class="msg-name">You</span><span class="msg-time">${t}</span></div><div class="bubble user-b">${esc(text)}</div></div>`;
   m.appendChild(d); m.scrollTop = m.scrollHeight;
 }
 
-// Audit H3 fix: Gemini output was being injected via innerHTML with only
-// markdown-style replacements applied. A prompt-injected response containing
-// `<img src=x onerror=...>` would execute. Now we HTML-escape the raw text
-// FIRST, then re-introduce only the explicit markdown transformations on
-// the escaped string. The escaped output is provably script-free.
+// Audit H3 fix: Gemini output is HTML-escaped FIRST, then explicit markdown
+// transformations are applied to the escaped string — provably script-free.
 function _safeSageMarkdown(text) {
   const escaped = String(text)
     .replace(/&/g, '&amp;')
@@ -468,18 +473,19 @@ function showTyping() {
 function hideTyping() { const t = document.getElementById('typing-ind'); if(t) t.remove(); }
 
 function updateUsage() {
-  const limit = LIMITS[USER_CTX.plan] || 10;
+  const limit = LIMITS[USER_CTX.plan] || 200;
   const pct   = Math.min(100,(queryCount/limit)*100);
-  document.getElementById('usage-label').textContent = queryCount+' / '+limit+' queries';
+  const lbl = document.getElementById('usage-label');
+  if (lbl) lbl.textContent = queryCount+' / '+limit+' messages';
   const bar = document.getElementById('usage-bar');
-  bar.style.width = pct+'%';
-  bar.style.background = pct>80?'var(--red)':pct>60?'var(--amber)':'var(--teal)';
-  // The canonical sidebar shows "Free plan / Pro plan" via PFCPlan badge;
-  // per-message quota count lives in #usage-label above. No sidebar write.
+  if (bar) {
+    bar.style.width = pct+'%';
+    bar.style.background = pct>80?'var(--red)':pct>60?'var(--amber)':'var(--teal)';
+  }
   if (queryCount >= limit) {
     document.getElementById('limit-wall').classList.add('show');
     document.getElementById('send-btn').disabled = true;
-    document.getElementById('msg-input').placeholder = 'Query limit reached — upgrade to continue';
+    document.getElementById('msg-input').placeholder = 'Quota reached — resets on the 1st';
   }
 }
 
@@ -498,69 +504,30 @@ function addHistory(q) {
 function sendStarter(t) { sendMessage(t); }
 function handleKey(e) { if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();} }
 function autoResize(el) { el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,120)+'px'; const l=el.value.length; document.getElementById('char-count').textContent=l+' / 500'; if(l>500)el.value=el.value.substring(0,500); }
-function clearChat() { const m=document.getElementById('messages'); m.innerHTML=''; const w=document.createElement('div'); w.id='welcome-screen'; w.className='welcome'; w.innerHTML='<div class="welcome-avatar">S</div><h2>Hi, I\'m Sage</h2><p>Ask me anything about your finances.</p>'; m.appendChild(w); history=[]; document.getElementById('limit-wall').classList.remove('show'); document.getElementById('history-card').style.display='none'; document.getElementById('history-list').innerHTML=''; }
+function clearChat() {
+  const m=document.getElementById('messages');
+  m.innerHTML='';
+  const w=document.createElement('div');
+  w.id='welcome-screen'; w.className='welcome';
+  w.innerHTML='<div class="welcome-avatar">S</div><h2>What can Sage forecast for you today?</h2><p class="welcome-sub">Ask anything — Sage answers from your real numbers.</p>';
+  m.appendChild(w);
+  history=[];
+  document.getElementById('limit-wall').classList.remove('show');
+  document.getElementById('history-card').style.display='none';
+  document.getElementById('history-list').innerHTML='';
+}
 function now() { return new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}); }
-function esc(t) { return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function esc(t) { return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 // ── AUTH-AWARE RE-HYDRATION ──
-// hydrateContext() ran synchronously at script-tag time, before PFCAuth resolved
-// the real userId — so USER_CTX may reflect pfc:guest:* (often empty → snapshot
-// stays in empty state). Once auth resolves and pfc-storage.js finishes
-// adoptGuestData, re-read from the now-correct namespace.
-function _rehydrateFromStorage() { hydrateContext(); updateUsage(); }
+function _rehydrateFromStorage() { hydrateContext(); hydratePlanInfo(); updateUsage(); }
 if (typeof PFCAuth !== 'undefined') {
   PFCAuth.onReady(_rehydrateFromStorage);
   PFCAuth.onAuthChange(_rehydrateFromStorage);
 }
+if (typeof PFCPlan !== 'undefined' && PFCPlan.onChange) {
+  PFCPlan.onChange(() => { hydratePlanInfo(); updateUsage(); });
+}
 </script>
-  <!-- Route guard: redirect unauthed users to sign-in -->
-  <script>
-    window.addEventListener('DOMContentLoaded', () => {
-      if (typeof PFCAuth !== 'undefined') PFCAuth.requireAuth();
-    });
-  </script>
-<footer class="site-footer" role="contentinfo">
-  <div class="footer-grid">
-    <div class="footer-col">
-      <h4>Product</h4>
-      <ul>
-        <li><a href="dashboard.html">Forecast</a></li>
-        <li><a href="blog.html">Journal</a></li>
-        <li><a href="billing.html">Pricing</a></li>
-        <li><a href="tools/take-home-pay.html">Take-home pay</a></li>
-      </ul>
-    </div>
-    <div class="footer-col">
-      <h4>Company</h4>
-      <ul>
-        <li><a href="about.html">About</a></li>
-        <li><a href="about.html#methodology">Methodology</a></li>
-        <li><a href="llms.txt">For language models</a></li>
-      </ul>
-    </div>
-    <div class="footer-col">
-      <h4>Resources</h4>
-      <ul>
-        <li><a href="help.html">Help</a></li>
-        <li><a href="blog.html">Articles</a></li>
-      </ul>
-    </div>
-    <div class="footer-col">
-      <h4>Trust</h4>
-      <ul>
-        <li><a href="about.html#methodology">Methodology</a></li>
-        <li><a href="about.html">Changelog</a></li>
-        <li><a href="privacy.html">Data handling</a></li>
-        <li><a href="terms.html">Terms</a></li>
-        <li><a href="about.html">Status</a></li>
-      </ul>
-    </div>
-  </div>
-  <div class="footer-stamp">
-    <span>© 2026 ProFinanceCast — Built in Europe</span>
-    <span>Last shipped <time datetime="2026-05-10">2026-05-10</time></span>
-  </div>
-</footer>
-</main>
 </body>
 </html>

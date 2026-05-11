@@ -1039,18 +1039,15 @@
               <div class="card-sub" style="color:var(--teal);">● Online</div>
             </div>
           </div>
-          <span class="card-badge badge-teal">10 / 10 queries</span>
+          <span class="card-badge badge-teal" style="background:rgba(212,175,106,0.12);color:#D4AF6A;border:1px solid rgba(212,175,106,0.22);">Pro</span>
         </div>
         <div class="sage-mini-chat" id="sage-chat">
-          <div class="sage-bubble ai">Hi! I'm Sage. I know your full financial picture. Ask me anything — "Can I afford a holiday?", "When will I be debt-free?", or "How does a raise affect my forecast?"</div>
+          <div class="sage-bubble ai">Sage is your in-app advisor — it answers questions grounded in your real numbers: "Can I afford a holiday?", "When will I be debt-free?", "How does a raise affect my forecast?"</div>
         </div>
         <div class="sage-input-row" style="margin-top:12px;">
-          <input class="sage-input-field" id="sage-input" placeholder="Ask Sage about your finances…" onkeydown="if(event.key==='Enter')sendToSage()">
-          <button class="sage-send-btn" onclick="sendToSage()">
-            <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M1 6.5h11M7 2l4.5 4.5L7 11" stroke="#0B1410" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </button>
+          <a href="sage.html" class="sage-send-btn" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:10px 16px;text-decoration:none;flex:1;font-family:var(--font-body);font-weight:600;font-size:13px;color:#0B1410;border-radius:8px;">Open Sage →</a>
         </div>
-        <div class="sage-limit">Free plan: <span id="sage-count">0</span> / 10 queries used this month</div>
+        <div class="sage-limit">Available on Pro · 200 messages a month</div>
       </div>
 
       <!-- INFLATION + SPENDING -->

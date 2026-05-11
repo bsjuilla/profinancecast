@@ -1136,13 +1136,13 @@
         </div>
         <div>
           <div class="plan-name" id="banner-plan-name">Free Plan</div>
-          <div class="plan-desc" id="banner-plan-desc">10 Sage messages/month · core forecasting tools</div>
+          <div class="plan-desc" id="banner-plan-desc">Core forecasting tools · no card required</div>
         </div>
       </div>
-      <div class="plan-usage">
-        <div class="usage-row"><span>Sage AI usage</span><span class="num" id="usage-text">0 / 10</span></div>
+      <div class="plan-usage" id="plan-usage-block" style="display:none;">
+        <div class="usage-row"><span>Sage AI usage</span><span class="num" id="usage-text">0 / 200</span></div>
         <div class="usage-track"><div class="usage-fill" id="usage-fill" style="width:0%;"></div></div>
-        <div class="plan-renew" id="plan-renew">Resets on 1 May 2026</div>
+        <div class="plan-renew" id="plan-renew">Resets on the 1st of each month</div>
       </div>
     </div>
 
@@ -1188,8 +1188,7 @@
           <li><svg class="check" viewBox="0 0 16 16" fill="none"><path d="M3 8.5l3 3 7-7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Debt avalanche &amp; snowball optimizer</li>
           <li><svg class="check" viewBox="0 0 16 16" fill="none"><path d="M3 8.5l3 3 7-7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Recurring expenses &amp; manual entry</li>
           <li><svg class="check" viewBox="0 0 16 16" fill="none"><path d="M3 8.5l3 3 7-7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Salary calculator (single offer)</li>
-          <li><svg class="check" viewBox="0 0 16 16" fill="none"><path d="M3 8.5l3 3 7-7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Sage AI — 10 messages/month</li>
-          <li><svg class="check" viewBox="0 0 16 16" fill="none"><path d="M3 8.5l3 3 7-7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>24 months of net-worth history</li>
+          <li><svg class="check" viewBox="0 0 16 16" fill="none"><path d="M3 8.5l3 3 7-7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Cash-flow forecast &amp; net-worth history (24 months)</li>
         </ul>
         <a class="plan-btn plan-btn--ghost" href="auth.html#signup">Get started free</a>
       </div>
@@ -1755,6 +1754,16 @@ window.addEventListener('DOMContentLoaded', () => {
       if (banner) banner.textContent = (plan === 'free' ? 'Free' : 'Pro') + ' Plan';
       const sidebar = document.getElementById('sidebar-plan');
       if (sidebar) sidebar.textContent = (plan === 'free' ? 'Free' : 'Pro') + ' plan';
+      // Sage usage row only meaningful on paid tiers (Sage = Pro-only feature)
+      const usageBlock = document.getElementById('plan-usage-block');
+      if (usageBlock) usageBlock.style.display = (plan === 'free' ? 'none' : '');
+      const desc = document.getElementById('banner-plan-desc');
+      if (desc) {
+        desc.textContent = (plan === 'free')
+          ? 'Core forecasting tools · no card required'
+          : (plan === 'premium' ? '500 Sage messages a month · all Pro features active'
+                                : '200 Sage messages a month · all Pro features active');
+      }
     });
     PFCPlan.refresh();
   }

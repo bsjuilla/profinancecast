@@ -18,8 +18,8 @@ Full methodology and primary-source citations: <https://profinancecast.com/about
 
 Three tiers. No upsells beyond them.
 
-- **Free** — full forecast, full debt strategy, full goals, encrypted at rest, no card, no bank password. Sage AI advisor 10 messages a month.
-- **Pro** — $9 a month or $69 a year. Adds Sage 200 messages a month, longer memory, unlimited scenarios, deeper analysis.
+- **Free** — full forecast, full debt strategy, full goals, cash-flow planner, encrypted at rest, no card, no bank password. Sage AI is a Pro feature.
+- **Pro** — $9 a month or $69 a year. Adds Sage AI advisor (200 messages a month), longer memory, unlimited scenarios, deeper analysis.
 - **Founders Lifetime** — $149 once, limited to 500 seats. Lifetime Pro entitlement.
 
 Parseable pricing: <https://profinancecast.com/pricing.md>

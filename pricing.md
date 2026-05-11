@@ -4,7 +4,7 @@ Single product, three tiers. No upsells beyond them.
 
 | Tier | Price | Sage AI | Scenarios | Notes |
 |---|---|---|---|---|
-| Free | $0 forever | 10 messages / month | 1 saved | Full forecast, full debt strategy, full goals. No card. No bank password. |
+| Free | $0 forever | — (Pro feature) | 1 saved | Full forecast, full debt strategy, full goals, cash-flow planner. No card. No bank password. |
 | Pro | $9 / month or $69 / year | 200 messages / month | Unlimited | Longer memory. Deeper analysis. Cancel any time. |
 | Founders Lifetime | $149 once | 200 messages / month | Unlimited | Lifetime Pro entitlement. Limited to 500 seats. |
 
@@ -16,7 +16,7 @@ Single product, three tiers. No upsells beyond them.
 - Debt strategy (avalanche + snowball, line-by-line amortization)
 - Goals projector (custom horizon, target tracking)
 - Net-worth chart with monthly compounding
-- Sage AI advisor — 10 messages a month
+- Cash-flow forecast (income vs expenses by category)
 - Encrypted at rest. Calculations run in your browser.
 
 ## Pro tier — what Pro adds

@@ -260,3 +260,61 @@ html body .stat-card:hover {
 html body ::-webkit-scrollbar { width: 6px; height: 6px; }
 html body ::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: 3px; }
 html body ::-webkit-scrollbar-track { background: transparent; }
+
+/* ── User-pill plan tiers + empty state ────────────────────────────── */
+/* Free → emerald avatar (default). Pro/Premium → gold treatment so
+   paid users are visually distinct in the sidebar footer. */
+html body .user-pill {
+  transition: background-color .15s ease, border-color .15s ease;
+  border: 1px solid transparent;
+}
+html body .user-pill:hover { background: var(--surface-2) !important; }
+
+/* Empty-state ("Set up profile") — dashed hint that the pill is a CTA */
+html body .user-pill[data-empty="1"] {
+  border-color: rgba(255,255,255,0.10);
+  border-style: dashed;
+}
+html body .user-pill[data-empty="1"] .user-name {
+  color: var(--ink-2) !important;
+  font-style: italic;
+}
+
+/* Pro tier — gold gradient avatar + gold plan label */
+html body .user-pill[data-plan="pro"] .user-avatar,
+html body .user-pill[data-plan="premium"] .user-avatar {
+  background: linear-gradient(135deg, #D4AF6A 0%, #8E6F36 100%) !important;
+  color: #0B1410 !important;
+  box-shadow: 0 0 0 1px rgba(212,175,106,0.45), 0 6px 18px rgba(212,175,106,0.20);
+}
+html body .user-pill[data-plan="pro"] .user-plan,
+html body .user-pill[data-plan="premium"] .user-plan {
+  color: var(--gold, #D4AF6A) !important;
+  font-weight: 600;
+}
+/* Tiny crown dot next to Pro/Premium avatar */
+html body .user-pill[data-plan="pro"] .user-avatar::after,
+html body .user-pill[data-plan="premium"] .user-avatar::after {
+  content: '';
+  position: absolute;
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--gold, #D4AF6A);
+  border: 2px solid var(--bg2, #0D1320);
+  bottom: -2px; right: -2px;
+}
+html body .user-pill .user-avatar { position: relative; }
+
+/* data-plan-badge color follows the tier */
+html body [data-plan-badge][data-plan="pro"],
+html body [data-plan-badge][data-plan="premium"] {
+  color: var(--gold, #D4AF6A) !important;
+}
+
+/* Pro-only nav items locked for free users — subtle dim + lock cue */
+html body a.nav-item.is-locked {
+  opacity: 0.85;
+}
+html body a.nav-item.is-locked .nav-badge {
+  background: var(--gold-soft, rgba(212,175,106,0.12)) !important;
+  color: var(--gold, #D4AF6A) !important;
+}
