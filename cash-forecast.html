@@ -694,8 +694,31 @@ boot();
 // may not be restored yet, so re-load once auth resolves to land on the
 // right namespace (otherwise we'd render the guest snapshot forever).
 if (typeof PFCAuth !== 'undefined') {
-  PFCAuth.onReady(() => { USER = loadUser(); renderRows(); renderTotalsAndCharts(); renderSubscriptions(); });
+  PFCAuth.onReady(() => {
+    USER = loadUser();
+    renderRows();
+    renderTotalsAndCharts();
+    renderSubscriptions();
+    _maybeFireActivation('cash-forecast');
+  });
   PFCAuth.onAuthChange(() => { USER = loadUser(); renderRows(); renderTotalsAndCharts(); renderSubscriptions(); });
+}
+
+// ── ACTIVATION EVENT ──
+// Same idempotency contract as dashboard.html — fires once per user when
+// they're signed in + have non-zero income + reach a value page.
+function _maybeFireActivation(source) {
+  try {
+    if (typeof PFCAuth === 'undefined' || typeof PFCStorage === 'undefined') return;
+    if (PFCAuth.getUserId() === 'guest') return;
+    if (PFCStorage.get('activated')) return;
+    const u = PFCStorage.getJSON('user') || {};
+    if (!u.income || u.income <= 0) return;
+    if (typeof PFC !== 'undefined' && typeof PFC.track === 'function') {
+      PFC.track('activation', { source });
+    }
+    PFCStorage.set('activated', '1');
+  } catch (_) {}
 }
 
 // Cross-tab sync — if another page (dashboard, onboarding) updates user data,

@@ -1765,53 +1765,10 @@ function setTab(btn, tab) {
   document.querySelector('.main').scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-// ── SAGE MINI ──
-let sageCount = 0;
-const MAX_FREE = 10;
-
-function sendToSage() {
-  const input = document.getElementById('sage-input');
-  const msg   = input.value.trim();
-  if (!msg) return;
-  if (sageCount >= MAX_FREE) {
-    addBubble('ai', 'You\'ve used your <em>10 free messages</em> this month. Pro gives you 200 messages a month, longer memory, and deeper analysis. Try Pro free for 14 days.');
-    return;
-  }
-  addBubble('user', msg);
-  input.value = '';
-  sageCount++;
-  document.getElementById('sage-count').textContent = sageCount;
-
-  setTimeout(() => {
-    const reply = getSageReply(msg.toLowerCase());
-    addBubble('ai', reply);
-  }, 700);
-}
-
-function addBubble(type, text) {
-  const chat = document.getElementById('sage-chat');
-  const div  = document.createElement('div');
-  div.className = 'sage-bubble ' + type;
-  div.innerHTML = text;
-  chat.appendChild(div);
-  chat.scrollTop = chat.scrollHeight;
-}
-
-function getSageReply(msg) {
-  if (msg.includes('holiday') || msg.includes('vacation') || msg.includes('trip'))
-    return 'Based on your savings of <em>$570/month</em>, you\'ll have <em>~$1,710</em> available in 3 months without touching your emergency fund. A short trip is very affordable.';
-  if (msg.includes('debt') || msg.includes('free') || msg.includes('pay off'))
-    return 'At your current payment of <em>$550/month</em>, you\'ll be completely debt-free in <em>14 months</em>. Adding just <em>$100/mo</em> cuts that to 11 months and saves ~$180 in interest.';
-  if (msg.includes('car') || msg.includes('vehicle'))
-    return 'A new car would add ~<em>$300–500/mo</em> to your expenses. This would push your debt-free date back by ~3 months. I\'d recommend waiting until your car loan is cleared in 11 months.';
-  if (msg.includes('raise') || msg.includes('salary') || msg.includes('income'))
-    return 'A <em>10% raise</em> on your current income ($3,000) adds <em>$300/month</em>. Over 12 months that\'s <em>$3,600 more</em> in net worth — use the salary slider above to model any amount.';
-  if (msg.includes('goal') || msg.includes('deposit') || msg.includes('house') || msg.includes('home'))
-    return 'For your home deposit goal of <em>$25,000</em>, you\'re at 17% ($4,200). At your savings rate, you\'ll reach it in about <em>36 months</em>. After you\'re debt-free in 14 months, redirect that $550 toward savings to cut it to <em>22 months</em>.';
-  if (msg.includes('invest') || msg.includes('stock') || msg.includes('crypto'))
-    return 'Before investing, I\'d prioritise: 1) clear your credit card at 19.9%, 2) build your emergency fund to $15k. Once those are done, <em>$200–300/mo</em> into a low-cost index fund would be a strong next step.';
-  return 'Great question! Based on your current financial profile — <em>$570/month savings rate</em>, <em>14 months to debt-free</em>, and a health score of <em>74/100</em> — you\'re in a solid position. Could you tell me more specifically what you\'d like to plan for?';
-}
+// Note: the dashboard's mini-Sage card is now a Pro teaser linking to
+// sage.html. The previous canned-reply JS (sendToSage / addBubble /
+// getSageReply / MAX_FREE) was removed when Sage moved to a Pro-gated
+// surface — no inputs on this page invoke it anymore.
 
 // ── EDIT FINANCES MODAL ──
 function openEditFinances() {
@@ -2824,9 +2781,29 @@ if (typeof PFCAuth !== 'undefined') {
     const fresh = loadUser();
     // Avoid a guest-mode flicker: only re-render if storage actually differs
     if (JSON.stringify(fresh) !== JSON.stringify(USER)) _rehydrateUserFromStorage();
+    _maybeFireActivation('dashboard');
   });
   // Sign-in / sign-out / account-switch after page load
   PFCAuth.onAuthChange(_rehydrateUserFromStorage);
+}
+
+// ── ACTIVATION EVENT ──
+// Canonical product metric: fires once per user when they (a) are signed in,
+// (b) have entered a non-zero income (onboarding complete), and (c) reach a
+// value-delivering page. Idempotent via PFCStorage('activated') so it never
+// double-fires across page navigation or repeat visits.
+function _maybeFireActivation(source) {
+  try {
+    if (typeof PFCAuth === 'undefined' || typeof PFCStorage === 'undefined') return;
+    if (PFCAuth.getUserId() === 'guest') return;
+    if (PFCStorage.get('activated')) return;
+    const u = PFCStorage.getJSON('user') || {};
+    if (!u.income || u.income <= 0) return;
+    if (typeof PFC !== 'undefined' && typeof PFC.track === 'function') {
+      PFC.track('activation', { source });
+    }
+    PFCStorage.set('activated', '1');
+  } catch (_) {}
 }
 
 // ── NET WORTH AUTO-LOGGER ──

@@ -2222,17 +2222,36 @@
     initAmbient();
     refreshFoundersCount();
   }
-  async function refreshFoundersCount() {
+  // 3-state founders counter — mirrors billing.html so visitors see urgency
+  // when seats run low instead of a flat "X of 500 left" regardless.
+  // Throttled to one refresh per 5 minutes (matches billing) so revisits
+  // don't hammer the API.
+  let _foundersLastFetch = 0;
+  async function refreshFoundersCount(force) {
     const el = document.getElementById('home-founders-counter');
     if (!el) return;
+    const now = Date.now();
+    if (!force && (now - _foundersLastFetch) < 5 * 60 * 1000) return;
+    _foundersLastFetch = now;
     try {
       const r = await fetch('/api/founders-claimed', { cache: 'no-store' });
       if (!r.ok) return;
       const data = await r.json();
       if (data.claimed == null) return;
-      el.textContent = 'Limited — ' + data.remaining + ' of ' + data.cap + ' seats left';
+      const remaining = data.remaining, cap = data.cap;
+      let copy;
+      if (remaining === 0)            copy = 'All ' + cap + ' founder seats claimed. Thank you.';
+      else if (remaining <= 25)       copy = 'Only ' + remaining + ' seats remaining — closes when sold out';
+      else if (remaining <= 100)      copy = remaining + ' of ' + cap + ' seats remaining';
+      else                            copy = data.claimed + ' of ' + cap + ' claimed';
+      el.textContent = copy;
     } catch (_) { /* keep placeholder */ }
   }
+  // Refresh when the tab regains focus (someone may have claimed a seat
+  // while the visitor had this tab in the background).
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') refreshFoundersCount(true);
+  });
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => setTimeout(ready, 50));
   else setTimeout(ready, 50);
 })();

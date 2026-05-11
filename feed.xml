@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>ProFinanceCast Journal</title>
+    <link>https://profinancecast.com/blog</link>
+    <atom:link href="https://profinancecast.com/feed.xml" rel="self" type="application/rss+xml" />
+    <description>Practical writing on personal finance, debt strategy, salary negotiation, and ten-year planning. Privacy-first. No bank login required.</description>
+    <language>en</language>
+    <copyright>© 2026 ProFinanceCast</copyright>
+    <lastBuildDate>Sun, 11 May 2026 00:00:00 GMT</lastBuildDate>
+    <generator>ProFinanceCast static</generator>
+
+    <item>
+      <title>Debt Avalanche vs Debt Snowball: Which Saves More Money? (2026 Guide)</title>
+      <link>https://profinancecast.com/blog-debt-avalanche.html</link>
+      <guid isPermaLink="true">https://profinancecast.com/blog-debt-avalanche.html</guid>
+      <pubDate>Thu, 01 May 2026 00:00:00 GMT</pubDate>
+      <description>The complete comparison of debt avalanche vs debt snowball methods. See which strategy saves more money, a side-by-side calculator, and how to choose the right one for your debts.</description>
+      <category>Debt strategy</category>
+    </item>
+
+    <item>
+      <title>The debt avalanche method, with a calculator</title>
+      <link>https://profinancecast.com/blog-debt-avalanche-method.html</link>
+      <guid isPermaLink="true">https://profinancecast.com/blog-debt-avalanche-method.html</guid>
+      <pubDate>Mon, 28 Apr 2026 00:00:00 GMT</pubDate>
+      <description>The debt avalanche method orders your debts by interest rate and pays the highest first. We model the math on a $40,000 stack and compare it to snowball, with a calculator.</description>
+      <category>Debt strategy</category>
+    </item>
+
+    <item>
+      <title>How big should your emergency fund actually be?</title>
+      <link>https://profinancecast.com/blog-emergency-fund.html</link>
+      <guid isPermaLink="true">https://profinancecast.com/blog-emergency-fund.html</guid>
+      <pubDate>Wed, 23 Apr 2026 00:00:00 GMT</pubDate>
+      <description>A calm, plain-English guide to sizing your emergency fund. How many months you need, where to keep it, and how to build it without stalling the rest of your plan.</description>
+      <category>Savings</category>
+    </item>
+
+    <item>
+      <title>Salary negotiation, in three honest moves</title>
+      <link>https://profinancecast.com/blog-salary-negotiation.html</link>
+      <guid isPermaLink="true">https://profinancecast.com/blog-salary-negotiation.html</guid>
+      <pubDate>Fri, 18 Apr 2026 00:00:00 GMT</pubDate>
+      <description>A calm, three-move framework for negotiating your salary. No scripts to memorize. No power poses. Just the math, the timing, and the language that works.</description>
+      <category>Salary</category>
+    </item>
+
+    <item>
+      <title>The 50/30/20 budget, when it works and when it doesn't</title>
+      <link>https://profinancecast.com/blog-50-30-20.html</link>
+      <guid isPermaLink="true">https://profinancecast.com/blog-50-30-20.html</guid>
+      <pubDate>Mon, 14 Apr 2026 00:00:00 GMT</pubDate>
+      <description>The 50/30/20 budget is famous because it's simple. It's also wrong for a lot of people. Here's where it works, where it breaks, and what to do instead.</description>
+      <category>Budgeting</category>
+    </item>
+
+    <item>
+      <title>What inflation is really doing to your savings</title>
+      <link>https://profinancecast.com/blog-inflation.html</link>
+      <guid isPermaLink="true">https://profinancecast.com/blog-inflation.html</guid>
+      <pubDate>Wed, 09 Apr 2026 00:00:00 GMT</pubDate>
+      <description>A plain-English look at how inflation erodes cash, what real returns look like in 2026, and how to think about it without panicking or ignoring it.</description>
+      <category>Inflation</category>
+    </item>
+
+    <item>
+      <title>Net worth is the only number that matters</title>
+      <link>https://profinancecast.com/blog-net-worth.html</link>
+      <guid isPermaLink="true">https://profinancecast.com/blog-net-worth.html</guid>
+      <pubDate>Fri, 04 Apr 2026 00:00:00 GMT</pubDate>
+      <description>Income tells you how fast you're earning. Spending tells you how fast you're consuming. Net worth tells you whether any of it is adding up.</description>
+      <category>Savings</category>
+    </item>
+
+    <item>
+      <title>Why most investors should buy the haystack</title>
+      <link>https://profinancecast.com/blog-index-funds.html</link>
+      <guid isPermaLink="true">https://profinancecast.com/blog-index-funds.html</guid>
+      <pubDate>Mon, 31 Mar 2026 00:00:00 GMT</pubDate>
+      <description>Stock-picking is hard. Index investing is the calm, well-evidenced alternative — here's why it works and how to think about it without overcomplicating things.</description>
+      <category>Investing</category>
+    </item>
+
+  </channel>
+</rss>

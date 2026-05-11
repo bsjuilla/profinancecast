@@ -557,12 +557,33 @@ function saveSettings() {
   const btn = document.getElementById('save-btn');
   const fname = document.getElementById('s-fname').value.trim();
   const lname = document.getElementById('s-lname').value.trim();
+  const fullName = (fname + ' ' + lname).trim();
+
+  // Persist the name to PFCStorage('user') — MERGE into the existing object so
+  // we never wipe the user's income/expenses/debts written by onboarding.
+  // Without this, the sidebar pill stays "Set up profile" forever after save.
+  if (typeof PFCStorage !== 'undefined') {
+    try {
+      const existing = PFCStorage.getJSON('user') || {};
+      const merged = { ...existing, name: fullName, firstName: fname, lastName: lname };
+      PFCStorage.setJSON('user', merged);
+    } catch (e) { /* never block save UI on storage failure */ }
+  }
+
   if (fname || lname) {
     const initials = ((fname[0] || '') + (lname[0] || '')).toUpperCase();
-    document.getElementById('profile-display-name').textContent = fname + ' ' + lname;
-    document.querySelector('.big-avatar').childNodes[0].textContent = initials;
-    document.querySelector('.user-name').textContent = fname + ' ' + lname.charAt(0) + '.';
+    const dispName = document.getElementById('profile-display-name');
+    if (dispName) dispName.textContent = fullName;
+    const bigAv = document.querySelector('.big-avatar');
+    if (bigAv && bigAv.childNodes[0]) bigAv.childNodes[0].textContent = initials;
   }
+
+  // Refresh sidebar pill (avatar + name + paid-tier styling) without waiting
+  // for a page reload. pfc-sidebar.js exposes this hook for exactly this case.
+  if (window.PFCSidebar && typeof window.PFCSidebar.refreshUserPill === 'function') {
+    window.PFCSidebar.refreshUserPill();
+  }
+
   btn.classList.add('saved');
   btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 7l3 3 6-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg> Saved!';
   showToast('Settings saved successfully');

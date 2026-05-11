@@ -242,4 +242,14 @@
   } else {
     init();
   }
+
+  // Expose a tiny public refresh hook so callers (settings.html save) can
+  // re-hydrate the sidebar pill immediately after they write a new name to
+  // PFCStorage — instead of duplicating the avatar/name logic per page.
+  window.PFCSidebar = {
+    refreshUserPill() {
+      const sb = document.querySelector('nav.sidebar, aside.sidebar');
+      if (sb) { hydrateUserPill(sb); hydrateUserPillPlan(sb); }
+    }
+  };
 })();

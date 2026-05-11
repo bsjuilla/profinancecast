@@ -128,7 +128,9 @@
   .limit-wall{background:rgba(212,175,106,0.07);border:1px solid rgba(212,175,106,0.25);border-radius:var(--r);padding:14px 18px;margin:14px 28px;display:none;}
   .limit-wall.show{display:block;}
   .limit-wall-title{font-family:var(--font-display);font-size:14px;font-weight:700;margin-bottom:4px;color:var(--gold);}
-  .limit-wall-text{font-size:13px;color:var(--text2);line-height:1.55;}
+  .limit-wall-text{font-size:13px;color:var(--text2);line-height:1.55;margin-bottom:10px;}
+  .limit-wall-cta{display:inline-flex;align-items:center;gap:7px;background:linear-gradient(135deg,var(--gold) 0%,#8E6F36 100%);color:#0B1410;padding:9px 16px;border-radius:var(--r-sm);text-decoration:none;font-family:var(--font-body);font-size:13px;font-weight:600;transition:opacity .15s;}
+  .limit-wall-cta:hover{opacity:.88;}
 
   @media(max-width:1000px){.context-panel{display:none;}}
   @media(max-width:700px){.sidebar{display:none;} .input-area,.messages,.limit-wall{padding-left:16px;padding-right:16px;} .starters{grid-template-columns:1fr;}}
@@ -275,7 +277,11 @@
 
       <div class="limit-wall" id="limit-wall">
         <div class="limit-wall-title">You've reached this month's Sage allowance</div>
-        <div class="limit-wall-text">Your quota resets on the 1st of next month. Need more headroom now? <a href="billing.html" style="color:var(--gold);text-decoration:underline;">See Premium</a>.</div>
+        <div class="limit-wall-text" id="limit-wall-text">Your quota resets on the 1st of next month.</div>
+        <a href="billing.html?upgrade=sage-premium" class="limit-wall-cta" id="limit-wall-cta" style="display:none;">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M2 7l3 3 7-7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Upgrade to Premium — 500 messages / month
+        </a>
       </div>
 
       <div class="input-area">
@@ -486,6 +492,9 @@ function updateUsage() {
     document.getElementById('limit-wall').classList.add('show');
     document.getElementById('send-btn').disabled = true;
     document.getElementById('msg-input').placeholder = 'Quota reached — resets on the 1st';
+    // Show Premium CTA only to Pro users (Premium has nowhere to upgrade to).
+    const cta = document.getElementById('limit-wall-cta');
+    if (cta) cta.style.display = (USER_CTX.plan === 'pro') ? 'inline-flex' : 'none';
   }
 }
 
