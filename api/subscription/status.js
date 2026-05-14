@@ -17,11 +17,17 @@ const OWNER_EMAILS = (process.env.OWNER_EMAILS || '')
   .split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
 
 export default async function handler(req, res) {
+  try {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
   const auth = req.headers.authorization || '';
   const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
   if (!token) return res.status(401).json({ error: 'Missing auth token' });
+
+  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    console.error('subscription/status: missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY env vars');
+    return res.status(200).json({ plan: 'free', status: 'config_missing' });
+  }
 
   const supabase = createClient(
     process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY,
@@ -90,4 +96,8 @@ export default async function handler(req, res) {
       resetsAt: profile.ai_queries_reset_at,
     } : null,
   });
+  } catch (err) {
+    console.error('subscription/status: unhandled error', err);
+    return res.status(200).json({ plan: 'free', status: 'error_fallback' });
+  }
 }

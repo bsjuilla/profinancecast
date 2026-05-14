@@ -642,7 +642,7 @@
     <!-- ── LOGIN VIEW ── -->
     <div class="view" id="view-login">
       <div class="auth-heading">Sign in</div>
-      <div class="auth-sub">No account yet? <a onclick="showView('signup')">Create one free →</a></div>
+      <div class="auth-sub">No account yet? <a href="#signup" onclick="showView('signup'); return false;">Create one free →</a></div>
 
       <div class="alert alert-error" id="login-error">Invalid email or password. Please try again.</div>
       <div class="alert alert-error" id="google-error" style="display:none;"></div>
@@ -689,7 +689,7 @@
     <!-- ── SIGNUP VIEW ── -->
     <div class="view active" id="view-signup">
       <div class="auth-heading">Start your free forecast</div>
-      <div class="auth-sub">Already have an account? <a onclick="showView('login')">Sign in →</a></div>
+      <div class="auth-sub">Already have an account? <a href="#login" onclick="showView('login'); return false;">Sign in →</a></div>
 
       <div class="alert alert-error" id="signup-error"></div>
 
