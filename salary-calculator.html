@@ -1039,13 +1039,27 @@ async function generateScript() {
 
   if (!salary) { showToast('Enter your current salary first'); return; }
 
+  const scriptBox = document.getElementById('script-box');
+  const copyBtn = document.getElementById('copy-btn');
+
+  // Pro-gate: Sage is a Pro-only feature. Show upgrade prompt instead of failing API call.
+  const plan = (typeof PFCPlan !== 'undefined' && PFCPlan.get) ? PFCPlan.get() : 'free';
+  if (plan === 'free') {
+    if (copyBtn) copyBtn.style.display = 'none';
+    scriptBox.innerHTML = '<div style="padding:8px 0;color:var(--text2);line-height:1.6;">'
+      + '<strong style="color:var(--text);display:block;margin-bottom:6px;">AI-generated scripts are a Pro feature.</strong>'
+      + 'Upgrade to get personalised negotiation scripts tailored to your role, market data, and target number — plus full Sage AI access.<br><br>'
+      + '<a href="/billing.html?upgrade=salary-script" style="display:inline-block;padding:8px 16px;background:var(--teal);color:var(--canvas);font-weight:700;border-radius:var(--r-sm);text-decoration:none;font-family:var(--font-body);">Upgrade to Pro &rarr;</a>'
+      + '</div>';
+    return;
+  }
+
   const range   = getMarketRange(salary);
   const raisePct = salary ? ((target - salary) / salary * 100).toFixed(1) : '10';
   const industry = document.getElementById('i-industry').options[document.getElementById('i-industry').selectedIndex].text;
   const country  = document.getElementById('i-country').options[document.getElementById('i-country').selectedIndex].text;
 
-  const scriptBox = document.getElementById('script-box');
-  document.getElementById('copy-btn').style.display = 'none';
+  if (copyBtn) copyBtn.style.display = 'none';
   scriptBox.innerHTML = `<div class="script-loading"><div class="spin"></div> Sage is writing your personalised negotiation script…</div>`;
 
   const prompt = `Write a professional salary negotiation script for someone with these details:
@@ -1069,9 +1083,13 @@ Write a concise, confident negotiation script with:
 Keep it realistic, not arrogant. Use their actual numbers throughout. Format clearly with section headers.`;
 
   try {
+    const session = (typeof PFCAuth !== 'undefined') ? PFCAuth.getSession() : null;
+    const headers = { 'Content-Type': 'application/json' };
+    if (session?.access_token) headers.Authorization = 'Bearer ' + session.access_token;
+
     const res = await fetch('/api/sage', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify({ message: prompt, csvMode: true }),
     });
     const data = await res.json();
