@@ -113,6 +113,9 @@
 
   .saved-pulse{animation:savedPulse 1.4s ease;}
   @keyframes savedPulse{0%{box-shadow:0 0 0 0 rgba(43,182,125,0.4);}70%{box-shadow:0 0 0 6px rgba(43,182,125,0);}100%{box-shadow:0 0 0 0 rgba(43,182,125,0);}}
+  .input-shake{animation:inputShake 0.36s ease;border-color:#EF4444 !important;}
+  @keyframes inputShake{0%,100%{transform:translateX(0);}20%,60%{transform:translateX(-4px);}40%,80%{transform:translateX(4px);}}
+  .pfc-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:rgba(20,28,32,0.95);color:#fff;padding:10px 18px;border-radius:6px;font-size:13px;font-family:var(--font-body);box-shadow:0 4px 16px rgba(0,0,0,0.3);z-index:9999;border:1px solid rgba(255,255,255,0.1);}
 </style>
   <link rel="stylesheet" href="css/pfc-tokens.css">
   <link rel="stylesheet" href="css/pfc-footer.css">
@@ -496,7 +499,20 @@ function addCustomRow(side) {
   const amountEl = document.getElementById(side === 'in' ? 'add-in-amount' : 'add-out-amount');
   const label = (labelEl.value || '').trim();
   const amount = Math.max(0, parseFloat(amountEl.value)||0);
-  if (!label) { labelEl.focus(); return; }
+  if (!label) {
+    labelEl.focus();
+    if (typeof showToast === 'function') showToast(side === 'in' ? 'Enter a label for the income source' : 'Enter a label for the expense');
+    labelEl.classList.add('input-shake');
+    setTimeout(() => labelEl.classList.remove('input-shake'), 400);
+    return;
+  }
+  if (amount <= 0) {
+    amountEl.focus();
+    if (typeof showToast === 'function') showToast('Enter an amount greater than 0');
+    amountEl.classList.add('input-shake');
+    setTimeout(() => amountEl.classList.remove('input-shake'), 400);
+    return;
+  }
   const arr = USER[side === 'in' ? 'customIn' : 'customOut'];
   const color = _pickColor(side, arr.length);
   arr.push({ id: _newId(), label, amount, color });
@@ -670,6 +686,19 @@ function saveAll() {
   // Inputs already wrote into USER on `input`; persist + confirm.
   persistUser();
   flashSaved();
+  showToast('Saved');
+}
+
+function showToast(msg) {
+  const old = document.getElementById('pfc-toast');
+  if (old) old.remove();
+  const t = document.createElement('div');
+  t.id = 'pfc-toast';
+  t.className = 'pfc-toast';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity .25s'; }, 2200);
+  setTimeout(() => t.remove(), 2600);
 }
 
 // ── Boot ─────────────────────────────────────────────────────────────────
