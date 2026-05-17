@@ -32,9 +32,13 @@
  *   async deriveSecret() → string
  *       Derives the per-user secret root used to encrypt that user's data.
  *       Priority:
- *         1. PFCAuth.getSession().access_token           (signed-in users)
- *         2. session.user.id + '|' + session.user.created_at  (fallback)
- *         3. localStorage 'pfc:guest:_k' (created on demand)  (anonymous)
+ *         1. session.user.id + '|' + session.user.created_at   (signed-in, stable)
+ *         2. PFCAuth.getSession().access_token                 (fallback if created_at missing)
+ *         3. localStorage 'pfc:guest:_k' (created on demand)   (anonymous)
+ *       NOTE: access_token is NOT primary because Supabase rotates it ~hourly
+ *       under autoRefreshToken — keying off it would cause silent data loss
+ *       every refresh. user.id + created_at is per-account stable forever.
+ *       See the DESIGN NOTE block inside deriveSecret() for full reasoning.
  *
  * Crypto parameters (matches OWASP 2023 PBKDF2 minimums for SHA-256):
  *   KDF        : PBKDF2-SHA256
