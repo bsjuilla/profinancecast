@@ -21,6 +21,8 @@
     }
   ],
   "redirects": [
-    { "source": "/index", "destination": "/", "permanent": true }
+    { "source": "/index", "destination": "/", "permanent": true },
+    { "source": "/blog-debt-avalanche", "destination": "/blog-debt-avalanche-method", "permanent": true },
+    { "source": "/blog-debt-avalanche.html", "destination": "/blog-debt-avalanche-method", "permanent": true }
   ]
 }
