@@ -2043,9 +2043,9 @@
           <circle cx="61" cy="2" r="1.8" fill="var(--gold)"/>
         </svg>
         <span>12 mo:</span>
-        <span class="num">$24,840</span>
+        <span class="num pfc-ticker">$24,840</span>
         <span class="sep">·</span>
-        <span class="pos">+$8,220</span>
+        <span class="pos pfc-ticker">+$8,220</span>
       </div>
       <div class="micro-glyph" aria-hidden="true">
         <svg viewBox="0 0 56 56" fill="none">
@@ -2916,6 +2916,31 @@ window._pfcCountUp = function (el, finalText, durationMs, targetNode) {
   window.addEventListener('scroll', update, { passive: true });
   window.addEventListener('resize', update, { passive: true });
   update();
+})();
+</script>
+
+<!-- ─────────── W4.5.8 — BENTO FLAGSHIP TICKERS ───────────
+     Only the two biggest display numbers in the bento grid (Net worth
+     $24,840 and the +$8,220 delta — both on the flagship b-tall card)
+     get the count-up. Other cards don't, to preserve the flagship beat.
+     Reuses window._pfcCountUp from W4.5.2. -->
+<script>
+(function bentoTickers() {
+  if (window.matchMedia && !window.matchMedia('(prefers-reduced-motion: no-preference)').matches) return;
+  if (typeof window._pfcCountUp !== 'function') return;
+  if (!('IntersectionObserver' in window)) return;
+  var targets = document.querySelectorAll('.pfc-ticker');
+  if (!targets.length) return;
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (entry) {
+      if (entry.isIntersecting) {
+        var el = entry.target;
+        window._pfcCountUp(el, el.textContent, 1200);
+        io.unobserve(el);
+      }
+    });
+  }, { threshold: 0.5 });
+  targets.forEach(function (el) { io.observe(el); });
 })();
 </script>
 
