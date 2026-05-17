@@ -140,6 +140,11 @@
      even before the external token stylesheet resolves.
      ════════════════════════════════════════════════════════════════════════ -->
 <style>
+  /* Gold usage rule (W4.4): champagne gold (#D4AF6A) is reserved for AT MOST
+     4 surfaces per viewport. The four canonical slots are: (1) .btn-outline
+     border, (2) .rule divider hairlines, (3) .price-card.hot border, (4)
+     roman numeral chapter ornaments. Everything else uses --money (emerald)
+     or --ink-3 (muted). Do NOT add new gold accents without removing one. */
   :root {
     --canvas: #0B1410;
     --surface: #111E18;
@@ -220,7 +225,8 @@
     max-width: 16ch;
     margin: 0 auto 28px;
   }
-  .hero h1 em, .hero h1 .grad { font-style: italic; color: var(--gold); font-weight: 500; }
+  /* W4.4 — demoted from gold to emerald (growth/gain is on-message for the headline). */
+  .hero h1 em, .hero h1 .grad { font-style: italic; color: var(--money); font-weight: 500; }
   .hero-sub {
     font-size: clamp(16px, 1.3vw, 19px);
     color: var(--ink-2); font-weight: 300;
@@ -523,14 +529,15 @@
     max-width: 16ch;
     margin: 0 auto 28px;
   }
+  /* W4.4 — demoted from gold to emerald: growth/gain is on-message. */
   .hero h1 em {
     font-style: italic;
-    color: var(--gold);
+    color: var(--money);
     font-weight: 400;
   }
-  /* Sprint 5: animated gradient on display copy banned. Static gold italic only. */
+  /* Sprint 5: animated gradient on display copy banned. Static italic only. */
   .hero h1 .grad {
-    color: var(--gold);
+    color: var(--money);
     font-style: italic;
     font-weight: 500;
   }
@@ -654,7 +661,8 @@
     margin-bottom: 18px;
     letter-spacing: -0.02em;
   }
-  .section-title em { font-style: italic; color: var(--gold); }
+  /* W4.4 — section-title em demoted to emerald to free up gold for the 4 canonical slots. */
+  .section-title em { font-style: italic; color: var(--money); }
   .section-sub {
     font-size: var(--t-16);
     color: var(--ink-2);
@@ -721,9 +729,10 @@
   .steps { display: grid; gap: 80px; }
   .step { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: center; }
   .step:nth-child(even) .step-visual { order: -1; }
+  /* W4.4 — step-num demoted from gold to muted ink-3 (structural label, not accent). */
   .step-num {
     font-family: var(--font-mono); font-size: var(--t-13);
-    color: var(--gold); letter-spacing: 0.10em; text-transform: uppercase;
+    color: var(--ink-3); letter-spacing: 0.10em; text-transform: uppercase;
     margin-bottom: 12px;
   }
   .step h3 {
@@ -834,7 +843,8 @@
     font-weight: 500;
     margin-bottom: 16px; line-height: 1.05;
   }
-  .cta-strip h2 em { color: var(--gold); }
+  /* W4.4 — cta-strip h2 em demoted to emerald. */
+  .cta-strip h2 em { color: var(--money); }
   .cta-strip p { color: var(--ink-2); margin-bottom: 32px; font-size: var(--t-16); max-width: 56ch; margin-left: auto; margin-right: auto; font-weight: 300; }
 
   /* ── FOOTER ─────────────────────────────────────────────────────── */
@@ -899,9 +909,10 @@
     transition: border-color 160ms ease, transform 160ms ease;
   }
   .journal-strip .blog-card:hover { border-color: var(--gold-soft); transform: translateY(-2px); }
+  /* W4.4 — journal topic eyebrow demoted to muted ink-3 (small structural label). */
   .journal-strip .blog-card .topic {
     font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.12em;
-    text-transform: uppercase; color: var(--gold); margin-bottom: 10px;
+    text-transform: uppercase; color: var(--ink-3); margin-bottom: 10px;
   }
   .journal-strip .blog-card h3 {
     font-family: var(--font-display); font-style: italic; font-size: 22px;
@@ -1274,13 +1285,14 @@
     text-wrap: pretty;
   }
 
-  /* Bento card — gold border on hover + micro-glyph in the corner */
-  .bento-card:hover { border-color: var(--gold); transform: translateY(-2px); }
+  /* W4.4 — bento hover border and micro-glyph demoted from gold to muted ink-3.
+     The card edge no longer competes with the 4 canonical gold slots. */
+  .bento-card:hover { border-color: var(--line-2); transform: translateY(-2px); }
   .bento-card .micro-glyph {
     position: absolute; right: 22px; top: 22px;
     width: 56px; height: 56px;
     pointer-events: none;
-    color: var(--gold);
+    color: var(--ink-3);
     opacity: 0.40;
     transition: opacity var(--t-base) var(--ease-out), transform 0.7s var(--ease-out);
   }
@@ -1408,18 +1420,8 @@
   #pricing { padding-top: 80px; padding-bottom: 72px; }
   #journal { padding-top: 88px; padding-bottom: 56px; }
 
-  /* Pricing — Most-chosen tag + comparison row */
-  .price-card .most-chosen {
-    position: absolute; top: -14px; right: 16px;
-    font-family: var(--font-mono); font-size: 10px; font-weight: 600;
-    letter-spacing: 0.14em; text-transform: uppercase;
-    color: var(--gold);
-    padding: 5px 10px;
-    background: var(--canvas);
-    border: 1px solid var(--gold);
-    border-radius: 4px;
-    line-height: 1;
-  }
+  /* W4.4 — orphan ".most-chosen" rule removed. Markup uses .price-tag only. */
+  /* Pricing — comparison row */
   .pricing-compare {
     margin-top: 28px;
     border: 1px solid var(--line);
@@ -1658,8 +1660,9 @@
   </div>
   <div class="hero-inner">
     <div class="pfc-hero-copy">
+      <!-- W4.4 — pulse dot removed (Linear cliché, competed with headline). -->
       <div class="eyebrow reveal">
-        <span class="dot" aria-hidden="true"></span> A FORECASTING TOOL FOR YOUR PERSONAL FINANCES
+        A FORECASTING TOOL FOR YOUR PERSONAL FINANCES
       </div>
       <h1 class="reveal" id="hero-headline">
         What your money looks like in 2036 — <em>not advice, just math you can verify.</em>
