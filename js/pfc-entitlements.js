@@ -43,6 +43,17 @@ const PFCPlan = (() => {
     } catch(_) { return null; }
   }
 
+  // Like _readCache, but ignores TTL — used on fetch failure to recover a
+  // stale entry rather than silently demoting a Pro user to 'free' (audit #18).
+  function _readCacheAnyAge() {
+    try {
+      if (typeof PFCStorage === 'undefined') return null;
+      const c = PFCStorage.getJSON(STORAGE_KEY);
+      if (!c || !c.plan || !c.fetchedAt) return null;
+      return c;
+    } catch(_) { return null; }
+  }
+
   function _writeCache() {
     try {
       if (typeof PFCStorage !== 'undefined') {
@@ -60,6 +71,7 @@ const PFCPlan = (() => {
       _emit(prev, _plan);
       return _plan;
     }
+    let fetchFailed = false;
     try {
       const session = PFCAuth.getSession();
       const token = session?.access_token;
@@ -70,12 +82,36 @@ const PFCPlan = (() => {
         const data = await res.json();
         _plan = (data && typeof data.plan === 'string') ? data.plan : 'free';
       } else {
-        // Fail closed: any 4xx/5xx → treat as free, never auto-upgrade
-        _plan = 'free';
+        // Treat 4xx/5xx as a transient fetch failure rather than authoritative
+        // "free": a 500 / 502 / 429 from /api/subscription/status MUST NOT
+        // demote a paying user. We fall through to the cache-recovery branch
+        // below. (audit #18)
+        fetchFailed = true;
       }
     } catch (e) {
       console.warn('[PFCPlan] refresh failed:', e.message);
-      _plan = 'free';
+      fetchFailed = true;
+    }
+    if (fetchFailed) {
+      // Network failures must not demote Pro users — return stale cache if
+      // available, only fall back to 'free' as last resort. Critically we do
+      // NOT _writeCache() on failure: that would persist 'free' under the
+      // 30s TTL and silently downgrade the user across navigations.
+      const stale = _readCacheAnyAge();
+      if (stale && stale.plan) {
+        _plan = stale.plan;
+        // Don't touch _fetchedAt — leave it as whenever the successful fetch
+        // last landed so the next call still treats this entry as needing
+        // a refresh on the normal cadence.
+        _emit(prev, _plan);
+      } else {
+        // No prior cache → safest default is 'free' (fail closed).
+        _plan = 'free';
+        _fetchedAt = Date.now();
+        _writeCache();
+        _emit(prev, _plan);
+      }
+      return _plan;
     }
     _fetchedAt = Date.now();
     _writeCache();
