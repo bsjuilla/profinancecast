@@ -44,7 +44,7 @@
   .user-name{font-size:13px;font-weight:500}
   .user-plan{font-size:11px;color:var(--text3)}
   .main{flex:1;height:100vh;overflow-y:auto;display:flex;flex-direction:column}
-  .topbar{display:flex;align-items:center;justify-content:space-between;padding:0 28px;height:64px;flex-shrink:0;border-bottom:1px solid var(--border);background:rgba(8,12,18,0.9);position:sticky;top:0;z-index:10;backdrop-filter:blur(12px)}
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:0 28px;height:64px;flex-shrink:0;border-bottom:1px solid var(--border);background:color-mix(in srgb, var(--bg) 90%, transparent);position:sticky;top:0;z-index:10;backdrop-filter:blur(12px)}
   .topbar-left{display:flex;flex-direction:column}
   .topbar-title{font-family:var(--font-display);font-size:17px;font-weight:700}
   .topbar-sub{font-size:12px;color:var(--text3);margin-top:1px}
@@ -64,7 +64,7 @@
 
   /* THE SHAREABLE CARD */
   #rc-canvas{
-    background:linear-gradient(135deg,var(--canvas) 0%,#0D1F30 50%,var(--canvas) 100%);
+    background:linear-gradient(135deg,#0B1410 0%,#1C3328 50%,#0B1410 100%);
     border:1px solid rgba(43,182,125,0.2);border-radius:20px;padding:32px;
     position:relative;overflow:hidden;margin-bottom:16px;
   }
@@ -210,6 +210,19 @@
   .toast{animation:slideUp .2s ease}
   @media(max-width:1050px){.page-layout{grid-template-columns:1fr}}
   @media(max-width:680px){.sidebar{display:none}.content{padding:16px}}
+
+  /* Ivory paper surface remap — dark-text-on-paper for printable deliverable */
+  [data-surface="ivory"] {
+    --bg: var(--paper);
+    --bg2: var(--paper-2);
+    --bg3: var(--paper-2);
+    --card: var(--paper);
+    --text: var(--paper-ink);
+    --text2: rgba(20, 32, 26, 0.62);
+    --text3: rgba(20, 32, 26, 0.38);
+    --border: rgba(20, 32, 26, 0.10);
+    --border2: rgba(20, 32, 26, 0.18);
+  }
 </style>
   <link rel="stylesheet" href="css/pfc-tokens.css">
   <link rel="stylesheet" href="css/pfc-footer.css">
@@ -248,7 +261,7 @@
   <script src="js/pfc-analytics.js" defer></script>
   <script src="js/pfc-sidebar.js" defer></script>
 </head>
-<body>
+<body data-surface="ivory">
 <nav class="sidebar" aria-label="Primary navigation">
   <a href="dashboard.html" class="sidebar-logo">
     <div class="logo-mark">PF</div>
