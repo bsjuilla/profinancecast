@@ -6,13 +6,13 @@
    ════════════════════════════════════════════════════════════════════════ */
 
 :root {
-  --pfc-canvas: #0e1116;
-  --pfc-ink: #f3efe6;
-  --pfc-ink-soft: #cfc8b9;
-  --pfc-ink-faint: rgba(243, 239, 230, 0.55);
-  --pfc-rule: rgba(243, 239, 230, 0.12);
-  --pfc-accent: #c9a96a;
-  --pfc-card: rgba(243, 239, 230, 0.04);
+  --pfc-canvas: var(--canvas, #0B1410);
+  --pfc-ink: var(--ink, #F0EDE2);
+  --pfc-ink-soft: var(--ink-2, #B8C2BC);
+  --pfc-ink-faint: var(--ink-3, #6F7C75);
+  --pfc-rule: rgba(240, 237, 226, 0.12);
+  --pfc-accent: var(--gold, #D4AF6A);
+  --pfc-card: var(--surface, #111E18);
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -49,7 +49,7 @@ a:hover { border-color: var(--pfc-accent); }
 
 .pfc-header {
   position: sticky; top: 0; z-index: 20;
-  background: rgba(14, 17, 22, 0.92);
+  background: rgba(11, 20, 16, 0.92);
   backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--pfc-rule);
 }
@@ -221,10 +221,10 @@ blockquote {
 
 /* ── Topic accent override (W1-K · 4 sub-themes) ──────────────────────
    Set on .pfc-eyebrow only; never on global --pfc-accent. */
-.pfc-eyebrow.topic-debt      { color: #B8584A; }
-.pfc-eyebrow.topic-investing { color: #3F6E8F; }
-.pfc-eyebrow.topic-planning  { color: #2BB67D; }
-.pfc-eyebrow.topic-salary    { color: #D4AF6A; }
+.pfc-eyebrow.topic-debt      { color: var(--terracotta, #E66E5C); }
+.pfc-eyebrow.topic-investing { color: var(--gold, #D4AF6A); }
+.pfc-eyebrow.topic-planning  { color: var(--emerald, #2BB67D); }
+.pfc-eyebrow.topic-salary    { color: var(--gold, #D4AF6A); }
 
 /* ── Editorial drop cap (one per post; only on the first body paragraph
    directly after the AEO answer-block lede). ───────────────────────── */
