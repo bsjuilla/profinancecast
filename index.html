@@ -1162,6 +1162,76 @@
     .hero-anchor .ha-spark { width: 100%; height: 80px; }
     .hero-anchor .ha-cap { font-size: 15px; }
   }
+  /* NOTE: .hero-anchor styles above kept intentionally for rollback (W4.1).
+     The static anchor figure was removed from markup; the live forecast
+     widget now occupies the hero right pane via .pfc-hero-grid. */
+
+  /* ── W4.1 — HERO: 2-COLUMN GRID (copy left, live widget right) ───
+     At ≥980px, hero becomes a 2-col grid. Below, it collapses to a
+     single column with copy on top and the widget below. We override
+     the inherited centered layout only at the breakpoint so the
+     existing aurora mesh / mobile rules remain intact. */
+  @media (min-width: 980px) {
+    .pfc-hero-grid {
+      place-items: start;
+      padding: 132px 32px 72px;
+      text-align: left;
+    }
+    .pfc-hero-grid .hero-inner {
+      max-width: 1280px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+      gap: 56px;
+      align-items: center;
+    }
+    .pfc-hero-grid .pfc-hero-copy { text-align: left; }
+    .pfc-hero-grid .pfc-hero-copy .eyebrow { margin-bottom: 22px; }
+    .pfc-hero-grid .pfc-hero-copy h1 {
+      margin: 0 0 22px;
+      max-width: 14ch;
+      font-size: clamp(48px, 5.4vw, 84px);
+      text-align: left;
+    }
+    .pfc-hero-grid .pfc-hero-copy .hero-sub {
+      margin: 0 0 28px;
+      max-width: 48ch;
+      text-align: left;
+    }
+    .pfc-hero-grid .pfc-hero-copy .hero-cta {
+      justify-content: flex-start;
+      margin-bottom: 20px;
+    }
+    .pfc-hero-grid .pfc-hero-copy .trust-row {
+      justify-content: flex-start;
+      gap: 18px 22px;
+      max-width: 52ch;
+    }
+    /* Widget sits in the right column; cancel the 80px margin-top it
+       carried when it lived in its own section. */
+    .pfc-hero-grid .pfc-hero-demo {
+      margin: 0;
+      max-width: none;
+      padding: 0;
+      width: 100%;
+    }
+    .pfc-hero-grid .pfc-hero-demo .chart-frame {
+      padding: 28px;
+    }
+    .pfc-hero-grid .pfc-hero-demo .chart-grid {
+      grid-template-columns: 1fr;
+      gap: 22px;
+    }
+    .pfc-hero-grid .pfc-hero-demo .chart-result {
+      min-height: 280px;
+    }
+  }
+  /* Mobile / tablet: widget stacks below copy, breathing room above. */
+  @media (max-width: 979px) {
+    .pfc-hero-grid .pfc-hero-demo {
+      margin-top: 48px;
+    }
+    .pfc-hero-grid .pfc-hero-demo .chart-frame { padding: 22px; }
+  }
 
   /* Numbered section index — typeset roman numeral marker. Editorial-
      quarterly register, replaces the plain dash-eyebrow on key sections. */
@@ -1417,7 +1487,10 @@
 <main id="main" role="main">
 
 <!-- ─────────── HERO ─────────── -->
-<section class="hero" aria-labelledby="hero-headline">
+<!-- W4.1 + W4.2: 2-column hero grid at ≥980px (copy left, live forecast widget right).
+     The interactive demo replaces the static anchor figure — kinesthetic value prop.
+     Static .hero-anchor figure removed; CSS for it kept in <style> as "kept for rollback". -->
+<section class="hero pfc-hero-grid" aria-labelledby="hero-headline">
   <!-- Aurora mesh: 3 drifting blurred blobs behind the hero copy.
        Pure CSS, GPU-only transforms, paused under prefers-reduced-motion. -->
   <div class="hero-mesh" aria-hidden="true">
@@ -1426,72 +1499,91 @@
     <div class="mesh-blob mesh-blob-3"></div>
   </div>
   <div class="hero-inner">
-  <div class="eyebrow reveal">
-    <span class="dot" aria-hidden="true"></span> A FORECASTING TOOL FOR YOUR PERSONAL FINANCES
-  </div>
-  <h1 class="reveal" id="hero-headline">
-    What your money looks like in 2036 —<br>
-    <em>not advice, just math you can verify.</em>
-  </h1>
-  <p class="hero-sub reveal">
-    Drop in four numbers and see the answers most planners won't give you on the first call:
-    <em style="font-style:italic;color:var(--ink);">When am I debt-free? · What if I get a raise? · Will I hit my goal on time?</em>
-    Numbers stay in your browser. The compound-growth formula is on the page; check our work.
-  </p>
-  <div class="hero-cta reveal">
-    <a href="auth.html" class="btn btn-primary btn-lg">
-      Start your free forecast
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M3 7h8m-3-3l3 3-3 3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
-    </a>
-    <a href="#demo" class="btn btn-outline btn-lg">Try the live demo — no signup</a>
-  </div>
-  <p class="hero-disclosure reveal" style="font-family:var(--font-body);font-size:13px;color:var(--ink-3);max-width:62ch;margin:8px auto 22px;line-height:1.55;">
-    Free forever. Numbers stay in your browser. We never see your bank credentials, and your forecast is encrypted before it touches our servers.
-  </p>
-  <div class="trust-row reveal" role="list" aria-label="What we do and don't do" style="margin-bottom:18px;">
-    <span role="listitem"><span aria-hidden="true" style="color:var(--money);">✓</span> Calculations run in your browser</span>
-    <span role="listitem"><span aria-hidden="true" style="color:var(--money);">✓</span> No bank login required</span>
-    <span role="listitem"><span aria-hidden="true" style="color:var(--money);">✓</span> EU GDPR compliant</span>
-    <span role="listitem"><span aria-hidden="true" style="color:var(--money);">✓</span> Built in Europe</span>
-  </div>
-  <!-- Hero numerical anchor — institutional preview of what the dashboard
-       reveals. Static dummy numbers framed editorially; the sparkline
-       draws in once when the figure scrolls into view. Replaces the
-       empty lower half of the hero with information density without
-       becoming a SaaS mockup. aria-hidden because the figures are
-       illustrative, not user data. -->
-  <figure class="hero-anchor reveal" id="hero-anchor" aria-hidden="true">
-    <div>
-      <div class="ha-meta">Worked example · illustrative, not a real customer</div>
-      <div class="ha-num"><span class="ha-curr">$</span>24,840 <em>·</em> <span style="font-size:0.55em;color:var(--ink-2);font-style:normal;font-family:var(--font-mono);letter-spacing:0;">+$8,220</span></div>
-      <div class="ha-cap">From <b>$16,620</b> today to a projected net worth twelve months out, debt-free in month seven, holding a 22 percent savings rate.</div>
+    <div class="pfc-hero-copy">
+      <div class="eyebrow reveal">
+        <span class="dot" aria-hidden="true"></span> A FORECASTING TOOL FOR YOUR PERSONAL FINANCES
+      </div>
+      <h1 class="reveal" id="hero-headline">
+        What your money looks like in 2036 — <em>not advice, just math you can verify.</em>
+      </h1>
+      <p class="hero-sub reveal">
+        See exactly when you'll be debt-free, your net worth in 2036, and which goals you'll actually hit — drop in your numbers, no bank login.
+      </p>
+      <div class="hero-cta reveal">
+        <a href="auth.html" class="btn btn-primary btn-lg">
+          Start your free forecast
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M3 7h8m-3-3l3 3-3 3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+        <a href="#demo" class="btn btn-outline btn-lg">Try the live demo — no signup</a>
+      </div>
+      <div class="trust-row reveal" role="list" aria-label="What we do and don't do">
+        <span role="listitem"><span aria-hidden="true" style="color:var(--money);">✓</span> Calculations run in your browser</span>
+        <span role="listitem"><span aria-hidden="true" style="color:var(--money);">✓</span> No bank login required</span>
+        <span role="listitem"><span aria-hidden="true" style="color:var(--money);">✓</span> EU GDPR · encrypted at rest</span>
+        <span role="listitem"><span aria-hidden="true" style="color:var(--money);">✓</span> Built in Europe</span>
+      </div>
     </div>
-    <div class="ha-spark">
-      <svg viewBox="0 0 260 96" preserveAspectRatio="none" aria-hidden="true">
-        <defs>
-          <linearGradient id="ha-grad" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0%"  stop-color="var(--money)" stop-opacity="0.55"/>
-            <stop offset="100%" stop-color="var(--money)" stop-opacity="0"/>
-          </linearGradient>
-        </defs>
-        <line x1="0" y1="32" x2="260" y2="32" stroke="rgba(255,255,255,0.05)"/>
-        <line x1="0" y1="64" x2="260" y2="64" stroke="rgba(255,255,255,0.05)"/>
-        <path class="spark-area" d="M0,86 L20,82 L40,76 L60,72 L80,66 L100,58 L120,52 L140,46 L160,38 L180,30 L200,24 L220,16 L240,10 L240,96 L0,96 Z" fill="url(#ha-grad)"/>
-        <path class="spark-line" d="M0,86 L20,82 L40,76 L60,72 L80,66 L100,58 L120,52 L140,46 L160,38 L180,30 L200,24 L220,16 L240,10"/>
-        <circle class="spark-end" cx="240" cy="10" r="3.4"/>
-      </svg>
-    </div>
-    <div class="ha-foot">
-      <span>Inputs · 4 numbers</span>
-      <span>Calc · client-side</span>
-      <span>Encryption · AES-256</span>
-      <span>Bank credentials · 0</span>
-    </div>
-  </figure>
 
-  <p class="hero-byline reveal" style="font-family:var(--font-body);font-size:13px;color:var(--ink-3);max-width:60ch;margin:14px auto 8px;">
-    Built in Europe by independent finance professionals. Private by design — your numbers stay in your browser.
-  </p>
+    <!-- ── INTERACTIVE FORECAST WIDGET (lifted into hero right pane) ── -->
+    <div class="hero-chart pfc-hero-demo reveal" id="demo">
+      <div class="chart-frame">
+        <div class="chart-grid">
+          <div class="chart-controls">
+            <h3>Try a live forecast</h3>
+            <p>Drag the sliders. The compound-growth curve re-projects in real time.</p>
+
+            <div class="slider-row">
+              <label>Monthly take-home <span class="v" id="v-income">$5,000</span></label>
+              <input type="range" id="s-income" min="1000" max="20000" step="100" value="5000">
+            </div>
+            <div class="slider-row">
+              <label>Savings rate <span class="v" id="v-rate">20%</span></label>
+              <input type="range" id="s-rate" min="0" max="60" step="1" value="20">
+            </div>
+            <div class="slider-row">
+              <label>Debt balance <span class="v" id="v-debt">$8,000</span></label>
+              <input type="range" id="s-debt" min="0" max="100000" step="500" value="8000">
+            </div>
+            <div class="slider-row">
+              <label>Starting net worth <span class="v" id="v-nw">$5,000</span></label>
+              <input type="range" id="s-nw" min="-50000" max="200000" step="1000" value="5000">
+            </div>
+          </div>
+
+          <div class="chart-result">
+            <div class="chart-stats">
+              <div>
+                <div class="lbl">Net worth · 12 months</div>
+                <div class="val num" id="r-nw">$17,000</div>
+                <div class="delta num" id="r-delta">+$12,000</div>
+              </div>
+              <div style="text-align:right;">
+                <div class="lbl">Debt-free in</div>
+                <div class="val num" id="r-debt-free">7<span style="font-family:var(--font-body);font-size:18px;color:var(--ink-3);font-weight:400;"> months</span></div>
+                <div class="delta" id="r-debt-delta">on plan</div>
+              </div>
+            </div>
+            <svg id="fc-svg" viewBox="0 0 600 200" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="cg" x1="0" x2="0" y1="0" y2="1">
+                  <stop offset="0%"  stop-color="var(--money)" stop-opacity="0.45"/>
+                  <stop offset="100%" stop-color="var(--money)" stop-opacity="0"/>
+                </linearGradient>
+                <filter id="glow"><feGaussianBlur stdDeviation="3"/></filter>
+              </defs>
+              <line x1="0" y1="50"  x2="600" y2="50"  stroke="rgba(255,255,255,0.04)"/>
+              <line x1="0" y1="100" x2="600" y2="100" stroke="rgba(255,255,255,0.04)"/>
+              <line x1="0" y1="150" x2="600" y2="150" stroke="rgba(255,255,255,0.04)"/>
+              <path id="fc-area" d="" fill="url(#cg)"/>
+              <path id="fc-line" d="" fill="none" stroke="var(--money)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/>
+              <path id="fc-line2" d="" fill="none" stroke="var(--money)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <circle id="fc-end" cx="600" cy="20" r="5" fill="var(--gold)"/>
+              <circle id="fc-end-glow" cx="600" cy="20" r="11" fill="var(--gold)" opacity="0.30"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -1502,70 +1594,6 @@
     <div class="cell"><div class="num">12 mo</div><div class="lbl">Forecast horizon</div></div>
     <div class="cell"><div class="num">AES-256</div><div class="lbl">Encrypted locally</div></div>
     <div class="cell"><div class="num">EU-built</div><div class="lbl">Private by design</div></div>
-  </div>
-</section>
-
-<section class="hero-demo-wrapper" style="padding:64px 24px 0;text-align:center;">
-
-  <!-- ── INTERACTIVE FORECAST WIDGET ── -->
-  <div class="hero-chart reveal" id="demo">
-    <div class="chart-frame">
-      <div class="chart-grid">
-        <div class="chart-controls">
-          <h3>Try a live forecast</h3>
-          <p>Drag the sliders. The compound-growth curve on the right re-projects in real time.</p>
-
-          <div class="slider-row">
-            <label>Monthly take-home <span class="v" id="v-income">$5,000</span></label>
-            <input type="range" id="s-income" min="1000" max="20000" step="100" value="5000">
-          </div>
-          <div class="slider-row">
-            <label>Savings rate <span class="v" id="v-rate">20%</span></label>
-            <input type="range" id="s-rate" min="0" max="60" step="1" value="20">
-          </div>
-          <div class="slider-row">
-            <label>Debt balance <span class="v" id="v-debt">$8,000</span></label>
-            <input type="range" id="s-debt" min="0" max="100000" step="500" value="8000">
-          </div>
-          <div class="slider-row">
-            <label>Starting net worth <span class="v" id="v-nw">$5,000</span></label>
-            <input type="range" id="s-nw" min="-50000" max="200000" step="1000" value="5000">
-          </div>
-        </div>
-
-        <div class="chart-result">
-          <div class="chart-stats">
-            <div>
-              <div class="lbl">Net worth · 12 months</div>
-              <div class="val num" id="r-nw">$17,000</div>
-              <div class="delta num" id="r-delta">+$12,000</div>
-            </div>
-            <div style="text-align:right;">
-              <div class="lbl">Debt-free in</div>
-              <div class="val num" id="r-debt-free">7<span style="font-family:var(--font-body);font-size:18px;color:var(--ink-3);font-weight:400;"> months</span></div>
-              <div class="delta" id="r-debt-delta">on plan</div>
-            </div>
-          </div>
-          <svg id="fc-svg" viewBox="0 0 600 200" preserveAspectRatio="none">
-            <defs>
-              <linearGradient id="cg" x1="0" x2="0" y1="0" y2="1">
-                <stop offset="0%"  stop-color="var(--money)" stop-opacity="0.45"/>
-                <stop offset="100%" stop-color="var(--money)" stop-opacity="0"/>
-              </linearGradient>
-              <filter id="glow"><feGaussianBlur stdDeviation="3"/></filter>
-            </defs>
-            <line x1="0" y1="50"  x2="600" y2="50"  stroke="rgba(255,255,255,0.04)"/>
-            <line x1="0" y1="100" x2="600" y2="100" stroke="rgba(255,255,255,0.04)"/>
-            <line x1="0" y1="150" x2="600" y2="150" stroke="rgba(255,255,255,0.04)"/>
-            <path id="fc-area" d="" fill="url(#cg)"/>
-            <path id="fc-line" d="" fill="none" stroke="var(--money)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/>
-            <path id="fc-line2" d="" fill="none" stroke="var(--money)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-            <circle id="fc-end" cx="600" cy="20" r="5" fill="var(--gold)"/>
-            <circle id="fc-end-glow" cx="600" cy="20" r="11" fill="var(--gold)" opacity="0.30"/>
-          </svg>
-        </div>
-      </div>
-    </div>
   </div>
 </section>
 
