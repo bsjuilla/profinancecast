@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -23,10 +23,11 @@
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Sign in — ProFinanceCast">
   <meta name="twitter:description" content="Sign in or create your ProFinanceCast account to access your forecast, goals, debts, and Sage AI advisor.">
-<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<!-- Cormorant Garamond + Inter + JetBrains Mono — fintech editorial stack -->
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,400;1,500&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500;1,9..144,600&family=Inter+Tight:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" media="print" onload="this.media='all'" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500;1,9..144,600&family=Inter+Tight:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500;1,9..144,600&family=Inter+Tight:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"></noscript>
 <link rel="stylesheet" href="css/pfc-tokens.css">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -819,7 +820,7 @@ if (!supabaseClient) {
   document.addEventListener('DOMContentLoaded', () => {
     const err = document.createElement('div');
     err.style.cssText = 'position:fixed;inset:0;display:grid;place-items:center;background:var(--canvas);color:#E05252;font-family:Inter,sans-serif;padding:24px;text-align:center;';
-    err.innerHTML = '<div><h2 style="font-family:Cormorant Garamond,serif;margin-bottom:8px;">Service unavailable</h2><p style="color:#8A9BB0;">Authentication is temporarily down. Please try again in a moment.</p></div>';
+    err.innerHTML = '<div><h2 style="font-family:Fraunces,serif;margin-bottom:8px;">Service unavailable</h2><p style="color:#8A9BB0;">Authentication is temporarily down. Please try again in a moment.</p></div>';
     document.body.appendChild(err);
   });
 }

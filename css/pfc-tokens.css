@@ -1,4 +1,8 @@
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500;1,9..144,600&family=Inter+Tight:wght@300;400;500;600;700&display=swap');
+/* Fonts (Fraunces + Inter Tight + JetBrains Mono) are loaded by each page's
+   <link> block in <head> using a preconnect + preload + async-stylesheet
+   pattern. Do NOT @import them here — render-blocking @import inside a
+   stylesheet that itself blocks render is the worst font-loading pattern.
+   See any page's <head> for the canonical block. */
 
 /* ════════════════════════════════════════════════════════════════════════
    ProFinanceCast — Design Tokens · v3 "Modern Fintech"
