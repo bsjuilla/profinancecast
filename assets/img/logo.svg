@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ProFinanceCast — Ledger Mark logo
+  "PFC" serif display + diamond ornament rule + tracked "FORECASTING HOUSE"
+  Champagne gold #D4AF6A on transparent. Brand: emerald-black + ivory + champagne.
+
+  Use:
+    Default — drop in anywhere; transparent background lets it sit on emerald-black or ivory.
+    Width recommendations:
+      - In-page wordmark: 180–240px wide
+      - Footer / sub-brand: 120–160px wide
+      - OG cards: 320–400px wide
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 260" width="400" height="260" role="img" aria-label="ProFinanceCast — Forecasting House">
+  <title>ProFinanceCast — Forecasting House</title>
+
+  <!-- PFC display wordmark, Fraunces 600 opsz 144 -->
+  <text x="200" y="135"
+        text-anchor="middle"
+        font-family="'Fraunces', 'Playfair Display', Georgia, serif"
+        font-size="120"
+        font-weight="600"
+        font-style="normal"
+        fill="#D4AF6A"
+        letter-spacing="-2"
+        style="font-variation-settings: 'opsz' 144;">PFC</text>
+
+  <!-- Hairline rule with centered diamond ornament -->
+  <g stroke="#D4AF6A" fill="#D4AF6A">
+    <line x1="120" y1="170" x2="190" y2="170" stroke-width="1" stroke-linecap="round"/>
+    <line x1="210" y1="170" x2="280" y2="170" stroke-width="1" stroke-linecap="round"/>
+    <!-- Diamond ornament -->
+    <polygon points="200,164 206,170 200,176 194,170" stroke="none"/>
+  </g>
+
+  <!-- Forecasting House subtitle, tracked uppercase Inter Tight 500 -->
+  <text x="200" y="210"
+        text-anchor="middle"
+        font-family="'Inter Tight', 'Inter', -apple-system, system-ui, sans-serif"
+        font-size="18"
+        font-weight="500"
+        fill="#D4AF6A"
+        letter-spacing="6">FORECASTING HOUSE</text>
+</svg>
