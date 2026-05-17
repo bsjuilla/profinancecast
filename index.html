@@ -140,6 +140,11 @@
      even before the external token stylesheet resolves.
      ════════════════════════════════════════════════════════════════════════ -->
 <style>
+  /* Gold usage rule (W4.4): champagne gold (#D4AF6A) is reserved for AT MOST
+     4 surfaces per viewport. The four canonical slots are: (1) .btn-outline
+     border, (2) .rule divider hairlines, (3) .price-card.hot border, (4)
+     roman numeral chapter ornaments. Everything else uses --money (emerald)
+     or --ink-3 (muted). Do NOT add new gold accents without removing one. */
   :root {
     --canvas: #0B1410;
     --surface: #111E18;
@@ -220,7 +225,8 @@
     max-width: 16ch;
     margin: 0 auto 28px;
   }
-  .hero h1 em, .hero h1 .grad { font-style: italic; color: var(--gold); font-weight: 500; }
+  /* W4.4 — demoted from gold to emerald (growth/gain is on-message for the headline). */
+  .hero h1 em, .hero h1 .grad { font-style: italic; color: var(--money); font-weight: 500; }
   .hero-sub {
     font-size: clamp(16px, 1.3vw, 19px);
     color: var(--ink-2); font-weight: 300;
@@ -415,19 +421,25 @@
   main { position: relative; z-index: 2; }
 
   /* ── NAV ─────────────────────────────────────────────────────────── */
+  /* W4.7.5 — nav is more solid at the top of the page (over the emerald
+     mesh-blob in the hero, where translucent backdrop went muddy) and
+     gets lighter once scrolled past the hero. */
   nav {
     position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
     width: calc(100% - 48px); max-width: 1200px;
     z-index: 50;
     display: flex; align-items: center; justify-content: space-between;
     padding: 11px 18px;
-    background: rgba(11, 20, 16, 0.65);
+    background: rgba(11, 20, 16, 0.92);
     backdrop-filter: blur(20px) saturate(140%);
     border: 1px solid var(--line-2);
     border-radius: 999px;
     transition: padding var(--t-base) var(--ease-out), background var(--t-base) var(--ease-out);
   }
-  nav.scrolled { background: rgba(11, 20, 16, 0.88); }
+  nav[data-scrolled="true"] { background: rgba(11, 20, 16, 0.80); }
+  /* Legacy .scrolled class kept for back-compat with the GSAP ScrollTrigger
+     elsewhere in this file. */
+  nav.scrolled { background: rgba(11, 20, 16, 0.80); }
   .logo {
     display: flex; align-items: center; gap: 10px;
     font-family: var(--font-display); font-weight: 600; font-size: var(--t-18);
@@ -470,8 +482,21 @@
   .btn-primary:active { transform: translateY(0); }
   .btn-ghost { background: transparent; color: var(--ink-2); }
   .btn-ghost:hover { color: var(--ink); }
-  .btn-outline { background: rgba(255,255,255,0.02); color: var(--ink); border-color: var(--line-2); }
-  .btn-outline:hover { border-color: var(--money); background: var(--money-soft); }
+  /* W4.3 — secondary CTA: champagne hairline, transparent fill. The primary
+     stays emerald-solid; the outline is brand-on and visibly quieter. */
+  .btn-outline {
+    background: transparent;
+    color: var(--gold);
+    border: 1px solid var(--gold);
+    font-weight: 500;
+  }
+  .btn-outline:hover {
+    background: var(--gold-soft);
+    border-color: var(--gold);
+    box-shadow: var(--glow-gold);
+    color: var(--ink);
+  }
+  .btn-outline:active { background: rgba(212, 175, 106, 0.18); }
   .btn-lg { padding: 14px 26px; font-size: var(--t-15); }
 
   /* ── HERO ────────────────────────────────────────────────────────── */
@@ -510,14 +535,15 @@
     max-width: 16ch;
     margin: 0 auto 28px;
   }
+  /* W4.4 — demoted from gold to emerald: growth/gain is on-message. */
   .hero h1 em {
     font-style: italic;
-    color: var(--gold);
+    color: var(--money);
     font-weight: 400;
   }
-  /* Sprint 5: animated gradient on display copy banned. Static gold italic only. */
+  /* Sprint 5: animated gradient on display copy banned. Static italic only. */
   .hero h1 .grad {
-    color: var(--gold);
+    color: var(--money);
     font-style: italic;
     font-weight: 500;
   }
@@ -606,9 +632,12 @@
     font-family: var(--font-mono); font-size: var(--t-11);
     color: var(--ink-3); letter-spacing: 0.10em; text-transform: uppercase;
   }
+  /* W4.7.3 — flagship live numbers in the hero widget; sized as the
+     largest display numerics on the page (var(--t-32) was undefined and
+     fell back to 16px, making them look weaker than supporting copy). */
   .chart-stats .val {
-    font-family: var(--font-display); font-size: var(--t-32);
-    font-weight: 600; letter-spacing: -0.02em;
+    font-family: var(--font-display); font-size: clamp(40px, 5.6vw, 64px);
+    font-weight: 600; letter-spacing: -0.02em; line-height: 1;
     font-feature-settings: "tnum" 1, "lnum" 1;
   }
   .chart-stats .delta {
@@ -641,7 +670,8 @@
     margin-bottom: 18px;
     letter-spacing: -0.02em;
   }
-  .section-title em { font-style: italic; color: var(--gold); }
+  /* W4.4 — section-title em demoted to emerald to free up gold for the 4 canonical slots. */
+  .section-title em { font-style: italic; color: var(--money); }
   .section-sub {
     font-size: var(--t-16);
     color: var(--ink-2);
@@ -708,9 +738,10 @@
   .steps { display: grid; gap: 80px; }
   .step { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: center; }
   .step:nth-child(even) .step-visual { order: -1; }
+  /* W4.4 — step-num demoted from gold to muted ink-3 (structural label, not accent). */
   .step-num {
     font-family: var(--font-mono); font-size: var(--t-13);
-    color: var(--gold); letter-spacing: 0.10em; text-transform: uppercase;
+    color: var(--ink-3); letter-spacing: 0.10em; text-transform: uppercase;
     margin-bottom: 12px;
   }
   .step h3 {
@@ -740,14 +771,35 @@
     padding: 36px 28px;
     display: flex; flex-direction: column;
     position: relative;
-    transition: border-color var(--t-base) var(--ease-out), transform var(--t-base) var(--ease-out);
+    /* W4.5.4 — settle-eased lift on hover; champagne hairline + soft shadow */
+    transition:
+      transform var(--pfc-dur-settle) var(--pfc-ease-settle),
+      box-shadow var(--pfc-dur-settle) var(--pfc-ease-settle),
+      border-color var(--pfc-dur-settle) var(--pfc-ease-settle);
+    will-change: transform;
   }
-  .price-card:hover { border-color: var(--line-2); }
+  .price-card:hover {
+    transform: translateY(-3px);
+    border-color: var(--gold);
+    box-shadow: var(--pfc-elev-gold), 0 18px 48px -24px rgba(0, 0, 0, 0.6);
+  }
   .price-card.hot {
     border: 1px solid var(--gold);
     background: linear-gradient(180deg, rgba(212,175,106,0.06) 0%, var(--surface) 60%);
     box-shadow: 0 30px 80px rgba(212,175,106,0.10), 0 0 0 1px rgba(212,175,106,0.30) inset;
     transform: translateY(-4px);
+  }
+  /* W4.5.4 — hot card's hover lifts deeper, same champagne shadow. */
+  .price-card.hot:hover {
+    transform: translateY(-7px);
+    box-shadow: var(--pfc-elev-gold), 0 30px 80px rgba(212,175,106,0.14), 0 0 0 1px rgba(212,175,106,0.40) inset;
+  }
+  /* W4.5.4 — neutralize the lift under reduced-motion. The token-driven
+     durations already zero out via the global rule in pfc-tokens.css, but
+     the transform target is still set — strip it explicitly here. */
+  @media (prefers-reduced-motion: reduce) {
+    .price-card:hover { transform: none; }
+    .price-card.hot:hover { transform: translateY(-4px); }
   }
   .price-tag {
     position: absolute; top: -14px; left: 50%; transform: translateX(-50%);
@@ -821,15 +873,18 @@
     font-weight: 500;
     margin-bottom: 16px; line-height: 1.05;
   }
-  .cta-strip h2 em { color: var(--gold); }
+  /* W4.4 — cta-strip h2 em demoted to emerald. */
+  .cta-strip h2 em { color: var(--money); }
   .cta-strip p { color: var(--ink-2); margin-bottom: 32px; font-size: var(--t-16); max-width: 56ch; margin-left: auto; margin-right: auto; font-weight: 300; }
 
   /* ── FOOTER ─────────────────────────────────────────────────────── */
+  /* W4.7.6 — brand col was 2fr but only ~32 chars of copy = wide desert.
+     1.4fr balances the row without truncating the brand statement. */
   footer {
     border-top: 1px solid var(--line);
     padding: 64px 24px 36px;
     max-width: 1240px; margin: 80px auto 0;
-    display: grid; grid-template-columns: 2fr repeat(3, 1fr); gap: 48px;
+    display: grid; grid-template-columns: 1.4fr repeat(3, 1fr); gap: 48px;
   }
   footer .col h4 {
     font-family: var(--font-mono); font-size: var(--t-11);
@@ -886,9 +941,10 @@
     transition: border-color 160ms ease, transform 160ms ease;
   }
   .journal-strip .blog-card:hover { border-color: var(--gold-soft); transform: translateY(-2px); }
+  /* W4.4 — journal topic eyebrow demoted to muted ink-3 (small structural label). */
   .journal-strip .blog-card .topic {
     font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.12em;
-    text-transform: uppercase; color: var(--gold); margin-bottom: 10px;
+    text-transform: uppercase; color: var(--ink-3); margin-bottom: 10px;
   }
   .journal-strip .blog-card h3 {
     font-family: var(--font-display); font-style: italic; font-size: 22px;
@@ -961,22 +1017,25 @@
     will-change: transform;
     transform: translate3d(0,0,0);
   }
+  /* W4.5.6 — tri-color ambient: emerald · ink-blue · champagne.
+     Slowed to 70s/80s/65s so the breathing reads as editorial atmosphere
+     rather than three pulsing emeralds competing with the hero copy. */
   .hero-mesh .mesh-blob-1 {
     background: var(--money);
     top: -12%; left: -12%;
-    animation: mesh-drift-1 42s ease-in-out infinite;
+    animation: mesh-drift-1 70s ease-in-out infinite;
   }
   .hero-mesh .mesh-blob-2 {
-    background: var(--gold);
+    background: rgba(107, 156, 183, 0.40); /* --blue rgba */
     bottom: -18%; right: -10%;
     opacity: 0.14;
-    animation: mesh-drift-2 52s ease-in-out infinite;
+    animation: mesh-drift-2 80s ease-in-out infinite;
   }
   .hero-mesh .mesh-blob-3 {
-    background: rgba(43,182,125,0.40);
+    background: rgba(212, 175, 106, 0.50); /* champagne rgba */
     top: 38%; left: 28%;
     opacity: 0.12;
-    animation: mesh-drift-3 46s ease-in-out infinite;
+    animation: mesh-drift-3 65s ease-in-out infinite;
   }
   @keyframes mesh-drift-1 {
     0%,100% { transform: translate3d(0, 0, 0); }
@@ -1047,7 +1106,8 @@
     0%,100% { box-shadow: 0 0 0 0 rgba(43,182,125,0); }
     50%     { box-shadow: 0 0 36px -8px rgba(43,182,125,0.10); }
   }
-  .bento-card:hover { border-color: var(--gold-soft); }
+  /* W4.4 — bento hover border kept as muted line-2 (was --gold-soft). */
+  .bento-card:hover { border-color: var(--line-2); }
 
   /* ── REDUCED MOTION ──────────────────────────────────────────────────
      Static, elegant fallback. No drift, no breath, hairline drawn full. */
@@ -1103,6 +1163,8 @@
     margin-bottom: 8px;
   }
   .hero-anchor .ha-meta::before { content: '— '; color: var(--ink-4); }
+  /* W4.7.1 — .hero-anchor block is dead post-W4.1 (markup removed).
+     font-variation-settings line removed; rest kept for rollback safety. */
   .hero-anchor .ha-num {
     font-family: var(--font-display);
     font-size: clamp(40px, 5.6vw, 64px);
@@ -1111,7 +1173,6 @@
     color: var(--ink);
     letter-spacing: -0.02em;
     font-feature-settings: "tnum" 1, "lnum" 1;
-    font-variation-settings: "opsz" 144;
     margin-bottom: 8px;
   }
   .hero-anchor .ha-num .ha-curr { font-size: 0.55em; color: var(--ink-3); margin-right: 4px; vertical-align: super; }
@@ -1162,6 +1223,76 @@
     .hero-anchor .ha-spark { width: 100%; height: 80px; }
     .hero-anchor .ha-cap { font-size: 15px; }
   }
+  /* NOTE: .hero-anchor styles above kept intentionally for rollback (W4.1).
+     The static anchor figure was removed from markup; the live forecast
+     widget now occupies the hero right pane via .pfc-hero-grid. */
+
+  /* ── W4.1 — HERO: 2-COLUMN GRID (copy left, live widget right) ───
+     At ≥980px, hero becomes a 2-col grid. Below, it collapses to a
+     single column with copy on top and the widget below. We override
+     the inherited centered layout only at the breakpoint so the
+     existing aurora mesh / mobile rules remain intact. */
+  @media (min-width: 980px) {
+    .pfc-hero-grid {
+      place-items: start;
+      padding: 132px 32px 72px;
+      text-align: left;
+    }
+    .pfc-hero-grid .hero-inner {
+      max-width: 1280px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+      gap: 56px;
+      align-items: center;
+    }
+    .pfc-hero-grid .pfc-hero-copy { text-align: left; }
+    .pfc-hero-grid .pfc-hero-copy .eyebrow { margin-bottom: 22px; }
+    .pfc-hero-grid .pfc-hero-copy h1 {
+      margin: 0 0 22px;
+      max-width: 14ch;
+      font-size: clamp(48px, 5.4vw, 84px);
+      text-align: left;
+    }
+    .pfc-hero-grid .pfc-hero-copy .hero-sub {
+      margin: 0 0 28px;
+      max-width: 48ch;
+      text-align: left;
+    }
+    .pfc-hero-grid .pfc-hero-copy .hero-cta {
+      justify-content: flex-start;
+      margin-bottom: 20px;
+    }
+    .pfc-hero-grid .pfc-hero-copy .trust-row {
+      justify-content: flex-start;
+      gap: 18px 22px;
+      max-width: 52ch;
+    }
+    /* Widget sits in the right column; cancel the 80px margin-top it
+       carried when it lived in its own section. */
+    .pfc-hero-grid .pfc-hero-demo {
+      margin: 0;
+      max-width: none;
+      padding: 0;
+      width: 100%;
+    }
+    .pfc-hero-grid .pfc-hero-demo .chart-frame {
+      padding: 28px;
+    }
+    .pfc-hero-grid .pfc-hero-demo .chart-grid {
+      grid-template-columns: 1fr;
+      gap: 22px;
+    }
+    .pfc-hero-grid .pfc-hero-demo .chart-result {
+      min-height: 280px;
+    }
+  }
+  /* Mobile / tablet: widget stacks below copy, breathing room above. */
+  @media (max-width: 979px) {
+    .pfc-hero-grid .pfc-hero-demo {
+      margin-top: 48px;
+    }
+    .pfc-hero-grid .pfc-hero-demo .chart-frame { padding: 22px; }
+  }
 
   /* Numbered section index — typeset roman numeral marker. Editorial-
      quarterly register, replaces the plain dash-eyebrow on key sections. */
@@ -1176,7 +1307,17 @@
     color: var(--gold); font-size: var(--t-15); letter-spacing: 0;
     text-transform: none;
   }
-  .section-index .rule { flex: 0 0 36px; height: 1px; background: var(--gold); opacity: 0.55; }
+  .section-index .rule {
+    flex: 0 0 36px; height: 1px; background: var(--gold); opacity: 0.55;
+    /* W4.5.5 — draw the gold hairline left-to-right on first viewport entry. */
+    transform: scaleX(0);
+    transform-origin: left center;
+    transition: transform 600ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .section-index .rule.is-visible { transform: scaleX(1); }
+  @media (prefers-reduced-motion: reduce) {
+    .section-index .rule { transform: scaleX(1) !important; transition: none !important; }
+  }
 
   /* Pull-quote / lede — distinct, larger Fraunces italic */
   .pfc-lede {
@@ -1191,13 +1332,14 @@
     text-wrap: pretty;
   }
 
-  /* Bento card — gold border on hover + micro-glyph in the corner */
-  .bento-card:hover { border-color: var(--gold); transform: translateY(-2px); }
+  /* W4.4 — bento hover border and micro-glyph demoted from gold to muted ink-3.
+     The card edge no longer competes with the 4 canonical gold slots. */
+  .bento-card:hover { border-color: var(--line-2); transform: translateY(-2px); }
   .bento-card .micro-glyph {
     position: absolute; right: 22px; top: 22px;
     width: 56px; height: 56px;
     pointer-events: none;
-    color: var(--gold);
+    color: var(--ink-3);
     opacity: 0.40;
     transition: opacity var(--t-base) var(--ease-out), transform 0.7s var(--ease-out);
   }
@@ -1325,18 +1467,8 @@
   #pricing { padding-top: 80px; padding-bottom: 72px; }
   #journal { padding-top: 88px; padding-bottom: 56px; }
 
-  /* Pricing — Most-chosen tag + comparison row */
-  .price-card .most-chosen {
-    position: absolute; top: -14px; right: 16px;
-    font-family: var(--font-mono); font-size: 10px; font-weight: 600;
-    letter-spacing: 0.14em; text-transform: uppercase;
-    color: var(--gold);
-    padding: 5px 10px;
-    background: var(--canvas);
-    border: 1px solid var(--gold);
-    border-radius: 4px;
-    line-height: 1;
-  }
+  /* W4.4 — orphan ".most-chosen" rule removed. Markup uses .price-tag only. */
+  /* Pricing — comparison row */
   .pricing-compare {
     margin-top: 28px;
     border: 1px solid var(--line);
@@ -1377,6 +1509,171 @@
     .pricing-compare-row { grid-template-columns: 1.4fr 1fr 1fr 1fr; padding: 12px 14px; gap: 6px; }
     .pricing-compare-row .feat { font-size: 12px; }
   }
+
+  /* ── W4.6 — EDITORIAL PHOTOGRAPHY ─────────────────────────────────
+     8 commissioned WebPs in assets/img/photos/. Each image is 1024×1024
+     source; CSS resizes per placement. Always specify width+height in
+     the <img> tag to prevent CLS. */
+  .pfc-photo-band {
+    width: 100%;
+    background: var(--canvas);
+    padding: var(--space-7, 72px) 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-4, 18px);
+    max-width: none;
+    margin: 0;
+  }
+  .pfc-photo-band picture,
+  .pfc-photo-band > img {
+    max-width: 1100px;
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: var(--r-md);
+    aspect-ratio: 16 / 7;
+    object-fit: cover;
+  }
+  .pfc-photo-band picture img { width: 100%; height: 100%; object-fit: cover; }
+  .pfc-photo-band .caption {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: clamp(15px, 1.2vw, 18px);
+    color: var(--ink-2);
+    max-width: 56ch;
+    text-align: center;
+    line-height: 1.45;
+    margin: 0;
+  }
+  .pfc-hero-img {
+    width: 100%;
+    height: auto;
+    border-radius: var(--r-lg);
+    display: block;
+  }
+  .pfc-strip-banner {
+    width: 100%;
+    height: clamp(180px, 22vw, 360px);
+    object-fit: cover;
+    object-position: center;
+    display: block;
+    border-radius: var(--r-md);
+    margin-bottom: var(--space-6, 36px);
+  }
+  .pfc-step-img-wrap {
+    margin-top: 16px;
+  }
+  .pfc-step-img {
+    width: 100%;
+    max-width: 420px;
+    height: auto;
+    border-radius: var(--r-md);
+    display: block;
+    margin: 0 auto;
+  }
+  .pfc-bento-img {
+    width: 100%;
+    max-width: 140px;
+    height: auto;
+    margin-bottom: 14px;
+    border-radius: var(--r-sm);
+    display: block;
+  }
+  .pfc-cta-strip {
+    display: grid;
+    grid-template-columns: minmax(280px, 380px) 1fr;
+    gap: 40px;
+    align-items: center;
+  }
+  .pfc-cta-img {
+    width: 100%;
+    max-width: 380px;
+    height: auto;
+    border-radius: var(--r-md);
+    display: block;
+    aspect-ratio: 4 / 5;
+    object-fit: cover;
+  }
+  .pfc-journal-masthead {
+    width: 100%;
+    height: clamp(140px, 18vw, 280px);
+    object-fit: cover;
+    object-position: center;
+    display: block;
+    border-radius: var(--r-md);
+    margin-bottom: 32px;
+    max-width: 1100px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .pfc-gold-arrow-strip {
+    width: 100%;
+    padding: 32px 24px;
+    display: flex;
+    justify-content: center;
+    background: transparent;
+    max-width: none;
+    margin: 0;
+  }
+  .pfc-gold-arrow-strip img {
+    max-width: 280px;
+    width: 100%;
+    height: auto;
+    opacity: 0.85;
+    display: block;
+  }
+  /* Mobile-only hero alt photo — visible at <980px, hidden otherwise. */
+  .pfc-hero-mobile-pic {
+    display: none;
+    margin: 32px auto 0;
+    max-width: 480px;
+    width: 100%;
+    border-radius: var(--r-md);
+    overflow: hidden;
+  }
+  .pfc-hero-mobile-pic img {
+    width: 100%;
+    height: auto;
+    display: block;
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+  }
+  @media (max-width: 979px) {
+    .pfc-hero-mobile-pic { display: block; }
+  }
+  @media (max-width: 760px) {
+    .pfc-cta-strip { grid-template-columns: 1fr; gap: 24px; }
+    .pfc-cta-img { max-width: 260px; margin: 0 auto; }
+    .pfc-photo-band picture,
+    .pfc-photo-band > img { aspect-ratio: 4 / 3; }
+    .pfc-photo-band { padding: 48px 16px; }
+  }
+  @media (max-width: 680px) {
+    .pfc-cta-img { display: none; }
+    .pfc-cta-strip { grid-template-columns: 1fr; }
+    .pfc-gold-arrow-strip img { max-width: 200px; }
+  }
+
+  /* ─────────── W4.5.7 — SCROLL-VELOCITY PROGRESS BAR ───────────
+     Thin champagne hairline at the very top of the viewport, scaled
+     horizontally by document scroll progress. Reduced-motion hides it
+     entirely (constant 1px-2px hairline at the top can be visually
+     annoying for vestibular users). */
+  .pfc-scroll-progress {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--gold);
+    transform-origin: left center;
+    transform: scaleX(0);
+    z-index: 9999;
+    pointer-events: none;
+    will-change: transform;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .pfc-scroll-progress { display: none; }
+  }
 </style>
   <script src="js/pfc-sentry-scrub.js" defer></script>
   <script src="https://js.sentry-cdn.com/9b8b34d46908bd9f79a16cf18322ac70.min.js" crossorigin="anonymous" defer></script>
@@ -1384,6 +1681,8 @@
   <!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "37cb784ad53047a9921bfd79e9835310"}'></script><!-- End Cloudflare Web Analytics -->
 </head>
 <body>
+<!-- W4.5.7 — scroll-velocity champagne progress bar (hidden under reduced-motion) -->
+<div class="pfc-scroll-progress" aria-hidden="true"></div>
 
 <a href="#main" class="skip-link" style="position:absolute;top:-40px;left:0;padding:8px 16px;background:var(--canvas);color:var(--ink);border:1px solid var(--gold);border-radius:var(--r-xs);font-size:13px;z-index:200;text-decoration:none;" onfocus="this.style.top='8px';this.style.left='8px';" onblur="this.style.top='-40px';">Skip to content</a>
 
@@ -1417,7 +1716,10 @@
 <main id="main" role="main">
 
 <!-- ─────────── HERO ─────────── -->
-<section class="hero" aria-labelledby="hero-headline">
+<!-- W4.1 + W4.2: 2-column hero grid at ≥980px (copy left, live forecast widget right).
+     The interactive demo replaces the static anchor figure — kinesthetic value prop.
+     Static .hero-anchor figure removed; CSS for it kept in <style> as "kept for rollback". -->
+<section class="hero pfc-hero-grid" aria-labelledby="hero-headline">
   <!-- Aurora mesh: 3 drifting blurred blobs behind the hero copy.
        Pure CSS, GPU-only transforms, paused under prefers-reduced-motion. -->
   <div class="hero-mesh" aria-hidden="true">
@@ -1426,148 +1728,143 @@
     <div class="mesh-blob mesh-blob-3"></div>
   </div>
   <div class="hero-inner">
-  <div class="eyebrow reveal">
-    <span class="dot" aria-hidden="true"></span> A FORECASTING TOOL FOR YOUR PERSONAL FINANCES
-  </div>
-  <h1 class="reveal" id="hero-headline">
-    What your money looks like in 2036 —<br>
-    <em>not advice, just math you can verify.</em>
-  </h1>
-  <p class="hero-sub reveal">
-    Drop in four numbers and see the answers most planners won't give you on the first call:
-    <em style="font-style:italic;color:var(--ink);">When am I debt-free? · What if I get a raise? · Will I hit my goal on time?</em>
-    Numbers stay in your browser. The compound-growth formula is on the page; check our work.
-  </p>
-  <div class="hero-cta reveal">
-    <a href="auth.html" class="btn btn-primary btn-lg">
-      Start your free forecast
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M3 7h8m-3-3l3 3-3 3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
-    </a>
-    <a href="#demo" class="btn btn-outline btn-lg">Try the live demo — no signup</a>
-  </div>
-  <p class="hero-disclosure reveal" style="font-family:var(--font-body);font-size:13px;color:var(--ink-3);max-width:62ch;margin:8px auto 22px;line-height:1.55;">
-    Free forever. Numbers stay in your browser. We never see your bank credentials, and your forecast is encrypted before it touches our servers.
-  </p>
-  <div class="trust-row reveal" role="list" aria-label="What we do and don't do" style="margin-bottom:18px;">
-    <span role="listitem"><span aria-hidden="true" style="color:var(--money);">✓</span> Calculations run in your browser</span>
-    <span role="listitem"><span aria-hidden="true" style="color:var(--money);">✓</span> No bank login required</span>
-    <span role="listitem"><span aria-hidden="true" style="color:var(--money);">✓</span> EU GDPR compliant</span>
-    <span role="listitem"><span aria-hidden="true" style="color:var(--money);">✓</span> Built in Europe</span>
-  </div>
-  <!-- Hero numerical anchor — institutional preview of what the dashboard
-       reveals. Static dummy numbers framed editorially; the sparkline
-       draws in once when the figure scrolls into view. Replaces the
-       empty lower half of the hero with information density without
-       becoming a SaaS mockup. aria-hidden because the figures are
-       illustrative, not user data. -->
-  <figure class="hero-anchor reveal" id="hero-anchor" aria-hidden="true">
-    <div>
-      <div class="ha-meta">Worked example · illustrative, not a real customer</div>
-      <div class="ha-num"><span class="ha-curr">$</span>24,840 <em>·</em> <span style="font-size:0.55em;color:var(--ink-2);font-style:normal;font-family:var(--font-mono);letter-spacing:0;">+$8,220</span></div>
-      <div class="ha-cap">From <b>$16,620</b> today to a projected net worth twelve months out, debt-free in month seven, holding a 22 percent savings rate.</div>
+    <div class="pfc-hero-copy">
+      <!-- W4.4 — pulse dot removed (Linear cliché, competed with headline). -->
+      <div class="eyebrow reveal">
+        A FORECASTING TOOL FOR YOUR PERSONAL FINANCES
+      </div>
+      <h1 class="reveal" id="hero-headline">
+        What your money looks like in 2036 — <em>not advice, just math you can verify.</em>
+      </h1>
+      <p class="hero-sub reveal">
+        See exactly when you'll be debt-free, your net worth in 2036, and which goals you'll actually hit — drop in your numbers, no bank login.
+      </p>
+      <div class="hero-cta reveal">
+        <a href="auth.html" class="btn btn-primary btn-lg">
+          Start your free forecast
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M3 7h8m-3-3l3 3-3 3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+        <a href="#demo" class="btn btn-outline btn-lg">Try the live demo — no signup</a>
+      </div>
+      <div class="trust-row reveal" role="list" aria-label="What we do and don't do">
+        <span role="listitem"><span aria-hidden="true" style="color:var(--money);">✓</span> Calculations run in your browser</span>
+        <span role="listitem"><span aria-hidden="true" style="color:var(--money);">✓</span> No bank login required</span>
+        <span role="listitem"><span aria-hidden="true" style="color:var(--money);">✓</span> EU GDPR · encrypted at rest</span>
+        <span role="listitem"><span aria-hidden="true" style="color:var(--money);">✓</span> Built in Europe</span>
+      </div>
+      <!-- W4.6: mobile-only hero alternative — Portuguese coastal window. Hidden ≥980px. -->
+      <div class="pfc-hero-mobile-pic" aria-hidden="false">
+        <picture>
+          <source srcset="assets/img/photos/coastal-window.webp" type="image/webp" media="(max-width: 980px)">
+          <img src="assets/img/photos/coastal-window.webp"
+               alt="An open leather notebook on a marble window sill with four hand-written numbers, looking out over a blurred Portuguese coastal town at dawn."
+               width="1024" height="1024"
+               loading="lazy"
+               decoding="async">
+        </picture>
+      </div>
     </div>
-    <div class="ha-spark">
-      <svg viewBox="0 0 260 96" preserveAspectRatio="none" aria-hidden="true">
-        <defs>
-          <linearGradient id="ha-grad" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0%"  stop-color="var(--money)" stop-opacity="0.55"/>
-            <stop offset="100%" stop-color="var(--money)" stop-opacity="0"/>
-          </linearGradient>
-        </defs>
-        <line x1="0" y1="32" x2="260" y2="32" stroke="rgba(255,255,255,0.05)"/>
-        <line x1="0" y1="64" x2="260" y2="64" stroke="rgba(255,255,255,0.05)"/>
-        <path class="spark-area" d="M0,86 L20,82 L40,76 L60,72 L80,66 L100,58 L120,52 L140,46 L160,38 L180,30 L200,24 L220,16 L240,10 L240,96 L0,96 Z" fill="url(#ha-grad)"/>
-        <path class="spark-line" d="M0,86 L20,82 L40,76 L60,72 L80,66 L100,58 L120,52 L140,46 L160,38 L180,30 L200,24 L220,16 L240,10"/>
-        <circle class="spark-end" cx="240" cy="10" r="3.4"/>
-      </svg>
-    </div>
-    <div class="ha-foot">
-      <span>Inputs · 4 numbers</span>
-      <span>Calc · client-side</span>
-      <span>Encryption · AES-256</span>
-      <span>Bank credentials · 0</span>
-    </div>
-  </figure>
 
-  <p class="hero-byline reveal" style="font-family:var(--font-body);font-size:13px;color:var(--ink-3);max-width:60ch;margin:14px auto 8px;">
-    Built in Europe by independent finance professionals. Private by design — your numbers stay in your browser.
-  </p>
-  </div>
-</section>
+    <!-- ── INTERACTIVE FORECAST WIDGET (lifted into hero right pane) ── -->
+    <div class="hero-chart pfc-hero-demo reveal" id="demo">
+      <div class="chart-frame">
+        <div class="chart-grid">
+          <div class="chart-controls">
+            <h3>Try a live forecast</h3>
+            <p>Drag the sliders. The compound-growth curve re-projects in real time.</p>
 
-<!-- ─────────── CREDIBILITY STRIP ─────────── -->
-<section class="credibility" aria-label="Privacy guarantees">
-  <div class="grid">
-    <div class="cell"><div class="num">0</div><div class="lbl">Trackers loaded</div></div>
-    <div class="cell"><div class="num">12 mo</div><div class="lbl">Forecast horizon</div></div>
-    <div class="cell"><div class="num">AES-256</div><div class="lbl">Encrypted locally</div></div>
-    <div class="cell"><div class="num">EU-built</div><div class="lbl">Private by design</div></div>
-  </div>
-</section>
-
-<section class="hero-demo-wrapper" style="padding:64px 24px 0;text-align:center;">
-
-  <!-- ── INTERACTIVE FORECAST WIDGET ── -->
-  <div class="hero-chart reveal" id="demo">
-    <div class="chart-frame">
-      <div class="chart-grid">
-        <div class="chart-controls">
-          <h3>Try a live forecast</h3>
-          <p>Drag the sliders. The compound-growth curve on the right re-projects in real time.</p>
-
-          <div class="slider-row">
-            <label>Monthly take-home <span class="v" id="v-income">$5,000</span></label>
-            <input type="range" id="s-income" min="1000" max="20000" step="100" value="5000">
-          </div>
-          <div class="slider-row">
-            <label>Savings rate <span class="v" id="v-rate">20%</span></label>
-            <input type="range" id="s-rate" min="0" max="60" step="1" value="20">
-          </div>
-          <div class="slider-row">
-            <label>Debt balance <span class="v" id="v-debt">$8,000</span></label>
-            <input type="range" id="s-debt" min="0" max="100000" step="500" value="8000">
-          </div>
-          <div class="slider-row">
-            <label>Starting net worth <span class="v" id="v-nw">$5,000</span></label>
-            <input type="range" id="s-nw" min="-50000" max="200000" step="1000" value="5000">
-          </div>
-        </div>
-
-        <div class="chart-result">
-          <div class="chart-stats">
-            <div>
-              <div class="lbl">Net worth · 12 months</div>
-              <div class="val num" id="r-nw">$17,000</div>
-              <div class="delta num" id="r-delta">+$12,000</div>
+            <div class="slider-row">
+              <label>Monthly take-home <span class="v" id="v-income">$5,000</span></label>
+              <input type="range" id="s-income" min="1000" max="20000" step="100" value="5000">
             </div>
-            <div style="text-align:right;">
-              <div class="lbl">Debt-free in</div>
-              <div class="val num" id="r-debt-free">7<span style="font-family:var(--font-body);font-size:18px;color:var(--ink-3);font-weight:400;"> months</span></div>
-              <div class="delta" id="r-debt-delta">on plan</div>
+            <div class="slider-row">
+              <label>Savings rate <span class="v" id="v-rate">20%</span></label>
+              <input type="range" id="s-rate" min="0" max="60" step="1" value="20">
+            </div>
+            <div class="slider-row">
+              <label>Debt balance <span class="v" id="v-debt">$8,000</span></label>
+              <input type="range" id="s-debt" min="0" max="100000" step="500" value="8000">
+            </div>
+            <div class="slider-row">
+              <label>Starting net worth <span class="v" id="v-nw">$5,000</span></label>
+              <input type="range" id="s-nw" min="-50000" max="200000" step="1000" value="5000">
             </div>
           </div>
-          <svg id="fc-svg" viewBox="0 0 600 200" preserveAspectRatio="none">
-            <defs>
-              <linearGradient id="cg" x1="0" x2="0" y1="0" y2="1">
-                <stop offset="0%"  stop-color="var(--money)" stop-opacity="0.45"/>
-                <stop offset="100%" stop-color="var(--money)" stop-opacity="0"/>
-              </linearGradient>
-              <filter id="glow"><feGaussianBlur stdDeviation="3"/></filter>
-            </defs>
-            <line x1="0" y1="50"  x2="600" y2="50"  stroke="rgba(255,255,255,0.04)"/>
-            <line x1="0" y1="100" x2="600" y2="100" stroke="rgba(255,255,255,0.04)"/>
-            <line x1="0" y1="150" x2="600" y2="150" stroke="rgba(255,255,255,0.04)"/>
-            <path id="fc-area" d="" fill="url(#cg)"/>
-            <path id="fc-line" d="" fill="none" stroke="var(--money)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/>
-            <path id="fc-line2" d="" fill="none" stroke="var(--money)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-            <circle id="fc-end" cx="600" cy="20" r="5" fill="var(--gold)"/>
-            <circle id="fc-end-glow" cx="600" cy="20" r="11" fill="var(--gold)" opacity="0.30"/>
-          </svg>
+
+          <div class="chart-result">
+            <div class="chart-stats">
+              <div>
+                <div class="lbl">Net worth · 12 months</div>
+                <div class="val num" id="r-nw">$17,000</div>
+                <div class="delta num" id="r-delta">+$12,000</div>
+              </div>
+              <!-- W4.7.4 — removed the .delta slot here. Sibling has a
+                   numeric +/- delta; making this one text ("on plan") looked
+                   off-by-grammar against a numeric peer. -->
+              <div style="text-align:right;">
+                <div class="lbl">Debt-free in</div>
+                <div class="val num" id="r-debt-free">7<span style="font-family:var(--font-body);font-size:18px;color:var(--ink-3);font-weight:400;"> months</span></div>
+              </div>
+            </div>
+            <svg id="fc-svg" viewBox="0 0 600 200" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="cg" x1="0" x2="0" y1="0" y2="1">
+                  <stop offset="0%"  stop-color="var(--money)" stop-opacity="0.45"/>
+                  <stop offset="100%" stop-color="var(--money)" stop-opacity="0"/>
+                </linearGradient>
+                <filter id="glow"><feGaussianBlur stdDeviation="3"/></filter>
+              </defs>
+              <line x1="0" y1="50"  x2="600" y2="50"  stroke="rgba(255,255,255,0.04)"/>
+              <line x1="0" y1="100" x2="600" y2="100" stroke="rgba(255,255,255,0.04)"/>
+              <line x1="0" y1="150" x2="600" y2="150" stroke="rgba(255,255,255,0.04)"/>
+              <path id="fc-area" d="" fill="url(#cg)"/>
+              <path id="fc-line" d="" fill="none" stroke="var(--money)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/>
+              <path id="fc-line2" d="" fill="none" stroke="var(--money)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <circle id="fc-end" cx="600" cy="20" r="5" fill="var(--gold)"/>
+              <circle id="fc-end-glow" cx="600" cy="20" r="11" fill="var(--gold)" opacity="0.30"/>
+            </svg>
+          </div>
         </div>
       </div>
     </div>
   </div>
 </section>
+
+<!-- ─────────── CREDIBILITY STRIP ───────────
+     W4.7.2 — four balanced product-truth data points, all short numeric glyphs. -->
+<section class="credibility" aria-label="Product at a glance">
+  <div class="grid">
+    <div class="cell"><div class="num">0 banks</div><div class="lbl">No bank login required</div></div>
+    <div class="cell"><div class="num">4 inputs</div><div class="lbl">Numbers you already know</div></div>
+    <div class="cell"><div class="num">10 years</div><div class="lbl">Forecast horizon</div></div>
+    <div class="cell"><div class="num">$9/mo</div><div class="lbl">Or $69/year — cancel any time</div></div>
+  </div>
+</section>
+
+<!-- ─────────── W4.6 — EDITORIAL PHOTO BAND (hero-ledger) ───────────
+     Full-bleed editorial moment between credibility strip and "How it
+     works". The leather-bound ledger is the physical embodiment of
+     compound-interest math — the thing the product replaces. -->
+<section class="pfc-photo-band" aria-label="Editorial photograph: a vintage compound-interest ledger">
+  <picture>
+    <source srcset="assets/img/photos/hero-ledger.webp" type="image/webp">
+    <img src="assets/img/photos/hero-ledger.webp"
+         alt="A leather-bound 1962 bank ledger open on emerald velvet, showing hand-written compound-interest figures and a vintage fountain pen."
+         width="1024" height="1024"
+         loading="lazy"
+         decoding="async">
+  </picture>
+  <p class="caption"><em>The numbers your grandfather worked on a ledger — now computed in your browser.</em></p>
+</section>
+
+<!-- ─────────── W4.6 — DECORATIVE GOLD-LEAF ARROW STRIP ─────────── -->
+<div class="pfc-gold-arrow-strip" aria-hidden="true">
+  <img src="assets/img/photos/gold-leaf-arrow.webp"
+       alt=""
+       width="1024" height="1024"
+       loading="lazy"
+       decoding="async">
+</div>
 
 <!-- ─────────── HOW IT WORKS ─────────── -->
 <section id="how">
@@ -1619,6 +1916,18 @@
         <div class="step-num">Step 02</div>
         <h3>We compound forward — to the day</h3>
         <p>Our model projects every month for the next year. Real inflation pulled from the World Bank for your country. Real interest on every debt. Goals projected to the exact month you'll hit them.</p>
+        <!-- W4.6: editorial photograph — brass drafting compass and future-value formula -->
+        <figure class="pfc-step-img-wrap">
+          <picture>
+            <source srcset="assets/img/photos/compass-on-paper.webp" type="image/webp">
+            <img src="assets/img/photos/compass-on-paper.webp"
+                 alt="A brass drafting compass mid-draw on ivory grid paper, beside a folded sheet showing the future-value formula."
+                 width="1024" height="1024"
+                 loading="lazy"
+                 decoding="async"
+                 class="pfc-step-img">
+          </picture>
+        </figure>
       </div>
       <div class="step-visual">
         <span class="step-pill" aria-hidden="true"><span class="pulse"></span>Live</span>
@@ -1734,9 +2043,9 @@
           <circle cx="61" cy="2" r="1.8" fill="var(--gold)"/>
         </svg>
         <span>12 mo:</span>
-        <span class="num">$24,840</span>
+        <span class="num pfc-ticker">$24,840</span>
         <span class="sep">·</span>
-        <span class="pos">+$8,220</span>
+        <span class="pos pfc-ticker">+$8,220</span>
       </div>
       <div class="micro-glyph" aria-hidden="true">
         <svg viewBox="0 0 56 56" fill="none">
@@ -1857,9 +2166,16 @@
 
     <div class="bento-card b-3" data-bento>
       <div>
-        <div class="icon" style="background: rgba(212,175,106,0.10); border-color: rgba(212,175,106,0.25); color: var(--gold);">
-          <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="4" y="6" width="14" height="12" rx="1.6" stroke="currentColor" stroke-width="1.6"/><path d="M8 6V4a3 3 0 016 0v2" stroke="currentColor" stroke-width="1.6"/></svg>
-        </div>
+        <!-- W4.6: replace the small lock icon with the editorial key-on-velvet photograph -->
+        <picture>
+          <source srcset="assets/img/photos/key-on-velvet.webp" type="image/webp">
+          <img src="assets/img/photos/key-on-velvet.webp"
+               alt="An antique brass skeleton key on ink-emerald velvet with a small letterpress card reading AES-256."
+               width="1024" height="1024"
+               loading="lazy"
+               decoding="async"
+               class="pfc-bento-img">
+        </picture>
         <h3>Encrypted by default</h3>
         <p>AES-256 in the browser, on a Web Crypto API key never sent to a server. Zero bank credentials, zero third-party trackers, zero cross-domain pixels. Delete everything in one click — settings to wipe.</p>
       </div>
@@ -1902,6 +2218,17 @@
     <h2 class="section-title">Three tiers. <em>One product.</em></h2>
     <p class="pfc-lede" style="margin-top:14px;">Free covers the ten-year forecast forever, with no time limit and no degradation. Pro is for households running multiple scenarios in parallel — a job offer, a relocation, a paid-off mortgage. Cancel any time — refund within thirty days, no email exchange required.</p>
   </div>
+
+  <!-- W4.6: editorial strip banner — three bowls showing growth from nothing to gold -->
+  <picture>
+    <source srcset="assets/img/photos/seedling-coin.webp" type="image/webp">
+    <img src="assets/img/photos/seedling-coin.webp"
+         alt="Three ceramic bowls in a row on linen — empty, a single bronze coin, and a tarnished gold sovereign with an olive sprig between."
+         width="1024" height="1024"
+         loading="lazy"
+         decoding="async"
+         class="pfc-strip-banner">
+  </picture>
 
   <div class="pricing">
     <div class="price-card pfc-card--elev">
@@ -2001,6 +2328,16 @@
 
 <!-- ─────────── FROM THE JOURNAL ─────────── -->
 <section id="journal" class="reveal journal-strip" aria-labelledby="journal-headline">
+  <!-- W4.6: editorial masthead — desk corner with broadsheet, tea, and The Intelligent Investor -->
+  <picture>
+    <source srcset="assets/img/photos/desk-corner.webp" type="image/webp">
+    <img src="assets/img/photos/desk-corner.webp"
+         alt="Corner of a walnut desk with a folded financial broadsheet, black tea in a porcelain cup, a wax-sealed envelope, and a worn copy of The Intelligent Investor."
+         width="1024" height="1024"
+         loading="lazy"
+         decoding="async"
+         class="pfc-journal-masthead">
+  </picture>
   <div class="head section-head">
     <div class="section-index"><span class="roman">iv.</span><span class="rule"></span>From the journal</div>
     <h2 id="journal-headline" class="section-title">Practical writing on <em>debt, salary, and the next ten years.</em></h2>
@@ -2074,15 +2411,29 @@
 <!-- ─────────── CTA ─────────── -->
 <section style="padding: 48px 0 96px;">
   <div class="cta-strip reveal">
-    <h2>See where your money <em>actually lands.</em></h2>
-    <p>Four numbers in. Ten years out. Free forever — no bank login, no card on file, no email confirmation before you see the chart.</p>
-    <a href="auth.html" class="btn btn-primary btn-lg">
-      Run the forecast
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7h8m-3-3l3 3-3 3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
-    </a>
-    <p style="margin-top:18px;margin-bottom:0;font-family:var(--font-body);font-size:13px;color:var(--ink-3);max-width:54ch;">
-      Numbers stay in your browser. Cancel from Settings — paid plans refundable within 30 days.
-    </p>
+    <div class="pfc-cta-strip">
+      <!-- W4.6: visual punctuation for "start" — a struck match against pure black -->
+      <picture>
+        <source srcset="assets/img/photos/match-flame.webp" type="image/webp">
+        <img src="assets/img/photos/match-flame.webp"
+             alt="A struck match held vertically against pure black, flame burning at champagne gold with motion-frozen smoke above."
+             width="1024" height="1024"
+             loading="lazy"
+             decoding="async"
+             class="pfc-cta-img">
+      </picture>
+      <div class="pfc-cta-strip-copy">
+        <h2>See where your money <em>actually lands.</em></h2>
+        <p>Four numbers in. Ten years out. Free forever — no bank login, no card on file, no email confirmation before you see the chart.</p>
+        <a href="auth.html" class="btn btn-primary btn-lg">
+          Run the forecast
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7h8m-3-3l3 3-3 3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+        <p style="margin-top:18px;margin-bottom:0;font-family:var(--font-body);font-size:13px;color:var(--ink-3);max-width:54ch;">
+          Numbers stay in your browser. Cancel from Settings — paid plans refundable within 30 days.
+        </p>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -2277,13 +2628,13 @@
       rDelta.classList.toggle('bad', delta < 0);
       if (debt === 0) {
         rDebt.innerHTML = 'Already';
-        rDebtDel.textContent = 'no debt';
+        if (rDebtDel) rDebtDel.textContent = 'no debt';
       } else if (debtFreeMonth > 0 && debtFreeMonth <= 12) {
         rDebt.innerHTML = debtFreeMonth + '<span style="font-family:var(--font-body);font-size:18px;color:var(--ink-3);font-weight:400;"> months</span>';
-        rDebtDel.textContent = 'on plan';
+        if (rDebtDel) rDebtDel.textContent = 'on plan';
       } else {
         rDebt.innerHTML = '12+<span style="font-family:var(--font-body);font-size:18px;color:var(--ink-3);font-weight:400;"> months</span>';
-        rDebtDel.textContent = 'increase savings';
+        if (rDebtDel) rDebtDel.textContent = 'increase savings';
       }
       [sIn, sRate, sDeb, sNw].forEach(updatePct);
     }
@@ -2379,6 +2730,220 @@
 })();
 </script>
 
+<!-- ─────────── W4.5.1 — HERO COMPOUND CURVE DRAW-IN ───────────
+     The forecast curve animates from invisible to fully drawn on first
+     paint (1600ms, ease-hero). Runs ONCE — slider drags after this point
+     use recompute()'s direct d-attribute writes, which read as smooth
+     transitions through the same stroke-dashoffset (we leave it active).
+     If JS fails to load, the path renders fully because we only HIDE
+     after we confirm we can read getTotalLength(). -->
+<script>
+(function animateHeroCurveIn() {
+  if (window.matchMedia && !window.matchMedia('(prefers-reduced-motion: no-preference)').matches) return;
+  // Defer past initForecast()'s first recompute() (ready() uses setTimeout(50)).
+  setTimeout(function () {
+    var path = document.getElementById('fc-line');
+    var area = document.getElementById('fc-area');
+    if (!path) return;
+    var len = 0;
+    try { len = path.getTotalLength(); } catch (_) { return; }
+    if (!len) return;
+    path.style.transition = 'none';
+    path.style.strokeDasharray = len;
+    path.style.strokeDashoffset = len;
+    var prevAreaOpacity;
+    if (area) {
+      prevAreaOpacity = area.style.opacity;
+      area.style.opacity = '0';
+    }
+    // Force reflow so the initial hidden state is committed before we
+    // attach the transition.
+    void path.getBoundingClientRect();
+    path.style.transition = 'stroke-dashoffset 1600ms cubic-bezier(0.16, 1, 0.3, 1)';
+    path.style.strokeDashoffset = '0';
+    if (area) {
+      area.style.transition = 'opacity 1200ms ease-out 400ms';
+      area.style.opacity = prevAreaOpacity || '';
+    }
+  }, 120);
+})();
+</script>
+
+<!-- ─────────── W4.5.2 — HERO OUTPUT COUNT-UPS ───────────
+     #r-nw (net worth) and #r-debt-free (debt-free month) count up from 0
+     to their final value over 900ms on first viewport entry. After that,
+     slider drags call recompute() which writes the final value directly
+     — no count-up on every drag (that would feel arcade).
+     Defined at window scope as _pfcCountUp so W4.5.8 bento tickers reuse it. -->
+<script>
+window._pfcCountUp = function (el, finalText, durationMs, targetNode) {
+  // targetNode lets a caller animate a Text child node (e.g. preserving
+  // a trailing <span> like "7 months"). Defaults to the element itself.
+  var node = targetNode || el;
+  var match = String(finalText).match(/-?\d[\d,]*/);
+  if (!match) return;
+  var target = parseInt(match[0].replace(/,/g, ''), 10);
+  if (!isFinite(target)) return;
+  var prefix = finalText.slice(0, match.index);
+  var suffix = finalText.slice(match.index + match[0].length);
+  var start = performance.now();
+  function step(now) {
+    var t = Math.min(1, (now - start) / durationMs);
+    var eased = 1 - Math.pow(1 - t, 3); // easeOutCubic
+    var v = Math.round(target * eased);
+    var rendered = prefix + v.toLocaleString() + suffix;
+    if (node.nodeType === 3) node.nodeValue = rendered;
+    else node.textContent = rendered;
+    if (t < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+};
+(function animateHeroCountUps() {
+  if (window.matchMedia && !window.matchMedia('(prefers-reduced-motion: no-preference)').matches) return;
+  // Defer past initForecast()'s first recompute() so the elements hold
+  // their FINAL text — that's the count-up's destination value.
+  setTimeout(function () {
+    if (!('IntersectionObserver' in window)) return;
+    var rNw   = document.getElementById('r-nw');
+    var rDebt = document.getElementById('r-debt-free');
+    var targets = [];
+    if (rNw)   targets.push({ el: rNw,   finalText: rNw.textContent, node: rNw });
+    if (rDebt) {
+      // r-debt-free is rendered as "7<span>...months</span>". Animate only
+      // the leading numeric text node so the trailing " months" span is
+      // preserved verbatim.
+      var firstChild = rDebt.firstChild;
+      if (firstChild && firstChild.nodeType === 3 && /\d/.test(firstChild.nodeValue)) {
+        targets.push({ el: rDebt, finalText: firstChild.nodeValue, node: firstChild });
+      } else if (firstChild) {
+        // Fallback: animate textContent (loses span). Acceptable degradation.
+        targets.push({ el: rDebt, finalText: rDebt.textContent, node: rDebt });
+      }
+    }
+    if (!targets.length) return;
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) {
+          var t = targets.find(function (tt) { return tt.el === entry.target; });
+          if (t) window._pfcCountUp(t.el, t.finalText, 900, t.node);
+          io.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.4 });
+    targets.forEach(function (t) { io.observe(t.el); });
+  }, 140);
+})();
+</script>
+
+<!-- ─────────── W4.5.3 — PHOTO-BAND PARALLAX ───────────
+     Subtle vertical drift on the .pfc-photo-band imagery as the band
+     passes through the viewport. The static ledger photo gains a hint
+     of depth without competing with the data-driven hero widget above.
+     Reduced-motion: opt-out via prefers-reduced-motion guard. -->
+<script>
+(function heroBandParallax() {
+  if (window.matchMedia && !window.matchMedia('(prefers-reduced-motion: no-preference)').matches) return;
+  var target = document.querySelector('.pfc-photo-band picture, .pfc-photo-band > img');
+  if (!target) return;
+  var ticking = false;
+  function onScroll() {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(function () {
+      var rect = target.getBoundingClientRect();
+      var vh = window.innerHeight || document.documentElement.clientHeight;
+      if (rect.bottom > 0 && rect.top < vh) {
+        var center = (rect.top + rect.height / 2) - vh / 2;
+        target.style.transform = 'translateY(' + (center * -0.06).toFixed(2) + 'px)';
+      }
+      ticking = false;
+    });
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', onScroll, { passive: true });
+  onScroll();
+})();
+</script>
+
+<!-- ─────────── W4.5.5 — ROMAN-ORNAMENT RULE DRAW-IN ───────────
+     The short gold hairlines inside .section-index draw left-to-right
+     (scaleX 0→1, 600ms, ease-hero) when their section enters viewport.
+     Under reduced-motion the CSS rule above forces the final state,
+     and the script below adds .is-visible immediately so a no-IO browser
+     still shows them. -->
+<script>
+(function ruleDrawIn() {
+  var rules = document.querySelectorAll('.section-index .rule');
+  if (!rules.length) return;
+  var reduce = window.matchMedia && !window.matchMedia('(prefers-reduced-motion: no-preference)').matches;
+  if (reduce || !('IntersectionObserver' in window)) {
+    rules.forEach(function (el) { el.classList.add('is-visible'); });
+    return;
+  }
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (entry) {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('is-visible');
+        io.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.3 });
+  rules.forEach(function (el) { io.observe(el); });
+})();
+</script>
+
+<!-- ─────────── W4.5.7 — SCROLL PROGRESS DRIVER ───────────
+     Updates .pfc-scroll-progress transform on scroll/resize via rAF.
+     If the user prefers reduced motion the bar is display:none in CSS,
+     so we can skip the listener wiring entirely there. -->
+<script>
+(function scrollProgressBar() {
+  var bar = document.querySelector('.pfc-scroll-progress');
+  if (!bar) return;
+  if (window.matchMedia && !window.matchMedia('(prefers-reduced-motion: no-preference)').matches) return;
+  var ticking = false;
+  function update() {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(function () {
+      var doc = document.documentElement;
+      var docHeight = doc.scrollHeight - doc.clientHeight;
+      var pct = docHeight > 0 ? Math.min(1, Math.max(0, window.scrollY / docHeight)) : 0;
+      bar.style.transform = 'scaleX(' + pct + ')';
+      ticking = false;
+    });
+  }
+  window.addEventListener('scroll', update, { passive: true });
+  window.addEventListener('resize', update, { passive: true });
+  update();
+})();
+</script>
+
+<!-- ─────────── W4.5.8 — BENTO FLAGSHIP TICKERS ───────────
+     Only the two biggest display numbers in the bento grid (Net worth
+     $24,840 and the +$8,220 delta — both on the flagship b-tall card)
+     get the count-up. Other cards don't, to preserve the flagship beat.
+     Reuses window._pfcCountUp from W4.5.2. -->
+<script>
+(function bentoTickers() {
+  if (window.matchMedia && !window.matchMedia('(prefers-reduced-motion: no-preference)').matches) return;
+  if (typeof window._pfcCountUp !== 'function') return;
+  if (!('IntersectionObserver' in window)) return;
+  var targets = document.querySelectorAll('.pfc-ticker');
+  if (!targets.length) return;
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (entry) {
+      if (entry.isIntersecting) {
+        var el = entry.target;
+        window._pfcCountUp(el, el.textContent, 1200);
+        io.unobserve(el);
+      }
+    });
+  }, { threshold: 0.5 });
+  targets.forEach(function (el) { io.observe(el); });
+})();
+</script>
+
 <!-- Mobile sticky CTA — shows on ≤540px after a 5s engagement delay; dismissible 30 days. -->
 <div class="pfc-sticky-cta-wrap" id="pfc-sticky-cta-wrap" hidden role="region" aria-label="Quick start">
   <a class="pfc-sticky-cta pfc-tap" href="auth.html" data-cta="sticky-mobile">
@@ -2426,6 +2991,30 @@
     const btn = document.getElementById('pfc-sticky-cta-dismiss');
     if (btn) btn.addEventListener('click', dismiss);
   });
+})();
+</script>
+
+<!-- W4.7.5 — nav backdrop opacity is high at top-of-page (muddy emerald
+     mesh-blob underneath) and lower once the user has scrolled past 80px.
+     data-scrolled toggle is read by the rule defined in the inline <style>. -->
+<script>
+(function () {
+  const nav = document.getElementById('nav');
+  if (!nav) return;
+  let scheduled = false;
+  function syncScrolled() {
+    scheduled = false;
+    const past = window.scrollY > 80;
+    if (past) nav.setAttribute('data-scrolled', 'true');
+    else nav.removeAttribute('data-scrolled');
+  }
+  function onScroll() {
+    if (scheduled) return;
+    scheduled = true;
+    requestAnimationFrame(syncScrolled);
+  }
+  syncScrolled();
+  window.addEventListener('scroll', onScroll, { passive: true });
 })();
 </script>
 
