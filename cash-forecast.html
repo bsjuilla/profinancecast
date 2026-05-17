@@ -147,6 +147,39 @@
   <!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "37cb784ad53047a9921bfd79e9835310"}'></script>
   <script src="js/pfc-analytics.js" defer></script>
   <script src="js/pfc-sidebar.js" defer></script>
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Monthly Cash Flow Forecast",
+    "applicationCategory": "FinanceApplication",
+    "applicationSubCategory": "CashFlowForecast",
+    "operatingSystem": "Web",
+    "url": "https://profinancecast.com/cash-forecast",
+    "description": "See your monthly cash flow forecast — income, expenses by category, and your ending cash position. Privacy-first: runs entirely in your browser, no bank login required.",
+    "browserRequirements": "Requires JavaScript. No bank login.",
+    "isAccessibleForFree": true,
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+    "featureList": [
+      "Monthly income and expense forecasting",
+      "Category-level expense breakdown",
+      "Ending cash position by month",
+      "No signup, no tracking, no bank connection"
+    ],
+    "publisher": { "@type": "Organization", "@id": "https://profinancecast.com/#org" }
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://profinancecast.com/" },
+      { "@type": "ListItem", "position": 2, "name": "Cash forecast", "item": "https://profinancecast.com/cash-forecast" }
+    ]
+  }
+  </script>
 </head>
 <body>
 <nav class="sidebar" aria-label="Primary navigation">
