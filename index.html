@@ -470,8 +470,21 @@
   .btn-primary:active { transform: translateY(0); }
   .btn-ghost { background: transparent; color: var(--ink-2); }
   .btn-ghost:hover { color: var(--ink); }
-  .btn-outline { background: rgba(255,255,255,0.02); color: var(--ink); border-color: var(--line-2); }
-  .btn-outline:hover { border-color: var(--money); background: var(--money-soft); }
+  /* W4.3 — secondary CTA: champagne hairline, transparent fill. The primary
+     stays emerald-solid; the outline is brand-on and visibly quieter. */
+  .btn-outline {
+    background: transparent;
+    color: var(--gold);
+    border: 1px solid var(--gold);
+    font-weight: 500;
+  }
+  .btn-outline:hover {
+    background: var(--gold-soft);
+    border-color: var(--gold);
+    box-shadow: var(--glow-gold);
+    color: var(--ink);
+  }
+  .btn-outline:active { background: rgba(212, 175, 106, 0.18); }
   .btn-lg { padding: 14px 26px; font-size: var(--t-15); }
 
   /* ── HERO ────────────────────────────────────────────────────────── */
