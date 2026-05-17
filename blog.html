@@ -5,9 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Financial Planning Blog — ProFinanceCast</title>
 <meta name="description" content="Free personal finance guides, budgeting tips, debt payoff strategies, and savings calculators. Practical advice to help you forecast and improve your financial future.">
-<meta name="keywords" content="personal finance, budgeting, debt payoff, savings, financial forecast, salary negotiation, emergency fund">
 <meta name="robots" content="index,follow">
 <link rel="canonical" href="https://profinancecast.com/blog">
+<link rel="alternate" hreflang="en" href="https://profinancecast.com/blog">
+<link rel="alternate" hreflang="x-default" href="https://profinancecast.com/blog">
 <link rel="alternate" type="application/rss+xml" title="ProFinanceCast Journal" href="https://profinancecast.com/feed.xml">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Financial Planning Blog — ProFinanceCast">
@@ -145,6 +146,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/pfc-config.js"></script>
   <script src="js/pfc-auth.js"></script>
+  <script src="js/pfc-crypto.js"></script>
   <script src="js/pfc-storage.js"></script>
   <script src="js/pfc-entitlements.js"></script>
   <!-- v3 reskin: new fonts + emerald palette overrides -->
@@ -211,8 +213,8 @@ body.pfc-inapp a[href="index.html#pricing"]:not(.footer-col a) {
   <div class="nav-links">
     <a href="index.html#features">Features</a>
     <a href="index.html#pricing">Pricing</a>
-    <a href="blog.html" class="active">Blog</a>
-    <a href="tools/take-home-pay.html">Calculators</a>
+    <a href="blog" class="active">Blog</a>
+    <a href="tools/take-home-pay">Calculators</a>
   </div>
   <div class="nav-cta">
     <a href="auth.html" class="btn-sm btn-ghost-sm">Log in</a>
@@ -396,9 +398,9 @@ body.pfc-inapp a[href="index.html#pricing"]:not(.footer-col a) {
       <h4>Product</h4>
       <ul>
         <li><a href="/">Forecast</a></li>
-        <li><a href="blog.html">Journal</a></li>
+        <li><a href="blog">Journal</a></li>
         <li><a href="billing.html">Pricing</a></li>
-        <li><a href="tools/take-home-pay.html">Take-home pay</a></li>
+        <li><a href="tools/take-home-pay">Take-home pay</a></li>
       </ul>
     </div>
     <div class="footer-col">
@@ -413,7 +415,7 @@ body.pfc-inapp a[href="index.html#pricing"]:not(.footer-col a) {
       <h4>Resources</h4>
       <ul>
         <li><a href="help.html">Help</a></li>
-        <li><a href="blog.html">Articles</a></li>
+        <li><a href="blog">Articles</a></li>
       </ul>
     </div>
     <div class="footer-col">

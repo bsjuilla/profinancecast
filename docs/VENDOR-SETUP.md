@@ -154,3 +154,9 @@ When the module ships: `api/email/send.js`, `api/email/templates/welcome.js`, `t
 | **Total** | **$12** | **$21** |
 
 If PostHog is chosen instead of Plausible, the post-trial number drops to $12/mo total.
+
+---
+
+## Outstanding migrations
+
+- **PayPal Subscriptions API.** Current billing flow uses one-off PayPal orders. Migrate to PayPal Subscriptions API for true server-side auto-renewal so we don't depend on client-side renewal prompts. Tracked in Workstream 0 follow-ups.

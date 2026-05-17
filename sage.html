@@ -142,6 +142,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/pfc-config.js"></script>
   <script src="js/pfc-auth.js"></script>
+  <script src="js/pfc-crypto.js"></script>
   <script src="js/pfc-storage.js"></script>
   <script src="js/pfc-entitlements.js"></script>
   <!-- v3 reskin: new fonts + emerald palette overrides -->
@@ -377,13 +378,57 @@ function hydratePlanInfo(){
 hydrateContext();
 let queryCount = 0, history = [], isTyping = false;
 
-function buildSysPrompt() {
-  return `You are Sage, a warm and concise personal AI financial advisor for ProFinanceCast. Always use the user's real data below. Keep responses to 2-4 short paragraphs. Use **bold** for key numbers. Be encouraging but honest. Never mention Gemini, Google, or any AI company — you are simply Sage.
+// Workstream 0 Task 0.2 (restored): the system prompt is still built
+// server-side from the authenticated profile — no client-supplied prompt
+// text reaches the model. Multi-turn conversation and numeric
+// personalisation are now re-enabled via strictly-typed fields:
+//   • history     — array of ≤10 {role:'user'|'assistant', text:'…' ≤500ch}.
+//                   No 'system' / 'tool' / arbitrary roles. No prompt text.
+//   • userContext — numbers-only block, every field clamped to a fixed
+//                   range. No currency strings, no names, no asset
+//                   breakdowns. The server templates the numbers into a
+//                   "USER FINANCIAL CONTEXT (numbers only):" block.
+// systemPrompt remains rejected with a 400.
 
-USER DATA — ${USER_CTX.name}: income $${USER_CTX.income}/mo, expenses $${USER_CTX.expenses}/mo, monthly savings $${USER_CTX.monthlySavings}, net worth $${USER_CTX.netWorth}, total debt $${USER_CTX.debt} (payment $${USER_CTX.debtPayment}/mo), health score ${USER_CTX.healthScore}/100, 12-mo forecast $${USER_CTX.forecast12mo}.
-Debts: ${USER_CTX.debts.map(d=>d.name+' $'+d.balance+' at '+d.rate+'%').join(', ')}.
-Goals: ${USER_CTX.goals.map(g=>g.name+' $'+g.current+'/$'+g.target).join(', ')}.
-End each response with one brief actionable next step.`;
+// Build the numbers-only userContext object from PFCStorage. Anything that
+// fails the number/range checks is dropped (the server would 400 on it).
+// Returns null if no usable figures are present.
+function buildUserContext() {
+  try {
+    const ctx = USER_CTX || {};
+    const out = {};
+    const num = (v) => (typeof v === 'number' && Number.isFinite(v)) ? v : null;
+    const clamp = (v, min, max) => (v !== null && v >= min && v <= max) ? v : null;
+
+    const monthlyIncome   = clamp(num(ctx.income),                0, 1_000_000);
+    const monthlyExpenses = clamp(num(ctx.expenses),              0, 1_000_000);
+    const totalDebt       = clamp(num(ctx.debt),                  0, 100_000_000);
+    const totalSavings    = clamp(num(ctx.savings ?? ctx.netWorth), 0, 100_000_000);
+    const age             = clamp(num(ctx.age),                  18, 100);
+    const goalsCountRaw   = Array.isArray(ctx.goals) ? ctx.goals.length : num(ctx.goalsCount);
+    const goalsCount      = (Number.isInteger(goalsCountRaw) && goalsCountRaw >= 0 && goalsCountRaw <= 50) ? goalsCountRaw : null;
+
+    // Derive savings rate from income+expenses if available.
+    let savingsRate = null;
+    if (monthlyIncome !== null && monthlyIncome > 0 && monthlyExpenses !== null) {
+      const rate = ((monthlyIncome - monthlyExpenses) / monthlyIncome) * 100;
+      if (Number.isFinite(rate) && rate >= -100 && rate <= 100) {
+        // Round to one decimal to keep payload tidy.
+        savingsRate = Math.round(rate * 10) / 10;
+      }
+    }
+
+    if (monthlyIncome   !== null) out.monthlyIncome   = monthlyIncome;
+    if (monthlyExpenses !== null) out.monthlyExpenses = monthlyExpenses;
+    if (totalDebt       !== null) out.totalDebt       = totalDebt;
+    if (totalSavings    !== null) out.totalSavings    = totalSavings;
+    if (savingsRate     !== null) out.savingsRate     = savingsRate;
+    if (age             !== null) out.age             = age;
+    if (goalsCount      !== null) out.goalsCount      = goalsCount;
+    return Object.keys(out).length ? out : null;
+  } catch (_) {
+    return null;
+  }
 }
 
 async function sendMessage(text) {
@@ -401,12 +446,14 @@ async function sendMessage(text) {
   showTyping();
   isTyping = true;
   document.getElementById('send-btn').disabled = true;
-  history.push({role:'user', parts:[{text:msg}]});
   try {
     const reply = await callSage(msg);
     hideTyping();
     addSageBubble(reply);
-    history.push({role:'model', parts:[{text:reply}]});
+    // Append BOTH turns only after a successful round-trip so a failed call
+    // doesn't poison the next request with an unanswered user turn.
+    history.push({ role: 'user',      text: msg });
+    history.push({ role: 'assistant', text: reply });
     queryCount++;
     updateUsage();
   } catch(e) {
@@ -421,14 +468,25 @@ async function callSage(msg) {
   const session = (typeof PFCAuth !== 'undefined') ? PFCAuth.getSession() : null;
   const headers = { 'Content-Type': 'application/json' };
   if (session?.access_token) headers.Authorization = 'Bearer ' + session.access_token;
+
+  // Bounded history: last 10 turns max, each text trimmed + capped to 500ch.
+  // Server independently re-validates everything; this is just a friendly
+  // pre-flight so we don't 400 on our own request.
+  const histPayload = history
+    .slice(-10)
+    .map(t => ({ role: t.role, text: String(t.text || '').trim().slice(0, 500) }))
+    .filter(t => t.text && (t.role === 'user' || t.role === 'assistant'));
+
+  const userContext = buildUserContext();
+
+  const body = { message: msg };
+  if (histPayload.length) body.history = histPayload;
+  if (userContext)        body.userContext = userContext;
+
   const res = await fetch('/api/sage', {
     method:'POST',
     headers,
-    body: JSON.stringify({
-      message: msg,
-      history: history.slice(-10),
-      systemPrompt: buildSysPrompt()
-    })
+    body: JSON.stringify(body)
   });
   if (!res.ok) throw new Error('API ' + res.status);
   const d = await res.json();

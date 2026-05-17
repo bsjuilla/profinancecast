@@ -5,10 +5,25 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <meta name="theme-color" content="#2BB67D">
-<title>Cash forecast — ProFinanceCast</title>
+<title>Monthly cash flow forecast — see your ending cash | ProFinanceCast</title>
   <meta name="description" content="Monthly cash-flow forecast — income, expenses by category, and your ending cash. Free, no card required.">
-  <meta name="robots" content="noindex,nofollow">
-  <link rel="canonical" href="https://profinancecast.com/cash-forecast.html">
+  <link rel="canonical" href="https://profinancecast.com/cash-forecast">
+  <link rel="alternate" hreflang="en" href="https://profinancecast.com/cash-forecast">
+  <link rel="alternate" hreflang="x-default" href="https://profinancecast.com/cash-forecast">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://profinancecast.com/cash-forecast">
+  <meta property="og:title" content="Monthly cash flow forecast — see your ending cash | ProFinanceCast">
+  <meta property="og:description" content="See your real cash flow month by month. Privacy-first forecasting — runs in your browser, no bank login.">
+  <meta property="og:image" content="https://profinancecast.com/api/og?title=Monthly+cash+flow+forecast&subtitle=See+your+ending+cash+%E2%80%94+privacy-first">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:locale" content="en">
+  <meta property="og:site_name" content="ProFinanceCast">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@profinancecast">
+  <meta name="twitter:title" content="Monthly cash flow forecast — see your ending cash">
+  <meta name="twitter:description" content="See your real cash flow month by month. Privacy-first forecasting — runs in your browser, no bank login.">
+  <meta name="twitter:image" content="https://profinancecast.com/api/og?title=Monthly+cash+flow+forecast&subtitle=See+your+ending+cash+%E2%80%94+privacy-first">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" integrity="sha384-e6nUZLBkQ86NJ6TVVKAeSaK8jWa3NhkYWZFomE39AvDbQWeie9PlQqM3pmYW5d1g" crossorigin="anonymous"></script>
@@ -123,6 +138,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/pfc-config.js"></script>
   <script src="js/pfc-auth.js"></script>
+  <script src="js/pfc-crypto.js"></script>
   <script src="js/pfc-storage.js"></script>
   <script src="js/pfc-entitlements.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -133,6 +149,39 @@
   <!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "37cb784ad53047a9921bfd79e9835310"}'></script>
   <script src="js/pfc-analytics.js" defer></script>
   <script src="js/pfc-sidebar.js" defer></script>
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Monthly Cash Flow Forecast",
+    "applicationCategory": "FinanceApplication",
+    "applicationSubCategory": "CashFlowForecast",
+    "operatingSystem": "Web",
+    "url": "https://profinancecast.com/cash-forecast",
+    "description": "See your monthly cash flow forecast — income, expenses by category, and your ending cash position. Privacy-first: runs entirely in your browser, no bank login required.",
+    "browserRequirements": "Requires JavaScript. No bank login.",
+    "isAccessibleForFree": true,
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+    "featureList": [
+      "Monthly income and expense forecasting",
+      "Category-level expense breakdown",
+      "Ending cash position by month",
+      "No signup, no tracking, no bank connection"
+    ],
+    "publisher": { "@type": "Organization", "@id": "https://profinancecast.com/#org" }
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://profinancecast.com/" },
+      { "@type": "ListItem", "position": 2, "name": "Cash forecast", "item": "https://profinancecast.com/cash-forecast" }
+    ]
+  }
+  </script>
 </head>
 <body>
 <nav class="sidebar" aria-label="Primary navigation">
@@ -330,7 +379,7 @@
         <h4>Product</h4>
         <ul>
           <li><a href="dashboard.html">Forecast</a></li>
-          <li><a href="cash-forecast.html">Cash forecast</a></li>
+          <li><a href="cash-forecast">Cash forecast</a></li>
           <li><a href="billing.html">Pricing</a></li>
         </ul>
       </div>
@@ -346,7 +395,7 @@
         <h4>Resources</h4>
         <ul>
           <li><a href="help.html">Help</a></li>
-          <li><a href="blog.html">Articles</a></li>
+          <li><a href="blog">Articles</a></li>
         </ul>
       </div>
       <div class="footer-col">

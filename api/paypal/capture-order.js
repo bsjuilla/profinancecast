@@ -160,7 +160,6 @@ export default async function handler(req, res) {
       ai_queries_reset_at: periodEnd,
     }).eq('id', user.id);
 
-    console.log(`UPGRADED: user=${user.id} sku=${sku} plan=${dbPlan} order=${orderID} amount=${amountPaid}`);
     return res.status(200).json({
       status: 'COMPLETED', plan: dbPlan, sku, orderID,
       captureID: capture?.id,

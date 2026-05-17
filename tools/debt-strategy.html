@@ -4,10 +4,25 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-<title>Debt strategy comparator — ProFinanceCast</title>
+<title>Debt payoff strategy — avalanche vs snowball | ProFinanceCast</title>
 <meta name="description" content="Compare debt avalanche vs snowball: see how many months earlier you'll be debt-free and how much interest you'll save.">
-<meta name="robots" content="noindex,nofollow">
-<link rel="canonical" href="https://profinancecast.com/tools/debt-strategy.html">
+<link rel="canonical" href="https://profinancecast.com/tools/debt-strategy">
+<link rel="alternate" hreflang="en" href="https://profinancecast.com/tools/debt-strategy">
+<link rel="alternate" hreflang="x-default" href="https://profinancecast.com/tools/debt-strategy">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://profinancecast.com/tools/debt-strategy">
+<meta property="og:title" content="Debt payoff strategy — avalanche vs snowball | ProFinanceCast">
+<meta property="og:description" content="See which debt payoff method saves you the most. Avalanche, snowball, side-by-side. No signup.">
+<meta property="og:image" content="https://profinancecast.com/api/og?title=Debt+payoff+strategy&subtitle=Avalanche+vs+snowball+%E2%80%94+side-by-side">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:locale" content="en">
+<meta property="og:site_name" content="ProFinanceCast">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@profinancecast">
+<meta name="twitter:title" content="Debt payoff strategy — avalanche vs snowball">
+<meta name="twitter:description" content="See which debt payoff method saves you the most. Avalanche, snowball, side-by-side. No signup.">
+<meta name="twitter:image" content="https://profinancecast.com/api/og?title=Debt+payoff+strategy&subtitle=Avalanche+vs+snowball+%E2%80%94+side-by-side">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -154,6 +169,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="../js/pfc-config.js"></script>
   <script src="../js/pfc-auth.js"></script>
+  <script src="../js/pfc-crypto.js"></script>
   <script src="../js/pfc-storage.js"></script>
   <script src="../js/pfc-entitlements.js"></script>
   <script src="../js/pfc-motion.js" defer></script>
@@ -167,6 +183,40 @@
   <script src="../js/pfc-analytics.js" defer></script>
   <script src="../js/pfc-sidebar.js" defer></script>
   <script src="../js/pfc-debt-engine.js" defer></script>
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Debt Payoff Strategy Comparator",
+    "applicationCategory": "FinanceApplication",
+    "applicationSubCategory": "DebtCalculator",
+    "operatingSystem": "Web",
+    "url": "https://profinancecast.com/tools/debt-strategy",
+    "description": "Compare debt avalanche vs snowball payoff strategies side-by-side. See exactly how many months earlier you'll be debt-free and how much interest you'll save. Runs entirely in your browser.",
+    "browserRequirements": "Requires JavaScript. No bank login.",
+    "isAccessibleForFree": true,
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+    "featureList": [
+      "Avalanche vs snowball method comparison",
+      "Months-to-debt-free for each strategy",
+      "Total interest paid for each strategy",
+      "No signup, no tracking, no affiliate links"
+    ],
+    "publisher": { "@type": "Organization", "@id": "https://profinancecast.com/#org" }
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://profinancecast.com/" },
+      { "@type": "ListItem", "position": 2, "name": "Tools", "item": "https://profinancecast.com/tools/" },
+      { "@type": "ListItem", "position": 3, "name": "Debt payoff strategy", "item": "https://profinancecast.com/tools/debt-strategy" }
+    ]
+  }
+  </script>
 </head>
 <body>
 
@@ -347,9 +397,9 @@
         <h4>Product</h4>
         <ul>
           <li><a href="../dashboard.html">Forecast</a></li>
-          <li><a href="../blog.html">Journal</a></li>
+          <li><a href="../blog">Journal</a></li>
           <li><a href="../billing.html">Pricing</a></li>
-          <li><a href="take-home-pay.html">Take-home pay</a></li>
+          <li><a href="take-home-pay">Take-home pay</a></li>
         </ul>
       </div>
       <div class="footer-col">
@@ -364,7 +414,7 @@
         <h4>Resources</h4>
         <ul>
           <li><a href="../help.html">Help</a></li>
-          <li><a href="../blog.html">Articles</a></li>
+          <li><a href="../blog">Articles</a></li>
         </ul>
       </div>
       <div class="footer-col">
