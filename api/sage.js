@@ -55,19 +55,96 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-
 //                     (used by dashboard.html / recurring.html / salary-calculator.html).
 //                     It's a boolean flag, not a text field — no injection surface.
 //                     Raises the per-call length cap to 8000 and disables quota.
+//   history         — bounded conversation history. Array of ≤10 items, each
+//                     { role: 'user'|'assistant', text: string ≤500 chars }.
+//                     Mapped to Gemini's {role:'user'|'model'} turn shape.
+//                     Roles are STRICTLY whitelisted to block injection of
+//                     'system' / 'tool' turns. See Workstream 0 Task 0.2.
+//   userContext     — strict, numbers-only financial context block. Each
+//                     field is validated as a finite number within a fixed
+//                     range. No free-text. The server interpolates the
+//                     numbers into the system prompt (built server-side).
 //
 // NOTE: systemPrompt is deliberately NOT here. The system prompt is built
 // server-side from the authenticated profile only. See Workstream 0 Task 0.2.
-const ALLOWED_KEYS = new Set(['message', 'conversationId', 'csvMode']);
+const ALLOWED_KEYS = new Set(['message', 'conversationId', 'csvMode', 'history', 'userContext']);
+
+// Strict whitelist for userContext fields. Numbers only, strict ranges.
+// Any key NOT in this map is rejected with reason 'userContext.<key>'.
+// Ranges are deliberately wide (currency-agnostic) but finite.
+const USER_CONTEXT_FIELDS = {
+  monthlyIncome:   { min: 0,    max: 1_000_000,   integer: false },
+  monthlyExpenses: { min: 0,    max: 1_000_000,   integer: false },
+  totalDebt:       { min: 0,    max: 100_000_000, integer: false },
+  totalSavings:    { min: 0,    max: 100_000_000, integer: false },
+  savingsRate:     { min: -100, max: 100,         integer: false },
+  age:             { min: 18,   max: 100,         integer: false },
+  goalsCount:      { min: 0,    max: 50,          integer: true  },
+};
 
 function badRequest(res, reason) {
   return res.status(400).json({ error: 'BAD_REQUEST', reason });
 }
 
+// Validate the client-supplied history array. Returns either
+//   { ok: true, history: [{role:'user'|'assistant', text:'...'}, ...] }
+// or
+//   { ok: false }  (caller emits 400 with reason 'history').
+// We deliberately do not surface which item or field failed — the shape is
+// trivially small and the client builds it from a known-good local array.
+function _validateHistory(raw) {
+  if (raw === undefined) return { ok: true, history: null };
+  if (!Array.isArray(raw)) return { ok: false };
+  if (raw.length > 10) return { ok: false };
+  const out = [];
+  for (const item of raw) {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) return { ok: false };
+    const keys = Object.keys(item);
+    if (keys.length !== 2 || !keys.includes('role') || !keys.includes('text')) return { ok: false };
+    if (item.role !== 'user' && item.role !== 'assistant') return { ok: false };
+    if (typeof item.text !== 'string') return { ok: false };
+    const text = item.text.trim();
+    if (!text) return { ok: false };
+    if (text.length > 500) return { ok: false };
+    out.push({ role: item.role, text });
+  }
+  return { ok: true, history: out };
+}
+
+// Validate the client-supplied userContext object. Returns either
+//   { ok: true, userContext: {...validated numeric fields...} }
+// or
+//   { ok: false, reason: 'userContext.<key>' }.
+// Never logs values — only the offending key name.
+function _validateUserContext(raw) {
+  if (raw === undefined) return { ok: true, userContext: null };
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+    return { ok: false, reason: 'userContext' };
+  }
+  const out = {};
+  for (const key of Object.keys(raw)) {
+    const spec = USER_CONTEXT_FIELDS[key];
+    if (!spec) return { ok: false, reason: 'userContext.' + key };
+    const v = raw[key];
+    if (typeof v !== 'number' || !Number.isFinite(v)) {
+      return { ok: false, reason: 'userContext.' + key };
+    }
+    if (spec.integer && !Number.isInteger(v)) {
+      return { ok: false, reason: 'userContext.' + key };
+    }
+    if (v < spec.min || v > spec.max) {
+      return { ok: false, reason: 'userContext.' + key };
+    }
+    out[key] = v;
+  }
+  return { ok: true, userContext: out };
+}
+
 // Build the Sage system prompt server-side. The only inputs are the
-// authenticated profile row (controlled by us) and static template text.
-// We never interpolate raw client text into this string.
-function buildSagePrompt(profile) {
+// authenticated profile row (controlled by us), a STRICTLY-validated
+// numbers-only userContext block, and static template text. We never
+// interpolate raw client text into this string.
+function buildSagePrompt(profile, userContext) {
   const fullName = (profile?.full_name || '').toString().slice(0, 80);
   const safeName = fullName.replace(/[^\p{L}\p{N}\s.,'\-]/gu, '').trim() || 'there';
   // country_code is stored as a short ISO-style string; clamp defensively.
@@ -81,12 +158,26 @@ function buildSagePrompt(profile) {
     `Be encouraging but honest. Never mention Gemini, Google, or any AI company — you are simply Sage. ` +
     `End each response with one brief actionable next step.`;
 
-  // Personalisation is intentionally limited to fields that live in the
-  // authenticated profile row. Financial figures (income, expenses, debts,
-  // goals) are stored client-side under E2E encryption; they are NOT
-  // available to this endpoint. If the user wants tailored numeric advice,
-  // they must share the relevant numbers in their message.
+  // Identity personalisation comes from the authenticated profile row only.
   prompt += `\n\nUSER: ${safeName}, plan=${plan}` + (country ? `, country=${country}` : '');
+
+  // Numeric personalisation comes from the validated userContext block.
+  // Every field here has already been confirmed to be a finite number in
+  // range — safe to template directly. We format as a structured list so
+  // the model treats these as data, not instructions.
+  if (userContext && typeof userContext === 'object') {
+    const lines = [];
+    if (typeof userContext.monthlyIncome   === 'number') lines.push(`Monthly income: $${userContext.monthlyIncome}`);
+    if (typeof userContext.monthlyExpenses === 'number') lines.push(`Monthly expenses: $${userContext.monthlyExpenses}`);
+    if (typeof userContext.totalDebt       === 'number') lines.push(`Total debt: $${userContext.totalDebt}`);
+    if (typeof userContext.totalSavings    === 'number') lines.push(`Total savings: $${userContext.totalSavings}`);
+    if (typeof userContext.savingsRate     === 'number') lines.push(`Savings rate: ${userContext.savingsRate}%`);
+    if (typeof userContext.age             === 'number') lines.push(`Age: ${userContext.age}`);
+    if (typeof userContext.goalsCount      === 'number') lines.push(`Goals tracked: ${userContext.goalsCount}`);
+    if (lines.length) {
+      prompt += `\n\nUSER FINANCIAL CONTEXT (numbers only):\n` + lines.join('\n');
+    }
+  }
   return prompt;
 }
 
@@ -133,7 +224,7 @@ export default async function handler(req, res) {
     if (!ALLOWED_KEYS.has(k)) return badRequest(res, k);
   }
 
-  const { message: rawMessage, conversationId, csvMode } = body;
+  const { message: rawMessage, conversationId, csvMode, history: rawHistory, userContext: rawUserContext } = body;
 
   if (typeof rawMessage !== 'string') return badRequest(res, 'message');
   const message = rawMessage.trim();
@@ -148,6 +239,17 @@ export default async function handler(req, res) {
   const isCsv = csvMode === true;
   const limit = isCsv ? 8000 : 500;
   if (message.length > limit) return badRequest(res, 'message');
+
+  // Validate optional history + userContext. CSV mode ignores both (it's a
+  // single-shot batch parser, not a conversation), but we still reject
+  // malformed shapes so a misbehaving caller learns about it.
+  const histResult = _validateHistory(rawHistory);
+  if (!histResult.ok) return badRequest(res, 'history');
+  const history = histResult.history;
+
+  const ctxResult = _validateUserContext(rawUserContext);
+  if (!ctxResult.ok) return badRequest(res, ctxResult.reason);
+  const userContext = ctxResult.userContext;
 
   // ── Plan-aware quota check (skipped for csvMode batch parsing AND owner) ─
   // We still need the profile row to build the system prompt below, so we
@@ -207,16 +309,28 @@ export default async function handler(req, res) {
   }
 
   // ── Normal chat ───────────────────────────────────────────────────────
-  // System prompt is built server-side from the authenticated profile.
-  // No client-supplied text reaches this string — only `message` is passed
-  // to Gemini as a separate conversation turn below.
-  const systemPrompt = buildSagePrompt(profile || {});
+  // System prompt is built server-side from the authenticated profile +
+  // the STRICTLY-validated numeric userContext block. No raw client text
+  // reaches this string — only validated numbers are interpolated.
+  const systemPrompt = buildSagePrompt(profile || {}, userContext);
 
+  // Build the conversation turns. Order: priming → validated history → new
+  // message. Each history item is mapped from {role:'user'|'assistant'} to
+  // Gemini's {role:'user'|'model'} turn shape. text was already trimmed and
+  // length-checked in _validateHistory.
   const contents = [
     { role: 'user', parts: [{ text: systemPrompt }] },
     { role: 'model', parts: [{ text: "Understood! I'm Sage, your personal financial advisor." }] },
-    { role: 'user', parts: [{ text: message }] },
   ];
+  if (history && history.length) {
+    for (const turn of history) {
+      contents.push({
+        role: turn.role === 'assistant' ? 'model' : 'user',
+        parts: [{ text: turn.text }],
+      });
+    }
+  }
+  contents.push({ role: 'user', parts: [{ text: message }] });
 
   const geminiBody = {
     contents,
