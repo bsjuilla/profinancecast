@@ -52,4 +52,17 @@ One page. Read it before you write anything that ships.
 
 ---
 
+## Gold usage rules (WCAG-compliant)
+
+Champagne gold `#D4AF6A` is a SURFACE ACCENT, never a body-text color on ivory.
+
+| Surface | Gold as text? | Gold as decoration? |
+|---|---|---|
+| Canvas / surface / surface-2 (emerald-black) | Passes AAA (~7.5:1) — fine for any size | Always |
+| Paper / paper-2 (ivory) | Fails WCAG AA (~1.95:1) — use `--paper-ink` for text | Borders, rules, ornaments, dividers only |
+
+Only break this rule for the logo wordmark (Fraunces "PFC" at >=48px) on the emerald-black hero — and even there, ensure the surface contrast meets AAA. On ivory surfaces (`body[data-surface="ivory"]`, blog posts, report cards) the wordmark and all body text must use `var(--paper-ink)` (`#14201A`) for emerald-on-paper.
+
+---
+
 *If a sentence violates two or more rules above, rewrite the sentence — don't patch it.*

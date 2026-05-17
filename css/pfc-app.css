@@ -377,6 +377,14 @@ body.pfc-app {
   justify-content: center;
 }
 
+/* W3 Task 3.5 — Mobile-safe minimum font sizes.
+   Prevents iOS auto-zoom on input focus and improves readability at small
+   viewport widths. Specific tags can override with their own font-size. */
+@media (max-width: 768px) {
+  body { font-size: 16px; }
+  input, select, textarea, button { font-size: 16px; }
+}
+
 /* Hero credibility strip — 4-cell privacy guarantees on index.html. */
 .credibility { padding: 64px 24px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
 .credibility .grid { max-width: 1080px; margin: 0 auto; display: grid; grid-template-columns: repeat(4, 1fr); }

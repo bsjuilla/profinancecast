@@ -132,11 +132,130 @@
 <link rel="stylesheet" media="print" onload="this.media='all'" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500;1,9..144,600&family=Inter+Tight:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500;1,9..144,600&family=Inter+Tight:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"></noscript>
 <link rel="stylesheet" href="css/pfc-tokens.css">
-<link rel="stylesheet" href="css/pfc-app.css">
 
-<!-- GSAP for scroll choreography (defer = doesn't block paint) -->
-<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer integrity="sha384-g4NTh/Iv5PPU4xPyhEWqPcwtNXOvdaDI8LLnyYfyNZOjKJeYQyjzQ9X5275eBjpt" crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js" defer integrity="sha384-Z3REaz79l2IaAZqJsSABtTbhjgOUYyV3p90XNnAPCSHg3EMTz1fouunq9WZRtj3d" crossorigin="anonymous"></script>
+<!-- ════════════════════════════════════════════════════════════════════════
+     W3 Task 3.3 — Critical CSS for above-the-fold (nav + hero + first section).
+     Inlined so first paint never waits for pfc-app.css to download.
+     Mirrors the most-used tokens from pfc-tokens.css so layout is correct
+     even before the external token stylesheet resolves.
+     ════════════════════════════════════════════════════════════════════════ -->
+<style>
+  :root {
+    --canvas: #0B1410;
+    --surface: #111E18;
+    --surface-2: #16271F;
+    --paper: #F4EFE5;
+    --paper-ink: #14201A;
+    --ink: #F0EDE2;
+    --ink-2: #B8C2BC;
+    --ink-3: #6F7C75;
+    --gold: #D4AF6A;
+    --money: #2BB67D;
+    --money-soft: rgba(43,182,125,0.12);
+    --money-glow: rgba(43,182,125,0.30);
+    --warning: #E66E5C;
+    --line: rgba(240,237,226,0.06);
+    --line-2: rgba(240,237,226,0.10);
+    --font-display: 'Fraunces','Cormorant Garamond','Playfair Display',Georgia,serif;
+    --font-body: 'Inter Tight','Inter',-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
+    --font-mono: 'JetBrains Mono','SF Mono',ui-monospace,monospace;
+    --t-fast: 120ms;
+    --t-base: 220ms;
+    --t-slow: 420ms;
+    --ease-out: cubic-bezier(0.22,0.61,0.36,1);
+    --ease-spring: cubic-bezier(0.34,1.5,0.64,1);
+    --r-xs: 6px;
+    --r-pill: 999px;
+    --r-xl: 28px;
+    --t-11: 0.6875rem;
+    --t-12: 0.75rem;
+    --t-13: 0.8125rem;
+    --t-14: 0.875rem;
+    --t-15: 0.9375rem;
+    --t-18: 1.125rem;
+  }
+  /* Above-the-fold reset + critical layout (mirrors first inline <style> block,
+     this duplicate runs BEFORE the page <style> to remove FOUC entirely). */
+  *,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: var(--font-body);
+    background: var(--canvas);
+    color: var(--ink);
+    line-height: 1.55;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1,h2,h3,h4 {
+    font-family: var(--font-display);
+    font-weight: 500;
+    letter-spacing: -0.015em;
+    line-height: 1.05;
+  }
+  a { color: inherit; text-decoration: none; }
+  img, svg { display: block; max-width: 100%; }
+  nav {
+    position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
+    width: calc(100% - 48px); max-width: 1200px;
+    z-index: 50;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 11px 18px;
+    background: rgba(11,20,16,0.65);
+    backdrop-filter: blur(20px) saturate(140%);
+    border: 1px solid var(--line-2);
+    border-radius: 999px;
+  }
+  .hero {
+    min-height: 100svh;
+    display: grid; place-items: center;
+    padding: 128px 24px 56px;
+    text-align: center;
+    position: relative;
+  }
+  .hero-inner { max-width: 1120px; margin: 0 auto; width: 100%; position: relative; z-index: 1; }
+  .hero h1 {
+    font-size: clamp(48px, 7.6vw, 104px);
+    line-height: 0.96;
+    letter-spacing: -0.025em;
+    max-width: 16ch;
+    margin: 0 auto 28px;
+  }
+  .hero h1 em, .hero h1 .grad { font-style: italic; color: var(--gold); font-weight: 500; }
+  .hero-sub {
+    font-size: clamp(16px, 1.3vw, 19px);
+    color: var(--ink-2); font-weight: 300;
+    max-width: 56ch; margin: 0 auto 40px;
+  }
+</style>
+
+<!-- pfc-app.css is shared chrome (sidebar, app body class, far-below-fold cards).
+     None of it is above-the-fold on index.html, so we load it asynchronously
+     using the print → all media-swap pattern. Critical CSS above keeps the
+     hero painting at first byte. -->
+<link rel="preload" as="style" href="css/pfc-app.css">
+<link rel="stylesheet" href="css/pfc-app.css" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="css/pfc-app.css"></noscript>
+
+<!-- GSAP for scroll choreography (gated behind prefers-reduced-motion: no-preference;
+     reduced-motion users save ~50 KB and skip the animation entirely) -->
+<script>
+  (function () {
+    if (!window.matchMedia) return;
+    if (!matchMedia('(prefers-reduced-motion: no-preference)').matches) return;
+    var gsap = document.createElement('script');
+    gsap.src = 'https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js';
+    gsap.integrity = 'sha384-g4NTh/Iv5PPU4xPyhEWqPcwtNXOvdaDI8LLnyYfyNZOjKJeYQyjzQ9X5275eBjpt';
+    gsap.crossOrigin = 'anonymous';
+    gsap.defer = true;
+    document.head.appendChild(gsap);
+    var st = document.createElement('script');
+    st.src = 'https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js';
+    st.integrity = 'sha384-Z3REaz79l2IaAZqJsSABtTbhjgOUYyV3p90XNnAPCSHg3EMTz1fouunq9WZRtj3d';
+    st.crossOrigin = 'anonymous';
+    st.defer = true;
+    document.head.appendChild(st);
+  })();
+</script>
 
 <!-- Hard fallback: if GSAP fails to load (CDN block, SRI mismatch, network error),
      reveal all .reveal elements within 1.5s so the page never stays invisibly empty. -->
@@ -178,7 +297,7 @@
 <script src="js/pfc-crypto.js"></script>
 <script src="js/pfc-storage.js"></script>
 <script src="js/pfc-entitlements.js"></script>
-<script src="js/pfc-motion.js"></script>
+<script src="js/pfc-motion.js" defer></script>
 <script src="js/pfc-analytics.js" defer></script>
 
 <!-- ════════════════════════════════════════════════════════════════════════

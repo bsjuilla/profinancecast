@@ -163,7 +163,11 @@
   .rc-invitation .eyebrow {
     font-family: var(--font-mono, 'JetBrains Mono', monospace);
     font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
-    color: var(--gold, #D4AF6A);
+    /* WCAG AA — body[data-surface="ivory"] remaps --card to --paper, so the
+       eyebrow renders on ivory. Champagne gold on ivory is ~1.95:1 and fails
+       AA at any size; use --paper-ink for the wordmark and reserve gold for
+       non-text accents (borders, rules) on ivory surfaces. */
+    color: var(--paper-ink, #14201A);
     margin-bottom: 8px;
   }
   .rc-invitation .headline {
