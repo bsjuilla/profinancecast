@@ -491,7 +491,7 @@ const CAT_META = {
   insurance: { icon: '🛡️', color: '#A78BFA', label: 'Insurance' },
   finance:   { icon: '🏦', color: '#22C55E', label: 'Finance' },
   health:    { icon: '❤️', color: '#F97316', label: 'Health' },
-  other:     { icon: '📄', color: '#8A9BB0', label: 'Other' },
+  other:     { icon: '📄', color: '#B8C2BC', label: 'Other' },
 };
 
 // ── BRAND RECOGNITION ──
@@ -820,7 +820,7 @@ function renderCharts() {
     const sankeyData = catEntries.slice(0, 6).map(([c, v]) => ({
       label: CAT_META[c]?.label || c,
       amount: v,
-      color: CAT_META[c]?.color || '#8A9BB0',
+      color: CAT_META[c]?.color || '#B8C2BC',
     }));
     if (sankeyData.length) {
       window.PFCMotion.sankey(sankeySvg, sankeyData);
@@ -836,16 +836,16 @@ function renderCharts() {
       labels: catEntries.map(([c])=>CAT_META[c]?.label||c),
       datasets:[{
         data: catEntries.map(([,v])=>Math.round(v*100)/100),
-        backgroundColor: catEntries.map(([c])=>CAT_META[c]?.color+'99'||'#8A9BB099'),
-        borderColor: catEntries.map(([c])=>CAT_META[c]?.color||'#8A9BB0'),
+        backgroundColor: catEntries.map(([c])=>CAT_META[c]?.color+'99'||'#B8C2BC99'),
+        borderColor: catEntries.map(([c])=>CAT_META[c]?.color||'#B8C2BC'),
         borderWidth:1.5,
       }]
     },
     options:{
       responsive:true, maintainAspectRatio:false, cutout:'68%',
       plugins:{
-        legend:{ position:'right', labels:{ color:'#8A9BB0', font:{size:11}, padding:10, boxWidth:10 } },
-        tooltip:{ backgroundColor:'#0F1923', borderColor:'rgba(255,255,255,0.1)', borderWidth:1,
+        legend:{ position:'right', labels:{ color:'#B8C2BC', font:{size:11}, padding:10, boxWidth:10 } },
+        tooltip:{ backgroundColor:'#16271F', borderColor:'rgba(255,255,255,0.1)', borderWidth:1,
           callbacks:{ label: ctx=>' '+sym+ctx.parsed.toFixed(2)+'/mo' } }
       }
     }
@@ -878,7 +878,7 @@ function renderCharts() {
     },
     options:{
       responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{display:false}, tooltip:{ backgroundColor:'#0F1923', borderColor:'rgba(255,255,255,0.1)', borderWidth:1,
+      plugins:{ legend:{display:false}, tooltip:{ backgroundColor:'#16271F', borderColor:'rgba(255,255,255,0.1)', borderWidth:1,
         callbacks:{ label: ctx=>' '+sym+ctx.parsed.y.toLocaleString() } } },
       scales:{
         x:{ grid:{color:'rgba(255,255,255,0.04)'}, ticks:{color:'#4A5A6E',font:{size:10}} },

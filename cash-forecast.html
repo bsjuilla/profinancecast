@@ -439,7 +439,7 @@ const OUT_ROWS = [
   { key:'housing',   label:'Housing',         color:'#F5A623' },
   { key:'food',      label:'Food & groceries', color:'#E05252' },
   { key:'transport', label:'Transport',       color:'#A78BFA' },
-  { key:'otherExp',  label:'Other expenses',  color:'#8A9BB0' },
+  { key:'otherExp',  label:'Other expenses',  color:'#B8C2BC' },
   { key:'debtPay',   label:'Debt payments',   color:'#D4AF6A' },
 ];
 // Color palette for custom rows — picks stable colors by index so legends
@@ -622,11 +622,11 @@ function drawCharts(t) {
     plugins:{
       legend:{
         position:'bottom',
-        labels:{ color:'#8A9BB0', font:{ family:'Inter, sans-serif', size:11 }, boxWidth:10, padding:8 }
+        labels:{ color:'#B8C2BC', font:{ family:'Inter, sans-serif', size:11 }, boxWidth:10, padding:8 }
       },
       tooltip:{
-        backgroundColor:'#0F1923', borderColor:'rgba(255,255,255,0.13)', borderWidth:1,
-        titleColor:'#F0F4F8', bodyColor:'#F0F4F8',
+        backgroundColor:'#16271F', borderColor:'rgba(255,255,255,0.13)', borderWidth:1,
+        titleColor:'#F0EDE2', bodyColor:'#F0EDE2',
         callbacks:{ label:(c)=>` ${c.label}: ${fmt(c.parsed)}` }
       }
     }
@@ -641,7 +641,7 @@ function drawCharts(t) {
       datasets:[{
         data: inHasData ? inSegments.map(s=>s.value) : [1],
         backgroundColor: inHasData ? inSegments.map(s=>s.color) : ['#1A2330'],
-        borderColor:'#0F1923', borderWidth:2
+        borderColor:'#16271F', borderWidth:2
       }]
     },
     options: donutOpts
@@ -656,7 +656,7 @@ function drawCharts(t) {
       datasets:[{
         data: outHasData ? outSegments.map(s=>s.value) : [1],
         backgroundColor: outHasData ? outSegments.map(s=>s.color) : ['#1A2330'],
-        borderColor:'#0F1923', borderWidth:2
+        borderColor:'#16271F', borderWidth:2
       }]
     },
     options: donutOpts
@@ -681,14 +681,14 @@ function drawCharts(t) {
       plugins:{
         legend:{ display:false },
         tooltip:{
-          backgroundColor:'#0F1923', borderColor:'rgba(255,255,255,0.13)', borderWidth:1,
-          titleColor:'#F0F4F8', bodyColor:'#F0F4F8',
+          backgroundColor:'#16271F', borderColor:'rgba(255,255,255,0.13)', borderWidth:1,
+          titleColor:'#F0EDE2', bodyColor:'#F0EDE2',
           callbacks:{ label:(c)=>` ${fmtSigned(c.parsed.y)}` }
         }
       },
       scales:{
-        x:{ grid:{ display:false }, ticks:{ color:'#8A9BB0', font:{ family:'Inter, sans-serif', size:11 } } },
-        y:{ grid:{ color:'rgba(255,255,255,0.05)' }, ticks:{ color:'#8A9BB0', font:{ family:'Inter, sans-serif', size:10 }, callback:(v)=>currencySym()+v.toLocaleString() } }
+        x:{ grid:{ display:false }, ticks:{ color:'#B8C2BC', font:{ family:'Inter, sans-serif', size:11 } } },
+        y:{ grid:{ color:'rgba(255,255,255,0.05)' }, ticks:{ color:'#B8C2BC', font:{ family:'Inter, sans-serif', size:10 }, callback:(v)=>currencySym()+v.toLocaleString() } }
       }
     }
   });

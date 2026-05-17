@@ -1107,18 +1107,18 @@ function buildChart() {
           position: 'top',
           align: 'end',
           labels: {
-            color: '#8A9BB0',
+            color: '#B8C2BC',
             font: { family: "'Inter', system-ui, sans-serif", size: 11 },
             boxWidth: 12, boxHeight: 2,
             padding: 12,
           }
         },
         tooltip: {
-          backgroundColor: '#0F1923',
+          backgroundColor: '#16271F',
           borderColor: 'rgba(255,255,255,0.1)',
           borderWidth: 1,
-          titleColor: '#F0F4F8',
-          bodyColor: '#8A9BB0',
+          titleColor: '#F0EDE2',
+          bodyColor: '#B8C2BC',
           padding: 12,
           callbacks: {
             label: ctx => ' ' + ctx.dataset.label + ': ' + (USER.currency||'$') + Math.round(ctx.parsed.y).toLocaleString()

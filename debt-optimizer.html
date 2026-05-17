@@ -554,7 +554,7 @@ const TYPE_COLORS = {
   car_loan:      { color: '#3B82F6', label: '🚗 Car loan' },
   student_loan:  { color: '#A78BFA', label: '🎓 Student loan' },
   mortgage:      { color: '#22C55E', label: '🏠 Mortgage' },
-  other:         { color: '#8A9BB0', label: '📄 Other' },
+  other:         { color: '#B8C2BC', label: '📄 Other' },
 };
 
 // ── INIT ──
@@ -885,11 +885,11 @@ function renderChart(opt, base) {
       plugins: {
         legend: { display: false },
         tooltip: {
-          backgroundColor: '#0F1923',
+          backgroundColor: '#16271F',
           borderColor: 'rgba(255,255,255,0.1)',
           borderWidth: 1,
-          titleColor: '#F0F4F8',
-          bodyColor: '#8A9BB0',
+          titleColor: '#F0EDE2',
+          bodyColor: '#B8C2BC',
           callbacks: {
             label: ctx => {
               const sym = USER.currency || '$';

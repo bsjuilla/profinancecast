@@ -572,7 +572,7 @@ function renderCard(d){
   surpEl.style.color=d.surplus>=0?'var(--money)':'#E05252';
   const nwEl=document.getElementById('rc-nw');
   nwEl.textContent=(d.nw<0?'-':'')+fmt(d.nw);
-  nwEl.style.color=d.nw>=0?'#F0F4F8':'#E05252';
+  nwEl.style.color=d.nw>=0?'#F0EDE2':'#E66E5C';
   const srEl=document.getElementById('rc-savrate');
   srEl.textContent=Math.round(d.savRate*100)+'%';
   srEl.style.color=d.savRate>=.2?'var(--money)':d.savRate>=.1?'#F5A623':'#E05252';
