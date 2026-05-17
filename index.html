@@ -771,14 +771,35 @@
     padding: 36px 28px;
     display: flex; flex-direction: column;
     position: relative;
-    transition: border-color var(--t-base) var(--ease-out), transform var(--t-base) var(--ease-out);
+    /* W4.5.4 — settle-eased lift on hover; champagne hairline + soft shadow */
+    transition:
+      transform var(--pfc-dur-settle) var(--pfc-ease-settle),
+      box-shadow var(--pfc-dur-settle) var(--pfc-ease-settle),
+      border-color var(--pfc-dur-settle) var(--pfc-ease-settle);
+    will-change: transform;
   }
-  .price-card:hover { border-color: var(--line-2); }
+  .price-card:hover {
+    transform: translateY(-3px);
+    border-color: var(--gold);
+    box-shadow: var(--pfc-elev-gold), 0 18px 48px -24px rgba(0, 0, 0, 0.6);
+  }
   .price-card.hot {
     border: 1px solid var(--gold);
     background: linear-gradient(180deg, rgba(212,175,106,0.06) 0%, var(--surface) 60%);
     box-shadow: 0 30px 80px rgba(212,175,106,0.10), 0 0 0 1px rgba(212,175,106,0.30) inset;
     transform: translateY(-4px);
+  }
+  /* W4.5.4 — hot card's hover lifts deeper, same champagne shadow. */
+  .price-card.hot:hover {
+    transform: translateY(-7px);
+    box-shadow: var(--pfc-elev-gold), 0 30px 80px rgba(212,175,106,0.14), 0 0 0 1px rgba(212,175,106,0.40) inset;
+  }
+  /* W4.5.4 — neutralize the lift under reduced-motion. The token-driven
+     durations already zero out via the global rule in pfc-tokens.css, but
+     the transform target is still set — strip it explicitly here. */
+  @media (prefers-reduced-motion: reduce) {
+    .price-card:hover { transform: none; }
+    .price-card.hot:hover { transform: translateY(-4px); }
   }
   .price-tag {
     position: absolute; top: -14px; left: 50%; transform: translateX(-50%);
