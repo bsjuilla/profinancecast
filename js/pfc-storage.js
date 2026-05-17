@@ -39,6 +39,15 @@
  * Legacy migration: any "pfc:{uid}:*" value that's NOT in envelope format
  * is treated as legacy plaintext, re-encrypted, and written back. A single
  * console.info logs the event.
+ *
+ * Refresh-safety: every set() also writes the plaintext to localStorage
+ * SYNCHRONOUSLY, so the value survives an immediate page unload. The
+ * async writer then re-encrypts and replaces it. If the user refreshes
+ * during the encrypt window (~100ms PBKDF2), _warmCache() on the next
+ * load detects the plaintext-at-key, treats it as a legacy migration,
+ * and re-encrypts. The trade-off: a brief (~100ms) plaintext-on-disk
+ * window during writes. The alternative is data loss on quick refresh,
+ * which is worse than transient plaintext.
  */
 const PFCStorage = (() => {
   // Legacy unprefixed keys to migrate on first run after the namespacing rollout
@@ -310,17 +319,14 @@ const PFCStorage = (() => {
         const { uid: writeUid, plaintext } = entry;
 
         if (plaintext === null) {
-          try { localStorage.removeItem(nsKey); }
-          catch (e) { console.error('[PFCStorage] remove failed:', e.message); }
+          // remove() already did the sync removeItem; this branch is a no-op.
           continue;
         }
 
         if (!_hasCrypto()) {
-          // No crypto → degrade to plaintext write so the app keeps working
-          // (the marketing claim isn't honoured for this browser, but we
-          // surfaced that loudly in PFCCrypto's self-test).
-          try { localStorage.setItem(nsKey, plaintext); }
-          catch (e) { console.error('[PFCStorage] set failed:', e.message); }
+          // No Web Crypto — sync plaintext write in set() is already on
+          // disk, so nothing to do here. Marketing claim is forfeit for
+          // this browser; surfaced loudly in PFCCrypto's self-test.
           continue;
         }
 
@@ -330,7 +336,14 @@ const PFCStorage = (() => {
           // being encrypted under the WRONG (newly-signed-in) user's key.
           const secret = await _secretForWriteUid(writeUid);
           const env = await window.PFCCrypto.encrypt(plaintext, secret);
-          localStorage.setItem(nsKey, env);
+          // RACE GUARD: if the in-memory cache has moved on while we
+          // were encrypting (a newer set() arrived), DO NOT write the
+          // stale envelope — it would clobber the fresher plaintext
+          // sitting in localStorage from the newer set()'s sync write.
+          // The next writer round will encrypt the newer value.
+          if (_cache.get(nsKey) === plaintext) {
+            localStorage.setItem(nsKey, env);
+          }
         } catch (e) {
           console.error('[PFCStorage] encrypt-and-persist failed for', nsKey, ':', e.message);
         }
@@ -389,12 +402,33 @@ const PFCStorage = (() => {
     }
     const k = _nsKey(shortKey);
     _cache.set(k, value);
+
+    // Sync plaintext write: this is the safety net against the user
+    // refreshing during the async encrypt-and-persist window (~100ms for
+    // PBKDF2 250k iterations + setItem). Without this, data is lost on
+    // immediate-refresh-after-save. The async writer below will replace
+    // this plaintext with an AES-GCM envelope shortly. If the user does
+    // refresh in that window, _warmCache() on the next page load will
+    // detect the plaintext at this key (isEnvelope() === false), treat
+    // it as a legacy migration, decrypt-as-plaintext + re-encrypt — the
+    // existing migration code path handles it transparently. Brief
+    // plaintext-on-disk window (~100ms) is the accepted trade-off.
+    try { localStorage.setItem(k, value); } catch (e) {
+      console.warn('[PFCStorage] sync plaintext write failed:', e.message);
+    }
+
     _queueWrite(k, value);
   }
 
   function remove(shortKey) {
     const k = _nsKey(shortKey);
     _cache.delete(k);
+    // Sync removal: same reasoning as set() — guarantees the removal
+    // survives an immediate page unload. The async writer's null-plaintext
+    // branch is now a no-op for this key but kept for code symmetry.
+    try { localStorage.removeItem(k); } catch (e) {
+      console.warn('[PFCStorage] sync remove failed:', e.message);
+    }
     _queueWrite(k, null);
   }
 
