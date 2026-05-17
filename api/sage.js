@@ -133,9 +133,11 @@ export default async function handler(req, res) {
     if (!ALLOWED_KEYS.has(k)) return badRequest(res, k);
   }
 
-  const { message, conversationId, csvMode } = body;
+  const { message: rawMessage, conversationId, csvMode } = body;
 
-  if (typeof message !== 'string' || !message.trim()) return badRequest(res, 'message');
+  if (typeof rawMessage !== 'string') return badRequest(res, 'message');
+  const message = rawMessage.trim();
+  if (!message) return badRequest(res, 'message');
   if (csvMode !== undefined && typeof csvMode !== 'boolean') return badRequest(res, 'csvMode');
   if (conversationId !== undefined) {
     if (typeof conversationId !== 'string' || !UUID_RE.test(conversationId)) {
