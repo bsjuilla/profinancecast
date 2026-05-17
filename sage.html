@@ -378,14 +378,12 @@ function hydratePlanInfo(){
 hydrateContext();
 let queryCount = 0, history = [], isTyping = false;
 
-function buildSysPrompt() {
-  return `You are Sage, a warm and concise personal AI financial advisor for ProFinanceCast. Always use the user's real data below. Keep responses to 2-4 short paragraphs. Use **bold** for key numbers. Be encouraging but honest. Never mention Gemini, Google, or any AI company — you are simply Sage.
-
-USER DATA — ${USER_CTX.name}: income $${USER_CTX.income}/mo, expenses $${USER_CTX.expenses}/mo, monthly savings $${USER_CTX.monthlySavings}, net worth $${USER_CTX.netWorth}, total debt $${USER_CTX.debt} (payment $${USER_CTX.debtPayment}/mo), health score ${USER_CTX.healthScore}/100, 12-mo forecast $${USER_CTX.forecast12mo}.
-Debts: ${USER_CTX.debts.map(d=>d.name+' $'+d.balance+' at '+d.rate+'%').join(', ')}.
-Goals: ${USER_CTX.goals.map(g=>g.name+' $'+g.current+'/$'+g.target).join(', ')}.
-End each response with one brief actionable next step.`;
-}
+// Workstream 0 Task 0.2: the system prompt is now built server-side from
+// the authenticated profile only. The previous client-side buildSysPrompt()
+// templated localStorage values into the prompt — that gave an attacker
+// who modified their own localStorage the ability to inject adversarial
+// instructions into the model. /api/sage now ignores any client-supplied
+// systemPrompt and rejects unknown fields with a 400.
 
 async function sendMessage(text) {
   const input = document.getElementById('msg-input');
@@ -422,14 +420,15 @@ async function callSage(msg) {
   const session = (typeof PFCAuth !== 'undefined') ? PFCAuth.getSession() : null;
   const headers = { 'Content-Type': 'application/json' };
   if (session?.access_token) headers.Authorization = 'Bearer ' + session.access_token;
+  // Workstream 0 Task 0.2: only `message` is sent. The server builds the
+  // system prompt from the authenticated profile and rejects unknown fields
+  // (including the old `systemPrompt` / `history` keys) with a 400.
+  // Multi-turn memory will return via a server-stored conversationId in a
+  // later task; for now Sage is single-turn.
   const res = await fetch('/api/sage', {
     method:'POST',
     headers,
-    body: JSON.stringify({
-      message: msg,
-      history: history.slice(-10),
-      systemPrompt: buildSysPrompt()
-    })
+    body: JSON.stringify({ message: msg })
   });
   if (!res.ok) throw new Error('API ' + res.status);
   const d = await res.json();

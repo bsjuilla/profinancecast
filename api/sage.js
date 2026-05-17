@@ -2,11 +2,13 @@
 //
 // Proxies user messages to Gemini. The Gemini key NEVER reaches the browser.
 //
-// Hardening added in this revision:
-//   • Requires a valid Supabase JWT (Bearer token) — no more anonymous spam
+// Hardening:
+//   • Requires a valid Supabase JWT (Bearer token) — no anonymous spam
 //   • Per-user monthly query limit, enforced server-side based on the plan
-//   • In-memory IP rate limit as a backup floor (5 req / 10s per IP)
-//   • Response shape unchanged → frontend keeps working without changes
+//   • In-memory IP rate limit as a backup floor
+//   • System prompt is built SERVER-SIDE from the authenticated profile.
+//     systemPrompt in the request body is intentionally ignored (and any
+//     unknown key produces a 400). See Workstream 0 Task 0.2.
 //
 // Required env: GEMINI_API_KEY, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
 
@@ -43,6 +45,51 @@ const PLAN_LIMITS = { free: 0, pro: 200, premium: 500 };
 const OWNER_EMAILS = (process.env.OWNER_EMAILS || '')
   .split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
 
+// UUID v4 (or any RFC4122 variant) — used to validate conversationId.
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+// Allow-list of body keys. Anything outside this set causes a 400.
+//   message         — required user-visible chat input (≤500 chars)
+//   conversationId  — optional uuid for future multi-turn threading
+//   csvMode         — legitimate server-side toggle for non-chat batch parsing
+//                     (used by dashboard.html / recurring.html / salary-calculator.html).
+//                     It's a boolean flag, not a text field — no injection surface.
+//                     Raises the per-call length cap to 8000 and disables quota.
+//
+// NOTE: systemPrompt is deliberately NOT here. The system prompt is built
+// server-side from the authenticated profile only. See Workstream 0 Task 0.2.
+const ALLOWED_KEYS = new Set(['message', 'conversationId', 'csvMode']);
+
+function badRequest(res, reason) {
+  return res.status(400).json({ error: 'BAD_REQUEST', reason });
+}
+
+// Build the Sage system prompt server-side. The only inputs are the
+// authenticated profile row (controlled by us) and static template text.
+// We never interpolate raw client text into this string.
+function buildSagePrompt(profile) {
+  const fullName = (profile?.full_name || '').toString().slice(0, 80);
+  const safeName = fullName.replace(/[^\p{L}\p{N}\s.,'\-]/gu, '').trim() || 'there';
+  // country_code is stored as a short ISO-style string; clamp defensively.
+  const country = (profile?.country_code || '').toString().slice(0, 8)
+    .replace(/[^A-Za-z\-]/g, '');
+  const plan = (profile?.plan === 'premium' || profile?.plan === 'pro') ? profile.plan : 'free';
+
+  let prompt =
+    `You are Sage, a warm and concise personal AI financial advisor for ProFinanceCast. ` +
+    `Keep responses to 2-4 short paragraphs. Use **bold** for key numbers. ` +
+    `Be encouraging but honest. Never mention Gemini, Google, or any AI company — you are simply Sage. ` +
+    `End each response with one brief actionable next step.`;
+
+  // Personalisation is intentionally limited to fields that live in the
+  // authenticated profile row. Financial figures (income, expenses, debts,
+  // goals) are stored client-side under E2E encryption; they are NOT
+  // available to this endpoint. If the user wants tailored numeric advice,
+  // they must share the relevant numbers in their message.
+  prompt += `\n\nUSER: ${safeName}, plan=${plan}` + (country ? `, country=${country}` : '');
+  return prompt;
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
@@ -75,20 +122,41 @@ export default async function handler(req, res) {
     return res.status(429).json({ error: 'Too many requests — slow down a moment.' });
   }
 
-  const { message, history = [], systemPrompt, csvMode = false } = req.body || {};
-  if (!message || typeof message !== 'string') return res.status(400).json({ error: 'Missing message' });
+  // ── Request-body whitelist ──────────────────────────────────────────────
+  // All allowed fields are whitelisted. systemPrompt is intentionally
+  // ignored — the system prompt is built server-side from the authenticated
+  // profile only. See Workstream 0 Task 0.2.
+  const body = (req.body && typeof req.body === 'object' && !Array.isArray(req.body)) ? req.body : null;
+  if (!body) return badRequest(res, 'body');
 
-  const limit = csvMode ? 8000 : 500;
-  if (message.length > limit) return res.status(400).json({ error: 'Message too long' });
+  for (const k of Object.keys(body)) {
+    if (!ALLOWED_KEYS.has(k)) return badRequest(res, k);
+  }
+
+  const { message, conversationId, csvMode } = body;
+
+  if (typeof message !== 'string' || !message.trim()) return badRequest(res, 'message');
+  if (csvMode !== undefined && typeof csvMode !== 'boolean') return badRequest(res, 'csvMode');
+  if (conversationId !== undefined) {
+    if (typeof conversationId !== 'string' || !UUID_RE.test(conversationId)) {
+      return badRequest(res, 'conversationId');
+    }
+  }
+
+  const isCsv = csvMode === true;
+  const limit = isCsv ? 8000 : 500;
+  if (message.length > limit) return badRequest(res, 'message');
 
   // ── Plan-aware quota check (skipped for csvMode batch parsing AND owner) ─
-  if (!csvMode && !isOwner) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('plan, ai_queries_used, ai_queries_limit, ai_queries_reset_at')
-      .eq('id', userId)
-      .maybeSingle();
+  // We still need the profile row to build the system prompt below, so we
+  // fetch it here either way (single round-trip).
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('full_name, country_code, plan, ai_queries_used, ai_queries_limit, ai_queries_reset_at')
+    .eq('id', userId)
+    .maybeSingle();
 
+  if (!isCsv && !isOwner) {
     const plan = profile?.plan || 'free';
     const cap  = profile?.ai_queries_limit || PLAN_LIMITS[plan] || PLAN_LIMITS.free;
     const used = profile?.ai_queries_used || 0;
@@ -111,7 +179,7 @@ export default async function handler(req, res) {
   const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY}`;
 
   // ── CSV batch mode (low temp, JSON-array output) ──────────────────────
-  if (csvMode) {
+  if (isCsv) {
     const geminiBody = {
       contents: [{ role: 'user', parts: [{ text: message }] }],
       generationConfig: { maxOutputTokens: 1200, temperature: 0.1, topP: 0.9 },
@@ -137,10 +205,14 @@ export default async function handler(req, res) {
   }
 
   // ── Normal chat ───────────────────────────────────────────────────────
+  // System prompt is built server-side from the authenticated profile.
+  // No client-supplied text reaches this string — only `message` is passed
+  // to Gemini as a separate conversation turn below.
+  const systemPrompt = buildSagePrompt(profile || {});
+
   const contents = [
-    { role: 'user', parts: [{ text: systemPrompt || 'You are Sage, a helpful personal finance AI advisor.' }] },
+    { role: 'user', parts: [{ text: systemPrompt }] },
     { role: 'model', parts: [{ text: "Understood! I'm Sage, your personal financial advisor." }] },
-    ...history.slice(-10),
     { role: 'user', parts: [{ text: message }] },
   ];
 
