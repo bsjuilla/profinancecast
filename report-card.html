@@ -215,18 +215,13 @@
   @media(max-width:1050px){.page-layout{grid-template-columns:1fr}}
   @media(max-width:680px){.sidebar{display:none}.content{padding:16px}}
 
-  /* Ivory paper surface remap — dark-text-on-paper for printable deliverable */
-  [data-surface="ivory"] {
-    --bg: var(--paper);
-    --bg2: var(--paper-2);
-    --bg3: var(--paper-2);
-    --card: var(--paper);
-    --text: var(--paper-ink);
-    --text2: rgba(20, 32, 26, 0.62);
-    --text3: rgba(20, 32, 26, 0.38);
-    --border: rgba(20, 32, 26, 0.10);
-    --border2: rgba(20, 32, 26, 0.18);
-  }
+  /* NOTE: W2.4 attempted to flip this page to data-surface="ivory" so it
+     read as a printable paper deliverable. That broke rendering because
+     #rc-canvas (line 66) has a hardcoded dark gradient AND nested text
+     uses var(--text) — flipping --text to --paper-ink produced dark text
+     on a dark card (invisible). The page is designed to render on the
+     canonical emerald-black canvas; the ivory-paper aspiration is parked
+     until a proper light-mode redesign of the grade card. */
 </style>
   <link rel="stylesheet" href="css/pfc-tokens.css">
   <link rel="stylesheet" href="css/pfc-footer.css">
@@ -265,7 +260,7 @@
   <script src="js/pfc-analytics.js" defer></script>
   <script src="js/pfc-sidebar.js" defer></script>
 </head>
-<body data-surface="ivory">
+<body>
 <nav class="sidebar" aria-label="Primary navigation">
   <a href="dashboard.html" class="sidebar-logo">
     <div class="logo-mark">PF</div>
