@@ -2779,6 +2779,36 @@ window._pfcCountUp = function (el, finalText, durationMs, targetNode) {
 })();
 </script>
 
+<!-- ─────────── W4.5.3 — PHOTO-BAND PARALLAX ───────────
+     Subtle vertical drift on the .pfc-photo-band imagery as the band
+     passes through the viewport. The static ledger photo gains a hint
+     of depth without competing with the data-driven hero widget above.
+     Reduced-motion: opt-out via prefers-reduced-motion guard. -->
+<script>
+(function heroBandParallax() {
+  if (window.matchMedia && !window.matchMedia('(prefers-reduced-motion: no-preference)').matches) return;
+  var target = document.querySelector('.pfc-photo-band picture, .pfc-photo-band > img');
+  if (!target) return;
+  var ticking = false;
+  function onScroll() {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(function () {
+      var rect = target.getBoundingClientRect();
+      var vh = window.innerHeight || document.documentElement.clientHeight;
+      if (rect.bottom > 0 && rect.top < vh) {
+        var center = (rect.top + rect.height / 2) - vh / 2;
+        target.style.transform = 'translateY(' + (center * -0.06).toFixed(2) + 'px)';
+      }
+      ticking = false;
+    });
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', onScroll, { passive: true });
+  onScroll();
+})();
+</script>
+
 <!-- Mobile sticky CTA — shows on ≤540px after a 5s engagement delay; dismissible 30 days. -->
 <div class="pfc-sticky-cta-wrap" id="pfc-sticky-cta-wrap" hidden role="region" aria-label="Quick start">
   <a class="pfc-sticky-cta pfc-tap" href="auth.html" data-cta="sticky-mobile">
