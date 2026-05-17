@@ -1017,22 +1017,25 @@
     will-change: transform;
     transform: translate3d(0,0,0);
   }
+  /* W4.5.6 — tri-color ambient: emerald · ink-blue · champagne.
+     Slowed to 70s/80s/65s so the breathing reads as editorial atmosphere
+     rather than three pulsing emeralds competing with the hero copy. */
   .hero-mesh .mesh-blob-1 {
     background: var(--money);
     top: -12%; left: -12%;
-    animation: mesh-drift-1 42s ease-in-out infinite;
+    animation: mesh-drift-1 70s ease-in-out infinite;
   }
   .hero-mesh .mesh-blob-2 {
-    background: var(--gold);
+    background: rgba(107, 156, 183, 0.40); /* --blue rgba */
     bottom: -18%; right: -10%;
     opacity: 0.14;
-    animation: mesh-drift-2 52s ease-in-out infinite;
+    animation: mesh-drift-2 80s ease-in-out infinite;
   }
   .hero-mesh .mesh-blob-3 {
-    background: rgba(43,182,125,0.40);
+    background: rgba(212, 175, 106, 0.50); /* champagne rgba */
     top: 38%; left: 28%;
     opacity: 0.12;
-    animation: mesh-drift-3 46s ease-in-out infinite;
+    animation: mesh-drift-3 65s ease-in-out infinite;
   }
   @keyframes mesh-drift-1 {
     0%,100% { transform: translate3d(0, 0, 0); }
