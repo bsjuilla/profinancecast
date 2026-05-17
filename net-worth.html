@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -21,18 +21,8 @@
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Net worth tracker — ProFinanceCast">
   <meta name="twitter:description" content="Watch your assets grow, debts shrink, and net worth compound month by month.">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js" integrity="sha384-bs/nf9FbdNouRbMiFcrcZfLXYPKiPaGVGplVbv7dLGECccEXDW+S3zjqSKR5ZEaD" crossorigin="anonymous"></script>
 <style>
-  :root {
-    --bg:var(--canvas); --bg2:#0D1320; --bg3:#111827; --card:#0F1923;
-    --border:rgba(255,255,255,0.07); --border2:rgba(255,255,255,0.13);
-    --teal:var(--money); --teal-dim:rgba(43,182,125,0.12);
-    --text:#F0F4F8; --text2:#8A9BB0; --text3:#4A5A6E;
-    --amber:#F5A623; --red:#E05252; --blue:#3B82F6;
-    --purple:#A78BFA; --green:#22C55E; --r:12px; --r-sm:8px;
-  }
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
   html,body{height:100%;}
   body{font-family:var(--font-body);background:var(--bg);color:var(--text);display:flex;overflow:hidden;}
@@ -197,7 +187,11 @@
   <script src="js/pfc-storage.js"></script>
   <script src="js/pfc-entitlements.js"></script>
   <!-- v3 reskin: new fonts + emerald palette overrides -->
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500;1,9..144,600&family=Inter+Tight:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+  <link rel="stylesheet" media="print" onload="this.media='all'" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500;1,9..144,600&family=Inter+Tight:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500;1,9..144,600&family=Inter+Tight:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"></noscript>
   <link rel="stylesheet" href="css/pfc-reskin.css">
 
 
@@ -909,11 +903,11 @@ function renderChart(data) {
       plugins: {
         legend: { display: false },
         tooltip: {
-          backgroundColor: '#0F1923',
+          backgroundColor: '#16271F',
           borderColor: 'rgba(255,255,255,0.1)',
           borderWidth: 1,
-          titleColor: '#F0F4F8',
-          bodyColor: '#8A9BB0',
+          titleColor: '#F0EDE2',
+          bodyColor: '#B8C2BC',
           padding: 12,
           callbacks: {
             label: ctx => ' ' + ctx.dataset.label + ': ' + sym + Math.abs(Math.round(ctx.parsed.y)).toLocaleString(),

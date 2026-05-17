@@ -24,11 +24,8 @@
   <meta name="twitter:title" content="Monthly cash flow forecast — see your ending cash">
   <meta name="twitter:description" content="See your real cash flow month by month. Privacy-first forecasting — runs in your browser, no bank login.">
   <meta name="twitter:image" content="https://profinancecast.com/api/og?title=Monthly+cash+flow+forecast&subtitle=See+your+ending+cash+%E2%80%94+privacy-first">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" integrity="sha384-e6nUZLBkQ86NJ6TVVKAeSaK8jWa3NhkYWZFomE39AvDbQWeie9PlQqM3pmYW5d1g" crossorigin="anonymous"></script>
 <style>
-  :root{--bg:var(--canvas);--bg2:#0D1320;--bg3:#111827;--card:#0F1923;--border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);--teal:var(--money);--teal-dim:rgba(43,182,125,0.10);--text:#F0F4F8;--text2:#8A9BB0;--text3:#4A5A6E;--amber:#F5A623;--red:#E05252;--blue:#3B82F6;--purple:#A78BFA;--gold:#D4AF6A;--r:14px;--r-sm:10px;}
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
   html,body{height:100%;}
   body{font-family:var(--font-body);background:var(--bg);color:var(--text);display:flex;}
@@ -141,7 +138,11 @@
   <script src="js/pfc-crypto.js"></script>
   <script src="js/pfc-storage.js"></script>
   <script src="js/pfc-entitlements.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500;1,9..144,600&family=Inter+Tight:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+  <link rel="stylesheet" media="print" onload="this.media='all'" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500;1,9..144,600&family=Inter+Tight:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500;1,9..144,600&family=Inter+Tight:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"></noscript>
   <link rel="stylesheet" href="css/pfc-reskin.css">
   <script src="js/pfc-sentry-scrub.js" defer></script>
   <script src="https://js.sentry-cdn.com/9b8b34d46908bd9f79a16cf18322ac70.min.js" crossorigin="anonymous" defer></script>
@@ -438,7 +439,7 @@ const OUT_ROWS = [
   { key:'housing',   label:'Housing',         color:'#F5A623' },
   { key:'food',      label:'Food & groceries', color:'#E05252' },
   { key:'transport', label:'Transport',       color:'#A78BFA' },
-  { key:'otherExp',  label:'Other expenses',  color:'#8A9BB0' },
+  { key:'otherExp',  label:'Other expenses',  color:'#B8C2BC' },
   { key:'debtPay',   label:'Debt payments',   color:'#D4AF6A' },
 ];
 // Color palette for custom rows — picks stable colors by index so legends
@@ -621,11 +622,11 @@ function drawCharts(t) {
     plugins:{
       legend:{
         position:'bottom',
-        labels:{ color:'#8A9BB0', font:{ family:'Inter, sans-serif', size:11 }, boxWidth:10, padding:8 }
+        labels:{ color:'#B8C2BC', font:{ family:'Inter, sans-serif', size:11 }, boxWidth:10, padding:8 }
       },
       tooltip:{
-        backgroundColor:'#0F1923', borderColor:'rgba(255,255,255,0.13)', borderWidth:1,
-        titleColor:'#F0F4F8', bodyColor:'#F0F4F8',
+        backgroundColor:'#16271F', borderColor:'rgba(255,255,255,0.13)', borderWidth:1,
+        titleColor:'#F0EDE2', bodyColor:'#F0EDE2',
         callbacks:{ label:(c)=>` ${c.label}: ${fmt(c.parsed)}` }
       }
     }
@@ -640,7 +641,7 @@ function drawCharts(t) {
       datasets:[{
         data: inHasData ? inSegments.map(s=>s.value) : [1],
         backgroundColor: inHasData ? inSegments.map(s=>s.color) : ['#1A2330'],
-        borderColor:'#0F1923', borderWidth:2
+        borderColor:'#16271F', borderWidth:2
       }]
     },
     options: donutOpts
@@ -655,7 +656,7 @@ function drawCharts(t) {
       datasets:[{
         data: outHasData ? outSegments.map(s=>s.value) : [1],
         backgroundColor: outHasData ? outSegments.map(s=>s.color) : ['#1A2330'],
-        borderColor:'#0F1923', borderWidth:2
+        borderColor:'#16271F', borderWidth:2
       }]
     },
     options: donutOpts
@@ -680,14 +681,14 @@ function drawCharts(t) {
       plugins:{
         legend:{ display:false },
         tooltip:{
-          backgroundColor:'#0F1923', borderColor:'rgba(255,255,255,0.13)', borderWidth:1,
-          titleColor:'#F0F4F8', bodyColor:'#F0F4F8',
+          backgroundColor:'#16271F', borderColor:'rgba(255,255,255,0.13)', borderWidth:1,
+          titleColor:'#F0EDE2', bodyColor:'#F0EDE2',
           callbacks:{ label:(c)=>` ${fmtSigned(c.parsed.y)}` }
         }
       },
       scales:{
-        x:{ grid:{ display:false }, ticks:{ color:'#8A9BB0', font:{ family:'Inter, sans-serif', size:11 } } },
-        y:{ grid:{ color:'rgba(255,255,255,0.05)' }, ticks:{ color:'#8A9BB0', font:{ family:'Inter, sans-serif', size:10 }, callback:(v)=>currencySym()+v.toLocaleString() } }
+        x:{ grid:{ display:false }, ticks:{ color:'#B8C2BC', font:{ family:'Inter, sans-serif', size:11 } } },
+        y:{ grid:{ color:'rgba(255,255,255,0.05)' }, ticks:{ color:'#B8C2BC', font:{ family:'Inter, sans-serif', size:10 }, callback:(v)=>currencySym()+v.toLocaleString() } }
       }
     }
   });

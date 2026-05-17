@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -23,8 +23,6 @@
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Dashboard — ProFinanceCast">
   <meta name="twitter:description" content="Your ProFinanceCast control room — net-worth forecast, monthly savings, debt payoff, and financial health score.">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <style>
   /* All design tokens come from pfc-tokens.css (loaded below).
      Local-only aliases stay here for code that hasn't migrated yet. */
@@ -408,7 +406,11 @@
   <script src="js/pfc-entitlements.js"></script>
   <script src="js/pfc-motion.js" defer></script>
   <!-- v3 reskin: new fonts + emerald palette overrides -->
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500;1,9..144,600&family=Inter+Tight:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+  <link rel="stylesheet" media="print" onload="this.media='all'" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500;1,9..144,600&family=Inter+Tight:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500;1,9..144,600&family=Inter+Tight:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"></noscript>
   <link rel="stylesheet" href="css/pfc-reskin.css">
 
 
@@ -1690,9 +1692,9 @@ function initChart() {
       plugins: {
         legend: { display: false },
         tooltip: {
-          backgroundColor: '#0F1923',
+          backgroundColor: '#16271F',
           borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1,
-          titleColor: '#8A9BB0', bodyColor: '#F0F4F8',
+          titleColor: '#B8C2BC', bodyColor: '#F0EDE2',
           callbacks: { label: ctx => ' $' + ctx.raw.toLocaleString() }
         }
       },
@@ -2157,7 +2159,7 @@ const CAT_META = {
   subscriptions: { label: 'Subscriptions', color: '#A78BFA', bg: 'rgba(167,139,250,0.12)' },
   entertainment: { label: 'Entertainment', color: '#EC4899', bg: 'rgba(236,72,153,0.12)' },
   health:        { label: 'Health',        color: '#22C55E', bg: 'rgba(34,197,94,0.12)' },
-  other:         { label: 'Other',         color: '#8A9BB0', bg: 'rgba(138,155,176,0.12)' },
+  other:         { label: 'Other',         color: '#B8C2BC', bg: 'rgba(184,194,188,0.12)' },
 };
 
 // ── Keyword rules ──
@@ -2945,14 +2947,14 @@ function renderNWTab() {
               display: true,
               position: 'top',
               align: 'end',
-              labels: { color: '#8A9BB0', font: { size: 11 }, boxWidth: 12, boxHeight: 2, padding: 10 }
+              labels: { color: '#B8C2BC', font: { size: 11 }, boxWidth: 12, boxHeight: 2, padding: 10 }
             },
             tooltip: {
-              backgroundColor: '#0F1923',
+              backgroundColor: '#16271F',
               borderColor: 'rgba(255,255,255,0.1)',
               borderWidth: 1,
-              titleColor: '#F0F4F8',
-              bodyColor: '#8A9BB0',
+              titleColor: '#F0EDE2',
+              bodyColor: '#B8C2BC',
               callbacks: {
                 label: ctx => ' ' + ctx.dataset.label + ': ' + sym + Math.round(ctx.parsed.y).toLocaleString()
               }

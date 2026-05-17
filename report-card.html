@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -22,18 +22,8 @@
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Financial report card — ProFinanceCast">
   <meta name="twitter:description" content="Pro feature — get a graded breakdown of your savings rate, debt load, and emergency-fund coverage.">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
-  :root {
-    --bg:var(--canvas);--bg2:#0D1320;--bg3:#111827;--card:#0F1923;
-    --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);
-    --teal:var(--money);--teal-dim:rgba(43,182,125,0.12);
-    --text:#F0F4F8;--text2:#8A9BB0;--text3:#4A5A6E;
-    --amber:#F5A623;--red:#E05252;--blue:#3B82F6;--purple:#A78BFA;--green:#22C55E;
-    --r:12px;--r-sm:8px;
-  }
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
   html,body{height:100%}
   body{font-family:var(--font-body);background:var(--bg);color:var(--text);display:flex;overflow:hidden}
@@ -54,7 +44,7 @@
   .user-name{font-size:13px;font-weight:500}
   .user-plan{font-size:11px;color:var(--text3)}
   .main{flex:1;height:100vh;overflow-y:auto;display:flex;flex-direction:column}
-  .topbar{display:flex;align-items:center;justify-content:space-between;padding:0 28px;height:64px;flex-shrink:0;border-bottom:1px solid var(--border);background:rgba(8,12,18,0.9);position:sticky;top:0;z-index:10;backdrop-filter:blur(12px)}
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:0 28px;height:64px;flex-shrink:0;border-bottom:1px solid var(--border);background:color-mix(in srgb, var(--bg) 90%, transparent);position:sticky;top:0;z-index:10;backdrop-filter:blur(12px)}
   .topbar-left{display:flex;flex-direction:column}
   .topbar-title{font-family:var(--font-display);font-size:17px;font-weight:700}
   .topbar-sub{font-size:12px;color:var(--text3);margin-top:1px}
@@ -74,7 +64,7 @@
 
   /* THE SHAREABLE CARD */
   #rc-canvas{
-    background:linear-gradient(135deg,var(--canvas) 0%,#0D1F30 50%,var(--canvas) 100%);
+    background:linear-gradient(135deg,#0B1410 0%,#1C3328 50%,#0B1410 100%);
     border:1px solid rgba(43,182,125,0.2);border-radius:20px;padding:32px;
     position:relative;overflow:hidden;margin-bottom:16px;
   }
@@ -220,6 +210,19 @@
   .toast{animation:slideUp .2s ease}
   @media(max-width:1050px){.page-layout{grid-template-columns:1fr}}
   @media(max-width:680px){.sidebar{display:none}.content{padding:16px}}
+
+  /* Ivory paper surface remap — dark-text-on-paper for printable deliverable */
+  [data-surface="ivory"] {
+    --bg: var(--paper);
+    --bg2: var(--paper-2);
+    --bg3: var(--paper-2);
+    --card: var(--paper);
+    --text: var(--paper-ink);
+    --text2: rgba(20, 32, 26, 0.62);
+    --text3: rgba(20, 32, 26, 0.38);
+    --border: rgba(20, 32, 26, 0.10);
+    --border2: rgba(20, 32, 26, 0.18);
+  }
 </style>
   <link rel="stylesheet" href="css/pfc-tokens.css">
   <link rel="stylesheet" href="css/pfc-footer.css">
@@ -242,7 +245,11 @@
     }
   </script>
   <!-- v3 reskin: new fonts + emerald palette overrides -->
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500;1,9..144,600&family=Inter+Tight:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+  <link rel="stylesheet" media="print" onload="this.media='all'" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500;1,9..144,600&family=Inter+Tight:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500;1,9..144,600&family=Inter+Tight:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"></noscript>
   <link rel="stylesheet" href="css/pfc-reskin.css">
 
 
@@ -254,7 +261,7 @@
   <script src="js/pfc-analytics.js" defer></script>
   <script src="js/pfc-sidebar.js" defer></script>
 </head>
-<body>
+<body data-surface="ivory">
 <nav class="sidebar" aria-label="Primary navigation">
   <a href="dashboard.html" class="sidebar-logo">
     <div class="logo-mark">PF</div>
@@ -565,7 +572,7 @@ function renderCard(d){
   surpEl.style.color=d.surplus>=0?'var(--money)':'#E05252';
   const nwEl=document.getElementById('rc-nw');
   nwEl.textContent=(d.nw<0?'-':'')+fmt(d.nw);
-  nwEl.style.color=d.nw>=0?'#F0F4F8':'#E05252';
+  nwEl.style.color=d.nw>=0?'#F0EDE2':'#E66E5C';
   const srEl=document.getElementById('rc-savrate');
   srEl.textContent=Math.round(d.savRate*100)+'%';
   srEl.style.color=d.savRate>=.2?'var(--money)':d.savRate>=.1?'#F5A623':'#E05252';

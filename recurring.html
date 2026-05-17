@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -21,18 +21,8 @@
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Recurring detector — ProFinanceCast">
   <meta name="twitter:description" content="Spot every subscription, watch for price hikes, and cancel what you don't use — straight from your bank statements.">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js" integrity="sha384-bs/nf9FbdNouRbMiFcrcZfLXYPKiPaGVGplVbv7dLGECccEXDW+S3zjqSKR5ZEaD" crossorigin="anonymous"></script>
 <style>
-  :root {
-    --bg:var(--canvas);--bg2:#0D1320;--bg3:#111827;--card:#0F1923;
-    --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);
-    --teal:var(--money);--teal-dim:rgba(43,182,125,0.12);
-    --text:#F0F4F8;--text2:#8A9BB0;--text3:#4A5A6E;
-    --amber:#F5A623;--red:#E05252;--blue:#3B82F6;
-    --purple:#A78BFA;--green:#22C55E;--r:12px;--r-sm:8px;
-  }
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
   html,body{height:100%;}
   body{font-family:var(--font-body);background:var(--bg);color:var(--text);display:flex;overflow:hidden;}
@@ -197,7 +187,11 @@
   <script src="js/pfc-entitlements.js"></script>
   <script src="js/pfc-motion.js" defer></script>
   <!-- v3 reskin: new fonts + emerald palette overrides -->
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500;1,9..144,600&family=Inter+Tight:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+  <link rel="stylesheet" media="print" onload="this.media='all'" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500;1,9..144,600&family=Inter+Tight:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500;1,9..144,600&family=Inter+Tight:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"></noscript>
   <link rel="stylesheet" href="css/pfc-reskin.css">
 
 
@@ -497,7 +491,7 @@ const CAT_META = {
   insurance: { icon: '🛡️', color: '#A78BFA', label: 'Insurance' },
   finance:   { icon: '🏦', color: '#22C55E', label: 'Finance' },
   health:    { icon: '❤️', color: '#F97316', label: 'Health' },
-  other:     { icon: '📄', color: '#8A9BB0', label: 'Other' },
+  other:     { icon: '📄', color: '#B8C2BC', label: 'Other' },
 };
 
 // ── BRAND RECOGNITION ──
@@ -826,7 +820,7 @@ function renderCharts() {
     const sankeyData = catEntries.slice(0, 6).map(([c, v]) => ({
       label: CAT_META[c]?.label || c,
       amount: v,
-      color: CAT_META[c]?.color || '#8A9BB0',
+      color: CAT_META[c]?.color || '#B8C2BC',
     }));
     if (sankeyData.length) {
       window.PFCMotion.sankey(sankeySvg, sankeyData);
@@ -842,16 +836,16 @@ function renderCharts() {
       labels: catEntries.map(([c])=>CAT_META[c]?.label||c),
       datasets:[{
         data: catEntries.map(([,v])=>Math.round(v*100)/100),
-        backgroundColor: catEntries.map(([c])=>CAT_META[c]?.color+'99'||'#8A9BB099'),
-        borderColor: catEntries.map(([c])=>CAT_META[c]?.color||'#8A9BB0'),
+        backgroundColor: catEntries.map(([c])=>CAT_META[c]?.color+'99'||'#B8C2BC99'),
+        borderColor: catEntries.map(([c])=>CAT_META[c]?.color||'#B8C2BC'),
         borderWidth:1.5,
       }]
     },
     options:{
       responsive:true, maintainAspectRatio:false, cutout:'68%',
       plugins:{
-        legend:{ position:'right', labels:{ color:'#8A9BB0', font:{size:11}, padding:10, boxWidth:10 } },
-        tooltip:{ backgroundColor:'#0F1923', borderColor:'rgba(255,255,255,0.1)', borderWidth:1,
+        legend:{ position:'right', labels:{ color:'#B8C2BC', font:{size:11}, padding:10, boxWidth:10 } },
+        tooltip:{ backgroundColor:'#16271F', borderColor:'rgba(255,255,255,0.1)', borderWidth:1,
           callbacks:{ label: ctx=>' '+sym+ctx.parsed.toFixed(2)+'/mo' } }
       }
     }
@@ -884,7 +878,7 @@ function renderCharts() {
     },
     options:{
       responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{display:false}, tooltip:{ backgroundColor:'#0F1923', borderColor:'rgba(255,255,255,0.1)', borderWidth:1,
+      plugins:{ legend:{display:false}, tooltip:{ backgroundColor:'#16271F', borderColor:'rgba(255,255,255,0.1)', borderWidth:1,
         callbacks:{ label: ctx=>' '+sym+ctx.parsed.y.toLocaleString() } } },
       scales:{
         x:{ grid:{color:'rgba(255,255,255,0.04)'}, ticks:{color:'#4A5A6E',font:{size:10}} },
