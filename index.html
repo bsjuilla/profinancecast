@@ -1447,6 +1447,151 @@
     .pricing-compare-row { grid-template-columns: 1.4fr 1fr 1fr 1fr; padding: 12px 14px; gap: 6px; }
     .pricing-compare-row .feat { font-size: 12px; }
   }
+
+  /* ── W4.6 — EDITORIAL PHOTOGRAPHY ─────────────────────────────────
+     8 commissioned WebPs in assets/img/photos/. Each image is 1024×1024
+     source; CSS resizes per placement. Always specify width+height in
+     the <img> tag to prevent CLS. */
+  .pfc-photo-band {
+    width: 100%;
+    background: var(--canvas);
+    padding: var(--space-7, 72px) 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-4, 18px);
+    max-width: none;
+    margin: 0;
+  }
+  .pfc-photo-band picture,
+  .pfc-photo-band > img {
+    max-width: 1100px;
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: var(--r-md);
+    aspect-ratio: 16 / 7;
+    object-fit: cover;
+  }
+  .pfc-photo-band picture img { width: 100%; height: 100%; object-fit: cover; }
+  .pfc-photo-band .caption {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: clamp(15px, 1.2vw, 18px);
+    color: var(--ink-2);
+    max-width: 56ch;
+    text-align: center;
+    line-height: 1.45;
+    margin: 0;
+  }
+  .pfc-hero-img {
+    width: 100%;
+    height: auto;
+    border-radius: var(--r-lg);
+    display: block;
+  }
+  .pfc-strip-banner {
+    width: 100%;
+    height: clamp(180px, 22vw, 360px);
+    object-fit: cover;
+    object-position: center;
+    display: block;
+    border-radius: var(--r-md);
+    margin-bottom: var(--space-6, 36px);
+  }
+  .pfc-step-img-wrap {
+    margin-top: 16px;
+  }
+  .pfc-step-img {
+    width: 100%;
+    max-width: 420px;
+    height: auto;
+    border-radius: var(--r-md);
+    display: block;
+    margin: 0 auto;
+  }
+  .pfc-bento-img {
+    width: 100%;
+    max-width: 140px;
+    height: auto;
+    margin-bottom: 14px;
+    border-radius: var(--r-sm);
+    display: block;
+  }
+  .pfc-cta-strip {
+    display: grid;
+    grid-template-columns: minmax(280px, 380px) 1fr;
+    gap: 40px;
+    align-items: center;
+  }
+  .pfc-cta-img {
+    width: 100%;
+    max-width: 380px;
+    height: auto;
+    border-radius: var(--r-md);
+    display: block;
+    aspect-ratio: 4 / 5;
+    object-fit: cover;
+  }
+  .pfc-journal-masthead {
+    width: 100%;
+    height: clamp(140px, 18vw, 280px);
+    object-fit: cover;
+    object-position: center;
+    display: block;
+    border-radius: var(--r-md);
+    margin-bottom: 32px;
+    max-width: 1100px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .pfc-gold-arrow-strip {
+    width: 100%;
+    padding: 32px 24px;
+    display: flex;
+    justify-content: center;
+    background: transparent;
+    max-width: none;
+    margin: 0;
+  }
+  .pfc-gold-arrow-strip img {
+    max-width: 280px;
+    width: 100%;
+    height: auto;
+    opacity: 0.85;
+    display: block;
+  }
+  /* Mobile-only hero alt photo — visible at <980px, hidden otherwise. */
+  .pfc-hero-mobile-pic {
+    display: none;
+    margin: 32px auto 0;
+    max-width: 480px;
+    width: 100%;
+    border-radius: var(--r-md);
+    overflow: hidden;
+  }
+  .pfc-hero-mobile-pic img {
+    width: 100%;
+    height: auto;
+    display: block;
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+  }
+  @media (max-width: 979px) {
+    .pfc-hero-mobile-pic { display: block; }
+  }
+  @media (max-width: 760px) {
+    .pfc-cta-strip { grid-template-columns: 1fr; gap: 24px; }
+    .pfc-cta-img { max-width: 260px; margin: 0 auto; }
+    .pfc-photo-band picture,
+    .pfc-photo-band > img { aspect-ratio: 4 / 3; }
+    .pfc-photo-band { padding: 48px 16px; }
+  }
+  @media (max-width: 680px) {
+    .pfc-cta-img { display: none; }
+    .pfc-cta-strip { grid-template-columns: 1fr; }
+    .pfc-gold-arrow-strip img { max-width: 200px; }
+  }
 </style>
   <script src="js/pfc-sentry-scrub.js" defer></script>
   <script src="https://js.sentry-cdn.com/9b8b34d46908bd9f79a16cf18322ac70.min.js" crossorigin="anonymous" defer></script>
@@ -1521,6 +1666,17 @@
         <span role="listitem"><span aria-hidden="true" style="color:var(--money);">✓</span> No bank login required</span>
         <span role="listitem"><span aria-hidden="true" style="color:var(--money);">✓</span> EU GDPR · encrypted at rest</span>
         <span role="listitem"><span aria-hidden="true" style="color:var(--money);">✓</span> Built in Europe</span>
+      </div>
+      <!-- W4.6: mobile-only hero alternative — Portuguese coastal window. Hidden ≥980px. -->
+      <div class="pfc-hero-mobile-pic" aria-hidden="false">
+        <picture>
+          <source srcset="assets/img/photos/coastal-window.webp" type="image/webp" media="(max-width: 980px)">
+          <img src="assets/img/photos/coastal-window.webp"
+               alt="An open leather notebook on a marble window sill with four hand-written numbers, looking out over a blurred Portuguese coastal town at dawn."
+               width="1024" height="1024"
+               loading="lazy"
+               decoding="async">
+        </picture>
       </div>
     </div>
 
@@ -1597,6 +1753,31 @@
   </div>
 </section>
 
+<!-- ─────────── W4.6 — EDITORIAL PHOTO BAND (hero-ledger) ───────────
+     Full-bleed editorial moment between credibility strip and "How it
+     works". The leather-bound ledger is the physical embodiment of
+     compound-interest math — the thing the product replaces. -->
+<section class="pfc-photo-band" aria-label="Editorial photograph: a vintage compound-interest ledger">
+  <picture>
+    <source srcset="assets/img/photos/hero-ledger.webp" type="image/webp">
+    <img src="assets/img/photos/hero-ledger.webp"
+         alt="A leather-bound 1962 bank ledger open on emerald velvet, showing hand-written compound-interest figures and a vintage fountain pen."
+         width="1024" height="1024"
+         loading="lazy"
+         decoding="async">
+  </picture>
+  <p class="caption"><em>The numbers your grandfather worked on a ledger — now computed in your browser.</em></p>
+</section>
+
+<!-- ─────────── W4.6 — DECORATIVE GOLD-LEAF ARROW STRIP ─────────── -->
+<div class="pfc-gold-arrow-strip" aria-hidden="true">
+  <img src="assets/img/photos/gold-leaf-arrow.webp"
+       alt=""
+       width="1024" height="1024"
+       loading="lazy"
+       decoding="async">
+</div>
+
 <!-- ─────────── HOW IT WORKS ─────────── -->
 <section id="how">
   <div class="section-head reveal">
@@ -1647,6 +1828,18 @@
         <div class="step-num">Step 02</div>
         <h3>We compound forward — to the day</h3>
         <p>Our model projects every month for the next year. Real inflation pulled from the World Bank for your country. Real interest on every debt. Goals projected to the exact month you'll hit them.</p>
+        <!-- W4.6: editorial photograph — brass drafting compass and future-value formula -->
+        <figure class="pfc-step-img-wrap">
+          <picture>
+            <source srcset="assets/img/photos/compass-on-paper.webp" type="image/webp">
+            <img src="assets/img/photos/compass-on-paper.webp"
+                 alt="A brass drafting compass mid-draw on ivory grid paper, beside a folded sheet showing the future-value formula."
+                 width="1024" height="1024"
+                 loading="lazy"
+                 decoding="async"
+                 class="pfc-step-img">
+          </picture>
+        </figure>
       </div>
       <div class="step-visual">
         <span class="step-pill" aria-hidden="true"><span class="pulse"></span>Live</span>
@@ -1885,9 +2078,16 @@
 
     <div class="bento-card b-3" data-bento>
       <div>
-        <div class="icon" style="background: rgba(212,175,106,0.10); border-color: rgba(212,175,106,0.25); color: var(--gold);">
-          <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="4" y="6" width="14" height="12" rx="1.6" stroke="currentColor" stroke-width="1.6"/><path d="M8 6V4a3 3 0 016 0v2" stroke="currentColor" stroke-width="1.6"/></svg>
-        </div>
+        <!-- W4.6: replace the small lock icon with the editorial key-on-velvet photograph -->
+        <picture>
+          <source srcset="assets/img/photos/key-on-velvet.webp" type="image/webp">
+          <img src="assets/img/photos/key-on-velvet.webp"
+               alt="An antique brass skeleton key on ink-emerald velvet with a small letterpress card reading AES-256."
+               width="1024" height="1024"
+               loading="lazy"
+               decoding="async"
+               class="pfc-bento-img">
+        </picture>
         <h3>Encrypted by default</h3>
         <p>AES-256 in the browser, on a Web Crypto API key never sent to a server. Zero bank credentials, zero third-party trackers, zero cross-domain pixels. Delete everything in one click — settings to wipe.</p>
       </div>
@@ -1930,6 +2130,17 @@
     <h2 class="section-title">Three tiers. <em>One product.</em></h2>
     <p class="pfc-lede" style="margin-top:14px;">Free covers the ten-year forecast forever, with no time limit and no degradation. Pro is for households running multiple scenarios in parallel — a job offer, a relocation, a paid-off mortgage. Cancel any time — refund within thirty days, no email exchange required.</p>
   </div>
+
+  <!-- W4.6: editorial strip banner — three bowls showing growth from nothing to gold -->
+  <picture>
+    <source srcset="assets/img/photos/seedling-coin.webp" type="image/webp">
+    <img src="assets/img/photos/seedling-coin.webp"
+         alt="Three ceramic bowls in a row on linen — empty, a single bronze coin, and a tarnished gold sovereign with an olive sprig between."
+         width="1024" height="1024"
+         loading="lazy"
+         decoding="async"
+         class="pfc-strip-banner">
+  </picture>
 
   <div class="pricing">
     <div class="price-card pfc-card--elev">
@@ -2029,6 +2240,16 @@
 
 <!-- ─────────── FROM THE JOURNAL ─────────── -->
 <section id="journal" class="reveal journal-strip" aria-labelledby="journal-headline">
+  <!-- W4.6: editorial masthead — desk corner with broadsheet, tea, and The Intelligent Investor -->
+  <picture>
+    <source srcset="assets/img/photos/desk-corner.webp" type="image/webp">
+    <img src="assets/img/photos/desk-corner.webp"
+         alt="Corner of a walnut desk with a folded financial broadsheet, black tea in a porcelain cup, a wax-sealed envelope, and a worn copy of The Intelligent Investor."
+         width="1024" height="1024"
+         loading="lazy"
+         decoding="async"
+         class="pfc-journal-masthead">
+  </picture>
   <div class="head section-head">
     <div class="section-index"><span class="roman">iv.</span><span class="rule"></span>From the journal</div>
     <h2 id="journal-headline" class="section-title">Practical writing on <em>debt, salary, and the next ten years.</em></h2>
@@ -2102,15 +2323,29 @@
 <!-- ─────────── CTA ─────────── -->
 <section style="padding: 48px 0 96px;">
   <div class="cta-strip reveal">
-    <h2>See where your money <em>actually lands.</em></h2>
-    <p>Four numbers in. Ten years out. Free forever — no bank login, no card on file, no email confirmation before you see the chart.</p>
-    <a href="auth.html" class="btn btn-primary btn-lg">
-      Run the forecast
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7h8m-3-3l3 3-3 3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
-    </a>
-    <p style="margin-top:18px;margin-bottom:0;font-family:var(--font-body);font-size:13px;color:var(--ink-3);max-width:54ch;">
-      Numbers stay in your browser. Cancel from Settings — paid plans refundable within 30 days.
-    </p>
+    <div class="pfc-cta-strip">
+      <!-- W4.6: visual punctuation for "start" — a struck match against pure black -->
+      <picture>
+        <source srcset="assets/img/photos/match-flame.webp" type="image/webp">
+        <img src="assets/img/photos/match-flame.webp"
+             alt="A struck match held vertically against pure black, flame burning at champagne gold with motion-frozen smoke above."
+             width="1024" height="1024"
+             loading="lazy"
+             decoding="async"
+             class="pfc-cta-img">
+      </picture>
+      <div class="pfc-cta-strip-copy">
+        <h2>See where your money <em>actually lands.</em></h2>
+        <p>Four numbers in. Ten years out. Free forever — no bank login, no card on file, no email confirmation before you see the chart.</p>
+        <a href="auth.html" class="btn btn-primary btn-lg">
+          Run the forecast
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7h8m-3-3l3 3-3 3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+        <p style="margin-top:18px;margin-bottom:0;font-family:var(--font-body);font-size:13px;color:var(--ink-3);max-width:54ch;">
+          Numbers stay in your browser. Cancel from Settings — paid plans refundable within 30 days.
+        </p>
+      </div>
+    </div>
   </div>
 </section>
 
