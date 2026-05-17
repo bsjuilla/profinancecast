@@ -1304,7 +1304,17 @@
     color: var(--gold); font-size: var(--t-15); letter-spacing: 0;
     text-transform: none;
   }
-  .section-index .rule { flex: 0 0 36px; height: 1px; background: var(--gold); opacity: 0.55; }
+  .section-index .rule {
+    flex: 0 0 36px; height: 1px; background: var(--gold); opacity: 0.55;
+    /* W4.5.5 — draw the gold hairline left-to-right on first viewport entry. */
+    transform: scaleX(0);
+    transform-origin: left center;
+    transition: transform 600ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .section-index .rule.is-visible { transform: scaleX(1); }
+  @media (prefers-reduced-motion: reduce) {
+    .section-index .rule { transform: scaleX(1) !important; transition: none !important; }
+  }
 
   /* Pull-quote / lede — distinct, larger Fraunces italic */
   .pfc-lede {
@@ -2827,6 +2837,33 @@ window._pfcCountUp = function (el, finalText, durationMs, targetNode) {
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
   onScroll();
+})();
+</script>
+
+<!-- ─────────── W4.5.5 — ROMAN-ORNAMENT RULE DRAW-IN ───────────
+     The short gold hairlines inside .section-index draw left-to-right
+     (scaleX 0→1, 600ms, ease-hero) when their section enters viewport.
+     Under reduced-motion the CSS rule above forces the final state,
+     and the script below adds .is-visible immediately so a no-IO browser
+     still shows them. -->
+<script>
+(function ruleDrawIn() {
+  var rules = document.querySelectorAll('.section-index .rule');
+  if (!rules.length) return;
+  var reduce = window.matchMedia && !window.matchMedia('(prefers-reduced-motion: no-preference)').matches;
+  if (reduce || !('IntersectionObserver' in window)) {
+    rules.forEach(function (el) { el.classList.add('is-visible'); });
+    return;
+  }
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (entry) {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('is-visible');
+        io.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.3 });
+  rules.forEach(function (el) { io.observe(el); });
 })();
 </script>
 
