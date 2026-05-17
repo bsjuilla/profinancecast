@@ -974,7 +974,6 @@ async function handleLogin() {
     return;
   }
   // Session was written to localStorage by the SDK — navigate to the destination
-  console.log('[auth] sign-in OK, session user:', data?.user?.id);
   window.location.href = _nextDestination();
 }
 

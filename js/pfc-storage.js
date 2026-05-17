@@ -97,7 +97,7 @@ const PFCStorage = (() => {
       }
       localStorage.removeItem(legacyKey);
     });
-    if (migrated > 0) console.log(`[PFCStorage] Migrated ${migrated} legacy key(s) → pfc:${userId}:*`);
+    if (migrated > 0 && window.PFC_DEBUG) console.log(`[PFCStorage] Migrated ${migrated} legacy key(s) → pfc:${userId}:*`);
   }
 
   // ── Guest → real-user adoption on first login ────────────────────────────
@@ -159,7 +159,7 @@ const PFCStorage = (() => {
         console.warn(`[PFCStorage] re-encryption failed for '${guestKey}':`, e.message);
       }
     }
-    if (adopted > 0) console.log(`[PFCStorage] Adopted ${adopted} guest key(s) → pfc:${userId}:*`);
+    if (adopted > 0 && window.PFC_DEBUG) console.log(`[PFCStorage] Adopted ${adopted} guest key(s) → pfc:${userId}:*`);
   }
 
   // Public sync wrapper that fires the async adoption and returns immediately.
@@ -430,7 +430,7 @@ const PFCStorage = (() => {
       _pending.delete(k);
       localStorage.removeItem(k);
     });
-    console.log(`[PFCStorage] Cleared ${toRemove.length} key(s) for ${_uid()}`);
+    if (window.PFC_DEBUG) console.log(`[PFCStorage] Cleared ${toRemove.length} key(s) for ${_uid()}`);
   }
 
   function isReady() { return _ready; }

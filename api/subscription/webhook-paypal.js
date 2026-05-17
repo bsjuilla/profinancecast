@@ -207,7 +207,6 @@ export default async function handler(req, res) {
           event_type: eventType === 'PAYMENT.CAPTURE.REFUNDED' ? 'refund' : 'reversal',
           provider_id: captureId,
         });
-        console.log(`Cancelled subscription for ${userId} via ${eventType} (capture ${captureId})`);
         break;
       }
 
@@ -246,7 +245,6 @@ export default async function handler(req, res) {
 
       default:
         // Unhandled event types are fine — just acknowledge so PayPal doesn't retry forever.
-        console.log(`PayPal webhook: ignoring ${eventType}`);
         await _logEvent({
           user_id: null,
           event_type: 'unhandled:' + eventType,
