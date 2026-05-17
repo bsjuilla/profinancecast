@@ -142,13 +142,15 @@
   <link rel="stylesheet" href="css/pfc-blog.css">
   <link rel="stylesheet" href="css/pfc-footer.css">
   <script src="js/pfc-export.js" defer></script>
-  <!-- Supabase SDK + auth/storage/entitlements (must load before any inline script that uses them) -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/pfc-config.js"></script>
-  <script src="js/pfc-auth.js"></script>
-  <script src="js/pfc-crypto.js"></script>
-  <script src="js/pfc-storage.js"></script>
-  <script src="js/pfc-entitlements.js"></script>
+  <!-- Supabase SDK + auth/storage/entitlements. Blog only uses PFCAuth.isLoggedIn()
+       defensively for an in-app nav rewrite — the typeof guard handles the case
+       where these load after the inline body init runs, so we defer all of them. -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+  <script src="js/pfc-config.js" defer></script>
+  <script src="js/pfc-auth.js" defer></script>
+  <script src="js/pfc-crypto.js" defer></script>
+  <script src="js/pfc-storage.js" defer></script>
+  <script src="js/pfc-entitlements.js" defer></script>
   <!-- v3 reskin: new fonts + emerald palette overrides -->
   <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

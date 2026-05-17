@@ -134,9 +134,26 @@
 <link rel="stylesheet" href="css/pfc-tokens.css">
 <link rel="stylesheet" href="css/pfc-app.css">
 
-<!-- GSAP for scroll choreography (defer = doesn't block paint) -->
-<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer integrity="sha384-g4NTh/Iv5PPU4xPyhEWqPcwtNXOvdaDI8LLnyYfyNZOjKJeYQyjzQ9X5275eBjpt" crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js" defer integrity="sha384-Z3REaz79l2IaAZqJsSABtTbhjgOUYyV3p90XNnAPCSHg3EMTz1fouunq9WZRtj3d" crossorigin="anonymous"></script>
+<!-- GSAP for scroll choreography (gated behind prefers-reduced-motion: no-preference;
+     reduced-motion users save ~50 KB and skip the animation entirely) -->
+<script>
+  (function () {
+    if (!window.matchMedia) return;
+    if (!matchMedia('(prefers-reduced-motion: no-preference)').matches) return;
+    var gsap = document.createElement('script');
+    gsap.src = 'https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js';
+    gsap.integrity = 'sha384-g4NTh/Iv5PPU4xPyhEWqPcwtNXOvdaDI8LLnyYfyNZOjKJeYQyjzQ9X5275eBjpt';
+    gsap.crossOrigin = 'anonymous';
+    gsap.defer = true;
+    document.head.appendChild(gsap);
+    var st = document.createElement('script');
+    st.src = 'https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js';
+    st.integrity = 'sha384-Z3REaz79l2IaAZqJsSABtTbhjgOUYyV3p90XNnAPCSHg3EMTz1fouunq9WZRtj3d';
+    st.crossOrigin = 'anonymous';
+    st.defer = true;
+    document.head.appendChild(st);
+  })();
+</script>
 
 <!-- Hard fallback: if GSAP fails to load (CDN block, SRI mismatch, network error),
      reveal all .reveal elements within 1.5s so the page never stays invisibly empty. -->
@@ -178,7 +195,7 @@
 <script src="js/pfc-crypto.js"></script>
 <script src="js/pfc-storage.js"></script>
 <script src="js/pfc-entitlements.js"></script>
-<script src="js/pfc-motion.js"></script>
+<script src="js/pfc-motion.js" defer></script>
 <script src="js/pfc-analytics.js" defer></script>
 
 <!-- ════════════════════════════════════════════════════════════════════════
