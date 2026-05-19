@@ -1,0 +1,454 @@
+/* css/pfc-tool-page.css — public-tool-page design system.
+   Mirrors blog.html / index.html visual tokens. Loaded AFTER pfc-tokens.css.
+
+   Shared by tools/<tool>/{index,uk,ie,fr,de,us,ca,au,sg}.html — five tools × nine
+   country variants = 45 indexable pages all using this single stylesheet.
+
+   Authoring rules:
+   - All colors via tokens from pfc-tokens.css. No raw hex outside this comment.
+   - Mobile-first; the 900px breakpoint flips the 2-column tool grid to 1 column.
+   - `prefers-reduced-motion` already handled by pfc-tokens.css overrides;
+     this stylesheet only adds transitions where the parent token allows them.
+*/
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: var(--font-body);
+  background: var(--canvas);
+  color: var(--ink);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+a { color: inherit; }
+
+/* ── NAV (mirrors blog.html exactly) ─────────────────────────────────── */
+.pfc-tool-nav {
+  position: sticky; top: 12px; z-index: 100;
+  width: calc(100% - 48px); max-width: 1200px; margin: 12px auto 0;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 18px;
+  background: rgba(11, 20, 16, 0.72);
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+  backdrop-filter: blur(14px) saturate(120%);
+  -webkit-backdrop-filter: blur(14px) saturate(120%);
+}
+.pfc-tool-nav .logo {
+  display: flex; align-items: center; gap: 10px;
+  font-family: var(--font-display); font-size: 16px; font-weight: 500;
+  color: var(--ink); text-decoration: none; letter-spacing: -0.01em;
+}
+.pfc-tool-nav .logo-mark { display: inline-flex; }
+.pfc-tool-nav .nav-links { display: flex; align-items: center; gap: 28px; }
+.pfc-tool-nav .nav-links a {
+  font-size: 13.5px; color: var(--ink-2); text-decoration: none;
+  transition: color var(--t-base) var(--ease-out);
+}
+.pfc-tool-nav .nav-links a:hover,
+.pfc-tool-nav .nav-links a.active { color: var(--ink); }
+
+.pfc-tool-nav .nav-cta { display: flex; gap: 10px; align-items: center; }
+.pfc-tool-nav .btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 9px 18px; border-radius: var(--r-pill);
+  font-size: 13px; font-weight: 500; text-decoration: none; cursor: pointer;
+  border: 1px solid transparent;
+  transition: transform var(--t-base) var(--ease-out),
+              background var(--t-base) var(--ease-out),
+              box-shadow var(--t-base) var(--ease-out);
+}
+.pfc-tool-nav .btn-ghost { background: transparent; color: var(--ink-2); }
+.pfc-tool-nav .btn-ghost:hover { color: var(--ink); }
+.pfc-tool-nav .btn-primary { background: var(--money); color: #0B1410; font-weight: 600; }
+.pfc-tool-nav .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 14px 50px var(--money-glow); }
+
+/* Mobile nav: stack the links into a single row, hide the secondary links */
+@media (max-width: 640px) {
+  .pfc-tool-nav .nav-links { gap: 16px; }
+  .pfc-tool-nav .nav-links a:not(.active) { display: none; }
+}
+
+/* ── HERO ────────────────────────────────────────────────────────────── */
+.pfc-tool-hero {
+  max-width: 1100px; margin: 0 auto;
+  padding: 96px 24px 40px;
+}
+.pfc-tool-hero .country-pill {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 6px 14px; border-radius: var(--r-pill);
+  background: var(--gold-soft);
+  border: 1px solid rgba(212, 175, 106, 0.22);
+  font-family: var(--font-mono); font-size: 11px;
+  color: var(--gold);
+  letter-spacing: 0.10em; text-transform: uppercase;
+  margin-bottom: 18px;
+}
+.pfc-tool-hero h1 {
+  font-family: var(--font-display);
+  font-size: clamp(36px, 5.5vw, 64px);
+  font-weight: 480;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  margin-bottom: 18px;
+  text-wrap: balance;
+}
+.pfc-tool-hero h1 em {
+  font-style: italic;
+  color: var(--gold);
+  font-weight: 460;
+}
+.pfc-tool-hero p {
+  font-size: clamp(15px, 1.4vw, 18px);
+  color: var(--ink-2);
+  font-weight: 300;
+  max-width: 60ch;
+  line-height: 1.6;
+  text-wrap: pretty;
+}
+
+/* ── TOOL GRID (inputs / outputs) ────────────────────────────────────── */
+.pfc-tool-grid {
+  max-width: 1100px; margin: 0 auto;
+  padding: 0 24px 60px;
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: 28px;
+}
+@media (max-width: 900px) {
+  .pfc-tool-grid { grid-template-columns: 1fr; }
+}
+
+.pfc-tool-card {
+  background: linear-gradient(180deg, var(--surface-2) 0%, var(--surface) 100%);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: 28px;
+  display: flex; flex-direction: column; gap: 18px;
+}
+.pfc-tool-card h2 {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  margin-bottom: 4px;
+}
+.pfc-tool-card .sub {
+  font-size: 13px;
+  color: var(--ink-3);
+  margin-bottom: 12px;
+}
+
+/* ── Form fields ─────────────────────────────────────────────────────── */
+.pfc-field { display: flex; flex-direction: column; gap: 6px; }
+.pfc-field label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-3);
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+}
+.pfc-field input,
+.pfc-field select {
+  background: var(--canvas);
+  color: var(--ink);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-sm);
+  padding: 11px 14px;
+  font-family: var(--font-body);
+  font-size: 15px;
+  font-feature-settings: "tnum" 1, "lnum" 1;
+  transition: border-color var(--t-base) var(--ease-out);
+  width: 100%;
+}
+.pfc-field input:focus,
+.pfc-field select:focus {
+  outline: none;
+  border-color: var(--money);
+}
+.pfc-field .with-symbol {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  background: var(--canvas);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-sm);
+  transition: border-color var(--t-base) var(--ease-out);
+}
+.pfc-field .with-symbol:focus-within { border-color: var(--money); }
+.pfc-field .with-symbol .sym {
+  padding: 0 10px 0 14px;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 14px;
+}
+.pfc-field .with-symbol input {
+  border: none;
+  background: transparent;
+  padding-left: 0;
+}
+.pfc-field .with-symbol input:focus { outline: none; }
+.pfc-field .hint {
+  font-size: 12px;
+  color: var(--ink-3);
+  font-family: var(--font-body);
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+/* ── Output rows ─────────────────────────────────────────────────────── */
+.pfc-output-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 14px 0;
+  border-bottom: 1px dashed var(--line);
+}
+.pfc-output-row:last-child { border-bottom: none; }
+.pfc-output-row .lbl {
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.pfc-output-row .val {
+  font-family: var(--font-mono);
+  font-size: 22px;
+  color: var(--ink);
+  font-feature-settings: "tnum" 1, "lnum" 1;
+}
+.pfc-output-row .val.hero {
+  font-size: 32px;
+  color: var(--money);
+  font-weight: 500;
+}
+.pfc-output-row .val.warn { color: var(--warning); }
+.pfc-output-row .val.gold { color: var(--gold); }
+
+.pfc-chart-wrap { height: 280px; position: relative; }
+.pfc-chart-wrap canvas { max-width: 100%; }
+
+/* Verdict banner — used by mortgage-affordability + debt-strategy-compare */
+.pfc-verdict {
+  margin-top: 8px;
+  padding: 14px 16px;
+  border-radius: var(--r-sm);
+  font-size: 14.5px;
+  line-height: 1.5;
+  border: 1px solid var(--line-2);
+}
+.pfc-verdict.good {
+  background: var(--money-soft);
+  border-color: rgba(43, 182, 125, 0.30);
+  color: var(--ink);
+}
+.pfc-verdict.warn {
+  background: var(--warning-soft);
+  border-color: rgba(230, 110, 92, 0.30);
+  color: var(--ink);
+}
+
+/* ── EXPLAINER + FAQ ─────────────────────────────────────────────────── */
+.pfc-explainer {
+  max-width: 880px; margin: 0 auto;
+  padding: 40px 24px;
+  border-top: 1px solid var(--line);
+}
+.pfc-explainer h2 {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  margin-bottom: 16px;
+}
+.pfc-explainer h2 em {
+  font-style: italic;
+  color: var(--gold);
+  font-weight: 460;
+}
+.pfc-explainer p {
+  font-size: 15.5px;
+  color: var(--ink-2);
+  line-height: 1.7;
+  margin-bottom: 14px;
+  max-width: 64ch;
+}
+.pfc-explainer .formula {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  padding: 16px 20px;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: var(--ink);
+  margin: 18px 0;
+  overflow-x: auto;
+}
+
+.pfc-faq {
+  max-width: 880px; margin: 0 auto;
+  padding: 20px 24px 60px;
+}
+.pfc-faq h2 {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  margin-bottom: 24px;
+}
+.pfc-faq details {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  padding: 16px 20px;
+  margin-bottom: 10px;
+  transition: border-color var(--t-base) var(--ease-out);
+}
+.pfc-faq details:hover { border-color: var(--line-2); }
+.pfc-faq summary {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--ink);
+  cursor: pointer;
+  list-style: none;
+  position: relative;
+  padding-right: 24px;
+}
+.pfc-faq summary::-webkit-details-marker { display: none; }
+.pfc-faq summary::after {
+  content: '+';
+  position: absolute;
+  right: 0; top: 50%;
+  transform: translateY(-50%);
+  color: var(--gold);
+  font-size: 18px;
+  line-height: 1;
+  transition: transform var(--t-base) var(--ease-out);
+}
+.pfc-faq details[open] summary::after {
+  content: '−';
+  transform: translateY(-50%) rotate(180deg);
+}
+.pfc-faq p {
+  font-size: 14.5px;
+  color: var(--ink-2);
+  line-height: 1.65;
+  margin-top: 12px;
+  max-width: 64ch;
+}
+
+/* ── CTA STRIP ───────────────────────────────────────────────────────── */
+.pfc-tool-cta {
+  max-width: 1100px; margin: 0 auto 80px;
+  padding: 40px 24px;
+  background: linear-gradient(135deg, rgba(43, 182, 125, 0.08), rgba(212, 175, 106, 0.05));
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-lg);
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 24px;
+  align-items: center;
+}
+@media (max-width: 700px) {
+  .pfc-tool-cta { grid-template-columns: 1fr; }
+}
+.pfc-tool-cta h3 {
+  font-family: var(--font-display);
+  font-size: clamp(22px, 2.4vw, 28px);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  margin-bottom: 8px;
+}
+.pfc-tool-cta p {
+  font-size: 14.5px;
+  color: var(--ink-2);
+  max-width: 56ch;
+}
+.pfc-tool-cta .btn-primary {
+  padding: 12px 26px;
+  background: var(--money);
+  color: #0B1410;
+  border-radius: var(--r-pill);
+  font-weight: 600;
+  font-size: 14px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  transition: transform var(--t-base) var(--ease-out),
+              box-shadow var(--t-base) var(--ease-out);
+}
+.pfc-tool-cta .btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 40px var(--money-glow);
+}
+
+/* ── COUNTRY SWITCHER ────────────────────────────────────────────────── */
+.pfc-country-switcher {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 24px 20px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-family: var(--font-mono);
+}
+.pfc-country-switcher .lbl {
+  font-size: 11px;
+  color: var(--ink-3);
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  align-self: center;
+  margin-right: 6px;
+}
+.pfc-country-switcher a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--line-2);
+  font-size: 12px;
+  color: var(--ink-2);
+  text-decoration: none;
+  transition: color var(--t-base) var(--ease-out),
+              border-color var(--t-base) var(--ease-out),
+              background var(--t-base) var(--ease-out);
+}
+.pfc-country-switcher a:hover {
+  color: var(--ink);
+  border-color: var(--line-3);
+}
+.pfc-country-switcher a.active {
+  background: var(--surface-2);
+  color: var(--ink);
+  border-color: var(--line-3);
+}
+
+/* ── Worked-example card (must-fix #4 — country differentiation depth) ── */
+.pfc-worked-example {
+  max-width: 880px; margin: 0 auto;
+  padding: 8px 24px 40px;
+}
+.pfc-worked-example .card {
+  background: var(--surface);
+  border: 1px solid var(--line-2);
+  border-left: 3px solid var(--gold);
+  border-radius: var(--r-sm);
+  padding: 18px 22px;
+}
+.pfc-worked-example .lbl {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--gold);
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.pfc-worked-example p {
+  font-size: 15px;
+  color: var(--ink-2);
+  line-height: 1.6;
+  margin: 0;
+}
+.pfc-worked-example p strong { color: var(--ink); font-weight: 500; }

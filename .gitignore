@@ -3,3 +3,7 @@ graphify-out/cache/
 
 # Graphify output (regenerated locally)
 graphify-out/
+
+# Tool-builder swarm worker scratch state (do not commit)
+.claude-flow/
+ruvector.db
