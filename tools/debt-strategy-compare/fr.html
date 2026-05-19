@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="fr-FR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculateur remboursement dettes — boule de neige vs avalanche | ProFinanceCast</title>
+<meta name="description" content="Calculateur gratuit de remboursement de dettes pour la France. Comparez les stratégies boule de neige et avalanche en EUR — taux typiques des cartes françaises. Sans inscription.">
+<link rel="canonical" href="https://profinancecast.com/tools/debt-strategy-compare/fr">
+<meta name="robots" content="index,follow">
+<link rel="alternate" hreflang="en" href="https://profinancecast.com/tools/debt-strategy-compare">
+<link rel="alternate" hreflang="x-default" href="https://profinancecast.com/tools/debt-strategy-compare">
+<link rel="alternate" hreflang="en-GB" href="https://profinancecast.com/tools/debt-strategy-compare/uk">
+<link rel="alternate" hreflang="en-IE" href="https://profinancecast.com/tools/debt-strategy-compare/ie">
+<link rel="alternate" hreflang="fr-FR" href="https://profinancecast.com/tools/debt-strategy-compare/fr">
+<link rel="alternate" hreflang="de-DE" href="https://profinancecast.com/tools/debt-strategy-compare/de">
+<link rel="alternate" hreflang="en-US" href="https://profinancecast.com/tools/debt-strategy-compare/us">
+<link rel="alternate" hreflang="en-CA" href="https://profinancecast.com/tools/debt-strategy-compare/ca">
+<link rel="alternate" hreflang="en-AU" href="https://profinancecast.com/tools/debt-strategy-compare/au">
+<link rel="alternate" hreflang="en-SG" href="https://profinancecast.com/tools/debt-strategy-compare/sg">
+
+<meta property="og:type" content="website">
+<meta property="og:title" content="Calculateur remboursement dettes France — boule de neige vs avalanche">
+<meta property="og:description" content="Comparez les stratégies de remboursement de dettes. Valeurs EUR, taux français typiques. Gratuit, sans inscription.">
+<meta property="og:url" content="https://profinancecast.com/tools/debt-strategy-compare/fr">
+<meta property="og:image" content="https://profinancecast.com/api/og?title=Dettes+France&eyebrow=Outils&subtitle=Boule+de+neige+vs+avalanche.">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:site_name" content="ProFinanceCast">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Calculateur remboursement dettes France">
+<meta name="twitter:description" content="Comparez boule de neige vs avalanche en EUR. Taux français typiques pré-remplis. Fonctionne dans votre navigateur.">
+<meta name="twitter:image" content="https://profinancecast.com/api/og?title=Dettes+France&eyebrow=Outils&subtitle=Boule+de+neige+vs+avalanche.">
+
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preload" as="font" type="font/woff2" crossorigin
+      href="https://fonts.gstatic.com/s/fraunces/v37/6NUh8FyLNQOQZAnv9bYAaaQjVO_h1cYfPgWj-XzNvKDz.woff2">
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600&family=Inter+Tight:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" media="print" onload="this.media='all'" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600&family=Inter+Tight:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+
+<link rel="stylesheet" href="../../../css/pfc-tokens.css">
+<link rel="stylesheet" href="../../../css/pfc-tool-page.css">
+<link rel="stylesheet" href="../../../css/pfc-footer.css">
+
+<style>
+.ds-debt-row { margin-bottom: 14px; }
+.ds-row-inputs { display: grid; grid-template-columns: 1.4fr 0.8fr 1fr auto; gap: 10px; align-items: end; }
+@media (max-width: 640px) { .ds-row-inputs { grid-template-columns: 1fr 1fr; } }
+.ds-remove-row { background: transparent; border: 1px solid var(--line-2); border-radius: var(--r-sm); color: var(--ink-3); cursor: pointer; font-size: 13px; padding: 10px 12px; transition: color var(--t-base), border-color var(--t-base); align-self: end; }
+.ds-remove-row:hover { color: var(--warning, #E66E5C); border-color: var(--warning, #E66E5C); }
+#ds-add-row { margin-top: 6px; background: transparent; border: 1px dashed var(--line-2); border-radius: var(--r-sm); color: var(--ink-2); cursor: pointer; font-size: 13px; font-family: var(--font-mono); padding: 9px 16px; width: 100%; letter-spacing: 0.04em; transition: color var(--t-base), border-color var(--t-base); }
+#ds-add-row:hover:not(:disabled) { color: var(--ink); border-color: var(--line-3); }
+#ds-add-row:disabled { opacity: 0.45; cursor: not-allowed; }
+.ds-results-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 4px; }
+@media (max-width: 540px) { .ds-results-grid { grid-template-columns: 1fr; } }
+.ds-strategy-block { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 16px; }
+.ds-strategy-block .strategy-label { font-family: var(--font-mono); font-size: 11px; color: var(--ink-3); letter-spacing: 0.10em; text-transform: uppercase; margin-bottom: 10px; }
+.ds-strategy-block .strategy-months { font-family: var(--font-mono); font-size: 28px; color: var(--money); font-feature-settings: "tnum" 1; margin-bottom: 4px; }
+.ds-strategy-block .strategy-interest { font-size: 13px; color: var(--ink-2); }
+.ds-strategy-block .strategy-interest span { font-family: var(--font-mono); color: var(--ink); }
+.ds-savings-row { display: flex; justify-content: space-between; align-items: baseline; padding: 12px 0 4px; border-top: 1px dashed var(--line); margin-top: 8px; }
+.ds-savings-row .lbl { font-size: 13px; color: var(--ink-2); }
+.ds-savings-row .val { font-family: var(--font-mono); font-size: 22px; color: var(--gold); font-feature-settings: "tnum" 1; }
+</style>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "SoftwareApplication",
+      "name": "Calculateur remboursement dettes (France) — boule de neige vs avalanche",
+      "applicationCategory": "FinanceApplication",
+      "operatingSystem": "Web",
+      "url": "https://profinancecast.com/tools/debt-strategy-compare/fr",
+      "description": "Calculateur de remboursement de dettes localisé pour la France, comparant les stratégies boule de neige et avalanche avec des valeurs EUR et des taux typiques français.",
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" },
+      "publisher": { "@type": "Organization", "name": "ProFinanceCast", "url": "https://profinancecast.com" }
+    },
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Accueil", "item": "https://profinancecast.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Outils", "item": "https://profinancecast.com/tools/" },
+        { "@type": "ListItem", "position": 3, "name": "Comparaison stratégies dettes", "item": "https://profinancecast.com/tools/debt-strategy-compare" },
+        { "@type": "ListItem", "position": 4, "name": "France", "item": "https://profinancecast.com/tools/debt-strategy-compare/fr" }
+      ]
+    },
+    {
+      "@type": "FAQPage",
+      "mainEntity": [
+        { "@type": "Question", "name": "Quelle est la différence entre les méthodes boule de neige et avalanche ?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Les deux méthodes consistent à payer le minimum sur toutes les dettes, puis à diriger le budget restant vers une dette cible. La boule de neige cible le solde le plus faible en premier ; l'avalanche cible le taux d'intérêt le plus élevé en premier, minimisant le coût total." } },
+        { "@type": "Question", "name": "Quelle méthode est mathématiquement optimale ?",
+          "acceptedAnswer": { "@type": "Answer", "text": "L'avalanche est toujours mathématiquement optimale — elle minimise le rythme d'accumulation des intérêts sur l'ensemble du portefeuille de dettes." } },
+        { "@type": "Question", "name": "Quelle méthode est la plus motivante ?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Des recherches suggèrent que beaucoup de personnes s'en tiennent mieux à la boule de neige car l'élimination rapide de petites dettes crée un sentiment de progrès. Si la différence d'intérêts est faible, choisissez la méthode que vous suivrez réellement." } },
+        { "@type": "Question", "name": "Quel est le taux d'usure en France pour le crédit à la consommation ?",
+          "acceptedAnswer": { "@type": "Answer", "text": "En France, le taux d'usure fixé par la Banque de France plafonne les taux pratiqués par les établissements de crédit. Pour le crédit revolving, ce plafond est généralement autour de 21–22% (2025). Les cartes de crédit avec facilité de paiement tournent autour de 18% en pratique." } },
+        { "@type": "Question", "name": "Quels sont les taux typiques du crédit revolving en France ?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Le crédit revolving français affiche généralement un TAEG autour de 18%. Les cartes de grands magasins peuvent approcher 20–21%. Les prêts personnels classiques sont bien inférieurs, à 3–8% selon la durée et le profil. Vérifiez toujours le TAEG figurant dans votre contrat." } }
+      ]
+    }
+  ]
+}
+</script>
+</head>
+<body data-pfc-country="fr">
+
+<nav class="pfc-tool-nav" role="banner" aria-label="Navigation principale">
+  <a class="logo" href="/" aria-label="ProFinanceCast accueil">
+    <span class="logo-mark" aria-hidden="true">
+      <svg viewBox="0 0 32 32" width="30" height="30" aria-hidden="true">
+        <path d="M5 22 L11 19.5 L17 14.5 L23 7" fill="none" stroke="#D4AF6A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="23" cy="7" r="3" fill="#D4AF6A" fill-opacity="0.22"/>
+        <circle cx="23" cy="7" r="1.8" fill="#D4AF6A"/>
+      </svg>
+    </span>
+    ProFinanceCast
+  </a>
+  <div class="nav-links">
+    <a href="/#features">Fonctionnalités</a>
+    <a href="/#pricing">Tarifs</a>
+    <a href="/tools/" class="active">Outils</a>
+    <a href="/blog">Blog</a>
+  </div>
+  <div class="nav-cta">
+    <a href="/auth.html" class="btn btn-ghost">Se connecter</a>
+    <a href="/auth.html#signup" class="btn btn-primary">Démarrer gratuitement
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M3 7h8m-3-3l3 3-3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </a>
+  </div>
+</nav>
+
+<header class="pfc-tool-hero">
+  <span class="country-pill">🇫🇷 France · EUR</span>
+  <h1>Remboursement de dettes, <em>comparé.</em></h1>
+  <p>Le crédit revolving français tourne autour de 18% de TAEG. Saisissez vos soldes et votre budget mensuel pour voir exactement combien chaque stratégie vous coûte en intérêts — et quand vous serez libéré de vos dettes.</p>
+</header>
+
+<section class="pfc-tool-grid">
+  <div class="pfc-tool-card">
+    <h2>Vos dettes</h2>
+    <div class="sub">Jusqu'à 8 dettes. Montants en EUR.</div>
+    <div class="pfc-field">
+      <label for="ds-budget">Budget mensuel total (mensualités minimales incluses)</label>
+      <div class="with-symbol"><span class="sym">€</span><input id="ds-budget" type="number" min="0" step="50" value="300" aria-label="Budget mensuel de remboursement"></div>
+      <span class="hint">Le total que vous pouvez allouer aux dettes chaque mois, mensualités minimales comprises.</span>
+    </div>
+    <div id="ds-debt-rows" role="list" aria-label="Liste des dettes"></div>
+    <button type="button" id="ds-add-row" aria-label="Ajouter une dette">+ Ajouter une dette</button>
+  </div>
+  <div class="pfc-tool-card">
+    <h2>Comparaison des stratégies</h2>
+    <div class="sub">Simulation mois par mois, calculée dans votre navigateur.</div>
+    <div class="ds-results-grid">
+      <div class="ds-strategy-block">
+        <div class="strategy-label">Avalanche (taux le plus élevé en premier)</div>
+        <div class="strategy-months" id="ds-avalanche-months">—</div>
+        <div class="strategy-interest">Total intérêts : <span id="ds-avalanche-interest">—</span></div>
+      </div>
+      <div class="ds-strategy-block">
+        <div class="strategy-label">Boule de neige (solde le plus faible en premier)</div>
+        <div class="strategy-months" id="ds-snowball-months">—</div>
+        <div class="strategy-interest">Total intérêts : <span id="ds-snowball-interest">—</span></div>
+      </div>
+    </div>
+    <div class="ds-savings-row">
+      <span class="lbl">Économies d'intérêts grâce à l'avalanche</span>
+      <span class="val" id="ds-savings">—</span>
+    </div>
+    <div id="ds-verdict" class="pfc-verdict" role="status" aria-live="polite"></div>
+    <div class="pfc-chart-wrap" style="height:260px;">
+      <canvas id="ds-chart" aria-label="Évolution du solde total : avalanche vs boule de neige"></canvas>
+    </div>
+  </div>
+</section>
+
+<nav class="pfc-country-switcher" aria-label="Versions par pays">
+  <span class="lbl">Localisé :</span>
+  <a href="/tools/debt-strategy-compare">🌐 Global</a>
+  <a href="/tools/debt-strategy-compare/uk">🇬🇧 UK</a>
+  <a href="/tools/debt-strategy-compare/ie">🇮🇪 Irlande</a>
+  <a href="/tools/debt-strategy-compare/fr" class="active">🇫🇷 France</a>
+  <a href="/tools/debt-strategy-compare/de">🇩🇪 Allemagne</a>
+  <a href="/tools/debt-strategy-compare/us">🇺🇸 États-Unis</a>
+  <a href="/tools/debt-strategy-compare/ca">🇨🇦 Canada</a>
+  <a href="/tools/debt-strategy-compare/au">🇦🇺 Australie</a>
+  <a href="/tools/debt-strategy-compare/sg">🇸🇬 Singapour</a>
+</nav>
+
+<section class="pfc-worked-example">
+  <div class="card">
+    <div class="lbl">Exemple — France</div>
+    <p>Prenez trois dettes courantes : <strong>3 000 € de crédit revolving à 18% TAEG</strong> (60 € min), <strong>1 500 € de carte magasin à 20% TAEG</strong> (30 € min), et <strong>8 000 € de prêt personnel à 6% TAEG</strong> (165 € min). Avec un budget de 400 €/mois et la méthode avalanche, vous attaquez la carte magasin en premier — économisant environ 180 € d'intérêts par rapport à la boule de neige.</p>
+  </div>
+</section>
+
+<section class="pfc-explainer">
+  <h2>Comment ça marche — <em>en clair.</em></h2>
+  <p>Les deux stratégies commencent de la même façon : payer le minimum sur chaque dette chaque mois. La différence réside dans l'affectation du budget restant.</p>
+  <p><strong>L'avalanche</strong> concentre le surplus sur la dette au taux le plus élevé. En France, il s'agit souvent du crédit revolving ou d'une carte de grand magasin. Cela minimise le coût total en intérêts.</p>
+  <p><strong>La boule de neige</strong> concentre le surplus sur la plus petite dette. Vous éliminez les dettes plus vite, ce qui est motivant — mais si cette petite dette a un faible taux, vous laissez une dette coûteuse s'accumuler.</p>
+  <p>En France, le taux d'usure encadre les taux pratiqués. Vérifiez le TAEG de chaque contrat pour saisir le taux exact. Pour approfondir les mathématiques et la recherche comportementale, consultez notre <a href="/blog-debt-avalanche-method">guide sur la méthode avalanche</a>.</p>
+</section>
+
+<section class="pfc-faq">
+  <h2>Questions fréquentes.</h2>
+  <details><summary>Quelle est la différence entre boule de neige et avalanche ?</summary>
+    <p>Les deux méthodes consistent à payer le minimum sur toutes les dettes, puis à diriger le surplus vers une cible. La boule de neige cible le solde le plus faible ; l'avalanche cible le taux le plus élevé.</p></details>
+  <details><summary>Quelle méthode est mathématiquement optimale ?</summary>
+    <p>L'avalanche est toujours mathématiquement optimale — elle minimise le rythme d'accumulation des intérêts sur l'ensemble du portefeuille.</p></details>
+  <details><summary>Quelle méthode est la plus motivante ?</summary>
+    <p>Des recherches suggèrent que beaucoup s'en tiennent mieux à la boule de neige grâce aux victoires rapides. Si la différence d'intérêts est faible, choisissez la méthode que vous suivrez réellement.</p></details>
+  <details><summary>Quel est le taux d'usure en France ?</summary>
+    <p>Le taux d'usure est le taux maximum légal fixé chaque trimestre par la Banque de France. Pour le crédit revolving, il plafonne généralement autour de 21–22%. Aucun prêteur ne peut légalement dépasser ce taux.</p></details>
+  <details><summary>Quels sont les taux typiques du crédit revolving en France ?</summary>
+    <p>Le crédit revolving français affiche généralement un TAEG autour de 18%. Les cartes de grands magasins peuvent approcher 20–21%. Les prêts personnels classiques sont bien inférieurs, à 3–8%. Vérifiez toujours le TAEG figurant dans votre contrat.</p></details>
+</section>
+
+<section class="pfc-tool-cta">
+  <div>
+    <h3>Suivez l'évolution de votre remboursement automatiquement.</h3>
+    <p>ProFinanceCast transforme un calcul ponctuel en prévision sur 10 ans, mise à jour automatiquement au fil de vos revenus et dépenses. Gratuit pour les fonctionnalités essentielles.</p>
+  </div>
+  <a href="/auth.html#signup" class="btn-primary">Démarrer gratuitement
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M3 7h8m-3-3l3 3-3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </a>
+</section>
+
+<footer class="site-footer" role="contentinfo">
+  <div class="footer-grid">
+    <div class="footer-col"><h4>Produit</h4><ul><li><a href="/">Prévision</a></li><li><a href="/blog">Journal</a></li><li><a href="/billing.html">Tarifs</a></li><li><a href="/tools/">Outils</a></li></ul></div>
+    <div class="footer-col"><h4>Entreprise</h4><ul><li><a href="/about.html">À propos</a></li><li><a href="/about.html#methodology">Méthodologie</a></li><li><a href="/llms.txt">Pour les modèles de langage</a></li></ul></div>
+    <div class="footer-col"><h4>Ressources</h4><ul><li><a href="/help.html">Aide</a></li><li><a href="/blog">Articles</a></li></ul></div>
+    <div class="footer-col"><h4>Confiance</h4><ul><li><a href="/privacy.html">Données</a></li><li><a href="/terms.html">CGU</a></li></ul></div>
+  </div>
+  <div class="footer-stamp"><span>© 2026 ProFinanceCast — Construit en Europe</span><span>Estimations uniquement, pas de conseil financier.</span></div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"
+        integrity="sha384-e6nUZLBkQ86NJ6TVVKAeSaK8jWa3NhkYWZFomE39AvDbQWeie9PlQqM3pmYW5d1g"
+        crossorigin="anonymous" defer></script>
+<script src="../../../js/pfc-tools-i18n.js" defer></script>
+<script src="../../../js/pfc-tools-lib.js" defer></script>
+<script src="../../../js/tools/debt-strategy-compare.js" defer></script>
+</body>
+</html>
