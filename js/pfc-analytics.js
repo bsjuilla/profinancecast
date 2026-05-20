@@ -67,8 +67,19 @@
 
   function track(name, props) {
     if (!name || typeof name !== 'string') return;
+    const scrubbed = scrub(props || {});
+    // Cloudflare Analytics queue (existing transport).
     window._cfa = window._cfa || [];
-    window._cfa.push(['event', name, scrub(props || {})]);
+    window._cfa.push(['event', name, scrubbed]);
+    // Plausible custom events (added May 2026 for Phase 2 tool funnel
+    // measurement). Plausible script may not be loaded yet — its loader
+    // replaces window.plausible with the real function and drains the queue.
+    try {
+      window.plausible = window.plausible || function () {
+        (window.plausible.q = window.plausible.q || []).push(arguments);
+      };
+      window.plausible(name, { props: scrubbed });
+    } catch (_) { /* never let analytics break the page */ }
   }
 
   window.PFC = window.PFC || {};
@@ -261,6 +272,54 @@
     });
 
     // 18. exit_popup_ban — never fires. The rule itself is in QA-BRIEF.
+
+    // ── Phase 2 SEO tool funnel events (added May 2026) ──────────────────
+    // 19-22 cover the 5 SEO calculator tools × 9 country variants.
+    //
+    // tool_view       — auto-fired on /tools/<tool>[/<country>] page load.
+    // tool_compute    — first time the user computes (fired by pfc-tools-lib.js
+    //                   makeLineChart / updateChartData via PFC.trackToolCompute).
+    // cta_signup_click — auto-fired by any [data-pfc-track="cta_signup_click"]
+    //                    element. Properties picked up from data-pfc-track-* attrs.
+    // cta_tool_open    — same pattern, used on tools/index.html grid links.
+
+    const toolMatch = (location.pathname || '').match(/^\/tools\/([a-z-]+)(?:\/|$)/i);
+    const tool = (toolMatch && toolMatch[1] && toolMatch[1] !== 'index') ? toolMatch[1] : null;
+    const country = (document.body && document.body.dataset && document.body.dataset.pfcCountry) || null;
+
+    if (tool) {
+      // 19. tool_view — fired once per pageview on any tool page.
+      track('tool_view', { tool, country });
+
+      // 20. tool_compute — exposed as a helper for pfc-tools-lib.js to call
+      // the first time a tool's chart renders or updates. Deduped via flag.
+      window.PFC._toolComputeFired = false;
+      window.PFC.trackToolCompute = function () {
+        if (window.PFC._toolComputeFired) return;
+        window.PFC._toolComputeFired = true;
+        track('tool_compute', { tool, country });
+      };
+    }
+
+    // 21-22. Generic [data-pfc-track] click handler. Drop the attribute on
+    // any element to wire it as a tracked click. Optional data-pfc-track-*
+    // attrs become event properties (camelCase preserved).
+    document.querySelectorAll('[data-pfc-track]').forEach(function (el) {
+      el.addEventListener('click', function () {
+        const name = el.dataset.pfcTrack;
+        if (!name) return;
+        const props = { surface };
+        for (const key in el.dataset) {
+          if (key.indexOf('pfcTrack') === 0 && key !== 'pfcTrack') {
+            const prop = key.replace('pfcTrack', '');
+            props[prop.charAt(0).toLowerCase() + prop.slice(1)] = el.dataset[key];
+          }
+        }
+        if (tool && !props.tool) props.tool = tool;
+        if (country && !props.country) props.country = country;
+        track(name, props);
+      }, { passive: true });
+    });
   }
 
   if (document.readyState === 'loading') {

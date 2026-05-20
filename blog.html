@@ -377,6 +377,7 @@
   <script src="js/pfc-sentry.js" defer></script>
   <!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "37cb784ad53047a9921bfd79e9835310"}'></script><!-- End Cloudflare Web Analytics -->
   <script src="js/pfc-analytics.js" defer></script>
+  <script defer data-domain="profinancecast.com" src="https://plausible.io/js/script.js"></script>
 </head>
 <body>
 <style>
@@ -443,7 +444,7 @@ body.pfc-inapp a[href="index.html#pricing"]:not(.footer-col a) {
   </div>
   <div class="nav-cta">
     <a href="auth.html" class="btn btn-ghost">Sign in</a>
-    <a href="auth.html#signup" class="btn btn-primary">
+    <a href="auth.html#signup" data-pfc-track="cta_signup_click" data-pfc-track-placement="auto" class="btn btn-primary">
       Start free
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M3 7h8m-3-3l3 3-3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </a>

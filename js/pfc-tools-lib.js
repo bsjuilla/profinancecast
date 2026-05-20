@@ -84,6 +84,14 @@
       if (datasets[i]) ds.data = datasets[i].data;
     });
     chart.update('none');
+    // Analytics: fire tool_compute the first time the user causes a chart
+    // update. PFC.trackToolCompute is self-deduped (once per pageview) and
+    // wrapped in try so an analytics outage never breaks the tool.
+    try {
+      if (window.PFC && typeof window.PFC.trackToolCompute === 'function') {
+        window.PFC.trackToolCompute();
+      }
+    } catch (_) {}
   }
 
   // ── Math: compound growth ──────────────────────────────────────────────
