@@ -714,8 +714,13 @@
   <!-- CONTENT -->
   <div class="content">
 
-    <!-- UPGRADE BANNER -->
-    <div class="upgrade-banner">
+    <!-- UPGRADE BANNER — only for Free users.
+         Hidden by default to avoid the "Pro user staring at an upgrade
+         prompt" churn risk. JS at boot calls hideUpgradeBannerIfPro()
+         which checks PFCPlan.get() and reveals only when plan === 'free'.
+         data-free-only is the standard convention used elsewhere in the
+         app for Free-only UI elements. -->
+    <div class="upgrade-banner" data-free-only style="display:none;">
       <div class="upgrade-text">
         <strong>You're on the Free plan — unlock your full financial picture</strong>
         Pro gives you 60 AI queries/month, multi-scenario planning, CSV import, and a completely ad-free experience.
@@ -2789,16 +2794,46 @@ function _rehydrateUserFromStorage() {
     chart.update('none');
   }
 }
+// ── Free-plan upgrade banner — reveal logic ─────────────────────────────
+// The banner is hidden by default in the HTML (display:none). We reveal it
+// only when the user's plan is truly 'free'. Pro users never see it.
+// Re-evaluated on every plan change so upgrade is reflected immediately.
+function hideUpgradeBannerIfPro() {
+  const banner = document.querySelector('.upgrade-banner[data-free-only]');
+  if (!banner) return;
+  let plan = 'free';
+  try { plan = (window.PFCPlan && PFCPlan.get) ? PFCPlan.get() : 'free'; } catch (_) {}
+  // Show banner only for plain free users; any other plan (pro, founder,
+  // lifetime, trial, whatever future tier names appear) hides it.
+  banner.style.display = (plan === 'free') ? '' : 'none';
+}
+
 if (typeof PFCAuth !== 'undefined') {
   PFCAuth.onReady(() => {
     const fresh = loadUser();
     // Avoid a guest-mode flicker: only re-render if storage actually differs
     if (JSON.stringify(fresh) !== JSON.stringify(USER)) _rehydrateUserFromStorage();
+    hideUpgradeBannerIfPro();
     _maybeFireActivation('dashboard');
   });
   // Sign-in / sign-out / account-switch after page load
-  PFCAuth.onAuthChange(_rehydrateUserFromStorage);
+  PFCAuth.onAuthChange(() => {
+    _rehydrateUserFromStorage();
+    hideUpgradeBannerIfPro();
+  });
 }
+// Also re-check on any plan change events the rest of the app might dispatch.
+// PFCPlan emits a custom event on its own state changes via PFCPlan.onChange.
+try {
+  if (window.PFCPlan && typeof PFCPlan.onChange === 'function') {
+    PFCPlan.onChange(hideUpgradeBannerIfPro);
+  }
+} catch (_) {}
+document.addEventListener('pfc:plan-changed', hideUpgradeBannerIfPro);
+// Belt-and-braces: re-check shortly after load in case PFCPlan resolves
+// asynchronously without firing PFCAuth.onReady (e.g. cached session).
+setTimeout(hideUpgradeBannerIfPro, 800);
+setTimeout(hideUpgradeBannerIfPro, 2500);
 
 // ── ACTIVATION EVENT ──
 // Canonical product metric: fires once per user when they (a) are signed in,

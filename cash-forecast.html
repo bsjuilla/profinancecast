@@ -486,6 +486,25 @@ function persistUser() {
     else localStorage.setItem('pfc_user', JSON.stringify(USER));
   } catch(e) { console.error('[cash-forecast] persist failed:', e); }
 }
+
+// Debounced persist — saves ~400ms after the user stops typing. This catches
+// the "type a value then refresh immediately" case that the blur-only
+// persistence used to lose silently. We keep the blur-trigger too (line 547)
+// so the save happens instantly when the user tabs away.
+let _persistDebounceTimer;
+function persistUserDebounced() {
+  clearTimeout(_persistDebounceTimer);
+  _persistDebounceTimer = setTimeout(persistUser, 400);
+}
+
+// Belt-and-braces: catch a refresh/navigation while a debounced save is still
+// pending. Cancel the timer and write synchronously before unload.
+window.addEventListener('beforeunload', () => {
+  if (_persistDebounceTimer) {
+    clearTimeout(_persistDebounceTimer);
+    try { persistUser(); } catch (_) {}
+  }
+});
 function currencySym() { return USER.currency || '$'; }
 function fmt(n) { return currencySym() + Math.abs(Math.round(n||0)).toLocaleString('en-US'); }
 function fmtSigned(n) { return (n<0?'-':'') + currencySym() + Math.abs(Math.round(n||0)).toLocaleString('en-US'); }
@@ -543,6 +562,9 @@ function buildRow(r, side, isCustom) {
       USER[r.key] = v;
     }
     renderTotalsAndCharts();
+    // Persist ~400ms after the user stops typing. Previously this only fired
+    // on blur, so typing → refresh-without-tabbing-away silently lost data.
+    persistUserDebounced();
   });
   input.addEventListener('blur', () => { persistUser(); flashSaved(); });
   if (isCustom) {
@@ -718,14 +740,29 @@ function renderSubscriptions() {
   } catch(_) {}
 }
 
-// ── Month selector — visual only for now; data is the current snapshot ───
+// ── Month selector — generated dynamically on every page load ────────────
+// Window: 1 month back (for quick reference) + current month + 6 months
+// forward. Computed at boot time from new Date(), so the range walks
+// forward automatically as months pass — in November 2026 the dropdown
+// ends at May 2027, not September 2026 like the old -1..+4 cap.
+// Locale comes from navigator.language so the month names render in the
+// user's language ("septembre 2026" for FR users etc.). Falls back to
+// 'en-US' if the browser refuses the locale (Safari old versions).
 function populateMonths() {
   const sel = document.getElementById('month-select');
+  if (!sel) return;
   const today = new Date();
+  const locale = (navigator.languages && navigator.languages[0]) || navigator.language || 'en-US';
   const months = [];
-  for (let i = -1; i <= 4; i++) {
+  for (let i = -1; i <= 6; i++) {
     const d = new Date(today.getFullYear(), today.getMonth() + i, 1);
-    months.push({ value: d.toISOString().slice(0,7), label: d.toLocaleDateString('en-US',{month:'long',year:'numeric'}) });
+    let label;
+    try {
+      label = d.toLocaleDateString(locale, { month: 'long', year: 'numeric' });
+    } catch (_) {
+      label = d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    }
+    months.push({ value: d.toISOString().slice(0,7), label: label });
   }
   sel.innerHTML = months.map(m => `<option value="${m.value}">${m.label}</option>`).join('');
   sel.value = today.toISOString().slice(0,7);
