@@ -404,6 +404,7 @@
   <script src="js/pfc-crypto.js"></script>
   <script src="js/pfc-storage.js"></script>
   <script src="js/pfc-currency.js"></script>
+  <script src="js/pfc-user.js"></script>
   <script src="js/pfc-entitlements.js"></script>
   <script src="js/pfc-motion.js" defer></script>
   <!-- v3 reskin: new fonts + emerald palette overrides -->
@@ -1489,15 +1490,18 @@ const DEFAULT_USER = {
   currency: '$', name: ''
 };
 
+// PFCUser is the single source of truth for the USER profile. These two
+// shims keep the rest of dashboard.html's existing call sites working — they
+// delegate to PFCUser.get() / PFCUser.update() under the hood. If PFCUser
+// hasn't loaded (script tag missing / blocked), they fall back to the
+// previous PFCStorage path so the page still renders.
 function loadUser() {
+  if (typeof PFCUser !== 'undefined') {
+    return { ...DEFAULT_USER, ...PFCUser.get() };
+  }
   try {
     const saved = PFCStorage.get('user');
     const u = saved ? { ...DEFAULT_USER, ...JSON.parse(saved) } : { ...DEFAULT_USER };
-    // Normalise currency on read so every fmt() / sym call gets a SYMBOL,
-    // not an ISO code. Handles legacy settings.html writes that stored
-    // "USD" / "MUR" / "EUR" as the value (which then rendered as
-    // "USD3,000" in chart tooltips and KPIs). With this normaliser,
-    // both old (symbol) and new (ISO) writes resolve to the symbol.
     if (typeof PFCCurrency !== 'undefined' && PFCCurrency.toSymbol) {
       u.currency = PFCCurrency.toSymbol(u.currency);
     } else if (!u.currency) {
@@ -1510,6 +1514,7 @@ function isUserEmpty(u) {
   return !u || (!u.income && !u.savings && !u.debt && !(u.name && u.name.length));
 }
 function saveUser(u) {
+  if (typeof PFCUser !== 'undefined') { try { PFCUser.set(u); } catch(_) {} return; }
   try { PFCStorage.setJSON('user', u); } catch(e) {}
 }
 
@@ -2685,8 +2690,10 @@ function applyToDashboard() {
   USER.transport     = avgOf('transport') || USER.transport;
   USER.otherExp      = (avgOf('subscriptions') + avgOf('entertainment') + avgOf('health') + avgOf('other')) || USER.otherExp;
 
-  // Save to localStorage
-  PFCStorage.setJSON('user', USER);
+  // Save via PFCUser so cross-page consumers (cash-forecast, net-worth) see
+  // the CSV-derived values. Falls back to PFCStorage directly if PFCUser
+  // failed to load.
+  saveUser(USER);
 
   // Update dashboard
   updateAllCards();
@@ -2920,6 +2927,14 @@ if (typeof PFCAuth !== 'undefined') {
   PFCAuth.onAuthChange(() => {
     _rehydrateUserFromStorage();
     hideUpgradeBannerIfPro();
+  });
+}
+// Cross-page sync via PFCUser — when settings.html (or any other page) writes
+// new profile data, re-render the dashboard cards without a manual reload.
+// Idempotent via the JSON-equality check inside _rehydrateUserFromStorage.
+if (typeof PFCUser !== 'undefined' && typeof PFCUser.onChange === 'function') {
+  PFCUser.onChange(() => {
+    try { _rehydrateUserFromStorage(); } catch (_) {}
   });
 }
 // Also re-check on any plan change events the rest of the app might dispatch.

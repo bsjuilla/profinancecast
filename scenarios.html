@@ -586,6 +586,8 @@
   <script src="js/pfc-auth.js"></script>
   <script src="js/pfc-crypto.js"></script>
   <script src="js/pfc-storage.js"></script>
+  <script src="js/pfc-currency.js"></script>
+  <script src="js/pfc-user.js"></script>
   <script src="js/pfc-entitlements.js"></script>
   <!-- Auth guard. Pro gating moved to in-page editorial preview (UX §6.25);
        set window.PFC_PREVIEW_GALLERY=false above this script to restore the
@@ -974,6 +976,9 @@ const DEFAULT_USER = {
 };
 
 function loadUser() {
+  if (typeof PFCUser !== 'undefined') {
+    try { return { ...DEFAULT_USER, ...PFCUser.get() }; } catch(e) { return { ...DEFAULT_USER }; }
+  }
   try {
     const s = PFCStorage.get('user');
     return s ? { ...DEFAULT_USER, ...JSON.parse(s) } : { ...DEFAULT_USER };

@@ -189,6 +189,8 @@
   <script src="js/pfc-auth.js"></script>
   <script src="js/pfc-crypto.js"></script>
   <script src="js/pfc-storage.js"></script>
+  <script src="js/pfc-currency.js"></script>
+  <script src="js/pfc-user.js"></script>
   <script src="js/pfc-entitlements.js"></script>
   <script src="js/pfc-motion.js" defer></script>
   <!-- v3 reskin: new fonts + emerald palette overrides -->
@@ -535,7 +537,7 @@ const BRAND_DB = {
 
 // ── INIT ──
 function init() {
-  try { USER = PFCStorage.getJSON('user') || {}; } catch(e) {}
+  try { USER = (typeof PFCUser !== 'undefined') ? PFCUser.get() : (PFCStorage.getJSON('user') || {}); } catch(e) {}
   try {
     const saved = PFCStorage.get('recurrings');
     if (saved) { RECURRINGS = JSON.parse(saved); showResults(); }
@@ -1090,7 +1092,7 @@ init();
 // RECURRINGS may reflect pfc:guest:* (often empty). Once auth resolves and pfc-
 // storage.js finishes adoptGuestData, re-read from the now-correct namespace.
 function _rehydrateFromStorage() {
-  try { USER = PFCStorage.getJSON('user') || {}; } catch(e) {}
+  try { USER = (typeof PFCUser !== 'undefined') ? PFCUser.get() : (PFCStorage.getJSON('user') || {}); } catch(e) {}
   try {
     const saved = PFCStorage.get('recurrings');
     if (saved) {

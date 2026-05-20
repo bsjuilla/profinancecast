@@ -458,6 +458,8 @@
   <script src="js/pfc-auth.js"></script>
   <script src="js/pfc-crypto.js"></script>
   <script src="js/pfc-storage.js"></script>
+  <script src="js/pfc-currency.js"></script>
+  <script src="js/pfc-user.js"></script>
   <script src="js/pfc-entitlements.js"></script>
   <script src="js/pfc-motion.js" defer></script>
   <!-- v3 reskin: new fonts + emerald palette overrides -->
@@ -788,7 +790,7 @@ const CAT_ICONS = {
 
 // ── LOAD ──
 function load() {
-  try { USER = PFCStorage.getJSON('user') || {}; } catch(e) { USER = {}; }
+  try { USER = (typeof PFCUser !== 'undefined') ? PFCUser.get() : (PFCStorage.getJSON('user') || {}); } catch(e) { USER = {}; }
   try { GOALS = PFCStorage.getJSON('goals') || []; } catch(e) { GOALS = []; }
 
   // Compute surplus
@@ -1234,7 +1236,7 @@ function _rehydrateFromStorage() {
 if (typeof PFCAuth !== 'undefined') {
   PFCAuth.onReady(() => {
     let freshUser = {}, freshGoals = [];
-    try { freshUser = PFCStorage.getJSON('user') || {}; } catch(e) {}
+    try { freshUser = (typeof PFCUser !== 'undefined') ? PFCUser.get() : (PFCStorage.getJSON('user') || {}); } catch(e) {}
     try { freshGoals = PFCStorage.getJSON('goals') || []; } catch(e) {}
     if (JSON.stringify(freshGoals) !== JSON.stringify(GOALS) ||
         (freshUser.currency || '$') !== (USER.sym || '$') ||

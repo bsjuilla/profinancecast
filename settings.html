@@ -156,6 +156,7 @@
   <script src="js/pfc-crypto.js"></script>
   <script src="js/pfc-storage.js"></script>
   <script src="js/pfc-currency.js"></script>
+  <script src="js/pfc-user.js"></script>
   <script src="js/pfc-entitlements.js"></script>
   <!-- v3 reskin: new fonts + emerald palette overrides -->
   <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
@@ -732,11 +733,23 @@ async function saveSettings() {
     ? PFCCurrency.toSymbol(currencyISO)
     : currencyISO;
 
-  // Persist to PFCStorage('user') — MERGE into the existing object so we never
-  // wipe the user's income/expenses/debts written by onboarding. The hydration
-  // path on DOMContentLoaded reads from here first, so age/currency survive
-  // refresh even when Supabase user_metadata is the source of truth for name.
-  if (typeof PFCStorage !== 'undefined') {
+  // Persist via PFCUser — merges into the existing object so we never wipe
+  // the user's income/expenses/debts written by onboarding, propagates the
+  // change to every other open page via PFCUser.onChange, and handles all
+  // three storage sinks (LS sync, encrypted PFCStorage, cash-forecast LS).
+  if (typeof PFCUser !== 'undefined') {
+    try {
+      PFCUser.update({
+        name: fullName,
+        firstName: fname,
+        lastName: lname,
+        age,
+        currency: currencySymbol,    // display-ready symbol
+        currencyCode: currencyISO,   // ISO code for dropdown re-selection
+      });
+    } catch (e) { /* never block save UI on storage failure */ }
+  } else if (typeof PFCStorage !== 'undefined') {
+    // Fallback if PFCUser failed to load
     try {
       const existing = PFCStorage.getJSON('user') || {};
       const merged = {
@@ -745,11 +758,11 @@ async function saveSettings() {
         firstName: fname,
         lastName: lname,
         age,
-        currency: currencySymbol,    // display-ready symbol
-        currencyCode: currencyISO,   // ISO code for dropdown re-selection
+        currency: currencySymbol,
+        currencyCode: currencyISO,
       };
       PFCStorage.setJSON('user', merged);
-    } catch (e) { /* never block save UI on storage failure */ }
+    } catch (e) {}
   }
 
   if (fname || lname) {
@@ -774,7 +787,7 @@ async function saveSettings() {
           first_name: fname,
           last_name: lname,
           age_range: age,
-          currency,
+          currency: currencyISO,
         },
       });
     }

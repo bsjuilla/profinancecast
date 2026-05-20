@@ -141,6 +141,8 @@
   <script src="js/pfc-auth.js"></script>
   <script src="js/pfc-crypto.js"></script>
   <script src="js/pfc-storage.js"></script>
+  <script src="js/pfc-currency.js"></script>
+  <script src="js/pfc-user.js"></script>
   <script src="js/pfc-entitlements.js"></script>
   <!-- v3 reskin: new fonts + emerald palette overrides -->
   <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
@@ -369,6 +371,7 @@ const LIMITS = { pro:200, premium:500 };
 function hydrateContext(){
   try {
     const stored = (window.PFC && window.PFC.user) ||
+                   (window.PFCUser && window.PFCUser.get && window.PFCUser.get()) ||
                    (window.PFCStorage && window.PFCStorage.get && window.PFCStorage.getJSON && window.PFCStorage.getJSON('user')) ||
                    null;
     if (!stored || !stored.income) return; // empty state stays

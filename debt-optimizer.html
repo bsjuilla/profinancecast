@@ -171,6 +171,8 @@
   <script src="js/pfc-auth.js"></script>
   <script src="js/pfc-crypto.js"></script>
   <script src="js/pfc-storage.js"></script>
+  <script src="js/pfc-currency.js"></script>
+  <script src="js/pfc-user.js"></script>
   <script src="js/pfc-entitlements.js"></script>
   <!-- v3 reskin: new fonts + emerald palette overrides -->
   <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
@@ -565,7 +567,7 @@ const TYPE_COLORS = {
 
 // ── INIT ──
 function init() {
-  try { USER = PFCStorage.getJSON('user') || {}; } catch(e) { USER = {}; }
+  try { USER = (typeof PFCUser !== 'undefined') ? PFCUser.get() : (PFCStorage.getJSON('user') || {}); } catch(e) { USER = {}; }
   try { DEBTS = PFCStorage.getJSON('debts') || []; } catch(e) { DEBTS = []; }
   try { STRATEGY = PFCStorage.get('debt_strategy') || 'avalanche'; } catch(e) {}
 
@@ -1152,7 +1154,7 @@ function _rehydrateFromStorage() { init(); }
 if (typeof PFCAuth !== 'undefined') {
   PFCAuth.onReady(() => {
     let freshUser = {}, freshDebts = [];
-    try { freshUser = PFCStorage.getJSON('user') || {}; } catch(e) {}
+    try { freshUser = (typeof PFCUser !== 'undefined') ? PFCUser.get() : (PFCStorage.getJSON('user') || {}); } catch(e) {}
     try { freshDebts = PFCStorage.getJSON('debts') || []; } catch(e) {}
     if (JSON.stringify(freshUser) !== JSON.stringify(USER) ||
         JSON.stringify(freshDebts) !== JSON.stringify(DEBTS)) {

@@ -302,6 +302,8 @@
 <script src="js/pfc-auth.js"></script>
 <script src="js/pfc-crypto.js"></script>
 <script src="js/pfc-storage.js"></script>
+<script src="js/pfc-currency.js"></script>
+<script src="js/pfc-user.js"></script>
 <script src="js/pfc-entitlements.js"></script>
 <script src="js/pfc-motion.js" defer></script>
 <script src="js/pfc-analytics.js" defer></script>
@@ -353,7 +355,11 @@
       }
     } catch (_) {}
     try {
-      if (typeof PFCStorage !== 'undefined' && !PFCStorage.get('user')) return 'onboarding.html';
+      // Prefer PFCUser.isEmpty() — it consults every source (encrypted store,
+      // LS mirrors, legacy keys) so first-time users still route to onboarding
+      // even if one storage layer is empty.
+      if (typeof PFCUser !== 'undefined' && PFCUser.isEmpty()) return 'onboarding.html';
+      if (typeof PFCUser === 'undefined' && typeof PFCStorage !== 'undefined' && !PFCStorage.get('user')) return 'onboarding.html';
     } catch (_) {}
     return 'dashboard.html';
   }

@@ -164,6 +164,8 @@
   <script src="js/pfc-auth.js"></script>
   <script src="js/pfc-crypto.js"></script>
   <script src="js/pfc-storage.js"></script>
+  <script src="js/pfc-currency.js"></script>
+  <script src="js/pfc-user.js"></script>
   <script src="js/pfc-entitlements.js"></script>
   <!-- Role taxonomy + BLS OES May 2024 US median wages for ~97 common roles.
        Used by getMarketRange() below: when the Job Title input matches a role
@@ -957,7 +959,7 @@ function populateRoleDatalist() {
 }
 
 function init() {
-  try { USER = PFCStorage.getJSON('user') || {}; } catch(e) { USER = {}; }
+  try { USER = (typeof PFCUser !== 'undefined') ? PFCUser.get() : (PFCStorage.getJSON('user') || {}); } catch(e) { USER = {}; }
   const sym = USER.currency || '$';
   ['sym-label','sym-custom','sym-offer'].forEach(id => {
     const el = document.getElementById(id);
@@ -1621,7 +1623,7 @@ init();
 // pfc-storage.js finishes adoptGuestData, re-read and re-prefill.
 function _rehydrateFromStorage() {
   const prevSalaryPrefill = USER.income ? USER.income * 12 : null;
-  try { USER = PFCStorage.getJSON('user') || {}; } catch(e) { USER = {}; }
+  try { USER = (typeof PFCUser !== 'undefined') ? PFCUser.get() : (PFCStorage.getJSON('user') || {}); } catch(e) { USER = {}; }
   const sym = USER.currency || '$';
   ['sym-label','sym-custom','sym-offer'].forEach(id => {
     const el = document.getElementById(id);
@@ -1641,7 +1643,7 @@ function _rehydrateFromStorage() {
 if (typeof PFCAuth !== 'undefined') {
   PFCAuth.onReady(() => {
     let fresh = {};
-    try { fresh = PFCStorage.getJSON('user') || {}; } catch(e) {}
+    try { fresh = (typeof PFCUser !== 'undefined') ? PFCUser.get() : (PFCStorage.getJSON('user') || {}); } catch(e) {}
     if (JSON.stringify(fresh) !== JSON.stringify(USER)) _rehydrateFromStorage();
   });
   PFCAuth.onAuthChange(_rehydrateFromStorage);

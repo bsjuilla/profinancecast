@@ -138,6 +138,7 @@
   <script src="js/pfc-crypto.js"></script>
   <script src="js/pfc-storage.js"></script>
   <script src="js/pfc-currency.js"></script>
+  <script src="js/pfc-user.js"></script>
   <script src="js/pfc-entitlements.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -482,18 +483,17 @@ function _pickColor(side, idx) {
 const CASH_FORECAST_LS_KEY = 'pfc_cash_forecast_user';
 
 function loadUser() {
+  // Primary: PFCUser is the central store and handles all 4 read precedence
+  // layers (PFCStorage, LS sync mirror, cash-forecast legacy LS, pre-namespace
+  // LS) plus currency normalisation. Falls back to the previous logic if
+  // PFCUser hasn't loaded yet (e.g. script tag blocked).
+  if (typeof PFCUser !== 'undefined') {
+    const u = { ...DEFAULT_USER, ...PFCUser.get() };
+    if (!Array.isArray(u.customIn))  u.customIn  = [];
+    if (!Array.isArray(u.customOut)) u.customOut = [];
+    return u;
+  }
   try {
-    // Read precedence:
-    // 1. Plaintext localStorage backup (sync, namespace-free, reliable)
-    // 2. Encrypted PFCStorage (canonical, namespace-aware, matches dashboard)
-    // 3. Legacy 'pfc_user' key for older browsers
-    // 4. DEFAULT_USER
-    //
-    // We check the LS backup FIRST because the encrypted PFCStorage write
-    // is async — there's a window between setJSON() and the actual IndexedDB
-    // write where a refresh would lose data if we relied on PFCStorage alone.
-    // The LS backup is written synchronously, so it's the most up-to-date
-    // source on refresh.
     let raw = null;
     try { raw = localStorage.getItem(CASH_FORECAST_LS_KEY); } catch (_) {}
     if (!raw && typeof PFCStorage !== 'undefined') {
@@ -505,11 +505,6 @@ function loadUser() {
     const u = !raw ? { ...DEFAULT_USER } : { ...DEFAULT_USER, ...JSON.parse(raw) };
     if (!Array.isArray(u.customIn))  u.customIn  = [];
     if (!Array.isArray(u.customOut)) u.customOut = [];
-    // Normalise currency on read — settings.html historically wrote ISO
-    // codes ("USD", "MUR") while onboarding wrote symbols ("₨"). Without
-    // this every dollar line on cash-forecast renders as "MUR3,000" for
-    // users who touched Settings. PFCCurrency.toSymbol returns the value
-    // unchanged if it's already a symbol.
     if (typeof PFCCurrency !== 'undefined' && PFCCurrency.toSymbol) {
       u.currency = PFCCurrency.toSymbol(u.currency);
     }
@@ -549,28 +544,22 @@ function _updateLastSavedIndicator() {
 
 function persistUser() {
   try {
+    // PFCUser owns the persistence pipeline — writes to LS sync mirror
+    // (immediate, plaintext), the cash-forecast legacy LS key, and the
+    // encrypted PFCStorage in one call. Also handles guest→user adoption.
+    if (typeof PFCUser !== 'undefined') {
+      PFCUser.set(USER);
+      _updateLastSavedIndicator();
+      return;
+    }
+    // Fallback path — PFCUser script tag blocked or load failed.
     const json = JSON.stringify(USER);
-    // PRIMARY: synchronous plaintext write to a stable key. Guarantees the
-    // data is in localStorage IMMEDIATELY, surviving any refresh. This is
-    // the source of truth for cash-forecast's own reloads.
-    // (The values here aren't credentials — they're personal-finance
-    // numbers — so plaintext on-device storage is acceptable. The encrypted
-    // path below remains for cross-page sync.)
     try { localStorage.setItem(CASH_FORECAST_LS_KEY, json); } catch (_) {}
-    // SECONDARY: encrypted PFCStorage write — async, drains in the background
-    // via the IndexedDB pipeline. This is what the dashboard / net-worth /
-    // other pages read via PFCStorage.getJSON('user'), so we keep it in sync.
-    // The async race that used to lose data is now caught by the LS write above.
     if (typeof PFCStorage !== 'undefined') {
       try { PFCStorage.setJSON('user', USER); } catch (_) {}
     } else {
-      // No PFCStorage at all — fall back to the legacy unencrypted key so
-      // the dashboard's own loadUser path can still find the data.
       try { localStorage.setItem('pfc_user', json); } catch (_) {}
     }
-    // After every save, also nudge the guest→authenticated namespace migration
-    // so any data that landed in pfc:guest:user during the auth-resolution
-    // window gets promoted to pfc:{realUid}:user. Idempotent and async.
     try {
       const uid = (typeof PFCAuth !== 'undefined' && PFCAuth.getUserId) ? PFCAuth.getUserId() : 'guest';
       if (uid && uid !== 'guest' && typeof PFCStorage !== 'undefined' && typeof PFCStorage.adoptGuestData === 'function') {

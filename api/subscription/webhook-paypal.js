@@ -126,7 +126,20 @@ export default async function handler(req, res) {
         });
 
         if (!userId) {
+          // Fail-open audit: PayPal verified the event but we cannot map it
+          // to a user. Returning 200 (below) is intentional — PayPal must not
+          // retry indefinitely — but we need this to land in subscription_events
+          // so operations can reconcile manually. The console.warn alone was
+          // lost on Vercel's log rotation.
           console.warn(`[webhook-paypal] capture.completed without resolvable userId (capture ${captureId})`);
+          await _logEvent({
+            user_id: null,
+            event_type: 'webhook_unresolvable_user',
+            provider_id: captureId,
+            amount,
+            currency,
+            raw_payload: { reason: 'no_custom_id_no_invoice_id', event },
+          });
           break;
         }
 
@@ -186,14 +199,26 @@ export default async function handler(req, res) {
         const captureId = resource.id;
         const links = resource.links || [];
         const upLink = links.find(l => l.rel === 'up');
-        if (!upLink) break;
+        if (!upLink) {
+          await _logEvent({ user_id: null, event_type: 'webhook_unresolvable_user',
+            provider_id: captureId, raw_payload: { reason: 'refund_no_up_link', event } });
+          break;
+        }
         const orderRes = await fetch(upLink.href, {
           headers: { 'Authorization': `Bearer ${await _getAccessToken()}` },
         });
-        if (!orderRes.ok) break;
+        if (!orderRes.ok) {
+          await _logEvent({ user_id: null, event_type: 'webhook_unresolvable_user',
+            provider_id: captureId, raw_payload: { reason: 'refund_order_fetch_failed', event } });
+          break;
+        }
         const order = await orderRes.json();
         const userId = order.purchase_units?.[0]?.custom_id;
-        if (!userId) break;
+        if (!userId) {
+          await _logEvent({ user_id: null, event_type: 'webhook_unresolvable_user',
+            provider_id: captureId, raw_payload: { reason: 'refund_no_custom_id', event } });
+          break;
+        }
 
         await supabase.from('subscriptions').update({
           status: 'cancelled',
@@ -213,7 +238,12 @@ export default async function handler(req, res) {
       case 'BILLING.SUBSCRIPTION.CANCELLED':
       case 'BILLING.SUBSCRIPTION.EXPIRED': {
         const userId = resource.custom_id;
-        if (!userId) break;
+        if (!userId) {
+          await _logEvent({ user_id: null, event_type: 'webhook_unresolvable_user',
+            provider_id: resource.id || null,
+            raw_payload: { reason: 'subscription_event_no_custom_id', event } });
+          break;
+        }
         await supabase.from('subscriptions').update({
           status: eventType === 'BILLING.SUBSCRIPTION.CANCELLED' ? 'cancelled' : 'expired',
           cancelled_at: new Date().toISOString(),

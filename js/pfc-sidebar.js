@@ -50,8 +50,14 @@
     const pillEl = sidebar.querySelector('.user-pill');
     if (!nameEl && !avatarEl) return;
     let name = '';
-    // Source 1: PFCStorage 'user' key (canonical, written by settings + onboarding).
-    if (typeof PFCStorage !== 'undefined') {
+    // Source 1: PFCUser (central store) — falls back to PFCStorage directly
+    // if pfc-user.js hasn't loaded (shouldn't happen in production but defensive).
+    if (typeof PFCUser !== 'undefined') {
+      try {
+        const u = PFCUser.get();
+        if (u) name = (u.name || u.firstName || '').trim();
+      } catch (_) {}
+    } else if (typeof PFCStorage !== 'undefined') {
       const raw = PFCStorage.get('user');
       if (raw) {
         try {

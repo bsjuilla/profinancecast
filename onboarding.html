@@ -141,6 +141,8 @@
   <script src="js/pfc-auth.js"></script>
   <script src="js/pfc-crypto.js"></script>
   <script src="js/pfc-storage.js"></script>
+  <script src="js/pfc-currency.js"></script>
+  <script src="js/pfc-user.js"></script>
   <script src="js/pfc-entitlements.js"></script>
   <!-- v3 reskin: new fonts + emerald palette overrides -->
   <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
@@ -743,7 +745,15 @@ function buildComplete() {
   };
 
   try {
-    PFCStorage.setJSON('user', userData);
+    // PFCUser is the central store — writes to LS sync mirror (immediate),
+    // encrypted PFCStorage (async), cash-forecast legacy LS, and notifies
+    // every onChange subscriber across other tabs/pages. Falls back to a
+    // direct PFCStorage write if PFCUser failed to load.
+    if (typeof PFCUser !== 'undefined') {
+      PFCUser.set(userData);
+    } else {
+      PFCStorage.setJSON('user', userData);
+    }
     // Persist selectedGoals (UX §6.16) so dashboard's loadGoals() shows the
     // user's real picks instead of the legacy fake-goals injection at
     // dashboard.html:2018-2025. Each goal carries a sensible default target;

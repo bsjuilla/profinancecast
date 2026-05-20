@@ -232,6 +232,8 @@
   <script src="js/pfc-auth.js"></script>
   <script src="js/pfc-crypto.js"></script>
   <script src="js/pfc-storage.js"></script>
+  <script src="js/pfc-currency.js"></script>
+  <script src="js/pfc-user.js"></script>
   <script src="js/pfc-entitlements.js"></script>
   <!-- Auth guard. Pro gating moved to in-page editorial preview (UX §6.26);
        set window.PFC_PREVIEW_GALLERY=false above this script to restore the
@@ -511,7 +513,7 @@
 })();
 
 const DEF={income:3000,otherIncome:0,housing:1200,food:540,transport:310,otherExp:380,savings:11580,investments:0,debt:8000,debtPay:550,currency:'$',name:'User'};
-function loadUser(){const u=PFCStorage.getJSON('user');return u?{...DEF,...u}:{...DEF}}
+function loadUser(){const u=(typeof PFCUser!=='undefined')?PFCUser.get():PFCStorage.getJSON('user');return u?{...DEF,...u}:{...DEF}}
 let U=loadUser();let C=U.currency||'$';
 function fmt(v){return C+Math.abs(Math.round(v)).toLocaleString()}
 
