@@ -403,6 +403,7 @@
   <script src="js/pfc-auth.js"></script>
   <script src="js/pfc-crypto.js"></script>
   <script src="js/pfc-storage.js"></script>
+  <script src="js/pfc-currency.js"></script>
   <script src="js/pfc-entitlements.js"></script>
   <script src="js/pfc-motion.js" defer></script>
   <!-- v3 reskin: new fonts + emerald palette overrides -->
@@ -934,11 +935,18 @@
         <div class="card-header">
           <div>
             <div class="card-title">Debt breakdown</div>
-            <div class="card-sub">Total: $8,000 remaining</div>
+            <div class="card-sub" id="debt-breakdown-sub">No debts on file</div>
           </div>
-          <span class="card-badge badge-amber">14 mo to free</span>
+          <span class="card-badge badge-amber" id="debt-breakdown-badge" style="display:none;">—</span>
         </div>
-        <table class="debt-table">
+        <!-- Dynamic debt table: rendered by renderDebtBreakdown() from real
+             user data. Reads PFCStorage.getJSON('debts') first (the array
+             used by debt-optimizer.html for multi-debt entries), falls back
+             to a single-row view of USER.debt + USER.debtPay, falls back
+             to an empty state if nothing's set. Previously hardcoded
+             "Car loan / Credit card / Personal loan" demo data that every
+             user saw regardless of their actual finances. -->
+        <table class="debt-table" id="debt-breakdown-table">
           <thead>
             <tr>
               <th>Debt</th>
@@ -947,34 +955,10 @@
               <th style="text-align:right;">Payoff</th>
             </tr>
           </thead>
-          <tbody>
-            <tr>
-              <td>
-                <span class="debt-name">Car loan</span>
-                <div class="debt-mini-bar"><div class="debt-mini-fill" style="width:62%;background:var(--amber);"></div></div>
-              </td>
-              <td style="text-align:right;color:var(--text);">$4,950</td>
-              <td style="text-align:right;">6.5%</td>
-              <td style="text-align:right;color:var(--teal);">11 mo</td>
-            </tr>
-            <tr>
-              <td>
-                <span class="debt-name">Credit card</span>
-                <div class="debt-mini-bar"><div class="debt-mini-fill" style="width:38%;background:var(--red);"></div></div>
-              </td>
-              <td style="text-align:right;color:var(--text);">$2,100</td>
-              <td style="text-align:right;">19.9%</td>
-              <td style="text-align:right;color:var(--teal);">5 mo</td>
-            </tr>
-            <tr>
-              <td>
-                <span class="debt-name">Personal loan</span>
-                <div class="debt-mini-bar"><div class="debt-mini-fill" style="width:22%;background:var(--blue);"></div></div>
-              </td>
-              <td style="text-align:right;color:var(--text);">$950</td>
-              <td style="text-align:right;">8.2%</td>
-              <td style="text-align:right;color:var(--teal);">2 mo</td>
-            </tr>
+          <tbody id="debt-breakdown-body">
+            <tr><td colspan="4" style="text-align:center;color:var(--text3);padding:18px 0;font-size:13px;">
+              <a href="debt-optimizer.html" style="color:var(--teal);text-decoration:none;">Add your debts in Debt strategy →</a>
+            </td></tr>
           </tbody>
         </table>
         <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);">
@@ -1508,7 +1492,18 @@ const DEFAULT_USER = {
 function loadUser() {
   try {
     const saved = PFCStorage.get('user');
-    return saved ? { ...DEFAULT_USER, ...JSON.parse(saved) } : { ...DEFAULT_USER };
+    const u = saved ? { ...DEFAULT_USER, ...JSON.parse(saved) } : { ...DEFAULT_USER };
+    // Normalise currency on read so every fmt() / sym call gets a SYMBOL,
+    // not an ISO code. Handles legacy settings.html writes that stored
+    // "USD" / "MUR" / "EUR" as the value (which then rendered as
+    // "USD3,000" in chart tooltips and KPIs). With this normaliser,
+    // both old (symbol) and new (ISO) writes resolve to the symbol.
+    if (typeof PFCCurrency !== 'undefined' && PFCCurrency.toSymbol) {
+      u.currency = PFCCurrency.toSymbol(u.currency);
+    } else if (!u.currency) {
+      u.currency = '$';
+    }
+    return u;
   } catch(e) { return { ...DEFAULT_USER }; }
 }
 function isUserEmpty(u) {
@@ -1859,6 +1854,96 @@ function resetFinances() {
   closeEditFinances(); recalcForecast(); updateAllCards();
   showDashToast('Reset to default data');
 }
+// Render the Debt breakdown table from real user data. Three render paths:
+//  1. If PFCStorage('debts') has an array (set by debt-optimizer.html), render
+//     one row per debt with name / balance / rate / months-to-payoff.
+//  2. Else if USER.debt > 0, render a single fallback row labelled "Total debt"
+//     using USER.debt + USER.debtPay (the onboarding-level coarse data).
+//  3. Else show an empty-state CTA pointing at /debt-optimizer.html.
+// Previously this table was hardcoded with fake "Car loan / Credit card /
+// Personal loan" rows that every user saw regardless of their actual debt.
+function renderDebtBreakdown() {
+  const body  = document.getElementById('debt-breakdown-body');
+  const sub   = document.getElementById('debt-breakdown-sub');
+  const badge = document.getElementById('debt-breakdown-badge');
+  if (!body) return;
+  const sym = (USER && USER.currency) || '$';
+
+  // Read multi-debt data from PFCStorage (debt-optimizer's array).
+  let debts = null;
+  try {
+    if (typeof PFCStorage !== 'undefined') {
+      const raw = PFCStorage.getJSON('debts');
+      if (Array.isArray(raw) && raw.length) debts = raw;
+    }
+  } catch (_) {}
+
+  // HTML-escape user-controlled debt names. Defensive: someone with a
+  // <img onerror=…> in their goal label would otherwise execute.
+  const esc = (s) => String(s == null ? '' : s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+
+  if (debts && debts.length) {
+    // Render each debt: name, balance, rate, payoff months. Sorted by
+    // balance descending so the biggest debts surface first.
+    const sorted = [...debts].sort((a,b) => (b.balance||0) - (a.balance||0));
+    const totalBalance = sorted.reduce((s,d) => s + (d.balance||0), 0);
+    const maxBalance = Math.max(...sorted.map(d => d.balance||0), 1);
+    const colors = ['var(--amber)','var(--red)','var(--blue)','var(--teal)','#A78BFA','#F97316'];
+    body.innerHTML = sorted.slice(0, 5).map((d, i) => {
+      const width = Math.round((d.balance||0) / maxBalance * 100);
+      const color = colors[i % colors.length];
+      const monthsToPay = (d.minPay||d.minimum||0) > 0 && (d.balance||0) > 0
+        ? Math.ceil((d.balance||0) / (d.minPay||d.minimum||1))
+        : null;
+      return `<tr>
+        <td>
+          <span class="debt-name">${esc(d.name || ('Debt ' + (i+1)))}</span>
+          <div class="debt-mini-bar"><div class="debt-mini-fill" style="width:${width}%;background:${color};"></div></div>
+        </td>
+        <td style="text-align:right;color:var(--text);">${sym}${Math.round(d.balance||0).toLocaleString()}</td>
+        <td style="text-align:right;">${(d.rate||0).toFixed(1)}%</td>
+        <td style="text-align:right;color:var(--teal);">${monthsToPay != null ? monthsToPay + ' mo' : '—'}</td>
+      </tr>`;
+    }).join('');
+    if (sub)   sub.textContent   = 'Total: ' + sym + Math.round(totalBalance).toLocaleString() + ' across ' + sorted.length + ' debt' + (sorted.length === 1 ? '' : 's');
+    const totalMonths = (USER.debtPay||0) > 0 ? Math.ceil(totalBalance / (USER.debtPay||1)) : 0;
+    if (badge) {
+      if (totalMonths > 0) { badge.style.display = ''; badge.textContent = totalMonths + ' mo to free'; }
+      else { badge.style.display = 'none'; }
+    }
+  } else if ((USER.debt||0) > 0) {
+    // Coarse fallback: only onboarding-level data is available, render a
+    // single aggregate row.
+    const months = (USER.debtPay||0) > 0 ? Math.ceil((USER.debt||0) / (USER.debtPay||1)) : null;
+    body.innerHTML = `<tr>
+      <td>
+        <span class="debt-name">Total debt</span>
+        <div class="debt-mini-bar"><div class="debt-mini-fill" style="width:100%;background:var(--amber);"></div></div>
+      </td>
+      <td style="text-align:right;color:var(--text);">${sym}${Math.round(USER.debt).toLocaleString()}</td>
+      <td style="text-align:right;color:var(--text3);">—</td>
+      <td style="text-align:right;color:var(--teal);">${months != null ? months + ' mo' : '—'}</td>
+    </tr>
+    <tr><td colspan="4" style="text-align:center;padding:10px 0 4px;">
+      <a href="debt-optimizer.html" style="color:var(--text3);font-size:11px;text-decoration:none;">Break this down by individual debts in Debt strategy →</a>
+    </td></tr>`;
+    if (sub)   sub.textContent   = 'Total: ' + sym + Math.round(USER.debt).toLocaleString() + ' remaining';
+    if (badge) {
+      if (months != null && months > 0) { badge.style.display = ''; badge.textContent = months + ' mo to free'; }
+      else { badge.style.display = 'none'; }
+    }
+  } else {
+    // Empty state.
+    body.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--text3);padding:18px 0;font-size:13px;">
+      <a href="debt-optimizer.html" style="color:var(--teal);text-decoration:none;">Add your debts in Debt strategy →</a>
+    </td></tr>`;
+    if (sub)   sub.textContent   = 'No debts on file';
+    if (badge) badge.style.display = 'none';
+  }
+}
+
 function updateAllCards() {
   const sym      = USER.currency;
   const income   = (USER.income||0) + (USER.otherIncome||0);
@@ -1869,6 +1954,9 @@ function updateAllCards() {
   const nw12     = nw + surplus * 12 * 0.9;
   const dMonths  = (USER.debtPay||0) > 0 && (USER.debt||0) > 0 ? Math.ceil((USER.debt||0) / (USER.debtPay||0)) : 0;
   const pct      = income > 0 ? Math.round((surplus/income)*100) : 0;
+
+  // Wire the debt-breakdown table from real data (replaces hardcoded demo).
+  try { renderDebtBreakdown(); } catch (_) {}
 
   // Health score
   const savePct = income > 0 ? surplus / income : 0;

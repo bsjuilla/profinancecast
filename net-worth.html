@@ -190,6 +190,7 @@
   <script src="js/pfc-auth.js"></script>
   <script src="js/pfc-crypto.js"></script>
   <script src="js/pfc-storage.js"></script>
+  <script src="js/pfc-currency.js"></script>
   <script src="js/pfc-entitlements.js"></script>
   <!-- v3 reskin: new fonts + emerald palette overrides -->
   <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
@@ -579,8 +580,19 @@ const MILESTONES = [
 ];
 
 // ── INIT ──
+// Centralised currency normaliser. settings.html historically wrote ISO
+// codes ("USD", "MUR") while onboarding wrote symbols ("₨"). Without this
+// helper, every $ display on net-worth would show as "MUR3,000" for users
+// who touched Settings. Called from every USER-load path on this page.
+function _normaliseUserCurrency(u) {
+  if (u && typeof PFCCurrency !== 'undefined' && PFCCurrency.toSymbol) {
+    u.currency = PFCCurrency.toSymbol(u.currency);
+  }
+  return u;
+}
+
 function init() {
-  try { USER = PFCStorage.getJSON('user') || {}; } catch(e) { USER = {}; }
+  try { USER = _normaliseUserCurrency(PFCStorage.getJSON('user') || {}); } catch(e) { USER = {}; }
   try { HISTORY = PFCStorage.getJSON('nw_history') || []; } catch(e) { HISTORY = []; }
 
   // Sidebar user-pill hydrated by js/pfc-sidebar.js;
@@ -1056,7 +1068,7 @@ init();
 // resolves and pfc-storage.js finishes adoptGuestData, re-read from the now-
 // correct namespace and re-render in place.
 function _rehydrateFromStorage() {
-  try { USER = PFCStorage.getJSON('user') || {}; } catch(e) { USER = {}; }
+  try { USER = _normaliseUserCurrency(PFCStorage.getJSON('user') || {}); } catch(e) { USER = {}; }
   try { HISTORY = PFCStorage.getJSON('nw_history') || []; } catch(e) { HISTORY = []; }
   logTodaySnapshot();
   renderAll();

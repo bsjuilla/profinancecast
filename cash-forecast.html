@@ -137,6 +137,7 @@
   <script src="js/pfc-auth.js"></script>
   <script src="js/pfc-crypto.js"></script>
   <script src="js/pfc-storage.js"></script>
+  <script src="js/pfc-currency.js"></script>
   <script src="js/pfc-entitlements.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -504,6 +505,14 @@ function loadUser() {
     const u = !raw ? { ...DEFAULT_USER } : { ...DEFAULT_USER, ...JSON.parse(raw) };
     if (!Array.isArray(u.customIn))  u.customIn  = [];
     if (!Array.isArray(u.customOut)) u.customOut = [];
+    // Normalise currency on read — settings.html historically wrote ISO
+    // codes ("USD", "MUR") while onboarding wrote symbols ("₨"). Without
+    // this every dollar line on cash-forecast renders as "MUR3,000" for
+    // users who touched Settings. PFCCurrency.toSymbol returns the value
+    // unchanged if it's already a symbol.
+    if (typeof PFCCurrency !== 'undefined' && PFCCurrency.toSymbol) {
+      u.currency = PFCCurrency.toSymbol(u.currency);
+    }
     return u;
   } catch(e) { return { ...DEFAULT_USER, customIn:[], customOut:[] }; }
 }
