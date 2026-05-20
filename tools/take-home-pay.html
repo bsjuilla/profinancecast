@@ -580,6 +580,25 @@
 
     // ----- Wire up -----
     populateCountries();
+
+    // Pre-fill from URL params before populateRegions/refreshLabel run, so
+    // the rest of the boot path picks up the user's intended country.
+    // Used by /salary-calculator's "See your take-home" CTA which navigates
+    // here with ?salary=NNNN&country=XX after the user has picked a target.
+    // Values are validated: country must exist in the loaded data, salary
+    // must be a plausible positive integer (1000–5000000) to skip obvious junk.
+    try {
+      var urlParams = new URLSearchParams(window.location.search);
+      var urlCountry = (urlParams.get('country') || '').toUpperCase();
+      var urlSalary  = parseInt(urlParams.get('salary'), 10);
+      if (urlCountry && Lib.getCountry(urlCountry)) {
+        els.country.value = urlCountry;
+      }
+      if (isFinite(urlSalary) && urlSalary >= 1000 && urlSalary <= 5000000) {
+        els.gross.value = urlSalary;
+      }
+    } catch (_) { /* malformed URL — fall through to defaults */ }
+
     populateRegions(els.country.value);
     refreshSalaryLabel(els.country.value);
 

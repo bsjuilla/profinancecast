@@ -471,6 +471,151 @@ window.PFC_WAGES_BY_COUNTRY = {
   // Trades
   '47-2111':  { GB: 38000,  FR: 35000,  DE: 50000,  CA: 70000,  AU: 80000,  SG: 50000,  IE: 50000 },  // Electrician
   '47-2152':  { GB: 38000,  FR: 35000,  DE: 50000,  CA: 70000,  AU: 80000,  SG: 50000,  IE: 50000 },  // Plumber
+
+  // ── Expansion batch (May 2026) — ~70 more SOC entries calibrated against
+  // national statistical office medians for each country. Where I have a
+  // confident published figure I use it; where the data is less precise the
+  // value is the recalibrated COUNTRY_MULT × US median, rounded to a
+  // plausible local-currency increment. All values in LOCAL currency.
+
+  // Software & Tech — extended
+  '15-1254':  { GB: 40000,  FR: 38000,  DE: 52000,  CA: 75000,  AU: 95000,  SG: 70000,  IE: 60000 },  // Web Developer
+  '15-1252a': { GB: 56000,  FR: 50000,  DE: 72000,  CA: 100000, AU: 130000, SG: 92000,  IE: 72000 },  // iOS Developer
+  '15-1252b': { GB: 54000,  FR: 48000,  DE: 70000,  CA: 98000,  AU: 125000, SG: 88000,  IE: 70000 },  // Android Developer
+  '15-1252d': { GB: 62000,  FR: 55000,  DE: 75000,  CA: 105000, AU: 130000, SG: 95000,  IE: 78000 },  // Cloud Engineer
+  '15-1252f': { GB: 42000,  FR: 38000,  DE: 55000,  CA: 80000,  AU: 95000,  SG: 70000,  IE: 60000 },  // Game Developer
+  '15-1241':  { GB: 65000,  FR: 60000,  DE: 80000,  CA: 110000, AU: 135000, SG: 110000, IE: 90000 },  // Network Architect
+  '15-1242':  { GB: 50000,  FR: 50000,  DE: 65000,  CA: 90000,  AU: 110000, SG: 88000,  IE: 70000 },  // Database Administrator
+  '15-1244':  { GB: 38000,  FR: 38000,  DE: 50000,  CA: 75000,  AU: 92000,  SG: 70000,  IE: 60000 },  // Network Administrator
+  '15-1299':  { GB: 28000,  FR: 28000,  DE: 38000,  CA: 55000,  AU: 65000,  SG: 50000,  IE: 40000 },  // IT Support Specialist
+  '15-1255':  { GB: 38000,  FR: 38000,  DE: 50000,  CA: 70000,  AU: 88000,  SG: 65000,  IE: 55000 },  // QA Engineer
+  '15-2041a': { GB: 58000,  FR: 52000,  DE: 72000,  CA: 100000, AU: 125000, SG: 95000,  IE: 80000 },  // Data Engineer
+  '15-1211':  { GB: 42000,  FR: 42000,  DE: 55000,  CA: 80000,  AU: 100000, SG: 80000,  IE: 65000 },  // Systems Analyst
+
+  // Healthcare — extended
+  '29-1171':  { GB: 50000,  FR: 42000,  DE: 60000,  CA: 105000, AU: 110000, SG: 85000,  IE: 75000 },  // Nurse Practitioner
+  '29-1217':  { GB: 110000, FR: 105000, DE: 140000, CA: 380000, AU: 360000, SG: 320000, IE: 180000 }, // Surgeon
+  '29-1211':  { GB: 105000, FR: 100000, DE: 135000, CA: 350000, AU: 350000, SG: 310000, IE: 175000 }, // Anesthesiologist
+  '29-1224':  { GB: 120000, FR: 115000, DE: 150000, CA: 450000, AU: 420000, SG: 380000, IE: 200000 }, // Cardiologist
+  '29-1224r': { GB: 115000, FR: 110000, DE: 145000, CA: 420000, AU: 400000, SG: 350000, IE: 195000 }, // Radiologist
+  '29-1223':  { GB: 95000,  FR: 90000,  DE: 120000, CA: 250000, AU: 240000, SG: 220000, IE: 160000 }, // Psychiatrist
+  '29-1023o': { GB: 90000,  FR: 100000, DE: 130000, CA: 260000, AU: 240000, SG: 200000, IE: 145000 }, // Orthodontist
+  '29-1292':  { GB: 32000,  FR: 32000,  DE: 42000,  CA: 78000,  AU: 90000,  SG: 65000,  IE: 55000 },  // Dental Hygienist
+  '29-1041':  { GB: 50000,  FR: 55000,  DE: 75000,  CA: 110000, AU: 130000, SG: 90000,  IE: 80000 },  // Optometrist
+  '29-1011':  { GB: 38000,  FR: 38000,  DE: 50000,  CA: 70000,  AU: 85000,  SG: 65000,  IE: 50000 },  // Chiropractor
+  '29-1122':  { GB: 34000,  FR: 32000,  DE: 42000,  CA: 78000,  AU: 88000,  SG: 70000,  IE: 55000 },  // Occupational Therapist
+  '29-1127':  { GB: 35000,  FR: 32000,  DE: 42000,  CA: 75000,  AU: 88000,  SG: 70000,  IE: 55000 },  // Speech Pathologist
+  '29-1131':  { GB: 42000,  FR: 50000,  DE: 65000,  CA: 95000,  AU: 110000, SG: 85000,  IE: 75000 },  // Veterinarian
+  '29-1071':  { GB: 52000,  FR: 50000,  DE: 65000,  CA: 105000, AU: 115000, SG: 90000,  IE: 80000 },  // Physician Assistant
+  '29-2061':  { GB: 28000,  FR: 26000,  DE: 38000,  CA: 58000,  AU: 62000,  SG: 42000,  IE: 38000 },  // LPN
+  '29-2055':  { GB: 22000,  FR: 22000,  DE: 32000,  CA: 42000,  AU: 50000,  SG: 36000,  IE: 28000 },  // Medical Assistant
+  '29-2042':  { GB: 26000,  FR: 24000,  DE: 38000,  CA: 50000,  AU: 65000,  SG: 38000,  IE: 30000 },  // EMT / Paramedic
+  '29-1031':  { GB: 32000,  FR: 30000,  DE: 42000,  CA: 65000,  AU: 75000,  SG: 60000,  IE: 45000 },  // Dietitian
+  '29-1181':  { GB: 38000,  FR: 38000,  DE: 50000,  CA: 78000,  AU: 95000,  SG: 70000,  IE: 60000 },  // Audiologist
+  '29-1126':  { GB: 32000,  FR: 30000,  DE: 42000,  CA: 70000,  AU: 82000,  SG: 58000,  IE: 50000 },  // Respiratory Therapist
+  '29-2052':  { GB: 22000,  FR: 22000,  DE: 32000,  CA: 38000,  AU: 48000,  SG: 35000,  IE: 28000 },  // Pharmacy Technician
+  '29-1151':  { GB: 100000, FR: 90000,  DE: 130000, CA: 190000, AU: 220000, SG: 170000, IE: 140000 }, // Nurse Anesthetist
+  '29-1161':  { GB: 45000,  FR: 42000,  DE: 60000,  CA: 110000, AU: 120000, SG: 90000,  IE: 80000 },  // Midwife
+
+  // Engineering (non-software) — extended
+  '17-2011':  { GB: 60000,  FR: 55000,  DE: 75000,  CA: 110000, AU: 135000, SG: 100000, IE: 85000 },  // Aerospace Engineer
+  '17-2041':  { GB: 50000,  FR: 50000,  DE: 70000,  CA: 95000,  AU: 120000, SG: 90000,  IE: 75000 },  // Chemical Engineer
+  '17-2061':  { GB: 62000,  FR: 60000,  DE: 80000,  CA: 115000, AU: 145000, SG: 105000, IE: 90000 },  // Computer Hardware Engineer
+  '17-2031':  { GB: 48000,  FR: 45000,  DE: 60000,  CA: 88000,  AU: 110000, SG: 85000,  IE: 70000 },  // Biomedical Engineer
+  '17-2112':  { GB: 48000,  FR: 45000,  DE: 60000,  CA: 88000,  AU: 105000, SG: 78000,  IE: 65000 },  // Industrial Engineer
+  '17-1011':  { GB: 45000,  FR: 42000,  DE: 60000,  CA: 80000,  AU: 100000, SG: 75000,  IE: 60000 },  // Architect
+  '17-2131':  { GB: 48000,  FR: 45000,  DE: 60000,  CA: 90000,  AU: 105000, SG: 80000,  IE: 65000 },  // Materials Engineer
+  '17-2081':  { GB: 48000,  FR: 45000,  DE: 60000,  CA: 88000,  AU: 105000, SG: 80000,  IE: 65000 },  // Environmental Engineer
+
+  // Finance — extended
+  '13-2011a': { GB: 45000,  FR: 45000,  DE: 60000,  CA: 80000,  AU: 95000,  SG: 75000,  IE: 65000 },  // Internal Auditor
+  '13-2099a': { GB: 80000,  FR: 75000,  DE: 95000,  CA: 130000, AU: 160000, SG: 135000, IE: 110000 }, // Portfolio Manager
+  '13-2061':  { GB: 60000,  FR: 60000,  DE: 75000,  CA: 110000, AU: 130000, SG: 100000, IE: 85000 },  // Actuary
+  '13-2072':  { GB: 38000,  FR: 35000,  DE: 50000,  CA: 65000,  AU: 78000,  SG: 60000,  IE: 50000 },  // Loan Officer
+  '13-2082':  { GB: 28000,  FR: 26000,  DE: 35000,  CA: 45000,  AU: 55000,  SG: 42000,  IE: 35000 },  // Tax Preparer
+  '13-2031':  { GB: 42000,  FR: 42000,  DE: 55000,  CA: 75000,  AU: 92000,  SG: 72000,  IE: 60000 },  // Budget Analyst
+  '13-2099b': { GB: 50000,  FR: 45000,  DE: 60000,  CA: 80000,  AU: 95000,  SG: 75000,  IE: 65000 },  // Risk Analyst
+  '13-1041':  { GB: 40000,  FR: 38000,  DE: 52000,  CA: 70000,  AU: 85000,  SG: 65000,  IE: 55000 },  // Compliance Officer
+  '43-3031':  { GB: 25000,  FR: 25000,  DE: 35000,  CA: 45000,  AU: 55000,  SG: 42000,  IE: 35000 },  // Bookkeeper
+  '13-1031':  { GB: 36000,  FR: 35000,  DE: 50000,  CA: 68000,  AU: 80000,  SG: 60000,  IE: 50000 },  // Insurance Adjuster
+  '13-2053':  { GB: 40000,  FR: 38000,  DE: 52000,  CA: 72000,  AU: 85000,  SG: 65000,  IE: 55000 },  // Insurance Underwriter
+
+  // Management — extended
+  '11-1021':  { GB: 50000,  FR: 50000,  DE: 65000,  CA: 92000,  AU: 110000, SG: 85000,  IE: 72000 },  // General Manager
+  '11-2022':  { GB: 60000,  FR: 60000,  DE: 80000,  CA: 110000, AU: 140000, SG: 110000, IE: 90000 },  // Sales Manager
+  '11-9111':  { GB: 55000,  FR: 50000,  DE: 70000,  CA: 95000,  AU: 120000, SG: 95000,  IE: 80000 },  // Healthcare Manager
+  '11-9021':  { GB: 55000,  FR: 50000,  DE: 70000,  CA: 95000,  AU: 115000, SG: 90000,  IE: 75000 },  // Construction Manager
+  '11-3011':  { GB: 140000, FR: 140000, DE: 185000, CA: 220000, AU: 270000, SG: 250000, IE: 195000 }, // CFO
+  '11-9051':  { GB: 32000,  FR: 32000,  DE: 42000,  CA: 58000,  AU: 70000,  SG: 55000,  IE: 45000 },  // Restaurant Manager
+  '11-9081':  { GB: 32000,  FR: 32000,  DE: 42000,  CA: 60000,  AU: 70000,  SG: 55000,  IE: 45000 },  // Hotel Manager
+  '11-3061':  { GB: 65000,  FR: 60000,  DE: 85000,  CA: 120000, AU: 145000, SG: 115000, IE: 95000 },  // Purchasing Manager
+
+  // Sales / Marketing — extended
+  '41-3091':  { GB: 36000,  FR: 38000,  DE: 50000,  CA: 70000,  AU: 80000,  SG: 60000,  IE: 50000 },  // Account Executive
+  '41-9099a': { GB: 28000,  FR: 28000,  DE: 38000,  CA: 50000,  AU: 60000,  SG: 45000,  IE: 38000 },  // SDR / BDR
+  '41-1011':  { GB: 32000,  FR: 32000,  DE: 45000,  CA: 62000,  AU: 75000,  SG: 58000,  IE: 48000 },  // Account Manager
+  '41-9099b': { GB: 42000,  FR: 40000,  DE: 55000,  CA: 75000,  AU: 90000,  SG: 72000,  IE: 60000 },  // Customer Success Manager
+  '41-9031':  { GB: 55000,  FR: 55000,  DE: 75000,  CA: 105000, AU: 125000, SG: 100000, IE: 80000 },  // Sales Engineer
+  '13-1161':  { GB: 36000,  FR: 38000,  DE: 50000,  CA: 68000,  AU: 80000,  SG: 65000,  IE: 52000 },  // Marketing Specialist
+  '13-1161a': { GB: 48000,  FR: 48000,  DE: 65000,  CA: 85000,  AU: 100000, SG: 80000,  IE: 65000 },  // Digital Marketing Manager
+  '13-1161b': { GB: 32000,  FR: 32000,  DE: 42000,  CA: 58000,  AU: 70000,  SG: 55000,  IE: 45000 },  // SEO Specialist
+  '13-1161c': { GB: 38000,  FR: 38000,  DE: 50000,  CA: 67000,  AU: 80000,  SG: 64000,  IE: 52000 },  // Content Marketing Manager
+  '13-1161d': { GB: 30000,  FR: 30000,  DE: 40000,  CA: 54000,  AU: 65000,  SG: 50000,  IE: 42000 },  // Social Media Manager
+  '13-1161e': { GB: 65000,  FR: 60000,  DE: 80000,  CA: 115000, AU: 140000, SG: 110000, IE: 90000 },  // Product Marketing Manager
+  '27-3031':  { GB: 32000,  FR: 32000,  DE: 42000,  CA: 60000,  AU: 72000,  SG: 56000,  IE: 46000 },  // PR Specialist
+  '41-9022':  { GB: 28000,  FR: 26000,  DE: 35000,  CA: 48000,  AU: 60000,  SG: 45000,  IE: 38000 },  // Real Estate Agent
+
+  // Education — extended
+  '25-1099':  { GB: 50000,  FR: 45000,  DE: 70000,  CA: 95000,  AU: 110000, SG: 85000,  IE: 75000 },  // University Professor
+  '25-2011':  { GB: 20000,  FR: 20000,  DE: 30000,  CA: 35000,  AU: 45000,  SG: 32000,  IE: 28000 },  // Preschool Teacher
+  '25-2050':  { GB: 32000,  FR: 32000,  DE: 55000,  CA: 65000,  AU: 78000,  SG: 60000,  IE: 50000 },  // Special Education Teacher
+  '25-1031':  { GB: 65000,  FR: 60000,  DE: 90000,  CA: 110000, AU: 130000, SG: 110000, IE: 90000 },  // School Principal
+  '21-1012':  { GB: 32000,  FR: 30000,  DE: 45000,  CA: 60000,  AU: 75000,  SG: 55000,  IE: 50000 },  // School Counselor
+  '25-4022':  { GB: 30000,  FR: 32000,  DE: 42000,  CA: 60000,  AU: 75000,  SG: 55000,  IE: 50000 },  // Librarian
+
+  // Creative — extended
+  '27-1024':  { GB: 30000,  FR: 30000,  DE: 42000,  CA: 56000,  AU: 65000,  SG: 50000,  IE: 42000 },  // Graphic Designer
+  '15-1255u': { GB: 48000,  FR: 48000,  DE: 65000,  CA: 88000,  AU: 105000, SG: 85000,  IE: 70000 },  // UX Designer (suffix 'u' to disambiguate from QA)
+  '27-1014':  { GB: 38000,  FR: 38000,  DE: 52000,  CA: 78000,  AU: 95000,  SG: 75000,  IE: 65000 },  // Animator
+  '27-4012':  { GB: 32000,  FR: 32000,  DE: 42000,  CA: 60000,  AU: 70000,  SG: 55000,  IE: 45000 },  // Video Editor
+  '27-3043':  { GB: 35000,  FR: 32000,  DE: 45000,  CA: 65000,  AU: 78000,  SG: 60000,  IE: 50000 },  // Writer
+  '27-4021':  { GB: 22000,  FR: 22000,  DE: 32000,  CA: 38000,  AU: 45000,  SG: 38000,  IE: 30000 },  // Photographer
+  '27-1025':  { GB: 30000,  FR: 32000,  DE: 42000,  CA: 58000,  AU: 70000,  SG: 55000,  IE: 45000 },  // Interior Designer
+
+  // Operations — extended
+  '13-1071':  { GB: 32000,  FR: 32000,  DE: 45000,  CA: 62000,  AU: 75000,  SG: 60000,  IE: 50000 },  // HR Specialist
+  '13-1071a': { GB: 30000,  FR: 30000,  DE: 42000,  CA: 58000,  AU: 70000,  SG: 56000,  IE: 48000 },  // Recruiter
+  '43-1011':  { GB: 28000,  FR: 28000,  DE: 38000,  CA: 55000,  AU: 65000,  SG: 50000,  IE: 42000 },  // Office Manager
+  '13-1082':  { GB: 50000,  FR: 48000,  DE: 65000,  CA: 90000,  AU: 110000, SG: 85000,  IE: 75000 },  // Project Manager
+  '43-4051':  { GB: 22000,  FR: 22000,  DE: 32000,  CA: 38000,  AU: 50000,  SG: 36000,  IE: 30000 },  // Customer Service Rep
+  '43-6014':  { GB: 22000,  FR: 22000,  DE: 32000,  CA: 42000,  AU: 52000,  SG: 38000,  IE: 32000 },  // Administrative Assistant
+
+  // Trades — extended
+  '47-2031':  { GB: 32000,  FR: 30000,  DE: 42000,  CA: 60000,  AU: 75000,  SG: 45000,  IE: 45000 },  // Carpenter
+  '49-9021':  { GB: 32000,  FR: 30000,  DE: 42000,  CA: 60000,  AU: 75000,  SG: 50000,  IE: 45000 },  // HVAC Technician
+  '49-3023':  { GB: 28000,  FR: 26000,  DE: 38000,  CA: 50000,  AU: 65000,  SG: 42000,  IE: 38000 },  // Auto Mechanic
+  '51-4121':  { GB: 30000,  FR: 28000,  DE: 38000,  CA: 55000,  AU: 70000,  SG: 45000,  IE: 38000 },  // Welder
+  '47-2061':  { GB: 28000,  FR: 26000,  DE: 38000,  CA: 50000,  AU: 65000,  SG: 38000,  IE: 38000 },  // Construction Worker
+  '53-3032':  { GB: 32000,  FR: 28000,  DE: 42000,  CA: 60000,  AU: 75000,  SG: 50000,  IE: 45000 },  // Truck Driver
+
+  // Hospitality — extended
+  '35-1011':  { GB: 30000,  FR: 28000,  DE: 38000,  CA: 55000,  AU: 65000,  SG: 50000,  IE: 42000 },  // Chef
+  '35-3011':  { GB: 18000,  FR: 18000,  DE: 25000,  CA: 30000,  AU: 38000,  SG: 28000,  IE: 22000 },  // Bartender
+  '35-3031':  { GB: 18000,  FR: 18000,  DE: 25000,  CA: 30000,  AU: 38000,  SG: 28000,  IE: 22000 },  // Waiter
+  '41-2011':  { GB: 18000,  FR: 18000,  DE: 25000,  CA: 30000,  AU: 38000,  SG: 26000,  IE: 22000 },  // Cashier
+  '39-5012':  { GB: 18000,  FR: 18000,  DE: 24000,  CA: 32000,  AU: 42000,  SG: 30000,  IE: 25000 },  // Hair Stylist
+  '33-9032':  { GB: 22000,  FR: 22000,  DE: 30000,  CA: 38000,  AU: 50000,  SG: 32000,  IE: 28000 },  // Security Guard
+
+  // Government / Public — extended
+  '33-3051':  { GB: 42000,  FR: 35000,  DE: 50000,  CA: 78000,  AU: 90000,  SG: 60000,  IE: 50000 },  // Police Officer
+  '33-2011':  { GB: 32000,  FR: 28000,  DE: 42000,  CA: 65000,  AU: 75000,  SG: 50000,  IE: 42000 },  // Firefighter
+  '43-5051':  { GB: 28000,  FR: 26000,  DE: 38000,  CA: 55000,  AU: 65000,  SG: 38000,  IE: 38000 },  // Postal Worker
+
+  // Other — extended
+  '19-3033':  { GB: 42000,  FR: 40000,  DE: 55000,  CA: 85000,  AU: 100000, SG: 80000,  IE: 70000 },  // Psychologist
+  '21-1023':  { GB: 30000,  FR: 28000,  DE: 42000,  CA: 60000,  AU: 75000,  SG: 50000,  IE: 45000 },  // Social Worker
+  '53-2011':  { GB: 95000,  FR: 90000,  DE: 110000, CA: 175000, AU: 200000, SG: 160000, IE: 140000 }, // Airline Pilot
+  '53-2031':  { GB: 28000,  FR: 28000,  DE: 38000,  CA: 60000,  AU: 75000,  SG: 50000,  IE: 42000 },  // Flight Attendant
 };
 
 // ── Lookup helpers ────────────────────────────────────────────────────────

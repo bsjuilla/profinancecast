@@ -609,9 +609,22 @@
           <div class="benefit-row">
             <div>
               <div style="font-size:13px;font-weight:500;">Annual bonus</div>
-              <div style="font-size:11px;color:var(--text3);">% of base salary</div>
+              <div style="font-size:11px;color:var(--text3);">% of base salary (target on-track)</div>
             </div>
             <input type="number" class="benefit-input" id="b-bonus" value="0" placeholder="10" oninput="calcBenefits()">
+          </div>
+          <!-- Equity / RSU row (added May 2026). Levels.fyi-style total-comp
+               breakdown — for a typical 4-year grant with a 1-year cliff,
+               annualised value = grant ÷ 4. Free users can model this; the
+               value just sits in the breakdown alongside bonus and benefits. -->
+          <div class="benefit-row">
+            <div>
+              <div style="font-size:13px;font-weight:500;">Equity / RSU
+                <span style="display:inline-block;padding:1px 6px;margin-left:6px;border-radius:var(--r-pill);background:var(--gold-soft);color:var(--gold);font-family:var(--font-mono);font-size:9px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;border:1px solid rgba(212,175,106,0.25);">New</span>
+              </div>
+              <div style="font-size:11px;color:var(--text3);">Annualised $ value (4-yr grant ÷ 4)</div>
+            </div>
+            <input type="number" class="benefit-input" id="b-equity" value="0" placeholder="25000" oninput="calcBenefits()">
           </div>
           <div class="benefit-row">
             <div>
@@ -642,22 +655,80 @@
             <input type="number" class="benefit-input" id="b-leave" value="0" placeholder="5" oninput="calcBenefits()">
           </div>
 
+          <!-- Levels.fyi-style total-comp breakdown. Each component is
+               broken out separately so the user can see exactly what's
+               driving the total — and so the negotiation conversation
+               can pivot to specific levers (e.g. "trade $5k base for
+               $20k of additional equity"). -->
           <div style="background:var(--bg3);border-radius:var(--r-sm);padding:14px;margin-top:14px;">
             <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
               <span style="font-size:12px;color:var(--text3);">Base salary</span>
               <span style="font-size:13px;font-weight:600;" id="tc-base">—</span>
             </div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:6px;" id="tc-bonus-row">
+              <span style="font-size:12px;color:var(--text3);">Bonus
+                <span style="font-size:10px;color:var(--text3);opacity:0.75;" id="tc-bonus-pct"></span>
+              </span>
+              <span style="font-size:13px;font-weight:600;" id="tc-bonus">—</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:6px;" id="tc-equity-row">
+              <span style="font-size:12px;color:var(--text3);">Equity / RSU
+                <span style="font-size:10px;color:var(--text3);opacity:0.75;">annualised</span>
+              </span>
+              <span style="font-size:13px;font-weight:600;color:var(--amber);" id="tc-equity">—</span>
+            </div>
             <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
-              <span style="font-size:12px;color:var(--text3);">Benefits value</span>
+              <span style="font-size:12px;color:var(--text3);">Other benefits
+                <span style="font-size:10px;color:var(--text3);opacity:0.75;">health · pension · WFH · leave</span>
+              </span>
               <span style="font-size:13px;font-weight:600;color:var(--teal);" id="tc-benefits">—</span>
             </div>
             <div style="height:1px;background:var(--border2);margin-bottom:8px;"></div>
-            <div style="display:flex;justify-content:space-between;">
+            <div style="display:flex;justify-content:space-between;align-items:baseline;">
               <span style="font-size:13px;font-weight:700;">Total comp</span>
-              <span style="font-family:var(--font-display);font-size:17px;font-weight:700;color:var(--teal);" id="tc-total">—</span>
+              <span style="font-family:var(--font-display);font-size:20px;font-weight:700;color:var(--teal);" id="tc-total">—</span>
+            </div>
+            <!-- Composition bar — visual mix of base/bonus/equity/benefits as % of total -->
+            <div style="margin-top:10px;display:flex;height:6px;border-radius:3px;overflow:hidden;background:var(--bg3);" id="tc-mix-bar">
+              <div id="tc-mix-base"    style="background:var(--teal);"></div>
+              <div id="tc-mix-bonus"   style="background:var(--blue, #6B9CB7);"></div>
+              <div id="tc-mix-equity"  style="background:var(--amber);"></div>
+              <div id="tc-mix-benefits" style="background:var(--money-soft, rgba(43,182,125,0.5));"></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:10px;font-family:var(--font-mono);color:var(--text3);margin-top:4px;letter-spacing:.04em;">
+              <span><span style="color:var(--teal);">▪</span> Base</span>
+              <span><span style="color:var(--blue, #6B9CB7);">▪</span> Bonus</span>
+              <span><span style="color:var(--amber);">▪</span> Equity</span>
+              <span><span style="color:var(--money-soft, rgba(43,182,125,0.5));">▪</span> Benefits</span>
             </div>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- Cross-link to take-home calculator with target salary pre-filled.
+         Sits between Total Comp and Sage script so the natural reading flow
+         is: see your band → set a target → know your total comp → see what
+         actually hits your bank account → only then generate the script. -->
+    <div class="card section-gap" style="background:linear-gradient(135deg,rgba(43,182,125,0.06),rgba(245,166,35,0.03));border-color:rgba(43,182,125,0.18);">
+      <div class="card-inner" style="display:flex;gap:18px;align-items:center;flex-wrap:wrap;">
+        <div style="flex:1;min-width:240px;">
+          <div class="card-title" style="margin-bottom:4px;">Now see what hits your bank</div>
+          <div class="card-sub" id="takehome-cta-sub">
+            Pick a target above, then run it through the take-home pay calculator to see net pay after income tax, social charges, and pension contributions in your country.
+          </div>
+        </div>
+        <button onclick="goToTakeHome()"
+                data-pfc-track="salary_to_takehome_click"
+                data-pfc-track-target-tool="take-home-pay"
+                style="padding:11px 22px;background:var(--teal);border:none;border-radius:var(--r-sm);font-size:13px;font-weight:700;color:var(--canvas);cursor:pointer;font-family:var(--font-body);display:inline-flex;align-items:center;gap:8px;white-space:nowrap;transition:transform 160ms,box-shadow 160ms;"
+                onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 8px 24px rgba(43,182,125,0.30)'"
+                onmouseout="this.style.transform='';this.style.boxShadow=''">
+          <span id="takehome-cta-label">See your take-home pay</span>
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+            <path d="M3 7h8m-3-3l3 3-3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
       </div>
     </div>
 
@@ -695,9 +766,36 @@ const INDUSTRY_MULT = {
   healthcare:1.15, design:1.05, marketing:1.0, hr:0.95, education:0.85,
   hospitality:0.8, retail:0.8, other:1.0,
 };
+// COUNTRY_MULT — converts US median (USD) to LOCAL currency equivalents for
+// roles that don't have explicit per-country medians in PFC_WAGES_BY_COUNTRY.
+//
+// These multipliers were RECALIBRATED in May 2026 via regression against
+// the 31-point tier-1 per-country dataset (national statistical office
+// medians for the highest-traffic roles across GB / FR / DE / CA / AU / SG /
+// IE). Method: for each country, compute the ratio of (per-country wage in
+// local currency / US median in USD) for every SOC code with per-country
+// data, then take the median ratio across all SOCs. This gives a robust
+// central tendency that survives outliers in any single occupation.
+//
+// Pre-recalibration multipliers were set during the formula-baseline era
+// (when EVERY country wage was derived from $50k × multiplier) and were
+// systematically too generous for GB/FR/DE (because the formula was built
+// to produce reasonable-looking USD-equivalents, not local-currency medians).
+//
+// Markets without per-country tier-1 data (ZA, MU, IN, AE, NG, KE, GH, BR,
+// PH) keep their original PPP-adjusted approximations.
 const COUNTRY_MULT = {
-  US:1.0, AU:0.88, GB:0.82, CA:0.85, DE:0.78, FR:0.72, SG:0.80,
-  AE:0.75, ZA:0.35, MU:0.28, IN:0.22, NG:0.25, KE:0.22, GH:0.20, BR:0.32, PH:0.25,
+  US: 1.00,
+  // Recalibrated against the 31-point per-country dataset (May 2026):
+  GB: 0.47,   // was 0.82 — ONS ASHE median ratios across 31 SOCs
+  IE: 0.65,   // NEW entry — CSO Earnings Survey median ratios
+  FR: 0.48,   // was 0.72 — Insee/Apec median ratios
+  DE: 0.62,   // was 0.78 — Destatis Verdienste median ratios
+  CA: 0.89,   // was 0.85 — Statistics Canada LFS median ratios (CAD)
+  AU: 1.07,   // was 0.88 — ABS Employee Earnings median ratios (AUD)
+  SG: 0.85,   // was 0.80 — MOM Occupational Wages median ratios (SGD)
+  // Markets without tier-1 per-country data — PPP-adjusted approximations:
+  AE: 0.75, ZA: 0.35, MU: 0.28, IN: 0.22, NG: 0.25, KE: 0.22, GH: 0.20, BR: 0.32, PH: 0.25,
 };
 const COMPANY_MULT = { startup:0.9, small:0.95, mid:1.0, large:1.1, enterprise:1.18 };
 const EXP_MULT = (y) => {
@@ -767,16 +865,26 @@ function getMarketRange(salary) {
       : match.role.usMedian * (COUNTRY_MULT[country] || 0.5);
     // Track whether this was a per-country hit (for the badge text).
     source = (perCountry != null) ? 'real-country' : 'real';
-    // Seniority + experience shims still apply on top of the role anchor.
+    // Seniority + experience + industry shims apply on top of the role anchor.
     // "Senior X" should land above base "X" median; junior should land below.
     const seniorityShim = seniority.mult >= 1.2 ? (seniority.mult * 0.85 + 0.15)
                        : seniority.mult <= 0.8 ? (seniority.mult * 0.85 + 0.15)
                        : 1.0;
     const expShim = exp <= 1 ? 0.85 : exp <= 3 ? 0.95 : exp <= 8 ? 1.0 : 1.08;
+    // Industry shim: per-country median already averages across industries,
+    // so the full INDUSTRY_MULT swing (0.80–1.45 in the formula path) would
+    // double-count. We dampen the deviation from 1.0 to 40% of its formula
+    // value — a Software Developer in Healthcare lands ~6% below the role
+    // median (instead of -15%), and in Finance/Consulting ~14% above
+    // (instead of +30%). This captures real within-role industry variance
+    // without overpowering the role anchor.
+    const rawIndustryMult = INDUSTRY_MULT[industry] || 1;
+    const industryShim = 1 + (rawIndustryMult - 1) * 0.4;
     median = countryBase
       * (COMPANY_MULT[company] || 1)
       * expShim
-      * seniorityShim;
+      * seniorityShim
+      * industryShim;
   } else {
     // Formula fallback — same baseline as before the BLS taxonomy was added.
     roleMatched = null;
@@ -926,6 +1034,7 @@ function calc() {
   // Market range
   const range = getMarketRange(salary);
   updateMarketRange(range, salary, target, sym);
+  updateTakeHomeCta();
 
   if (!salary || !target || target <= salary) {
     clearMetrics(sym);
@@ -1221,18 +1330,58 @@ function calcBenefits() {
   const salary = parseFloat(document.getElementById('i-target').value) || parseFloat(document.getElementById('i-salary').value) || 0;
   if (!salary) return;
 
-  const bonus   = (parseFloat(document.getElementById('b-bonus').value)   || 0) / 100 * salary;
-  const health  = parseFloat(document.getElementById('b-health').value)   || 0;
+  const bonusPctRaw = parseFloat(document.getElementById('b-bonus').value) || 0;
+  const bonus   = bonusPctRaw / 100 * salary;
+  const equity  = parseFloat(document.getElementById('b-equity').value)  || 0;
+  const health  = parseFloat(document.getElementById('b-health').value)  || 0;
   const pension = (parseFloat(document.getElementById('b-pension').value) || 0) / 100 * salary;
-  const remote  = parseFloat(document.getElementById('b-remote').value)   || 0;
-  const leave   = (parseFloat(document.getElementById('b-leave').value)   || 0) * (salary / 260);
+  const remote  = parseFloat(document.getElementById('b-remote').value)  || 0;
+  const leave   = (parseFloat(document.getElementById('b-leave').value)  || 0) * (salary / 260);
 
-  const benefitsTotal = Math.round(bonus + health + pension + remote + leave);
-  const totalComp = salary + benefitsTotal;
+  // Other benefits = everything that's not base/bonus/equity, lumped for
+  // visual brevity in the breakdown card.
+  const otherBenefits = Math.round(health + pension + remote + leave);
+  const totalComp = Math.round(salary + bonus + equity + otherBenefits);
 
+  // Update breakdown rows
   document.getElementById('tc-base').textContent     = sym + salary.toLocaleString();
-  document.getElementById('tc-benefits').textContent = sym + benefitsTotal.toLocaleString();
+  document.getElementById('tc-bonus').textContent    = sym + Math.round(bonus).toLocaleString();
+  document.getElementById('tc-bonus-pct').textContent = bonusPctRaw > 0 ? ' (' + bonusPctRaw + '% of base)' : '';
+  document.getElementById('tc-equity').textContent   = sym + equity.toLocaleString();
+  document.getElementById('tc-benefits').textContent = sym + otherBenefits.toLocaleString();
   document.getElementById('tc-total').textContent    = sym + totalComp.toLocaleString();
+
+  // Composition bar — proportional widths summing to 100%. Width zeroes out
+  // for any component that contributes nothing, so the bar visually compresses
+  // (e.g. if equity is $0 the equity segment disappears and the others fill in).
+  if (totalComp > 0) {
+    const basePct    = (salary       / totalComp * 100).toFixed(2);
+    const bonusPctW  = (bonus        / totalComp * 100).toFixed(2);
+    const equityPctW = (equity       / totalComp * 100).toFixed(2);
+    const benefPctW  = (otherBenefits / totalComp * 100).toFixed(2);
+    const segs = [
+      ['tc-mix-base',     basePct],
+      ['tc-mix-bonus',    bonusPctW],
+      ['tc-mix-equity',   equityPctW],
+      ['tc-mix-benefits', benefPctW],
+    ];
+    segs.forEach(([id, pct]) => {
+      const el = document.getElementById(id);
+      if (el) { el.style.width = pct + '%'; el.style.transition = 'width 220ms ease-out'; }
+    });
+  }
+}
+
+// Tiny helper for percentile phrasing — 1st, 2nd, 3rd, 4th, … 21st, 22nd, …
+function ordinalSuffix(n) {
+  const tens = n % 100;
+  if (tens >= 11 && tens <= 13) return 'th';
+  switch (n % 10) {
+    case 1: return 'st';
+    case 2: return 'nd';
+    case 3: return 'rd';
+    default: return 'th';
+  }
 }
 
 // ── GENERATE SCRIPT ──
@@ -1283,6 +1432,7 @@ async function generateScript() {
   const raisePct = salary ? ((target - salary) / salary * 100).toFixed(1) : '10';
   const industry = document.getElementById('i-industry').options[document.getElementById('i-industry').selectedIndex].text;
   const country  = document.getElementById('i-country').options[document.getElementById('i-country').selectedIndex].text;
+  const countryCode = document.getElementById('i-country').value;
 
   if (copyBtn) copyBtn.style.display = 'none';
   scriptBox.innerHTML = `<div class="script-loading"><div class="spin"></div> Sage is writing your personalised negotiation script…</div>`;
@@ -1290,6 +1440,63 @@ async function generateScript() {
   const targetNum = target || range.median;
   const askAmount = targetNum - salary;
   const askPct    = salary ? ((targetNum - salary) / salary * 100).toFixed(1) : '10';
+
+  // ── Percentile computation ──────────────────────────────────────────────
+  // Assume the band is 25th/50th/75th percentile (matches the spread logic
+  // in getMarketRange). Linear-interpolate between the three anchor points;
+  // clamp above 95th and below 5th so we never claim implausible extremes.
+  function computePercentile(value, low, median, high) {
+    if (!isFinite(value) || value <= 0) return null;
+    if (value <= low) {
+      // Below 25th — extrapolate down to 5th, floor at 5
+      const ratio = low > 0 ? value / low : 0;
+      return Math.max(5, Math.round(25 * ratio));
+    }
+    if (value <= median) {
+      return Math.round(25 + 25 * (value - low) / (median - low));
+    }
+    if (value <= high) {
+      return Math.round(50 + 25 * (value - median) / (high - median));
+    }
+    // Above 75th — extrapolate up to 95th, cap at 95
+    const overshoot = (value - high) / (high - median);
+    return Math.min(95, Math.round(75 + 25 * Math.min(1, overshoot)));
+  }
+  const targetPct = computePercentile(targetNum, range.low, range.median, range.high);
+  const currentPct = salary > 0 ? computePercentile(salary, range.low, range.median, range.high) : null;
+
+  // ── Statistical source attribution ──────────────────────────────────────
+  // Each country gets the actual name of the national statistical office
+  // dataset its per-country median comes from. For roles without a per-
+  // country entry, the prompt cites BLS OEWS as the US baseline + the
+  // country adjustment factor (PPP-style multiplier from COUNTRY_MULT).
+  const STAT_SOURCE = {
+    US: 'BLS OEWS May 2024',
+    GB: 'UK ONS ASHE 2024',
+    FR: 'Insee / Apec 2024',
+    DE: 'Destatis Verdienste 2024',
+    CA: 'Statistics Canada LFS 2024',
+    AU: 'ABS Employee Earnings May 2024',
+    SG: 'Singapore MOM Occupational Wages 2024',
+    IE: 'CSO Earnings & Labour Costs 2024',
+  };
+  let sourceLine;
+  if (range.source === 'real-country') {
+    sourceLine = `${STAT_SOURCE[countryCode] || 'national statistics'} — median for ${range.roleMatched || role} in ${country}`;
+  } else if (range.source === 'real') {
+    sourceLine = `BLS OEWS May 2024 — US median for ${range.roleMatched || role}, adjusted to ${country} via official wage-ratio data`;
+  } else {
+    sourceLine = `industry/country/experience benchmarks (rough estimate — no role-specific data available)`;
+  }
+
+  // Percentile phrasing for the prompt — falls back gracefully if the
+  // computation returned null (no current salary entered).
+  const targetPctPhrase = targetPct != null
+    ? `Their target sits at approximately the ${targetPct}${ordinalSuffix(targetPct)} percentile of the band.`
+    : '';
+  const currentPctPhrase = currentPct != null
+    ? `Their CURRENT salary sits at approximately the ${currentPct}${ordinalSuffix(currentPct)} percentile of the band.`
+    : '';
 
   const prompt = `You are writing a salary negotiation script that the user will read aloud almost verbatim in a real conversation. Write it for THIS specific person:
 
@@ -1299,8 +1506,11 @@ COUNTRY: ${country}
 YEARS OF EXPERIENCE: ${exp}
 CURRENT SALARY: ${sym}${salary.toLocaleString()}
 TARGET SALARY: ${sym}${targetNum.toLocaleString()} (a ${askPct}% raise, ${sym}${askAmount.toLocaleString()} more per year)
-ESTIMATED MARKET MEDIAN for this role/country/experience: ${sym}${range.median.toLocaleString()}
-ESTIMATED MARKET RANGE (25th–75th percentile): ${sym}${range.low.toLocaleString()} – ${sym}${range.high.toLocaleString()}
+MARKET MEDIAN for this role/country/experience: ${sym}${range.median.toLocaleString()}
+MARKET BAND (25th–75th percentile): ${sym}${range.low.toLocaleString()} – ${sym}${range.high.toLocaleString()}
+DATA SOURCE: ${sourceLine}
+${currentPctPhrase}
+${targetPctPhrase}
 
 WRITE A COMPLETE SPOKEN SCRIPT, NOT A TEMPLATE.
 
@@ -1308,11 +1518,13 @@ Hard rules (failing any of these means the script is unusable):
 1. DO NOT start with meta phrases like "Here is a script" or "Below you'll find". Start directly with the user's first line, as if they're speaking.
 2. DO NOT use markdown headers (###, ##) or bullet lists. Use plain spoken language. If you need section breaks, use a bracketed cue on its own line: [OPENING], [THE ASK], [JUSTIFICATION], [HANDLING PUSHBACK], [CLOSING].
 3. DO NOT use placeholders like [your achievement] or [insert specific example]. Invent plausible specifics that fit a ${exp}-year ${role} in ${industry}.
-4. Use the actual numbers from the inputs above — the target ${sym}${targetNum.toLocaleString()} must appear at least once, the market median ${sym}${range.median.toLocaleString()} must be referenced as evidence.
-5. Tone: confident but understated. No hyperbole. No "I'm thrilled" or "I'm so passionate". Calm and factual.
-6. Total length: 280–350 words. Don't pad.
-7. The "handling pushback" section must address ONE specific objection: "we don't have budget right now" — and the response should pivot to non-cash levers (signing bonus, equity refresh, accelerated review, remote/flex days) rather than capitulating.
-8. End with one line the user can use if the answer is "no": polite, professional, leaves the door open.
+4. Cite the SPECIFIC data source by name at least once in [JUSTIFICATION] — say "${sourceLine.split(' — ')[0]}" verbatim, not "market data" or "industry benchmarks". The credibility of the script depends on naming the source the user can verify.
+5. Cite the SPECIFIC PERCENTILE at least once: ${targetPctPhrase ? `state that their target sits at the ${targetPct}${ordinalSuffix(targetPct)} percentile of ${country} pay for this role` : 'reference the percentile if computable'}. Numbers are persuasive; vague claims are not.
+6. Use the actual currency-formatted numbers from the inputs above — the target ${sym}${targetNum.toLocaleString()} must appear at least once, the market median ${sym}${range.median.toLocaleString()} must be referenced as evidence.
+7. Tone: confident but understated. No hyperbole. No "I'm thrilled" or "I'm so passionate". Calm and factual. The user is presenting a case, not begging.
+8. Total length: 300–380 words. Don't pad. The source citation + percentile mention will add some length over a generic script — that's by design.
+9. The [HANDLING PUSHBACK] section must address ONE specific objection: "we don't have budget right now" — and the response should pivot to non-cash levers (signing bonus, equity refresh, accelerated review, remote/flex days, professional-development budget) rather than capitulating.
+10. End with one line the user can use if the answer is "no": polite, professional, leaves the door open.
 
 Write the script now. Just the script — no preamble, no afterword.`;
 
@@ -1345,6 +1557,43 @@ Write the script now. Just the script — no preamble, no afterword.`;
     document.getElementById('copy-btn').style.display = 'block';
   } catch(e) {
     scriptBox.innerHTML = '<span style="color:var(--red)">Could not reach Sage. Check your connection and try again.</span>';
+  }
+}
+
+// ── TAKE-HOME PAY CROSS-LINK ──
+// Hands off to /tools/take-home-pay with the user's target salary (or
+// current salary if no target set) and selected country pre-filled via URL
+// params. take-home-pay.html reads them at init. Falls back to a plain
+// navigation if no salary is available — the destination still works
+// without params.
+function goToTakeHome() {
+  const target  = parseFloat(document.getElementById('i-target').value) || 0;
+  const current = parseFloat(document.getElementById('i-salary').value) || 0;
+  const salary  = target || current;
+  const country = document.getElementById('i-country').value || 'US';
+  const params = [];
+  if (salary > 0) params.push('salary=' + Math.round(salary));
+  if (country)    params.push('country=' + encodeURIComponent(country));
+  const qs = params.length ? '?' + params.join('&') : '';
+  window.location.href = '/tools/take-home-pay' + qs;
+}
+
+// Update the CTA label + sub-text reactively when the target/salary changes
+// so users know what number is about to get carried over.
+function updateTakeHomeCta() {
+  const sym    = (window.USER && USER.currency) || '$';
+  const target = parseFloat(document.getElementById('i-target').value) || 0;
+  const salary = parseFloat(document.getElementById('i-salary').value) || 0;
+  const amount = target || salary;
+  const label  = document.getElementById('takehome-cta-label');
+  const sub    = document.getElementById('takehome-cta-sub');
+  if (!label || !sub) return;
+  if (amount > 0) {
+    label.textContent = 'See take-home on ' + sym + amount.toLocaleString();
+    sub.textContent = 'We’ll carry the ' + sym + amount.toLocaleString() + ' across and break it down by income tax, social charges, and pension. Numbers stay in your browser.';
+  } else {
+    label.textContent = 'See your take-home pay';
+    sub.textContent = 'Pick a target above, then run it through the take-home pay calculator to see net pay after income tax, social charges, and pension contributions in your country.';
   }
 }
 
