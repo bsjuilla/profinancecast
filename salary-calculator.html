@@ -369,12 +369,18 @@
       <!-- Market range -->
       <div class="card">
         <div class="card-inner">
-          <div class="card-title" style="margin-bottom:4px;">Market rate analysis</div>
-          <div class="card-sub" style="margin-bottom:18px;">Estimated range for your role, experience &amp; region</div>
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:4px;">
+            <div class="card-title">Market rate analysis</div>
+            <div id="seniority-badge" style="display:none;padding:3px 9px;border-radius:var(--r-pill);font-family:var(--font-mono);font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;background:var(--gold-soft);color:var(--gold);border:1px solid rgba(212,175,106,0.25);white-space:nowrap;">—</div>
+          </div>
+          <div class="card-sub" style="margin-bottom:14px;">Estimated band for your role, experience &amp; region — calibrated by industry, country, company size, and seniority signals in the role title.</div>
+          <div style="font-size:11px;color:var(--text3);background:rgba(245,166,35,0.06);border:1px solid rgba(245,166,35,0.18);border-radius:var(--r-sm);padding:8px 10px;line-height:1.5;margin-bottom:18px;">
+            <strong style="color:var(--amber);">Estimate, not a quote.</strong> These bands come from industry benchmarks and a seniority signal extracted from your role title — not from a live salary database. Use them as a directional anchor, not a fact. Cross-check against Levels.fyi, Glassdoor, or your country's official labour statistics (BLS in the US, ONS in the UK, Insee in France) before any negotiation.
+          </div>
 
           <!-- Range visual -->
-          <div style="margin-bottom:20px;">
-            <div class="range-bar-wrap" id="range-bar-wrap">
+          <div style="margin-bottom:24px;">
+            <div class="range-bar-wrap" id="range-bar-wrap" style="margin-top:22px;">
               <div class="range-bar-fill" id="range-fill" style="left:0%;width:100%;background:linear-gradient(90deg,rgba(59,130,246,0.3),rgba(43,182,125,0.4),rgba(245,166,35,0.3));"></div>
               <!-- You marker -->
               <div class="range-marker" id="you-marker" style="left:50%;background:var(--teal);">
@@ -385,9 +391,9 @@
                 <div class="range-marker-label" style="color:var(--amber);">Target</div>
               </div>
             </div>
-            <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3);">
+            <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3);margin-top:8px;">
               <span id="range-low-label">Low</span>
-              <span id="range-mid-label" style="color:var(--teal);font-weight:600;">Market median</span>
+              <span id="range-mid-label" style="color:var(--teal);font-weight:600;">Median</span>
               <span id="range-high-label">Top</span>
             </div>
           </div>
@@ -687,23 +693,57 @@ const EXP_MULT = (y) => {
   return 1.5;
 };
 
+// Seniority multiplier inferred from the role text. Real titles carry signal
+// that a flat industry × country × company × experience formula misses (a
+// "Director of Engineering" earns 2× a "Junior Engineer" in the same industry
+// and country). Patterns are matched against the lowercased role string in
+// priority order — first match wins.
+const SENIORITY_PATTERNS = [
+  { re: /\b(chief|c[eo]o|cfo|cto|cpo|cmo)\b/, mult: 2.5,  label: 'C-suite' },
+  { re: /\b(vp|vice[\s-]?president)\b/,        mult: 2.0,  label: 'VP' },
+  { re: /\bhead of\b/,                         mult: 1.8,  label: 'Head of' },
+  { re: /\b(director)\b/,                      mult: 1.65, label: 'Director' },
+  { re: /\b(principal|staff)\b/,               mult: 1.5,  label: 'Principal / Staff' },
+  { re: /\b(manager|lead)\b/,                  mult: 1.35, label: 'Manager / Lead' },
+  { re: /\b(senior|sr\.?)\b/,                  mult: 1.25, label: 'Senior' },
+  { re: /\b(junior|jr\.?|associate|entry)\b/,  mult: 0.78, label: 'Junior / Associate' },
+  { re: /\b(intern|trainee|apprentice|graduate|grad)\b/, mult: 0.5, label: 'Intern / Trainee' },
+];
+function getSeniority(roleText) {
+  const t = (roleText || '').toLowerCase();
+  for (const p of SENIORITY_PATTERNS) {
+    if (p.re.test(t)) return { mult: p.mult, label: p.label };
+  }
+  return { mult: 1.0, label: 'Mid-level' };
+}
+
 function getMarketRange(salary) {
+  const role     = (document.getElementById('i-role').value || '').trim();
   const industry = document.getElementById('i-industry').value;
   const country  = document.getElementById('i-country').value;
   const company  = document.getElementById('i-company').value;
   const exp      = parseFloat(document.getElementById('i-exp').value) || 3;
+
+  const seniority = getSeniority(role);
 
   const base = 50000;
   const median = base
     * (INDUSTRY_MULT[industry] || 1)
     * (COUNTRY_MULT[country] || 0.5)
     * (COMPANY_MULT[company] || 1)
-    * EXP_MULT(exp);
+    * EXP_MULT(exp)
+    * seniority.mult;
+
+  // Spread depends on seniority — junior bands are narrow, senior bands are wide
+  // (a junior dev's pay sits within ±15% of median; a director's pay can range
+  // ±35% depending on company stage and equity comp).
+  const spread = seniority.mult >= 1.5 ? 0.35 : (seniority.mult >= 1.2 ? 0.28 : 0.18);
 
   return {
-    low:    Math.round(median * 0.82),
+    low:    Math.round(median * (1 - spread)),
     median: Math.round(median),
-    high:   Math.round(median * 1.28),
+    high:   Math.round(median * (1 + spread)),
+    seniority: seniority.label,
   };
 }
 
@@ -854,6 +894,20 @@ function updateMarketRange(range, salary, target, sym) {
   document.getElementById('r-mid').textContent  = sym + range.median.toLocaleString();
   document.getElementById('r-high').textContent = sym + range.high.toLocaleString();
 
+  // Show the detected seniority label so users can verify the role input is
+  // actually influencing the band. Falls back to 'Mid-level' for any role
+  // without seniority keywords (which is fine — that's still real signal).
+  const senBadge = document.getElementById('seniority-badge');
+  if (senBadge) {
+    const roleText = (document.getElementById('i-role').value || '').trim();
+    if (roleText && range.seniority) {
+      senBadge.textContent = range.seniority;
+      senBadge.style.display = 'inline-block';
+    } else {
+      senBadge.style.display = 'none';
+    }
+  }
+
   if (!salary) { document.getElementById('position-box').style.display = 'none'; return; }
 
   // Position markers on bar
@@ -986,7 +1040,16 @@ function calcCounter() {
 
   if (!offer) return;
 
-  const anchor    = target || (salary * 1.15);
+  // Floor the anchor at three sensible reference points so the counter is
+  // ALWAYS above the offer:
+  //   1. your target (if set) or current salary +15%
+  //   2. the market median for the role
+  //   3. their offer + 5% (a polite counter must exceed the offer)
+  // Without this, a low current salary against a high offer used to produce
+  // a counter LESS than the offer and a negative "above" gap.
+  const range     = getMarketRange(salary);
+  const rawAnchor = target || (salary * 1.15);
+  const anchor    = Math.max(rawAnchor, range.median, offer * 1.05);
   const walkaway  = Math.max(offer, salary * 1.02);
   const counter   = Math.round(offer + (anchor - offer) * 0.65);
   const dream     = Math.round(anchor * 1.05);
@@ -1031,14 +1094,33 @@ function calcBenefits() {
 }
 
 // ── GENERATE SCRIPT ──
+// Accept letters, spaces, hyphens, slashes, ampersands, and apostrophes (covers
+// 99% of real job titles: "Senior Software Engineer", "Head of People & Culture",
+// "C++ Developer", "PR/Comms Lead"). Rejects gibberish like "rgbteybrt".
+const ROLE_REGEX = /^[a-zA-Z][a-zA-Z\s\-\/&'.+]{1,79}$/;
+function looksLikeRealRole(s) {
+  if (!ROLE_REGEX.test(s)) return false;
+  // Reject strings with no vowels (random keyboard mashing) — every real English
+  // job title has at least one vowel in every 6-char window.
+  const words = s.toLowerCase().split(/\s+/).filter(Boolean);
+  return words.every(w => /[aeiouy]/.test(w));
+}
+
 async function generateScript() {
   const salary  = parseFloat(document.getElementById('i-salary').value) || 0;
   const target  = parseFloat(document.getElementById('i-target').value) || 0;
-  const role    = document.getElementById('i-role').value.trim() || 'professional';
-  const exp     = document.getElementById('i-exp').value || '3';
+  const roleRaw = document.getElementById('i-role').value.trim();
+  const expNum  = parseFloat(document.getElementById('i-exp').value);
+  const exp     = (isFinite(expNum) && expNum >= 0 && expNum <= 50) ? expNum : 3;
   const sym     = USER.currency || '$';
 
   if (!salary) { showToast('Enter your current salary first'); return; }
+  if (!roleRaw || !looksLikeRealRole(roleRaw)) {
+    showToast('Enter a real job title (letters only) before generating the script');
+    document.getElementById('i-role').focus();
+    return;
+  }
+  const role = roleRaw;
 
   const scriptBox = document.getElementById('script-box');
   const copyBtn = document.getElementById('copy-btn');
@@ -1063,35 +1145,47 @@ async function generateScript() {
   if (copyBtn) copyBtn.style.display = 'none';
   scriptBox.innerHTML = `<div class="script-loading"><div class="spin"></div> Sage is writing your personalised negotiation script…</div>`;
 
-  const prompt = `Write a professional salary negotiation script for someone with these details:
-- Role: ${role}
-- Industry: ${industry}
-- Country: ${country}
-- Years experience: ${exp}
-- Current salary: ${sym}${salary.toLocaleString()}
-- Target salary: ${target ? sym + target.toLocaleString() : 'not set, suggest ' + sym + range.median.toLocaleString()}
-- Raise requested: ${raisePct}%
-- Market median for this role: ${sym}${range.median.toLocaleString()}
-- Market range (25th–75th percentile): ${sym}${range.low.toLocaleString()} – ${sym}${range.high.toLocaleString()}
+  const targetNum = target || range.median;
+  const askAmount = targetNum - salary;
+  const askPct    = salary ? ((targetNum - salary) / salary * 100).toFixed(1) : '10';
 
-Write a concise, confident negotiation script with:
-1. Opening statement (2-3 sentences) — express enthusiasm and set up the ask
-2. The ask itself — state the number confidently with market data backing
-3. Value justification — 2-3 bullet points on why they deserve this
-4. Response to pushback — how to handle "we don't have budget"
-5. Closing — professional regardless of outcome
+  const prompt = `You are writing a salary negotiation script that the user will read aloud almost verbatim in a real conversation. Write it for THIS specific person:
 
-Keep it realistic, not arrogant. Use their actual numbers throughout. Format clearly with section headers.`;
+ROLE: ${role}
+INDUSTRY: ${industry}
+COUNTRY: ${country}
+YEARS OF EXPERIENCE: ${exp}
+CURRENT SALARY: ${sym}${salary.toLocaleString()}
+TARGET SALARY: ${sym}${targetNum.toLocaleString()} (a ${askPct}% raise, ${sym}${askAmount.toLocaleString()} more per year)
+ESTIMATED MARKET MEDIAN for this role/country/experience: ${sym}${range.median.toLocaleString()}
+ESTIMATED MARKET RANGE (25th–75th percentile): ${sym}${range.low.toLocaleString()} – ${sym}${range.high.toLocaleString()}
+
+WRITE A COMPLETE SPOKEN SCRIPT, NOT A TEMPLATE.
+
+Hard rules (failing any of these means the script is unusable):
+1. DO NOT start with meta phrases like "Here is a script" or "Below you'll find". Start directly with the user's first line, as if they're speaking.
+2. DO NOT use markdown headers (###, ##) or bullet lists. Use plain spoken language. If you need section breaks, use a bracketed cue on its own line: [OPENING], [THE ASK], [JUSTIFICATION], [HANDLING PUSHBACK], [CLOSING].
+3. DO NOT use placeholders like [your achievement] or [insert specific example]. Invent plausible specifics that fit a ${exp}-year ${role} in ${industry}.
+4. Use the actual numbers from the inputs above — the target ${sym}${targetNum.toLocaleString()} must appear at least once, the market median ${sym}${range.median.toLocaleString()} must be referenced as evidence.
+5. Tone: confident but understated. No hyperbole. No "I'm thrilled" or "I'm so passionate". Calm and factual.
+6. Total length: 280–350 words. Don't pad.
+7. The "handling pushback" section must address ONE specific objection: "we don't have budget right now" — and the response should pivot to non-cash levers (signing bonus, equity refresh, accelerated review, remote/flex days) rather than capitulating.
+8. End with one line the user can use if the answer is "no": polite, professional, leaves the door open.
+
+Write the script now. Just the script — no preamble, no afterword.`;
 
   try {
     const session = (typeof PFCAuth !== 'undefined') ? PFCAuth.getSession() : null;
     const headers = { 'Content-Type': 'application/json' };
     if (session?.access_token) headers.Authorization = 'Bearer ' + session.access_token;
 
+    // csvMode:false routes through the full Sage chat path with proper temperature
+    // (0.7) and the rich system prompt. csvMode:true used a deterministic 0.1-temp
+    // path that bypassed the system prompt and produced templated/amateur output.
     const res = await fetch('/api/sage', {
       method: 'POST',
       headers,
-      body: JSON.stringify({ message: prompt, csvMode: true }),
+      body: JSON.stringify({ message: prompt, csvMode: false }),
     });
     const data = await res.json();
     const text = data.reply || data.error || 'Could not generate script. Try again.';

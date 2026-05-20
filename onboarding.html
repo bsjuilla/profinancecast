@@ -734,6 +734,24 @@ function buildComplete() {
       current: 0,
     }));
     PFCStorage.setJSON('goals', goalsArray);
+
+    // Bug fix (May 2026): if the Supabase auth session hadn't resolved at the
+    // moment we wrote the data, _uid() returned 'guest' and the data landed
+    // under pfc:guest:user. Cash-forecast then reads from pfc:{realUid}:user
+    // and gets empty values + the "Finish onboarding" banner. The one-shot
+    // _adoptGuestDataAsync that runs at session start has already passed.
+    //
+    // Force a re-adoption AFTER the write so the data is promoted into the
+    // authenticated namespace. This is idempotent and safe regardless of the
+    // auth state at the moment buildComplete() fires.
+    try {
+      const uid = (typeof PFCAuth !== 'undefined' && PFCAuth.getUserId) ? PFCAuth.getUserId() : 'guest';
+      if (uid && uid !== 'guest' && typeof PFCStorage.adoptGuestData === 'function') {
+        PFCStorage.adoptGuestData(uid);
+      }
+    } catch (adoptErr) {
+      console.warn('[onboarding] post-write guest adoption failed:', adoptErr && adoptErr.message);
+    }
   } catch (e) {
     console.error('Could not save user data to localStorage:', e);
   }
