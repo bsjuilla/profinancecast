@@ -475,14 +475,50 @@ function _pickColor(side, idx) {
   return pool[idx % pool.length];
 }
 
+// Stable localStorage key used as the SYNCHRONOUS source-of-truth for the
+// cash-forecast page. Decoupled from PFCStorage's per-user encrypted
+// namespace (which races with PFCAuth.onReady — see persistUser below).
+const CASH_FORECAST_LS_KEY = 'pfc_cash_forecast_user';
+
 function loadUser() {
   try {
-    const raw = (typeof PFCStorage !== 'undefined') ? PFCStorage.get('user') : localStorage.getItem('pfc_user');
+    // Read precedence:
+    // 1. Plaintext localStorage backup (sync, namespace-free, reliable)
+    // 2. Encrypted PFCStorage (canonical, namespace-aware, matches dashboard)
+    // 3. Legacy 'pfc_user' key for older browsers
+    // 4. DEFAULT_USER
+    //
+    // We check the LS backup FIRST because the encrypted PFCStorage write
+    // is async — there's a window between setJSON() and the actual IndexedDB
+    // write where a refresh would lose data if we relied on PFCStorage alone.
+    // The LS backup is written synchronously, so it's the most up-to-date
+    // source on refresh.
+    let raw = null;
+    try { raw = localStorage.getItem(CASH_FORECAST_LS_KEY); } catch (_) {}
+    if (!raw && typeof PFCStorage !== 'undefined') {
+      try { raw = PFCStorage.get('user'); } catch (_) {}
+    }
+    if (!raw) {
+      try { raw = localStorage.getItem('pfc_user'); } catch (_) {}
+    }
     const u = !raw ? { ...DEFAULT_USER } : { ...DEFAULT_USER, ...JSON.parse(raw) };
     if (!Array.isArray(u.customIn))  u.customIn  = [];
     if (!Array.isArray(u.customOut)) u.customOut = [];
     return u;
   } catch(e) { return { ...DEFAULT_USER, customIn:[], customOut:[] }; }
+}
+
+// Heuristic for "does USER actually contain user-entered data?" — used by
+// the PFCAuth.onReady re-render so we don't clobber a user's typed values
+// with an empty namespace fetch (the classic race that made every refresh
+// lose data even though persistUser fired).
+function _userHasData(u) {
+  if (!u) return false;
+  const numericKeys = ['income','otherIncome','housing','food','transport','otherExp','savings','investments','debt','debtPay'];
+  if (numericKeys.some(k => parseFloat(u[k]) > 0)) return true;
+  if (Array.isArray(u.customIn)  && u.customIn.length  > 0) return true;
+  if (Array.isArray(u.customOut) && u.customOut.length > 0) return true;
+  return false;
 }
 // Update the "Last saved at HH:MM" indicator next to the Save button.
 // Called from persistUser() so it reflects EVERY successful save —
@@ -504,8 +540,34 @@ function _updateLastSavedIndicator() {
 
 function persistUser() {
   try {
-    if (typeof PFCStorage !== 'undefined') PFCStorage.setJSON('user', USER);
-    else localStorage.setItem('pfc_user', JSON.stringify(USER));
+    const json = JSON.stringify(USER);
+    // PRIMARY: synchronous plaintext write to a stable key. Guarantees the
+    // data is in localStorage IMMEDIATELY, surviving any refresh. This is
+    // the source of truth for cash-forecast's own reloads.
+    // (The values here aren't credentials — they're personal-finance
+    // numbers — so plaintext on-device storage is acceptable. The encrypted
+    // path below remains for cross-page sync.)
+    try { localStorage.setItem(CASH_FORECAST_LS_KEY, json); } catch (_) {}
+    // SECONDARY: encrypted PFCStorage write — async, drains in the background
+    // via the IndexedDB pipeline. This is what the dashboard / net-worth /
+    // other pages read via PFCStorage.getJSON('user'), so we keep it in sync.
+    // The async race that used to lose data is now caught by the LS write above.
+    if (typeof PFCStorage !== 'undefined') {
+      try { PFCStorage.setJSON('user', USER); } catch (_) {}
+    } else {
+      // No PFCStorage at all — fall back to the legacy unencrypted key so
+      // the dashboard's own loadUser path can still find the data.
+      try { localStorage.setItem('pfc_user', json); } catch (_) {}
+    }
+    // After every save, also nudge the guest→authenticated namespace migration
+    // so any data that landed in pfc:guest:user during the auth-resolution
+    // window gets promoted to pfc:{realUid}:user. Idempotent and async.
+    try {
+      const uid = (typeof PFCAuth !== 'undefined' && PFCAuth.getUserId) ? PFCAuth.getUserId() : 'guest';
+      if (uid && uid !== 'guest' && typeof PFCStorage !== 'undefined' && typeof PFCStorage.adoptGuestData === 'function') {
+        PFCStorage.adoptGuestData(uid);
+      }
+    } catch (_) {}
     _updateLastSavedIndicator();
   } catch(e) { console.error('[cash-forecast] persist failed:', e); }
 }
@@ -860,16 +922,46 @@ function updateEmptyHintVisibility() {
 // PFCStorage namespaces by userId. At DOMContentLoaded the Supabase session
 // may not be restored yet, so re-load once auth resolves to land on the
 // right namespace (otherwise we'd render the guest snapshot forever).
+//
+// CRITICAL: the re-render must NOT clobber USER if the user has already
+// typed values during the auth-resolution window. The classic bug was:
+//   t=0    boot() — loads from guest namespace (empty) → USER = zeros
+//   t=500  user types Primary income = 5000 → USER.income = 5000
+//   t=1200 PFCAuth.onReady fires → loadUser() reads pfc:{realUid}:user
+//          (also empty) → USER = zeros → renderRows() draws zeros over
+//          the user's 5000. User sees value disappear.
+//
+// Fix: only overwrite USER when (a) the loaded data has values OR
+// (b) the current in-memory USER is empty (legitimate first-load).
 if (typeof PFCAuth !== 'undefined') {
   PFCAuth.onReady(() => {
-    USER = loadUser();
-    renderRows();
+    // Migrate any data that landed in pfc:guest:user during the resolution
+    // window into the now-known authenticated namespace BEFORE we re-load.
+    try {
+      const uid = PFCAuth.getUserId && PFCAuth.getUserId();
+      if (uid && uid !== 'guest' && typeof PFCStorage !== 'undefined' && typeof PFCStorage.adoptGuestData === 'function') {
+        PFCStorage.adoptGuestData(uid);
+      }
+    } catch (_) {}
+    const fresh = loadUser();
+    const freshHasData  = _userHasData(fresh);
+    const memoryHasData = _userHasData(USER);
+    if (freshHasData || !memoryHasData) {
+      USER = fresh;
+      renderRows();
+    }
+    // Always refresh derived UI — even if USER didn't change, the auth
+    // state did, and other dependent state (subscriptions, empty-hint) may
+    // need to re-evaluate.
     renderTotalsAndCharts();
     renderSubscriptions();
     updateEmptyHintVisibility();
     _maybeFireActivation('cash-forecast');
   });
   PFCAuth.onAuthChange(() => {
+    // Sign-in / sign-out / account-switch — here we DO want a full reload
+    // because the user identity changed. Preserving in-memory edits from
+    // the previous identity would be wrong (their data, your inputs).
     USER = loadUser();
     renderRows();
     renderTotalsAndCharts();
