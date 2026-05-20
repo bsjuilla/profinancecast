@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- PFC Forecasting House — full lockup logo.
+     Champagne gold (#D4AF6A) text + diamond divider on transparent background.
+     Used in hero blocks, auth.html left panel, footer brand mark, and any
+     surface ≥ 120px wide. For nav-bar use (≤ 32px square) see the inline
+     compact SVG embedded in each page's nav block — that one drops the
+     FORECASTING HOUSE subtitle which is unreadable below 100px.
+     Brand token: var(--gold) = #D4AF6A. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 130" width="240" height="130" role="img" aria-label="PFC Forecasting House">
+  <title>PFC Forecasting House</title>
+  <!-- PFC display lettering — serif, weighted, slightly tighter tracking -->
+  <text x="120" y="72"
+        text-anchor="middle"
+        font-family="'Fraunces', 'Cormorant Garamond', 'Playfair Display', Georgia, serif"
+        font-size="68"
+        font-weight="500"
+        letter-spacing="-1.5"
+        fill="#D4AF6A">PFC</text>
+
+  <!-- Divider rule + diamond -->
+  <line x1="46" y1="92" x2="113" y2="92" stroke="#D4AF6A" stroke-width="0.9" stroke-linecap="round"/>
+  <rect x="116" y="88" width="8" height="8" fill="#D4AF6A" transform="rotate(45 120 92)"/>
+  <line x1="127" y1="92" x2="194" y2="92" stroke="#D4AF6A" stroke-width="0.9" stroke-linecap="round"/>
+
+  <!-- FORECASTING HOUSE subtitle — small caps, letter-spaced -->
+  <text x="120" y="115"
+        text-anchor="middle"
+        font-family="'Inter Tight', 'Inter', system-ui, sans-serif"
+        font-size="11"
+        font-weight="500"
+        letter-spacing="3.5"
+        fill="#D4AF6A">FORECASTING HOUSE</text>
+</svg>

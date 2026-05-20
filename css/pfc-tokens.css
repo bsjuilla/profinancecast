@@ -376,6 +376,39 @@
 }
 [data-anim="rise"] { animation: pfc-rise var(--t-stately) var(--ease-out) both; }
 
+/* ── PFC brand mark (May 2026 refresh) ─────────────────────────────────
+   Single canonical class for the new "PFC" wordmark icon that replaces
+   the previous gold-key SVG (marketing pages) and the boxed "PF" tile
+   (app sidebars). Used inside the existing .logo / .nav-logo anchors —
+   drops the box/gradient styling that .logo-mark previously imposed,
+   because the new mark IS its own typographic identity rather than an
+   icon-in-a-box.
+
+   Inline SVG inside this span uses Fraunces serif text in --gold
+   (#D4AF6A) with a small diamond accent that echoes the diamond
+   divider in the full lockup at /assets/img/logo-pfc.svg.
+   ──────────────────────────────────────────────────────────────────── */
+.pfc-brand-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  height: 32px;
+  flex-shrink: 0;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  margin: 0;
+  color: var(--gold);
+}
+.pfc-brand-mark svg {
+  height: 100%;
+  width: auto;
+  display: block;
+  overflow: visible;
+}
+
 /* The "tick" of an animated counter cell */
 @keyframes pfc-pulse {
   0%   { box-shadow: 0 0 0 0 rgba(43,182,125,0.35); }
