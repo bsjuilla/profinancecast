@@ -50,11 +50,41 @@
     const pillEl = sidebar.querySelector('.user-pill');
     if (!nameEl && !avatarEl) return;
     let name = '';
+    // Source 1: PFCStorage 'user' key (canonical, written by settings + onboarding).
     if (typeof PFCStorage !== 'undefined') {
       const raw = PFCStorage.get('user');
       if (raw) {
-        try { name = (JSON.parse(raw).name || '').trim(); } catch (_) {}
+        try {
+          const parsed = JSON.parse(raw);
+          name = (parsed.name || parsed.firstName || '').trim();
+        } catch (_) {}
       }
+    }
+    // Source 2: Supabase session user_metadata. Fixes the "Set up profile"
+    // flash that occurred on every page refresh — PFCStorage's cache is
+    // namespaced by uid and reads null pre-warm-up, so on a fresh refresh
+    // the name was missing even for users who had set it. The Supabase
+    // session is restored synchronously from localStorage (via supabase-js's
+    // own session cache), so user_metadata is reliably available BEFORE
+    // PFCStorage warms up. Used as fallback only — PFCStorage wins when
+    // both have data.
+    if (!name && typeof PFCAuth !== 'undefined' && typeof PFCAuth.getSession === 'function') {
+      try {
+        const session = PFCAuth.getSession();
+        const meta = session && session.user && session.user.user_metadata;
+        if (meta) {
+          name = (meta.full_name || meta.name ||
+                  (meta.first_name && meta.last_name && (meta.first_name + ' ' + meta.last_name)) ||
+                  meta.first_name || '').trim();
+        }
+        // Last-resort: derive a friendly name from the email local-part
+        // (everything before @) when the user hasn't set any name at all.
+        if (!name && session && session.user && session.user.email) {
+          const local = session.user.email.split('@')[0];
+          // Convert "john.smith" / "john_smith" / "john-smith" → "John smith"
+          name = local.replace(/[._-]+/g, ' ').replace(/^./, c => c.toUpperCase());
+        }
+      } catch (_) {}
     }
     // Empty state: invite the user to complete their profile instead of the
     // anonymous "Your account" fallback. Once a name is saved, the pill flips

@@ -157,12 +157,26 @@
   <script src="js/pfc-analytics.js" defer></script>
   <script src="js/pfc-sidebar.js" defer></script>
 
-  <!-- Pro-only gate: free users get redirected to billing before any UI paints.
-       Mirrors scenarios.html / report-card.html. -->
+  <!-- Pro-only gate: free users get redirected to billing.
+       Bug fix (May 2026): the previous version called requirePlan() synchronously
+       at script-parse, BEFORE PFCAuth resolved the session. PFCPlan.get() returned
+       'free' by default during that window, and paying Pro users were redirected
+       to billing.html on every page load — a false-negative that locked them out
+       of the feature they paid for. Now we wait for PFCAuth.onReady so PFCPlan
+       has the correct plan state before the gate decision. -->
   <script>
-    if (typeof PFCPlan !== 'undefined') {
-      PFCPlan.requirePlan(['pro','premium']);
-    }
+    (function gatePro() {
+      function doGate() {
+        if (typeof PFCPlan !== 'undefined' && typeof PFCPlan.requirePlan === 'function') {
+          PFCPlan.requirePlan(['pro','premium']);
+        }
+      }
+      if (typeof PFCAuth !== 'undefined' && typeof PFCAuth.onReady === 'function') {
+        PFCAuth.onReady(doGate);
+      } else {
+        doGate();
+      }
+    })();
   </script>
   <!-- Privacy-friendly analytics by Plausible -->
   <script async src="https://plausible.io/js/pa-EvYdfUp4d9vvohwl_Yy2j.js"></script>

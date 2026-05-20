@@ -759,6 +759,16 @@ let selectedColor = 'var(--money)';
 const GOAL_COLORS = ['var(--money)','#3B82F6','#F5A623','#A78BFA','#E05252','#22C55E'];
 const PALETTE = ['var(--money)','#3B82F6','#F5A623','#A78BFA','#E05252','#22C55E','#F97316','#EC4899'];
 
+// HTML-escape helper. Used to wrap user-controlled strings (goal names)
+// before they get interpolated into innerHTML template literals. Without
+// this, a goal name like '<img src=x onerror=alert(1)>' would execute as
+// script in the legend renderer.
+function escHtml(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
 const CAT_DEFAULTS = {
   emergency: { name: 'Emergency fund', hint: (u) => `Recommended: 6× your monthly expenses = ${u.sym}${Math.round((u.housing+u.food+u.transport+u.otherExp)*6).toLocaleString()}` },
   home:      { name: 'Home deposit', hint: () => 'Typical deposit: 10–20% of property value' },
@@ -869,7 +879,7 @@ function render() {
       seg.style.cssText = `width:${pct}%;background:${color};`;
       barEl.appendChild(seg);
     }
-    legendEl.innerHTML += `<div class="alloc-legend-item"><div class="alloc-dot" style="background:${color};"></div>${g.name} — ${sym}${Math.round(alloc).toLocaleString()}/mo</div>`;
+    legendEl.innerHTML += `<div class="alloc-legend-item"><div class="alloc-dot" style="background:${color};"></div>${escHtml(g.name)} — ${sym}${Math.round(alloc).toLocaleString()}/mo</div>`;
   });
   // Unallocated
   const unallocPct = Math.max(0, (remainingSurplus / totalSurplus) * 100);

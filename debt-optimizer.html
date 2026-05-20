@@ -792,6 +792,19 @@ function renderAll() {
   renderPayoffOrder(opt, sym);
 }
 
+// HTML-escape helper. Used to wrap any user-controlled string (e.g. debt name)
+// before it gets interpolated into an innerHTML template literal — otherwise
+// a name like '<img src=x onerror=alert(1)>' would execute as script in the
+// renderer. Same pattern as sage.html's esc() function.
+function escHtml(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function renderDebtList(opt, sym) {
   const listEl = document.getElementById('debt-list');
   const totalDebt = DEBTS.reduce((s, d) => s + d.balance, 0);
@@ -812,7 +825,7 @@ function renderDebtList(opt, sym) {
     return `<div class="debt-row" style="animation:cardIn .3s ease ${priority * 0.05}s both;">
       <div class="debt-order-badge" style="background:${tc.color}22;color:${tc.color};">${priority + 1}</div>
       <div class="debt-info">
-        <div class="debt-name">${d.name}</div>
+        <div class="debt-name">${escHtml(d.name)}</div>
         <div class="debt-meta">${tc.label} · ${d.rate}% APR · ${sym}${d.minPay}/mo min</div>
         <div class="debt-bar-wrap" style="margin-top:6px;">
           <div class="debt-bar-fill" style="width:${widthPct}%;background:${tc.color};"></div>

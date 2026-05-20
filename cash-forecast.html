@@ -889,11 +889,56 @@ function showToast(msg) {
 }
 
 // ── Boot ─────────────────────────────────────────────────────────────────
-function boot() {
+//
+// The render pipeline used to fire immediately on script-parse, which meant
+// the page painted with USER=zeros for ~1-2 seconds before PFCAuth resolved
+// the session and PFCStorage warmed up the encrypted cache. Users perceived
+// this "zero flash" as "my data is gone." Worse, if they typed during that
+// window, the onReady re-render could clobber their typed values.
+//
+// New boot pipeline: render the page CHROME immediately (month selector,
+// add-row inputs, empty section frames), but DEFER all USER-dependent
+// rendering (row values, KPI cards, charts) until BOTH:
+//   1. PFCStorage.isReady() — the encrypted cache is warm + decrypted
+//   2. PFCAuth has resolved the session (we know _uid())
+//
+// A small loading skeleton hides the value-bearing surfaces during the
+// resolution window. A 3-second safety net forces a render anyway if
+// either signal never fires (offline / blocked SDK / etc.), at which
+// point we render what we have — possibly defaults, but at least not
+// stuck on a spinner forever.
+
+function _showCashForecastLoading() {
+  const root = document.querySelector('.content');
+  if (!root || root.dataset.cfLoading === '1') return;
+  root.dataset.cfLoading = '1';
+  const overlay = document.createElement('div');
+  overlay.id = 'cf-loading-overlay';
+  overlay.setAttribute('aria-live', 'polite');
+  overlay.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(11,20,16,0.55);backdrop-filter:blur(6px);z-index:5;border-radius:inherit;pointer-events:none;';
+  overlay.innerHTML = '<div style="display:flex;align-items:center;gap:12px;padding:12px 22px;background:rgba(11,20,16,0.92);border:1px solid var(--line-2,rgba(244,239,229,0.10));border-radius:999px;font-family:var(--font-mono,monospace);font-size:12px;color:var(--ink-2,#B8C2BC);letter-spacing:0.04em;"><div style="width:14px;height:14px;border:2px solid rgba(43,182,125,0.30);border-top-color:#2BB67D;border-radius:50%;animation:cf-spin 0.8s linear infinite;"></div>Loading your forecast…</div>';
+  // Make .content positioned so the absolute overlay anchors correctly.
+  const cs = getComputedStyle(root);
+  if (cs.position === 'static') root.style.position = 'relative';
+  root.appendChild(overlay);
+  if (!document.getElementById('cf-spin-keyframes')) {
+    const s = document.createElement('style');
+    s.id = 'cf-spin-keyframes';
+    s.textContent = '@keyframes cf-spin { to { transform: rotate(360deg); } }';
+    document.head.appendChild(s);
+  }
+}
+
+function _hideCashForecastLoading() {
+  const overlay = document.getElementById('cf-loading-overlay');
+  if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay);
+  const root = document.querySelector('.content');
+  if (root) delete root.dataset.cfLoading;
+}
+
+// Wire chrome (always safe, no USER dependency)
+function _bootChrome() {
   populateMonths();
-  renderRows();
-  renderTotalsAndCharts();
-  renderSubscriptions();
   // Enter-to-add for both inflow + outflow add-row inputs.
   ['add-in-label','add-in-amount'].forEach(id => {
     const el = document.getElementById(id);
@@ -903,6 +948,72 @@ function boot() {
     const el = document.getElementById(id);
     if (el) el.addEventListener('keydown', e => { if (e.key === 'Enter') addCustomRow('out'); });
   });
+}
+
+// Render USER-dependent surfaces once. Called when both readiness signals
+// have fired, OR when the safety-net timeout elapses.
+let _initialRenderDone = false;
+function _doInitialUserRender(reason) {
+  if (_initialRenderDone) return;
+  _initialRenderDone = true;
+  // Adopt guest data BEFORE the first authenticated read, so anything
+  // that landed in pfc:guest:user during the resolution window gets
+  // promoted to pfc:{realUid}:user.
+  try {
+    const uid = (typeof PFCAuth !== 'undefined' && PFCAuth.getUserId) ? PFCAuth.getUserId() : 'guest';
+    if (uid && uid !== 'guest' && typeof PFCStorage !== 'undefined' && typeof PFCStorage.adoptGuestData === 'function') {
+      PFCStorage.adoptGuestData(uid);
+    }
+  } catch (_) {}
+  USER = loadUser();
+  renderRows();
+  renderTotalsAndCharts();
+  renderSubscriptions();
+  updateEmptyHintVisibility();
+  _hideCashForecastLoading();
+  try { _maybeFireActivation('cash-forecast'); } catch (_) {}
+}
+
+function boot() {
+  _bootChrome();
+  _showCashForecastLoading();
+
+  const ready = { storage: false, auth: false };
+  const maybeRender = () => {
+    if (ready.storage && ready.auth) _doInitialUserRender('both-ready');
+  };
+
+  // Storage readiness
+  if (typeof PFCStorage !== 'undefined' && typeof PFCStorage.isReady === 'function' && PFCStorage.isReady()) {
+    ready.storage = true;
+  } else if (typeof PFCStorage !== 'undefined' && typeof PFCStorage.onReady === 'function') {
+    PFCStorage.onReady(() => { ready.storage = true; maybeRender(); });
+  } else {
+    // No PFCStorage at all — treat as ready (legacy fallback path in loadUser).
+    ready.storage = true;
+  }
+
+  // Auth readiness
+  if (typeof PFCAuth !== 'undefined' && typeof PFCAuth.isReady === 'function' && PFCAuth.isReady()) {
+    ready.auth = true;
+  } else if (typeof PFCAuth !== 'undefined' && typeof PFCAuth.onReady === 'function') {
+    PFCAuth.onReady(() => { ready.auth = true; maybeRender(); });
+  } else {
+    // No PFCAuth — render now (single-user dev/legacy mode).
+    ready.auth = true;
+  }
+
+  // Try-now in case both were ready synchronously.
+  maybeRender();
+
+  // Safety net: if neither signal fires within 3 seconds, render anyway.
+  // Better to show default-zero state than a frozen spinner.
+  setTimeout(() => {
+    if (!_initialRenderDone) {
+      ready.storage = ready.auth = true;
+      _doInitialUserRender('timeout-fallback');
+    }
+  }, 3000);
 }
 boot();
 
@@ -933,31 +1044,11 @@ function updateEmptyHintVisibility() {
 //
 // Fix: only overwrite USER when (a) the loaded data has values OR
 // (b) the current in-memory USER is empty (legitimate first-load).
+// Note: PFCAuth.onReady is now handled inside boot() via the maybeRender
+// gate — that's the single source of truth for the initial render. We only
+// hook onAuthChange here for the sign-in / sign-out / account-switch cases
+// that happen AFTER the page is alive.
 if (typeof PFCAuth !== 'undefined') {
-  PFCAuth.onReady(() => {
-    // Migrate any data that landed in pfc:guest:user during the resolution
-    // window into the now-known authenticated namespace BEFORE we re-load.
-    try {
-      const uid = PFCAuth.getUserId && PFCAuth.getUserId();
-      if (uid && uid !== 'guest' && typeof PFCStorage !== 'undefined' && typeof PFCStorage.adoptGuestData === 'function') {
-        PFCStorage.adoptGuestData(uid);
-      }
-    } catch (_) {}
-    const fresh = loadUser();
-    const freshHasData  = _userHasData(fresh);
-    const memoryHasData = _userHasData(USER);
-    if (freshHasData || !memoryHasData) {
-      USER = fresh;
-      renderRows();
-    }
-    // Always refresh derived UI — even if USER didn't change, the auth
-    // state did, and other dependent state (subscriptions, empty-hint) may
-    // need to re-evaluate.
-    renderTotalsAndCharts();
-    renderSubscriptions();
-    updateEmptyHintVisibility();
-    _maybeFireActivation('cash-forecast');
-  });
   PFCAuth.onAuthChange(() => {
     // Sign-in / sign-out / account-switch — here we DO want a full reload
     // because the user identity changed. Preserving in-memory edits from
