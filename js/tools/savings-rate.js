@@ -48,7 +48,8 @@
 
   function computeTaxRate(grossAnnual, takeHome) {
     if (grossAnnual <= 0) return 0;
-    return (1 - takeHome / grossAnnual) * 100;
+    // Clamp to [0, 100]: negative tax rate (takeHome > gross) or >100% are not valid inputs.
+    return Math.min(100, Math.max(0, (1 - takeHome / grossAnnual) * 100));
   }
 
   function buildChartSeries(monthlySavings, annualReturn, cappedYears) {
@@ -87,6 +88,17 @@
 
   function compute() {
     var inp = getInputs();
+    // Guard: takeHome <= 0 means we cannot derive a meaningful savings rate.
+    // Show placeholder dashes and skip chart update to avoid NaN/Infinity display.
+    if (inp.takeHome <= 0) {
+      document.getElementById('sr-rate').textContent = '—';
+      document.getElementById('sr-taxRate') && (document.getElementById('sr-taxRate').textContent = '—');
+      var yearsEl = document.getElementById('sr-years');
+      if (yearsEl) yearsEl.textContent = '—';
+      var ageEl = document.getElementById('sr-impliedAge');
+      if (ageEl) ageEl.textContent = '—';
+      return;
+    }
     var rate    = computeRate(inp.monthlySavings, inp.takeHome);
     var taxRate = computeTaxRate(inp.grossAnnual, inp.takeHome);
 

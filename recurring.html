@@ -636,9 +636,12 @@ function parseCSV(text) {
 }
 function parseDate(s) {
   s=s.replace(/['"]/g,'').trim();
+  // ISO 8601 YYYY-MM-DD — unambiguous, pass through directly.
   if(/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0,10);
+  // DD/MM/YYYY or DD-MM-YYYY (day first — most non-US bank CSVs).
+  // m[1]=DD, m[2]=MM, m[3]=YYYY → normalise to ISO YYYY-MM-DD.
   const m=s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
-  if(m){ const y=m[3].length===2?'20'+m[3]:m[3]; return `${y}-${m[1].padStart(2,'0')}-${m[2].padStart(2,'0')}`; }
+  if(m){ const y=m[3].length===2?'20'+m[3]:m[3]; return `${y}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`; }
   return s;
 }
 

@@ -24,9 +24,11 @@
     var totalContrib = principal + monthly * 12 * years;
     var interest     = fv - totalContrib;
 
+    var interestEl = document.getElementById('ci-interest');
     document.getElementById('ci-fv').textContent        = fmtCurrency(fv);
     document.getElementById('ci-contrib').textContent   = fmtCurrency(totalContrib);
-    document.getElementById('ci-interest').textContent  = fmtCurrency(interest);
+    interestEl.textContent  = fmtCurrency(interest);
+    interestEl.style.color  = interest < 0 ? 'var(--warning)' : 'var(--gold)';
     document.getElementById('ci-multiplier').textContent =
       totalContrib > 0 ? (fv / totalContrib).toFixed(2) + '×' : '—';
 

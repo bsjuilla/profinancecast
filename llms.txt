@@ -39,6 +39,16 @@ Parseable pricing: <https://profinancecast.com/pricing.md>
 - [Privacy](https://profinancecast.com/privacy.html): data handling, AES-256 at rest, client-side compute.
 - [Journal](https://profinancecast.com/blog.html): editorial articles on personal-finance forecasting, debt strategy, compounding.
 
+## Tools
+
+Free, no-login calculators. Each is localised across global + 8 markets (UK/IE/FR/DE/US/CA/AU/SG).
+
+- [/tools/compound-interest](https://profinancecast.com/tools/compound-interest) — Compound interest calculator with monthly contributions and year-by-year chart.
+- [/tools/mortgage-affordability](https://profinancecast.com/tools/mortgage-affordability) — 28/36-rule mortgage affordability calculator.
+- [/tools/fire-date](https://profinancecast.com/tools/fire-date) — Financial-independence date calculator using the 4% safe withdrawal rule.
+- [/tools/debt-strategy-compare](https://profinancecast.com/tools/debt-strategy-compare) — Side-by-side snowball vs avalanche debt-payoff comparator.
+- [/tools/savings-rate](https://profinancecast.com/tools/savings-rate) — Savings rate analyser with implied retirement age and Mr Money Mustache benchmark table.
+
 ## Authority signals
 
 - Calculations are deterministic and reproducible. Same numbers in, same forecast out.

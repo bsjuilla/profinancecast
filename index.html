@@ -2570,7 +2570,6 @@
     const rNw      = document.getElementById('r-nw');
     const rDelta   = document.getElementById('r-delta');
     const rDebt    = document.getElementById('r-debt-free');
-    const rDebtDel = document.getElementById('r-debt-delta');
     const fcLine   = document.getElementById('fc-line');
     const fcArea   = document.getElementById('fc-area');
     const fcEnd    = document.getElementById('fc-end');
@@ -2638,13 +2637,10 @@
       rDelta.classList.toggle('bad', delta < 0);
       if (debt === 0) {
         rDebt.innerHTML = 'Already';
-        if (rDebtDel) rDebtDel.textContent = 'no debt';
       } else if (debtFreeMonth >= 0 && debtFreeMonth <= 12) {
         rDebt.innerHTML = debtFreeMonth + '<span style="font-family:var(--font-body);font-size:18px;color:var(--ink-3);font-weight:400;"> months</span>';
-        if (rDebtDel) rDebtDel.textContent = 'on plan';
       } else {
         rDebt.innerHTML = '12+<span style="font-family:var(--font-body);font-size:18px;color:var(--ink-3);font-weight:400;"> months</span>';
-        if (rDebtDel) rDebtDel.textContent = 'increase savings';
       }
       [sIn, sRate, sDeb, sNw].forEach(updatePct);
     }

@@ -988,7 +988,18 @@ let chartRange = 6;
 let chart = null;
 let selectedScenarioId = null;
 
-const CHART_MONTHS_LABELS = ['Now','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec','Jan'];
+function buildChartMonthLabels(count) {
+  const labels = ['Now'];
+  const now = new Date();
+  for (let i = 1; i < count; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
+    labels.push(new Intl.DateTimeFormat(undefined, { month: 'short' }).format(d));
+  }
+  return labels;
+}
+// Maximum possible label set (25 points: Now + 24 months). Built at runtime so
+// month abbreviations start from the current month regardless of when the app loads.
+const CHART_MONTHS_LABELS = buildChartMonthLabels(25);
 
 function fmt(v) {
   const c = USER.currency || '$';
