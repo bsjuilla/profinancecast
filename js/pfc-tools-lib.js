@@ -32,7 +32,7 @@
   // ── Formatters ─────────────────────────────────────────────────────────
   function fmtCurrency(n, opts) {
     opts = opts || {};
-    if (!isFinite(n)) return country.symbol + '0';
+    if (!isFinite(n)) return '—';
     var decimals = opts.decimals != null ? opts.decimals : 0;
     return new Intl.NumberFormat(country.locale, {
       style: 'currency', currency: country.currency,

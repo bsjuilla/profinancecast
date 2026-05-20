@@ -2639,7 +2639,7 @@
       if (debt === 0) {
         rDebt.innerHTML = 'Already';
         if (rDebtDel) rDebtDel.textContent = 'no debt';
-      } else if (debtFreeMonth > 0 && debtFreeMonth <= 12) {
+      } else if (debtFreeMonth >= 0 && debtFreeMonth <= 12) {
         rDebt.innerHTML = debtFreeMonth + '<span style="font-family:var(--font-body);font-size:18px;color:var(--ink-3);font-weight:400;"> months</span>';
         if (rDebtDel) rDebtDel.textContent = 'on plan';
       } else {

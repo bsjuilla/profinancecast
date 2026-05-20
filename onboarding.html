@@ -556,7 +556,11 @@ function calcDebt() {
   const debt     = n('f-debt');
   const debtPay  = n('f-debtpay');
   const nw       = assets - debt;
-  const months   = debtPay > 0 && debt > 0 ? Math.ceil(debt / debtPay) : 0;
+  const income   = n('f-income') + n('f-other-income');
+  const expenses = n('f-housing') + n('f-food') + n('f-transport') + n('f-other-exp');
+  const surplus  = Math.max(0, income - expenses - debtPay);
+  const effectivePay = debtPay + surplus;
+  const months   = effectivePay > 0 && debt > 0 ? Math.ceil(debt / effectivePay) : 0;
 
   document.getElementById('lp-assets').textContent = fmt(assets);
   document.getElementById('lp-debt-val').textContent = fmt(debt);

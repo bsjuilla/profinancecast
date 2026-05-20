@@ -126,12 +126,12 @@
     var downInput = document.getElementById('ma-down');
     var targetInput = document.getElementById('ma-target');
 
-    if (rateInput && !rateInput.value) rateInput.value = country.mortgageRate || 6.8;
-    if (termInput && !termInput.value) termInput.value = getDefaultTerm();
-    if (downInput && !downInput.value) {
-      downInput.value = Math.round(country.propertyDefault * 0.2 / 1000) * 1000;
+    if (rateInput) rateInput.value = country.mortgageRate || 6.8;
+    if (termInput) termInput.value = getDefaultTerm();
+    if (downInput) {
+      downInput.value = Math.round((country.propertyDefault || 420000) * 0.2 / 1000) * 1000;
     }
-    if (targetInput && !targetInput.value) targetInput.value = country.propertyDefault || 420000;
+    if (targetInput) targetInput.value = country.propertyDefault || 420000;
 
     ['ma-income','ma-debts','ma-down','ma-target','ma-rate','ma-term'].forEach(function (id) {
       var el = document.getElementById(id);

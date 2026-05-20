@@ -768,8 +768,9 @@ function renderHistory(sym, fmt) {
     return;
   }
 
-  const rows = [...HISTORY].reverse().map((h, i) => {
-    const prev = HISTORY[HISTORY.length - 1 - i - 1];
+  const reversedHistory = [...HISTORY].reverse();
+  const rows = reversedHistory.map((h, i) => {
+    const prev = reversedHistory[i + 1];
     const delta = prev ? h.netWorth - prev.netWorth : null;
     const deltaStr = delta !== null
       ? `<span style="color:${delta >= 0 ? 'var(--teal)' : 'var(--red)'};">${delta >= 0 ? '+' : ''}${fmt(delta)}</span>`

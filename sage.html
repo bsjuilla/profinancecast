@@ -382,8 +382,8 @@ function hydratePlanInfo(){
     document.getElementById('usage-label').textContent = queryCount + ' / ' + limit + ' messages';
   } catch(_){}
 }
-hydrateContext();
 let queryCount = 0, history = [], isTyping = false;
+hydrateContext();
 
 // Workstream 0 Task 0.2 (restored): the system prompt is still built
 // server-side from the authenticated profile — no client-supplied prompt

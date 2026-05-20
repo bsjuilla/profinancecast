@@ -604,7 +604,7 @@ function renderTotalsAndCharts() {
   const netCard = document.getElementById('kpi-net-card');
   netCard.classList.toggle('neg', t.net < 0);
   document.getElementById('kpi-net-sub').textContent =
-    t.net >= 0 ? `${fmt(t.net)} headroom after expenses` : `Shortfall of ${fmt(t.net)} this month`;
+    t.net >= 0 ? `${fmt(t.net)} headroom after expenses` : `Shortfall of ${fmt(Math.abs(t.net))} this month`;
 
   document.getElementById('empty-hint').style.display =
     (t.inflow === 0 && t.outflow === 0) ? 'block' : 'none';

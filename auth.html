@@ -777,10 +777,10 @@
       </div>
       <div class="auth-heading">Check your inbox</div>
       <div class="auth-sub" style="margin-bottom:24px;">
-        We sent a confirmation link to <strong id="verify-email-display" style="color:var(--text);">your email</strong>.
+        We sent a confirmation link to <strong id="verify-email-display" style="color:var(--ink);">your email</strong>.
         Click the link to activate your account and start your free forecast.
       </div>
-      <div style="background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);padding:16px 18px;margin-bottom:24px;">
+      <div style="background:var(--surface);border:1px solid var(--line-2);border-radius:var(--r);padding:16px 18px;margin-bottom:24px;">
         <div style="font-size:13px;color:var(--text2);line-height:1.6;">
           Didn't receive it?
           <ul style="margin-top:8px;padding-left:16px;display:flex;flex-direction:column;gap:4px;">
@@ -790,7 +790,7 @@
           </ul>
         </div>
       </div>
-      <button class="btn-full btn-outline-full" onclick="showView('signup')" style="border:1px solid var(--border2)!important;">← Try a different email</button>
+      <button class="btn-full btn-outline-full" onclick="showView('signup')" style="border:1px solid var(--line-2)!important;">← Try a different email</button>
     </div>
 
   </div>
@@ -954,7 +954,12 @@ async function handleLogin() {
       msg = 'You haven’t confirmed your email yet. Check your inbox (and spam) for the link — or click "Resend" below.';
       // Show a resend button
       const errEl = document.getElementById('login-error');
-      errEl.innerHTML = msg + ' <a onclick="resendConfirmation(\'' + email + '\')" style="color:var(--teal);cursor:pointer;text-decoration:underline;">Resend</a>';
+      errEl.textContent = msg + ' ';
+      const resendLink = document.createElement('a');
+      resendLink.style.cssText = 'color:var(--teal);cursor:pointer;text-decoration:underline;';
+      resendLink.textContent = 'Resend';
+      resendLink.addEventListener('click', function() { resendConfirmation(email); });
+      errEl.appendChild(resendLink);
       return;
     }
     if (/invalid login credentials/i.test(msg)) {

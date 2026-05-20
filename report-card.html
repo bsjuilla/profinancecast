@@ -366,7 +366,7 @@
           <div class="rc-header">
             <div>
               <div class="rc-brand">
-                <div class="rc-brand-mark">PF</div>
+                <span class="pfc-brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32" width="32" height="32" aria-hidden="true"><text x="16" y="19" text-anchor="middle" font-family="'Fraunces','Cormorant Garamond',Georgia,serif" font-size="14" font-weight="500" letter-spacing="-0.4" fill="#D4AF6A">PFC</text><rect x="14.5" y="23" width="3" height="3" fill="#D4AF6A" transform="rotate(45 16 24.5)"/></svg></span>
                 <div class="rc-brand-name">ProFinanceCast</div>
               </div>
               <div class="rc-date" id="rc-date"></div>
@@ -511,7 +511,7 @@
 })();
 
 const DEF={income:3000,otherIncome:0,housing:1200,food:540,transport:310,otherExp:380,savings:11580,investments:0,debt:8000,debtPay:550,currency:'$',name:'User'};
-function loadUser(){try{const s=PFCStorage.get('user');return s?{...DEF,...JSON.parse(s)}:{...DEF}}catch(e){return{...DEF}}}
+function loadUser(){const u=PFCStorage.getJSON('user');return u?{...DEF,...u}:{...DEF}}
 let U=loadUser();let C=U.currency||'$';
 function fmt(v){return C+Math.abs(Math.round(v)).toLocaleString()}
 
@@ -528,7 +528,7 @@ function calc(){
   const savScore=Math.min(100,savRate*400);
   const debtScore=Math.max(0,100-debtRatio*280);
   const emgScore=Math.min(100,(emergency/6)*100);
-  const spendScore=Math.max(0,Math.min(100,(1-spendPct/0.85)*100+30));
+  const spendScore=Math.max(0,Math.min(100,(1-spendPct/0.85)*100));
   const total=Math.round(savScore*.25+debtScore*.25+emgScore*.25+spendScore*.25);
   return{income,expenses,debtPay,surplus,savRate,debtRatio,nw,emergency,spendPct,savScore,debtScore,emgScore,spendScore,total};
 }

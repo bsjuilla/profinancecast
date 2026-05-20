@@ -1045,9 +1045,10 @@ function buildForecastData(sc, months) {
   for (let m = 0; m <= months; m++) {
     pts.push(Math.round(savings - debt));
     if (m < months) {
-      const surplus = income - expenses - Math.min(debtPay, debt);
-      savings += surplus > 0 ? surplus : surplus; // always track
-      debt = Math.max(0, debt - Math.min(debtPay, debt));
+      const actualDebtPay = Math.min(debtPay, debt);
+      const surplus = income - (expenses + actualDebtPay);
+      savings += surplus;
+      debt = Math.max(0, debt - actualDebtPay);
     }
   }
   return pts;

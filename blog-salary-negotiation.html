@@ -1,9 +1,9 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Salary negotiation, in three honest moves — ProFinanceCast</title>
+<title>Salary negotiation, in three honest moves â€” ProFinanceCast</title>
 <meta name="description" content="A calm, three-move framework for negotiating your salary. No scripts to memorize. No power poses. Just the math, the timing, and the language that works." />
 <link rel="canonical" href="https://profinancecast.com/blog-salary-negotiation.html" />
 <link rel="alternate" hreflang="en" href="https://profinancecast.com/blog-salary-negotiation.html">
@@ -23,7 +23,7 @@
 <link rel="stylesheet" href="css/pfc-footer.css">
 <link rel="stylesheet" href="css/pfc-blog.css">
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"Article","headline":"Salary negotiation, in three honest moves","image":["https://profinancecast.com/favicon.svg"],"datePublished":"2026-05-08T09:00:00Z","dateModified":"2026-05-08T09:00:00Z","author":{"@type":"Organization","name":"ProFinanceCast Team","url":"https://profinancecast.com"},"publisher":{"@type":"Organization","name":"ProFinanceCast","url":"https://profinancecast.com","logo":{"@type":"ImageObject","url":"https://profinancecast.com/assets/img/logo-512.png","width":1024,"height":1024}},"description":"A calm, three-move framework for negotiating your salary.","mainEntityOfPage":"https://profinancecast.com/blog-salary-negotiation.html"}
+{"@context":"https://schema.org","@type":"Article","headline":"Salary negotiation, in three honest moves","image":["https://profinancecast.com/api/og?title=Salary+negotiation%2C+in+three+honest+moves&eyebrow=Blog+%C2%B7+Salary&subtitle=Anchor%2C+justify%2C+hold.+The+three+moves+that+do+most+of+the+work+in+a+salary+negotiation."],"datePublished":"2026-05-08T09:00:00Z","dateModified":"2026-05-08T09:00:00Z","author":{"@type":"Organization","name":"ProFinanceCast Team","url":"https://profinancecast.com"},"publisher":{"@type":"Organization","name":"ProFinanceCast","url":"https://profinancecast.com","logo":{"@type":"ImageObject","url":"https://profinancecast.com/assets/img/logo-512.png","width":1024,"height":1024}},"description":"A calm, three-move framework for negotiating your salary.","mainEntityOfPage":"https://profinancecast.com/blog-salary-negotiation.html"}
 </script>
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://profinancecast.com/"},{"@type":"ListItem","position":2,"name":"Blog","item":"https://profinancecast.com/blog.html"},{"@type":"ListItem","position":3,"name":"Salary negotiation","item":"https://profinancecast.com/blog-salary-negotiation.html"}]}
@@ -51,7 +51,7 @@
 <!-- Context-aware back affordance: shows "Back to Journal" if user came from /journal, otherwise "All articles" -->
 <div id="blog-back-bar" style="position:sticky;top:64px;z-index:50;display:flex;justify-content:flex-start;padding:12px 24px;background:rgba(11,20,16,0.85);backdrop-filter:blur(12px);border-bottom:1px solid var(--line,rgba(255,255,255,0.08));font-family:'Inter Tight','Inter',sans-serif;font-size:13px;">
   <a id="blog-back-link" href="blog" style="color:var(--ink-3,#8A9BB0);text-decoration:none;display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border:1px solid var(--line,rgba(255,255,255,0.08));border-radius:999px;transition:color 160ms,border-color 160ms;">
-    ← All articles
+    â† All articles
   </a>
 </div>
 <script>
@@ -64,7 +64,7 @@
         var link = document.getElementById('blog-back-link');
         if (link) {
           link.href = 'journal.html';
-          link.textContent = '← Back to Journal';
+          link.textContent = 'â† Back to Journal';
         }
       }
     } catch (e) {}
@@ -95,7 +95,7 @@ article blockquote { margin: 2.4rem 0; padding-left: 1.5rem; border-left: 2px so
 article code, article p code, article li code { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.92em; background: rgba(255,255,255,0.04); padding: 1px 5px; border-radius: 3px; border: 0; color: var(--pfc-ink, #f3efe6); }
 article ul { list-style: none; padding-left: 0; }
 article ul li { position: relative; padding-left: 1.4rem; margin-bottom: 0.75rem; line-height: 1.65; }
-article ul li::before { content: "•"; position: absolute; left: 0.25rem; top: 0; color: var(--gold, #D4AF6A); font-weight: 600; }
+article ul li::before { content: "â€¢"; position: absolute; left: 0.25rem; top: 0; color: var(--gold, #D4AF6A); font-weight: 600; }
 article ol { padding-left: 1.4rem; }
 article ol li { margin-bottom: 0.75rem; line-height: 1.65; }
 article ol li::marker { color: var(--gold, #D4AF6A); font-family: 'JetBrains Mono', monospace; font-size: 0.92em; }
@@ -121,11 +121,11 @@ article ol li::marker { color: var(--gold, #D4AF6A); font-family: 'JetBrains Mon
       document.querySelectorAll('a').forEach(function (a) {
         if (a.classList.contains('footer-col') || a.closest('footer')) return;
         var raw = (a.textContent || '').trim();
-        // Match "Blog", "← Blog", "→ Blog", " Blog", or any single-arrow + Blog combination
-        if (/^[←→\s]*Blog[\s]*$/.test(raw) && /\/?blog\.html?$/.test(a.getAttribute('href') || '')) {
+        // Match "Blog", "â† Blog", "â†’ Blog", " Blog", or any single-arrow + Blog combination
+        if (/^[â†â†’\s]*Blog[\s]*$/.test(raw) && /\/?blog\.html?$/.test(a.getAttribute('href') || '')) {
           a.setAttribute('href', 'journal.html');
           // Preserve any leading arrow when rewriting the visible text
-          var arrowMatch = raw.match(/^([←→])\s*Blog/);
+          var arrowMatch = raw.match(/^([â†â†’])\s*Blog/);
           a.textContent = arrowMatch ? arrowMatch[1] + ' Journal' : 'Journal';
         }
       });
@@ -162,7 +162,7 @@ article ol li::marker { color: var(--gold, #D4AF6A); font-family: 'JetBrains Mon
   <p>So you anchor first, with a specific number, supported by market data. Not a range. Ranges signal flexibility, and the other side will hear only the bottom of yours. A precise number signals research.</p>
   <p>Where to find the number:</p>
   <ul>
-    <li><strong>Levels.fyi</strong> for tech roles — verified by offer screenshots.</li>
+    <li><strong>Levels.fyi</strong> for tech roles â€” verified by offer screenshots.</li>
     <li><strong>Glassdoor and Payscale</strong> for general roles, weighted toward your location and years of experience.</li>
     <li><strong>The BLS Occupational Employment Statistics</strong> for US baseline by metro area.</li>
     <li><strong>Two or three trusted peers</strong> in similar roles. The most useful data is the data your friends will tell you over a drink.</li>
@@ -173,23 +173,23 @@ article ol li::marker { color: var(--gold, #D4AF6A); font-family: 'JetBrains Mon
   <p>The justification has two parts: market and merit. Market is "comparable roles in this market pay this." Merit is "here's what I bring that aligns with the top of that band."</p>
   <p>Don't read off a list of accomplishments. Pick one or two that map directly to what the role needs. If the job description emphasizes scaling a team, your example is "I grew a team from <span class="num">3</span> to <span class="num">12</span> over <span class="num">18</span> months." If it emphasizes revenue, your example is the dollar figure you moved.</p>
   <blockquote>You're not begging. You're explaining why your number is the right number for the role they're trying to fill.</blockquote>
-  <p>Tone matters more than wording. Calm, factual, slightly puzzled if the offer comes in low — as if there must be some misunderstanding about what the role is worth. Not adversarial. Not apologetic.</p>
+  <p>Tone matters more than wording. Calm, factual, slightly puzzled if the offer comes in low â€” as if there must be some misunderstanding about what the role is worth. Not adversarial. Not apologetic.</p>
   <h2>Move three: hold</h2>
   <p>This is where most negotiations are lost.</p>
-  <p>You make your counter. They pause. The pause is uncomfortable. So you start filling it. "But of course I'd be flexible." "I really want this role." "If that's not possible…" Every sentence you add after your number weakens it.</p>
+  <p>You make your counter. They pause. The pause is uncomfortable. So you start filling it. "But of course I'd be flexible." "I really want this role." "If that's not possibleâ€¦" Every sentence you add after your number weakens it.</p>
   <p>Hold the silence. Their next move is their move, not yours. They are far more practiced at this than you are because they hire many people; you take an offer once every few years. The way to neutralize that asymmetry is to make your number, then stop.</p>
   <p>What they say next is almost always one of three things:</p>
   <ol>
     <li><strong>"Let me check what I can do."</strong> Best outcome. They're going back to ask for headroom.</li>
     <li><strong>"We can't go that high, but we can do X."</strong> Now you're negotiating real numbers, not posturing.</li>
-    <li><strong>"That's outside our range."</strong> Now you ask, "What is your range, and what would it take to get to the top of it?" — and the conversation moves to non-cash levers: signing bonus, equity, vacation, remote flexibility, accelerated review.</li>
+    <li><strong>"That's outside our range."</strong> Now you ask, "What is your range, and what would it take to get to the top of it?" â€” and the conversation moves to non-cash levers: signing bonus, equity, vacation, remote flexibility, accelerated review.</li>
   </ol>
   <h2>The math nobody runs</h2>
   <p>A <span class="num">$5,000</span> bump on a <span class="num">$80,000</span> base is worth far more than <span class="num">$5,000</span>. It compounds through every future raise (most are percentages of your current salary), it lifts your <span class="num">401(k)</span> match if your employer matches a percentage, and it shows up again in your next offer when the next employer asks what you currently make.</p>
-  <p>Over a <span class="num">30</span>-year career, a single <span class="num">$5,000</span> negotiation win — assumed to compound at the same rate as your future raises — is worth roughly <span class="num">$200,000</span> in nominal lifetime earnings. <a href="/tools/savings-rate" data-pfc-track="blog_to_tool_link" data-pfc-track-target="savings-rate" data-pfc-track-source="blog-salary-negotiation">Invest that incremental income</a> at a real return of <span class="num">5%</span> and the present value lands closer to <span class="num">$340,000</span> — and every percentage point you can lift your savings rate with the raise pulls your financial-independence date forward by years, not months.</p>
+  <p>Over a <span class="num">30</span>-year career, a single <span class="num">$5,000</span> negotiation win â€” assumed to compound at the same rate as your future raises â€” is worth roughly <span class="num">$200,000</span> in nominal lifetime earnings. <a href="/tools/savings-rate" data-pfc-track="blog_to_tool_link" data-pfc-track-target="savings-rate" data-pfc-track-source="blog-salary-negotiation">Invest that incremental income</a> at a real return of <span class="num">5%</span> and the present value lands closer to <span class="num">$340,000</span> â€” and every percentage point you can lift your savings rate with the raise pulls your financial-independence date forward by years, not months.</p>
   <p>That's why the discomfort of the conversation is misleading. Five minutes of awkwardness in a video call is one of the highest-paid hours of your professional life.</p>
   <h2>One last calibration</h2>
-  <p>Negotiate every offer. Even when the offer feels generous. Even when you're sure they'll say no. The downside of a polite counter is approximately zero — companies almost never rescind offers over a respectful negotiation. The upside is years of compounding.</p>
+  <p>Negotiate every offer. Even when the offer feels generous. Even when you're sure they'll say no. The downside of a polite counter is approximately zero â€” companies almost never rescind offers over a respectful negotiation. The upside is years of compounding.</p>
   <p>Anchor. Justify. Hold. Then go check what the new number does to your net pay.</p>
   <div class="pfc-callout">
     <p><strong>Run the after-tax math.</strong> See exactly how a raise translates into take-home pay across US and UK tax bands. <a href="/tools/take-home-pay.html">Use the free take-home calculator</a>.</p>
@@ -208,7 +208,7 @@ article ol li::marker { color: var(--gold, #D4AF6A); font-family: 'JetBrains Mon
   <div class="pfc-related-grid">
     <a class="pfc-card" href="/blog-net-worth.html"><div class="pfc-card-eyebrow">Net worth</div><div class="pfc-card-title">Net worth is the only number that matters</div></a>
     <a class="pfc-card" href="/blog-50-30-20.html"><div class="pfc-card-eyebrow">Budgeting</div><div class="pfc-card-title">The 50/30/20 budget, when it works and when it doesn't</div></a>
-    <a class="pfc-card" href="/blog-debt-avalanche.html"><div class="pfc-card-eyebrow">Debt</div><div class="pfc-card-title">The debt avalanche method explained</div></a>
+    <a class="pfc-card" href="/blog-debt-avalanche-method.html"><div class="pfc-card-eyebrow">Debt</div><div class="pfc-card-title">The debt avalanche method explained</div></a>
   </div>
 </section>
 <footer class="site-footer" role="contentinfo">
@@ -249,7 +249,7 @@ article ol li::marker { color: var(--gold, #D4AF6A); font-family: 'JetBrains Mon
     </div>
   </div>
   <div class="footer-stamp">
-    <span>© 2026 ProFinanceCast — Built in Europe</span>
+    <span>Â© 2026 ProFinanceCast â€” Built in Europe</span>
     <span>Last shipped <time datetime="2026-05-10">2026-05-10</time></span>
   </div>
 </footer>
