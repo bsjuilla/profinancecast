@@ -748,6 +748,36 @@ function getMarketRange(salary) {
 }
 
 // ── INIT ──
+// Map browser locale → the best-matching country option in our dropdown. The
+// dropdown's first <option> is MU which became a silent default for non-MU
+// visitors. With this mapping a US visitor lands on US, a UK visitor on GB,
+// etc. Falls back to MU only if neither the country nor language part of the
+// locale matches any supported region — which is also fine because the user
+// can change it.
+const SUPPORTED_COUNTRIES = ['MU','US','GB','FR','DE','ZA','IN','AU','CA','SG','AE','NG','KE','GH','BR','PH'];
+const LANG_TO_COUNTRY = {
+  'en': 'US', 'fr': 'FR', 'de': 'DE', 'pt': 'BR', 'tl': 'PH', 'fil': 'PH',
+  'sw': 'KE', 'af': 'ZA', 'zu': 'ZA', 'ar': 'AE', 'hi': 'IN', 'ta': 'IN',
+};
+function detectCountryFromLocale() {
+  try {
+    const langs = (navigator.languages && navigator.languages.length)
+      ? navigator.languages : [navigator.language || 'en-US'];
+    for (const tag of langs) {
+      if (!tag) continue;
+      const parts = tag.split('-');
+      const region = (parts[1] || '').toUpperCase();
+      if (region && SUPPORTED_COUNTRIES.indexOf(region) !== -1) return region;
+    }
+    // Region didn't match — try language part
+    for (const tag of langs) {
+      const lang = (tag.split('-')[0] || '').toLowerCase();
+      if (LANG_TO_COUNTRY[lang]) return LANG_TO_COUNTRY[lang];
+    }
+  } catch (_) {}
+  return 'US';
+}
+
 function init() {
   try { USER = PFCStorage.getJSON('user') || {}; } catch(e) { USER = {}; }
   const sym = USER.currency || '$';
@@ -755,6 +785,17 @@ function init() {
     const el = document.getElementById(id);
     if (el) el.textContent = sym;
   });
+  // Set the country dropdown to match the browser's locale on first load.
+  // If the user already saved a country via onboarding (USER.country), prefer
+  // that; otherwise fall back to locale detection. Manual selection overrides
+  // both because the dropdown is editable.
+  const countrySelect = document.getElementById('i-country');
+  if (countrySelect) {
+    const preferred = (USER.country && SUPPORTED_COUNTRIES.indexOf(USER.country) !== -1)
+      ? USER.country
+      : detectCountryFromLocale();
+    countrySelect.value = preferred;
+  }
   // Sidebar user-pill hydrated by js/pfc-sidebar.js;
   // plan badge by PFCPlan.applyBadges().
   // Pre-fill salary from USER data if available

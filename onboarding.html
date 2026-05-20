@@ -477,8 +477,8 @@
           <div class="cm-label">Financial health score</div>
         </div>
       </div>
-      <a href="dashboard.html" class="btn-go">
-        Go to my dashboard
+      <a href="dashboard.html" class="btn-go" onclick="goToDashboard(event)">
+        <span id="go-dashboard-text">Go to my dashboard</span>
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </a>
     </div>
@@ -660,6 +660,31 @@ function showToast(msg) {
 }
 
 function skipOnboarding() { window.location.href = 'dashboard.html'; }
+
+// Bug fix: the "Go to my dashboard" button used to be a plain anchor that
+// navigated immediately, racing the async encrypted-write that PFCStorage
+// hadn't flushed yet. On fast hardware the dashboard could load before
+// the data was persisted, producing an empty-state flash and forcing the
+// user to refresh. This handler intercepts the click, gives the writer
+// pipeline a short window to drain, and only then navigates.
+async function goToDashboard(ev) {
+  if (ev && typeof ev.preventDefault === 'function') ev.preventDefault();
+  const label = document.getElementById('go-dashboard-text');
+  if (label) label.textContent = 'Saving your forecast…';
+  try {
+    // Re-adopt guest data once more in case the prior call (inside
+    // buildComplete()) raced with the auth resolution.
+    const uid = (typeof PFCAuth !== 'undefined' && PFCAuth.getUserId) ? PFCAuth.getUserId() : 'guest';
+    if (uid && uid !== 'guest' && typeof PFCStorage !== 'undefined' && typeof PFCStorage.adoptGuestData === 'function') {
+      PFCStorage.adoptGuestData(uid);
+    }
+    // 350ms is comfortably more than the ~100ms PBKDF2 + 100ms writer-debounce
+    // cycle. Errs on the side of "definitely flushed" without making the UX
+    // feel sluggish.
+    await new Promise(resolve => setTimeout(resolve, 350));
+  } catch (_) {}
+  window.location.href = 'dashboard.html';
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // FIX: buildComplete() now saves the correct shape to localStorage('pfc_user')

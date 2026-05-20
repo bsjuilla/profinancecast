@@ -282,7 +282,12 @@
   </div>
 
   <div class="content">
-    <div class="empty-hint" id="empty-hint">
+    <!-- Banner is hidden by default. It's only revealed by renderEmptyHint()
+         AFTER PFCStorage.onReady fires AND we've confirmed the user truly has
+         no income/expenses/debt saved. This prevents the false "Finish
+         onboarding" flash that used to appear for users who had onboarded
+         but whose data hadn't been promoted from the guest namespace yet. -->
+    <div class="empty-hint" id="empty-hint" style="display:none;">
       Your numbers aren't in yet. <a href="onboarding.html">Finish onboarding</a> or edit the rows below — the forecast updates as you type and persists in your browser.
     </div>
 
@@ -775,6 +780,19 @@ function boot() {
 }
 boot();
 
+// Reveal/hide the "Finish onboarding" banner based on whether the user
+// actually has data. We only call this AFTER auth + storage have resolved
+// so we never show a false-positive banner to someone who already onboarded.
+function updateEmptyHintVisibility() {
+  const hint = document.getElementById('empty-hint');
+  if (!hint) return;
+  const meaningfulKeys = ['income','otherIncome','housing','food','transport','otherExp','savings','investments','debt','debtPay'];
+  const hasAnyValue = meaningfulKeys.some(k => parseFloat(USER[k]) > 0);
+  const hasCustomRows = (Array.isArray(USER.customIn) && USER.customIn.length > 0)
+                     || (Array.isArray(USER.customOut) && USER.customOut.length > 0);
+  hint.style.display = (hasAnyValue || hasCustomRows) ? 'none' : 'block';
+}
+
 // PFCStorage namespaces by userId. At DOMContentLoaded the Supabase session
 // may not be restored yet, so re-load once auth resolves to land on the
 // right namespace (otherwise we'd render the guest snapshot forever).
@@ -784,10 +802,28 @@ if (typeof PFCAuth !== 'undefined') {
     renderRows();
     renderTotalsAndCharts();
     renderSubscriptions();
+    updateEmptyHintVisibility();
     _maybeFireActivation('cash-forecast');
   });
-  PFCAuth.onAuthChange(() => { USER = loadUser(); renderRows(); renderTotalsAndCharts(); renderSubscriptions(); });
+  PFCAuth.onAuthChange(() => {
+    USER = loadUser();
+    renderRows();
+    renderTotalsAndCharts();
+    renderSubscriptions();
+    updateEmptyHintVisibility();
+  });
+} else {
+  // No PFCAuth on the page (legacy / fallback) — evaluate immediately.
+  updateEmptyHintVisibility();
 }
+
+// Also re-evaluate on any user input, so the banner disappears the moment
+// the user starts editing the rows directly.
+document.addEventListener('input', (e) => {
+  if (e.target && e.target.closest && e.target.closest('.content')) {
+    setTimeout(updateEmptyHintVisibility, 50);
+  }
+});
 
 // ── ACTIVATION EVENT ──
 // Same idempotency contract as dashboard.html — fires once per user when
