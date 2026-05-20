@@ -165,6 +165,13 @@
   <script src="js/pfc-crypto.js"></script>
   <script src="js/pfc-storage.js"></script>
   <script src="js/pfc-entitlements.js"></script>
+  <!-- Role taxonomy + BLS OES May 2024 US median wages for ~97 common roles.
+       Used by getMarketRange() below: when the Job Title input matches a role
+       in this table (either via canonical title or any alias), the market band
+       is anchored to the real US median × country/company/experience multipliers
+       instead of the generic $50k formula baseline. Falls back to the formula
+       when no match is found. -->
+  <script src="js/salary-roles.js"></script>
   <script src="js/pfc-motion.js" defer></script>
   <!-- v3 reskin: new fonts + emerald palette overrides -->
   <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
@@ -294,7 +301,13 @@
 
           <div style="margin-bottom:14px;">
             <label class="field-label">Job title / Role</label>
-            <input type="text" class="field-input" id="i-role" placeholder="e.g. Software Engineer, Marketing Manager…" oninput="calc()">
+            <input type="text" class="field-input" id="i-role" list="role-suggestions"
+                   placeholder="e.g. Software Engineer, Registered Nurse, Marketing Manager…"
+                   autocomplete="off" oninput="calc()">
+            <!-- Populated on init by populateRoleDatalist() from window.PFC_SALARY_ROLES.
+                 When a user picks a suggestion, getMarketRange() looks up the real BLS
+                 median wage for that role instead of using the generic $50k formula. -->
+            <datalist id="role-suggestions"></datalist>
           </div>
 
           <div class="field-row" style="margin-bottom:14px;">
@@ -369,9 +382,12 @@
       <!-- Market range -->
       <div class="card">
         <div class="card-inner">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:4px;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:4px;flex-wrap:wrap;">
             <div class="card-title">Market rate analysis</div>
-            <div id="seniority-badge" style="display:none;padding:3px 9px;border-radius:var(--r-pill);font-family:var(--font-mono);font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;background:var(--gold-soft);color:var(--gold);border:1px solid rgba(212,175,106,0.25);white-space:nowrap;">—</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;">
+              <div id="source-badge" style="display:none;padding:3px 9px;border-radius:var(--r-pill);font-family:var(--font-mono);font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;background:var(--gold-soft);color:var(--gold);border:1px solid rgba(212,175,106,0.25);white-space:nowrap;">—</div>
+              <div id="seniority-badge" style="display:none;padding:3px 9px;border-radius:var(--r-pill);font-family:var(--font-mono);font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;background:var(--gold-soft);color:var(--gold);border:1px solid rgba(212,175,106,0.25);white-space:nowrap;">—</div>
+            </div>
           </div>
           <div class="card-sub" style="margin-bottom:14px;">Estimated band for your role, experience &amp; region — calibrated by industry, country, company size, and seniority signals in the role title.</div>
           <div style="font-size:11px;color:var(--text3);background:rgba(245,166,35,0.06);border:1px solid rgba(245,166,35,0.18);border-radius:var(--r-sm);padding:8px 10px;line-height:1.5;margin-bottom:18px;">
@@ -726,24 +742,61 @@ function getMarketRange(salary) {
 
   const seniority = getSeniority(role);
 
-  const base = 50000;
-  const median = base
-    * (INDUSTRY_MULT[industry] || 1)
-    * (COUNTRY_MULT[country] || 0.5)
-    * (COMPANY_MULT[company] || 1)
-    * EXP_MULT(exp)
-    * seniority.mult;
+  // Try to anchor the band on a REAL BLS-sourced US median for the matched role.
+  // If found, multiply by COUNTRY_MULT (PPP-style adjustment) + COMPANY_MULT +
+  // a smaller EXP_MULT (because seniority keywords already shifted the band
+  // through getSeniority). Falls back to the original formula when no match.
+  let median, source, roleMatched;
+  const match = (window.PFCSalaryRoles && window.PFCSalaryRoles.findRoleMatch)
+    ? window.PFCSalaryRoles.findRoleMatch(role)
+    : null;
+
+  if (match && match.role && match.role.usMedian > 0) {
+    // Real-data path
+    roleMatched = match.role.title;
+    source = 'real';
+    // The role's usMedian is the US national median for someone with mid-level
+    // experience (~5 years) at a mid-size employer. Apply only COUNTRY +
+    // COMPANY adjustments and a softened EXP curve (since the role itself
+    // already encodes most of the seniority signal). Seniority keywords still
+    // adjust modestly — a "Senior Software Developer" should land above the
+    // base "Software Developer" median.
+    const seniorityShim = seniority.mult >= 1.2 ? (seniority.mult * 0.85 + 0.15)
+                       : seniority.mult <= 0.8 ? (seniority.mult * 0.85 + 0.15)
+                       : 1.0;
+    const expShim = exp <= 1 ? 0.85 : exp <= 3 ? 0.95 : exp <= 8 ? 1.0 : 1.08;
+    median = match.role.usMedian
+      * (COUNTRY_MULT[country] || 0.5)
+      * (COMPANY_MULT[company] || 1)
+      * expShim
+      * seniorityShim;
+  } else {
+    // Formula fallback — same baseline as before the BLS taxonomy was added.
+    roleMatched = null;
+    source = 'estimate';
+    const base = 50000;
+    median = base
+      * (INDUSTRY_MULT[industry] || 1)
+      * (COUNTRY_MULT[country] || 0.5)
+      * (COMPANY_MULT[company] || 1)
+      * EXP_MULT(exp)
+      * seniority.mult;
+  }
 
   // Spread depends on seniority — junior bands are narrow, senior bands are wide
   // (a junior dev's pay sits within ±15% of median; a director's pay can range
-  // ±35% depending on company stage and equity comp).
-  const spread = seniority.mult >= 1.5 ? 0.35 : (seniority.mult >= 1.2 ? 0.28 : 0.18);
+  // ±35% depending on company stage and equity comp). Real-data bands are
+  // slightly tighter because we have a stronger anchor.
+  const baseSpread = seniority.mult >= 1.5 ? 0.35 : (seniority.mult >= 1.2 ? 0.28 : 0.18);
+  const spread = source === 'real' ? baseSpread * 0.9 : baseSpread;
 
   return {
     low:    Math.round(median * (1 - spread)),
     median: Math.round(median),
     high:   Math.round(median * (1 + spread)),
     seniority: seniority.label,
+    source: source,            // 'real' or 'estimate'
+    roleMatched: roleMatched,  // canonical title when real, null when estimate
   };
 }
 
@@ -778,6 +831,16 @@ function detectCountryFromLocale() {
   return 'US';
 }
 
+// Populate the role autocomplete datalist from the BLS-sourced taxonomy.
+// Browser-native <datalist> handles type-to-filter; we just have to seed it
+// with all canonical titles once at init.
+function populateRoleDatalist() {
+  const dl = document.getElementById('role-suggestions');
+  if (!dl || !window.PFCSalaryRoles || !window.PFCSalaryRoles.getAllTitlesForDatalist) return;
+  const titles = window.PFCSalaryRoles.getAllTitlesForDatalist();
+  dl.innerHTML = titles.map(t => '<option value="' + t.replace(/"/g, '&quot;') + '"></option>').join('');
+}
+
 function init() {
   try { USER = PFCStorage.getJSON('user') || {}; } catch(e) { USER = {}; }
   const sym = USER.currency || '$';
@@ -785,6 +848,7 @@ function init() {
     const el = document.getElementById(id);
     if (el) el.textContent = sym;
   });
+  populateRoleDatalist();
   // Set the country dropdown to match the browser's locale on first load.
   // If the user already saved a country via onboarding (USER.country), prefer
   // that; otherwise fall back to locale detection. Manual selection overrides
@@ -946,6 +1010,28 @@ function updateMarketRange(range, salary, target, sym) {
       senBadge.style.display = 'inline-block';
     } else {
       senBadge.style.display = 'none';
+    }
+  }
+
+  // Source badge: green "Real data" when the role text matched a BLS-sourced
+  // entry; gold "Estimate" otherwise. Lets the user know whether they're
+  // looking at a real anchor or the fallback formula.
+  const srcBadge = document.getElementById('source-badge');
+  if (srcBadge) {
+    if (range.source === 'real') {
+      srcBadge.textContent = 'Real data · ' + (range.roleMatched || 'BLS');
+      srcBadge.style.background = 'rgba(43,182,125,0.12)';
+      srcBadge.style.color = 'var(--money, #2BB67D)';
+      srcBadge.style.borderColor = 'rgba(43,182,125,0.30)';
+      srcBadge.style.display = 'inline-block';
+    } else if ((document.getElementById('i-role').value || '').trim()) {
+      srcBadge.textContent = 'Estimate · formula';
+      srcBadge.style.background = 'var(--gold-soft)';
+      srcBadge.style.color = 'var(--gold)';
+      srcBadge.style.borderColor = 'rgba(212,175,106,0.25)';
+      srcBadge.style.display = 'inline-block';
+    } else {
+      srcBadge.style.display = 'none';
     }
   }
 
