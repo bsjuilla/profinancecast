@@ -755,18 +755,25 @@ function getMarketRange(salary) {
     // Real-data path
     roleMatched = match.role.title;
     source = 'real';
-    // The role's usMedian is the US national median for someone with mid-level
-    // experience (~5 years) at a mid-size employer. Apply only COUNTRY +
-    // COMPANY adjustments and a softened EXP curve (since the role itself
-    // already encodes most of the seniority signal). Seniority keywords still
-    // adjust modestly — a "Senior Software Developer" should land above the
-    // base "Software Developer" median.
+    // Prefer per-country median when available (sourced from each country's
+    // national statistical office, in that country's local currency). Falls
+    // back to US median × COUNTRY_MULT for roles outside the curated
+    // per-country table.
+    const perCountry = (window.PFCSalaryRoles && window.PFCSalaryRoles.getCountryWage)
+      ? window.PFCSalaryRoles.getCountryWage(match.role.soc, country)
+      : null;
+    const countryBase = (perCountry != null)
+      ? perCountry
+      : match.role.usMedian * (COUNTRY_MULT[country] || 0.5);
+    // Track whether this was a per-country hit (for the badge text).
+    source = (perCountry != null) ? 'real-country' : 'real';
+    // Seniority + experience shims still apply on top of the role anchor.
+    // "Senior X" should land above base "X" median; junior should land below.
     const seniorityShim = seniority.mult >= 1.2 ? (seniority.mult * 0.85 + 0.15)
                        : seniority.mult <= 0.8 ? (seniority.mult * 0.85 + 0.15)
                        : 1.0;
     const expShim = exp <= 1 ? 0.85 : exp <= 3 ? 0.95 : exp <= 8 ? 1.0 : 1.08;
-    median = match.role.usMedian
-      * (COUNTRY_MULT[country] || 0.5)
+    median = countryBase
       * (COMPANY_MULT[company] || 1)
       * expShim
       * seniorityShim;
@@ -1018,11 +1025,19 @@ function updateMarketRange(range, salary, target, sym) {
   // looking at a real anchor or the fallback formula.
   const srcBadge = document.getElementById('source-badge');
   if (srcBadge) {
-    if (range.source === 'real') {
-      srcBadge.textContent = 'Real data · ' + (range.roleMatched || 'BLS');
-      srcBadge.style.background = 'rgba(43,182,125,0.12)';
+    if (range.source === 'real-country') {
+      // Best case: per-country median from ONS/Insee/Destatis/etc.
+      srcBadge.textContent = 'Real ' + ((document.getElementById('i-country').value || '').toUpperCase()) + ' data';
+      srcBadge.style.background = 'rgba(43,182,125,0.16)';
       srcBadge.style.color = 'var(--money, #2BB67D)';
-      srcBadge.style.borderColor = 'rgba(43,182,125,0.30)';
+      srcBadge.style.borderColor = 'rgba(43,182,125,0.40)';
+      srcBadge.style.display = 'inline-block';
+    } else if (range.source === 'real') {
+      // BLS US median + COUNTRY_MULT adjustment (no per-country entry yet)
+      srcBadge.textContent = 'BLS · adjusted';
+      srcBadge.style.background = 'rgba(43,182,125,0.10)';
+      srcBadge.style.color = 'var(--money, #2BB67D)';
+      srcBadge.style.borderColor = 'rgba(43,182,125,0.25)';
       srcBadge.style.display = 'inline-block';
     } else if ((document.getElementById('i-role').value || '').trim()) {
       srcBadge.textContent = 'Estimate · formula';
