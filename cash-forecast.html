@@ -274,6 +274,10 @@
     </div>
     <div class="tb-right">
       <select class="month-select" id="month-select" aria-label="Forecast month"></select>
+      <!-- Last-saved timestamp. Updated by persistUser() so users can see at
+           a glance whether their last edit hit storage. Hidden until the
+           first successful save fires. -->
+      <span id="last-saved-indicator" style="display:none;font-family:var(--font-mono);font-size:11px;color:var(--text3);margin-right:4px;letter-spacing:0.02em;" aria-live="polite"></span>
       <button class="save-btn" id="save-btn" onclick="saveAll()">
         <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8.5l3 3 7-7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
         Save changes
@@ -480,21 +484,44 @@ function loadUser() {
     return u;
   } catch(e) { return { ...DEFAULT_USER, customIn:[], customOut:[] }; }
 }
+// Update the "Last saved at HH:MM" indicator next to the Save button.
+// Called from persistUser() so it reflects EVERY successful save —
+// debounced, blur, manual, or beforeunload.
+function _updateLastSavedIndicator() {
+  const el = document.getElementById('last-saved-indicator');
+  if (!el) return;
+  try {
+    const now = new Date();
+    const locale = (navigator.languages && navigator.languages[0]) || navigator.language || 'en-US';
+    const time = now.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
+    el.textContent = '· Saved ' + time;
+    el.style.display = 'inline-block';
+  } catch (_) {
+    el.textContent = '· Saved';
+    el.style.display = 'inline-block';
+  }
+}
+
 function persistUser() {
   try {
     if (typeof PFCStorage !== 'undefined') PFCStorage.setJSON('user', USER);
     else localStorage.setItem('pfc_user', JSON.stringify(USER));
+    _updateLastSavedIndicator();
   } catch(e) { console.error('[cash-forecast] persist failed:', e); }
 }
 
 // Debounced persist — saves ~400ms after the user stops typing. This catches
 // the "type a value then refresh immediately" case that the blur-only
-// persistence used to lose silently. We keep the blur-trigger too (line 547)
-// so the save happens instantly when the user tabs away.
+// persistence used to lose silently. Also pulses the Save button via
+// flashSaved() so users have visual confirmation that their typing made it
+// to storage — without having to click anywhere or trust an invisible save.
 let _persistDebounceTimer;
 function persistUserDebounced() {
   clearTimeout(_persistDebounceTimer);
-  _persistDebounceTimer = setTimeout(persistUser, 400);
+  _persistDebounceTimer = setTimeout(() => {
+    persistUser();
+    flashSaved();
+  }, 400);
 }
 
 // Belt-and-braces: catch a refresh/navigation while a debounced save is still

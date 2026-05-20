@@ -527,7 +527,7 @@
         Notifications
         <div class="notif-dot" id="notif-dot"></div>
       </button>
-      <button class="topbar-btn primary" onclick="window.location.href='billing.html'">
+      <button class="topbar-btn primary" data-free-only style="display:none;" onclick="window.location.href='billing.html'">
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1l1.5 3.5L13 5.5l-3 3 .7 4-3.7-2-3.7 2 .7-4-3-3 4.5-.9z" fill="currentColor"/></svg>
         Upgrade to Pro
       </button>
@@ -543,7 +543,7 @@
     <div id="notif-list" style="max-height:320px;overflow-y:auto;">
       <div class="notif-empty" style="padding:32px 18px;text-align:center;color:var(--text3);font-size:13px;">No notifications</div>
     </div>
-    <div style="padding:12px 18px;border-top:1px solid var(--border);text-align:center;">
+    <div data-free-only style="display:none;padding:12px 18px;border-top:1px solid var(--border);text-align:center;">
       <span style="font-size:12px;color:var(--text3);">Upgrade to Pro for weekly email digests</span>
     </div>
   </div>
@@ -2794,18 +2794,30 @@ function _rehydrateUserFromStorage() {
     chart.update('none');
   }
 }
-// ── Free-plan upgrade banner — reveal logic ─────────────────────────────
-// The banner is hidden by default in the HTML (display:none). We reveal it
-// only when the user's plan is truly 'free'. Pro users never see it.
-// Re-evaluated on every plan change so upgrade is reflected immediately.
+// ── Free-only UI reveal logic ───────────────────────────────────────────
+// Every Free-only element (upgrade banner, top-right "Upgrade to Pro"
+// button, notifications-panel footer hint, etc.) ships with display:none
+// + data-free-only in the HTML. This function reveals them only when the
+// user's plan is truly 'free'. Pro / founder / lifetime / trial users
+// never see any of them. Re-evaluated on every auth + plan change so the
+// upgrade flow disappears instantly when the user pays.
+//
+// Each element remembers its intended display value via data-free-only-show,
+// which lets buttons restore to inline-flex, divs restore to block, etc.
+// Default is '' (the browser-default for the element's tag).
 function hideUpgradeBannerIfPro() {
-  const banner = document.querySelector('.upgrade-banner[data-free-only]');
-  if (!banner) return;
+  const nodes = document.querySelectorAll('[data-free-only]');
+  if (!nodes.length) return;
   let plan = 'free';
   try { plan = (window.PFCPlan && PFCPlan.get) ? PFCPlan.get() : 'free'; } catch (_) {}
-  // Show banner only for plain free users; any other plan (pro, founder,
-  // lifetime, trial, whatever future tier names appear) hides it.
-  banner.style.display = (plan === 'free') ? '' : 'none';
+  const shouldShow = (plan === 'free');
+  nodes.forEach(el => {
+    if (shouldShow) {
+      el.style.display = el.dataset.freeOnlyShow || '';
+    } else {
+      el.style.display = 'none';
+    }
+  });
 }
 
 if (typeof PFCAuth !== 'undefined') {
