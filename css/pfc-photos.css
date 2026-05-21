@@ -34,6 +34,24 @@
   margin: 0;
 }
 
+/* When the photo class lives directly on the <img> (as the integrate-photos
+ * script does), the <img>'s HTML width/height attributes fight the CSS
+ * aspect-ratio. Force height:auto so aspect-ratio + max-width can drive
+ * the layout box, and keep object-fit so the natural image fills it
+ * without distortion. !important is required to beat the inline
+ * width/height presentational attributes the integration emits. */
+img.pfc-photo-band,
+img.pfc-photo-hero,
+img.pfc-photo-eyebrow,
+img.pfc-photo-card,
+img.pfc-photo-portrait,
+img.pfc-photo-square {
+  width: 100% !important;
+  height: auto !important;
+  object-fit: cover;
+  object-position: center;
+}
+
 /* Each class has its own max-width discipline — without these the
  * figures fill the entire main column (1200px+) on Pro-gated dashboard
  * pages and dominate the viewport. The .pfc-photo-band line below was
