@@ -170,9 +170,14 @@ export default async function handler(req) {
     errors: errors,
   };
 
-  // 6h CDN cache. Even if FRED publishes new data, the dashboard widget
-  // catches up on the next visit beyond the cache window.
-  return _json(payload, 200, {
-    'Cache-Control': 'public, s-maxage=21600, max-age=0, must-revalidate',
-  });
+  // Cache only the happy path (≥3 of 4 series populated). When upstream
+  // is flaky, returning no-store lets the next request retry rather than
+  // serving 6 hours of cached failure to all users.
+  const populated = ['fedFunds','mortgage30y','treasury10y','cpiYoY']
+    .filter((k) => payload[k] && typeof payload[k].value === 'number').length;
+  const cacheControl = populated >= 3
+    ? 'public, s-maxage=21600, max-age=0, must-revalidate'
+    : 'no-store';
+
+  return _json(payload, 200, { 'Cache-Control': cacheControl });
 }
