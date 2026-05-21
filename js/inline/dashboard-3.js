@@ -3,8 +3,9 @@
     });
 
     // Macro context strip — populates the macro-widget div with FRED data.
-    // Renders 4 mini cells (Fed funds, 30Y mortgage, 10Y Treasury, CPI YoY)
-    // plus a 'real yield' hint if the user's savings field is non-zero.
+    // Hides itself entirely when all 4 series are null (e.g., FRED is
+    // IP-blocking Vercel's edge POPs — a known reachability issue with
+    // their public API). Better to show nothing than 4 cells of "—".
     (function _renderMacroWidget() {
       function _go() {
         try {
@@ -13,27 +14,32 @@
           if (!el) return;
           PFCMacro.get().then((d) => {
             if (!d || !el) return;
+            const series = [d.fedFunds, d.mortgage30y, d.treasury10y, d.cpiYoY];
+            const populated = series.filter(
+              (s) => s && typeof s.value === 'number' && isFinite(s.value)
+            );
+            // If FRED is unreachable from this Vercel POP, hide silently.
+            // The dashboard renders fine without macro context; better than
+            // showing a row of useless "—" placeholders.
+            if (populated.length === 0) {
+              el.style.display = 'none';
+              return;
+            }
             function _fmtPct(v) {
               return (typeof v === 'number' && isFinite(v)) ? v.toFixed(2) + '%' : '—';
             }
-            function _cell(label, val, note) {
+            function _cell(label, val) {
               return '<div style="display:inline-block;margin-right:22px;">' +
                 '<span style="display:block;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3,#8a9189);margin-bottom:2px;">' +
                   label + '</span>' +
                 '<span style="font-family:var(--font-display);font-weight:600;font-size:14px;color:var(--ink,#F0EDE2);">' +
-                  val + '</span>' +
-                (note ? '<span style="font-size:11px;color:var(--text3,#8a9189);margin-left:6px;">' + note + '</span>' : '') +
-                '</div>';
+                  val + '</span></div>';
             }
-            const ff  = d.fedFunds    ? _fmtPct(d.fedFunds.value)    : '—';
-            const mtg = d.mortgage30y ? _fmtPct(d.mortgage30y.value) : '—';
-            const t10 = d.treasury10y ? _fmtPct(d.treasury10y.value) : '—';
-            const cpi = d.cpiYoY      ? _fmtPct(d.cpiYoY.value)      : '—';
             el.innerHTML =
-              _cell('Fed funds', ff) +
-              _cell('30Y mortgage', mtg) +
-              _cell('10Y Treasury', t10) +
-              _cell('CPI YoY', cpi) +
+              _cell('Fed funds',    d.fedFunds    ? _fmtPct(d.fedFunds.value)    : '—') +
+              _cell('30Y mortgage', d.mortgage30y ? _fmtPct(d.mortgage30y.value) : '—') +
+              _cell('10Y Treasury', d.treasury10y ? _fmtPct(d.treasury10y.value) : '—') +
+              _cell('CPI YoY',      d.cpiYoY      ? _fmtPct(d.cpiYoY.value)      : '—') +
               '<span style="float:right;font-size:10.5px;color:var(--text3,#8a9189);">FRED &middot; ' +
                 (d.cpiYoY && d.cpiYoY.date ? d.cpiYoY.date : 'live') + '</span>';
             el.style.display = 'block';
