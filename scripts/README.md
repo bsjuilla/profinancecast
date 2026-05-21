@@ -74,13 +74,23 @@ Self-contained, no args.
 python scripts/convert-batch-e.py
 ```
 
-## Sibling scripts (lives in `/scripts/` outside this dir for now)
-- `screenshot-photos.py` — Playwright harness that loads each modified page
-  with the audit-bypass cookie pre-set, captures full-page screenshots, and
-  flags any `<figure>` with width > 1100px or off-viewport positioning.
-  Reads `AUDIT_BYPASS_TOKEN` from env.
+## screenshot-photos.py
+Playwright harness that loads each modified page with the audit-bypass cookie
+pre-set, captures full-page screenshots, and flags any `<figure>` with width
+> 1100px or off-viewport positioning. Reads `AUDIT_BYPASS_TOKEN` from env.
+This is the script the visual-regression CI workflow
+(`.github/workflows/visual-regression.yml`) runs post-deploy on every push
+to `main`.
+
+Run locally:
+```
+$env:AUDIT_BYPASS_TOKEN = "..."   # PowerShell
+python scripts/screenshot-photos.py
+```
+
+## Other (kept in `/scripts/` outside this repo for historical reasons)
 - `verify-live.py` — post-deploy CSP + 200-status sanity check.
 - `verify-sprint1.py`, `verify-sprint2.py`, `verify-sprint3.py` — older
   per-sprint Playwright checks.
 
-These will be migrated into this dir in the next sprint.
+These can be migrated in if needed; they're not on any automation hot path.
