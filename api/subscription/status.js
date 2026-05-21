@@ -41,6 +41,16 @@ export default async function handler(req, res) {
   const userId = userData.user.id;
   const userEmail = (userData.user.email || '').toLowerCase();
 
+  // _reason is a non-secret diagnostic string explaining the decision path.
+  // Helps debug "I'm Pro but the site shows Free" without needing server logs.
+  // Always one of:
+  //   owner_override        → email matched OWNER_EMAILS
+  //   active_subscription   → subscriptions row found with status=active, period valid
+  //   no_subscription_row   → no row in subscriptions for this user
+  //   sub_status_<status>   → row exists but status != active
+  //   sub_expired           → row active but current_period_end is past
+  //   db_error              → Supabase query failed
+
   // Owner override: env-driven, server-side. Single source of truth — every
   // gate downstream reads from this endpoint, so flipping the env propagates.
   if (userEmail && OWNER_EMAILS.includes(userEmail)) {
@@ -52,6 +62,8 @@ export default async function handler(req, res) {
       cancelledAt: null,
       provider: null,
       queries: { used: 0, limit: 999999, resetsAt: null },
+      _reason: 'owner_override',
+      _ownerEmailsConfigured: OWNER_EMAILS.length > 0,
     });
   }
 
@@ -64,8 +76,12 @@ export default async function handler(req, res) {
 
   if (subErr) {
     console.error('subscription/status query error:', subErr);
-    // Fail closed: return free, not 500, so the UI degrades gracefully
-    return res.status(200).json({ plan: 'free', status: 'unknown' });
+    return res.status(200).json({
+      plan: 'free',
+      status: 'unknown',
+      _reason: 'db_error',
+      _ownerEmailsConfigured: OWNER_EMAILS.length > 0,
+    });
   }
 
   // Treat subscriptions whose period_end is in the past as "free".
@@ -75,6 +91,11 @@ export default async function handler(req, res) {
   const periodEnd = sub?.current_period_end ? new Date(sub.current_period_end).getTime() : 0;
   const expired = periodEnd && periodEnd < now;
   const plan = (sub && sub.status === 'active' && !expired) ? sub.plan : 'free';
+  let reason;
+  if (!sub) reason = 'no_subscription_row';
+  else if (sub.status !== 'active') reason = 'sub_status_' + (sub.status || 'unknown');
+  else if (expired) reason = 'sub_expired';
+  else reason = 'active_subscription';
 
   // Optional: include AI query usage
   const { data: profile } = await supabase
@@ -95,6 +116,8 @@ export default async function handler(req, res) {
       limit: profile.ai_queries_limit || (plan === 'premium' ? 500 : plan === 'pro' ? 200 : 10),
       resetsAt: profile.ai_queries_reset_at,
     } : null,
+    _reason: reason,
+    _ownerEmailsConfigured: OWNER_EMAILS.length > 0,
   });
   } catch (err) {
     console.error('subscription/status: unhandled error', err);
