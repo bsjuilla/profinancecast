@@ -1,5 +1,5 @@
 // api/audit-login.js — Edge runtime audit-bypass cookie issuer.
-// rev: 2026-05-21-split-cookie
+// rev: 2026-05-22-upstash-wired
 //
 // PURPOSE
 // Lets the audit / dev agent access Pro-gated pages WITHOUT typing the
@@ -34,28 +34,62 @@
 // - When env var unset, endpoint returns 503 NOT_CONFIGURED so a token
 //   sniff in the URL bar can't pretend the feature exists.
 
+import { Redis } from '@upstash/redis';
+
 export const config = { runtime: 'edge' };
 
 const COOKIE_NAME_NONCE  = 'pfc_audit_session';     // HttpOnly, server-only
 const COOKIE_NAME_ACTIVE = 'pfc_audit_mode_active'; // JS-readable flag, no secret
 const COOKIE_MAX_AGE_SEC = 24 * 60 * 60; // 24h
 
-// Per-isolate rate-limit: 5 requests per IP per 5-minute window.
-// Edge functions execute in isolated v8 contexts; this map only survives
-// within a single isolate, so a determined attacker hitting many edge
-// nodes can amortize across them. But the realistic threat is a single
-// scripted brute-force hitting the same node — that this catches cleanly.
-// Persistent KV-backed limiting is queued for the next sprint (synthesis
-// queue Wave-2 #22). Defense-in-depth, not the only line.
-const RL_LIMIT = 5;
-const RL_WINDOW_MS = 5 * 60 * 1000;
-const _rlMap = new Map(); // ip -> { count, resetAt }
+// Upstash Redis client — only initialized if Vercel injected the env vars
+// (KV_REST_API_URL + KV_REST_API_TOKEN). Falls back to in-memory state
+// gracefully if absent (e.g. preview deploys before Storage is linked).
+const _redis = (process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN)
+  ? new Redis({
+      url: process.env.KV_REST_API_URL,
+      token: process.env.KV_REST_API_TOKEN,
+    })
+  : null;
 
-function _rateLimit(ip) {
+// Rate-limit config: 5 requests / IP / 5-minute window. Cleanly enforced
+// across all Edge isolates when Upstash is available (persistent counter
+// in Redis); falls back to per-isolate Map otherwise.
+const RL_LIMIT = 5;
+const RL_WINDOW_SEC = 5 * 60;
+const _rlMap = new Map(); // fallback: ip -> { count, resetAt }
+
+async function _rateLimit(ip) {
+  if (_redis) {
+    // Atomic INCR + EXPIRE via Redis. First INCR returns 1 and we set TTL;
+    // subsequent INCRs increment without touching TTL. If TTL elapses, the
+    // key disappears and the counter resets — same window semantics as the
+    // in-memory version.
+    const key = `pfc:rl:audit-login:${ip}`;
+    try {
+      const count = await _redis.incr(key);
+      if (count === 1) {
+        // Only set TTL on the first request of a new window.
+        await _redis.expire(key, RL_WINDOW_SEC);
+      }
+      if (count > RL_LIMIT) {
+        const ttl = await _redis.ttl(key);
+        return { ok: false, remaining: 0, retryAfterSec: Math.max(ttl, 1) };
+      }
+      return { ok: true, remaining: RL_LIMIT - count, retryAfterSec: 0 };
+    } catch (err) {
+      // Redis hiccup — fail OPEN (allow the request) rather than locking
+      // out legitimate users. The constant-time token check is still the
+      // primary guard; rate-limit is defense-in-depth.
+      console.warn('[audit-login] redis rate-limit unavailable:', err && err.message);
+      // Fall through to in-memory fallback.
+    }
+  }
+  // In-memory fallback (per-isolate, partial protection)
   const now = Date.now();
   const entry = _rlMap.get(ip);
   if (!entry || entry.resetAt < now) {
-    _rlMap.set(ip, { count: 1, resetAt: now + RL_WINDOW_MS });
+    _rlMap.set(ip, { count: 1, resetAt: now + RL_WINDOW_SEC * 1000 });
     return { ok: true, remaining: RL_LIMIT - 1, retryAfterSec: 0 };
   }
   if (entry.count >= RL_LIMIT) {
@@ -63,6 +97,41 @@ function _rateLimit(ip) {
   }
   entry.count += 1;
   return { ok: true, remaining: RL_LIMIT - entry.count, retryAfterSec: 0 };
+}
+
+// Nonce store — when Upstash is available we register every issued nonce
+// in a key with the same 24h TTL as the cookie. This serves two future
+// uses:
+//   1. Server-side endpoints that want to verify a nonce is still
+//      live (not revoked) can call _isNonceLive(nonce).
+//   2. The logout handler DELetes the key, so a specific leaked nonce
+//      can be killed in milliseconds without rotating the master token
+//      (which would invalidate every audit session including the owner's).
+const NONCE_KEY = (n) => `pfc:audit:nonce:${n}`;
+
+async function _registerNonce(nonce) {
+  if (!_redis) return; // No Redis -> nonce is implicit-trust until cookie expires
+  try {
+    await _redis.set(NONCE_KEY(nonce), '1', { ex: COOKIE_MAX_AGE_SEC });
+  } catch (err) {
+    console.warn('[audit-login] redis nonce register failed:', err && err.message);
+  }
+}
+
+async function _revokeNonce(nonce) {
+  if (!_redis || !nonce) return;
+  try { await _redis.del(NONCE_KEY(nonce)); } catch (_) {}
+}
+
+// Exported for future use by other audit-aware endpoints (none yet).
+// Returns true if Redis confirms the nonce is live, OR if Redis is
+// unavailable (fail-open — relies on the cookie's HttpOnly + 24h TTL).
+export async function _isNonceLive(nonce) {
+  if (!_redis || !nonce) return true;
+  try {
+    const v = await _redis.get(NONCE_KEY(nonce));
+    return v === '1' || v === 1;
+  } catch (_) { return true; }
 }
 
 function _safeEqual(a, b) {
@@ -104,7 +173,7 @@ function _json(payload, status, extraHeaders) {
   });
 }
 
-export default function handler(req) {
+export default async function handler(req) {
   if (req.method !== 'GET') {
     return _json({ error: 'Method not allowed', code: 'METHOD' }, 405);
   }
@@ -115,8 +184,13 @@ export default function handler(req) {
     return _json({ error: 'Audit mode not configured', code: 'NOT_CONFIGURED' }, 503);
   }
 
-  // Logout path — clear BOTH cookies (nonce + active flag).
+  // Logout path — clear BOTH cookies AND revoke the nonce in Redis (if
+  // present) so the same nonce can't be replayed even before the cookie
+  // expires. Parse the existing cookie header to find the nonce value.
   if (url.searchParams.has('logout')) {
+    const cookieHeader = req.headers.get('cookie') || '';
+    const nonceMatch = cookieHeader.match(new RegExp(`${COOKIE_NAME_NONCE}=([a-f0-9-]+)`));
+    if (nonceMatch) await _revokeNonce(nonceMatch[1]);
     const clearNonce  = `${COOKIE_NAME_NONCE}=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax`;
     const clearActive = `${COOKIE_NAME_ACTIVE}=; Path=/; Max-Age=0; Secure; SameSite=Lax`;
     console.log('[audit-login] logout');
@@ -137,7 +211,7 @@ export default function handler(req) {
   const ip = (req.headers.get('x-forwarded-for') || '').split(',')[0].trim()
           || req.headers.get('x-real-ip')
           || 'unknown';
-  const rl = _rateLimit(ip);
+  const rl = await _rateLimit(ip);
   if (!rl.ok) {
     return _json(
       { error: 'Too many attempts', code: 'RATE_LIMITED' },
@@ -157,6 +231,9 @@ export default function handler(req) {
   // HttpOnly so JS (and any XSS payload) can't read it. The active flag
   // is JS-readable but carries no secret — it's just a 1.
   const nonce = crypto.randomUUID();
+  // Register the nonce in Redis with matching TTL so it can be revoked
+  // (on logout) or queried (by future audit-aware endpoints).
+  await _registerNonce(nonce);
   const cookieNonce  = `${COOKIE_NAME_NONCE}=${nonce}; Path=/; Max-Age=${COOKIE_MAX_AGE_SEC}; HttpOnly; Secure; SameSite=Lax`;
   const cookieActive = `${COOKIE_NAME_ACTIVE}=1; Path=/; Max-Age=${COOKIE_MAX_AGE_SEC}; Secure; SameSite=Lax`;
   console.log('[audit-login] success — nonce=' + nonce.slice(0, 8) + '...');
