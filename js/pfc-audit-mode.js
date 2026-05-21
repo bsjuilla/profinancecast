@@ -5,16 +5,19 @@
  * pfc-auth.js and pfc-entitlements.js, so the audit-mode flag is set
  * before those modules' bootstrap code runs.
  *
- * Reads the `pfc_audit_session` cookie (set by /api/audit-login). If
- * present, sets `window.__PFC_AUDIT_MODE = true`. The auth + entitlements
+ * Reads the `pfc_audit_mode_active` cookie (JS-readable flag set by
+ * /api/audit-login alongside the HttpOnly nonce cookie). If present,
+ * sets `window.__PFC_AUDIT_MODE = true`. The auth + entitlements
  * modules check this flag and short-circuit their redirects + return
  * Pro/Premium plan + signed-in state. Pages render as if a Pro user is
  * signed in, populated with SAMPLE data (seeded into PFCStorage).
  *
- * SECURITY
- * - Reading the cookie is read-only. No token data is exposed.
- * - The cookie value is an opaque nonce generated server-side by
- *   /api/audit-login — not the audit secret token itself.
+ * SECURITY (split-cookie design, 2026-05-21)
+ * - The actual nonce lives in pfc_audit_session (HttpOnly, no JS access)
+ *   so an XSS payload can NEVER exfiltrate the secret session identifier.
+ * - We only read pfc_audit_mode_active here — a flag whose value is just
+ *   "1" and carries no secret material. Reading it tells us the user
+ *   passed /api/audit-login but reveals nothing else.
  * - All data shown in audit mode is SAMPLE — real user data is never
  *   loaded. A persistent yellow banner makes this obvious.
  *
@@ -28,7 +31,10 @@
     try {
       return typeof document !== 'undefined'
           && typeof document.cookie === 'string'
-          && /(^|;\s*)pfc_audit_session=[^;]+/.test(document.cookie);
+          // Only the JS-readable flag — the actual nonce is HttpOnly and we
+          // deliberately can't see it. Reading pfc_audit_mode_active=1 tells
+          // us we're in audit mode without exposing any secret to XSS.
+          && /(^|;\s*)pfc_audit_mode_active=1(?:;|$)/.test(document.cookie);
     } catch (_) { return false; }
   }
 

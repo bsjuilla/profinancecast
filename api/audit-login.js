@@ -19,15 +19,24 @@
 //
 // SECURITY POSTURE
 // - Token check is constant-time (no early-exit on first mismatched char).
-// - Cookie is HttpOnly=false (client JS must read it) but Secure + SameSite=Lax.
-// - 24h max age; auto-expires.
+// - Two cookies are set on success:
+//     * pfc_audit_session=<nonce>   HttpOnly  (server-only; no JS access)
+//     * pfc_audit_mode_active=1     JS-readable (carries NO secret)
+//   This split (added 2026-05-21 per security HIGH-1 finding) means any
+//   XSS that reads document.cookie sees only the "active" flag, never
+//   the nonce. The nonce is reserved for future server-side audit checks.
+// - 24h max age on both cookies; auto-expire.
+// - Two-step redirect on success to keep the token out of the Referer
+//   header sent to the homepage (security MED-5 finding):
+//     /api/audit-login?t=TOKEN  ->  /api/audit-login?_ok=1  ->  /
 // - Server logs every successful login + logout (console only — no PII).
 // - When env var unset, endpoint returns 503 NOT_CONFIGURED so a token
 //   sniff in the URL bar can't pretend the feature exists.
 
 export const config = { runtime: 'edge' };
 
-const COOKIE_NAME = 'pfc_audit_session';
+const COOKIE_NAME_NONCE  = 'pfc_audit_session';     // HttpOnly, server-only
+const COOKIE_NAME_ACTIVE = 'pfc_audit_mode_active'; // JS-readable flag, no secret
 const COOKIE_MAX_AGE_SEC = 24 * 60 * 60; // 24h
 
 function _safeEqual(a, b) {
@@ -48,9 +57,14 @@ function _safeEqual(a, b) {
   return diff === 0;
 }
 
-function _redirect(url, cookieHeader) {
+function _redirect(url, cookieHeaders) {
   const headers = new Headers({ 'Location': url, 'Cache-Control': 'no-store' });
-  if (cookieHeader) headers.append('Set-Cookie', cookieHeader);
+  // cookieHeaders may be a single string or an array — multiple Set-Cookie
+  // values must each be their own header line.
+  if (cookieHeaders) {
+    const arr = Array.isArray(cookieHeaders) ? cookieHeaders : [cookieHeaders];
+    for (const c of arr) headers.append('Set-Cookie', c);
+  }
   return new Response(null, { status: 302, headers });
 }
 
@@ -75,11 +89,19 @@ export default function handler(req) {
     return _json({ error: 'Audit mode not configured', code: 'NOT_CONFIGURED' }, 503);
   }
 
-  // Logout path — explicit clear, regardless of current token state.
+  // Logout path — clear BOTH cookies (nonce + active flag).
   if (url.searchParams.has('logout')) {
-    const clear = `${COOKIE_NAME}=; Path=/; Max-Age=0; Secure; SameSite=Lax`;
+    const clearNonce  = `${COOKIE_NAME_NONCE}=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax`;
+    const clearActive = `${COOKIE_NAME_ACTIVE}=; Path=/; Max-Age=0; Secure; SameSite=Lax`;
     console.log('[audit-login] logout');
-    return _redirect('/', clear);
+    return _redirect('/', [clearNonce, clearActive]);
+  }
+
+  // Step 2 of the two-step redirect: clean URL has no token, so the
+  // Referer header on the next request to / carries no secret. No work
+  // here — just hop to /.
+  if (url.searchParams.get('_ok') === '1') {
+    return _redirect('/', null);
   }
 
   const supplied = url.searchParams.get('t') || '';
@@ -89,15 +111,16 @@ export default function handler(req) {
     return _json({ error: 'Forbidden', code: 'FORBIDDEN' }, 403);
   }
 
-  // Token matched. Issue audit cookie. We use a server-generated nonce as
-  // the cookie value rather than the token itself — so even if the cookie
-  // leaks (browser dev tools / proxy log), it can't be replayed against
-  // this endpoint to re-enter audit mode.
+  // Token matched. Issue BOTH cookies. The server-generated nonce stays
+  // HttpOnly so JS (and any XSS payload) can't read it. The active flag
+  // is JS-readable but carries no secret — it's just a 1.
   const nonce = crypto.randomUUID();
-  const cookie = `${COOKIE_NAME}=${nonce}; Path=/; Max-Age=${COOKIE_MAX_AGE_SEC}; Secure; SameSite=Lax`;
+  const cookieNonce  = `${COOKIE_NAME_NONCE}=${nonce}; Path=/; Max-Age=${COOKIE_MAX_AGE_SEC}; HttpOnly; Secure; SameSite=Lax`;
+  const cookieActive = `${COOKIE_NAME_ACTIVE}=1; Path=/; Max-Age=${COOKIE_MAX_AGE_SEC}; Secure; SameSite=Lax`;
   console.log('[audit-login] success — nonce=' + nonce.slice(0, 8) + '...');
 
-  // Redirect to root after issuing the cookie so the URL bar no longer
-  // contains the secret token (history hygiene).
-  return _redirect('/', cookie);
+  // Step 1 of the two-step redirect: hop to /api/audit-login?_ok=1
+  // (clean URL, no token) so the URL bar / history / Referer header
+  // never carry the secret.
+  return _redirect('/api/audit-login?_ok=1', [cookieNonce, cookieActive]);
 }
