@@ -4,9 +4,10 @@ Single product, three tiers. No upsells beyond them.
 
 | Tier | Price | Sage AI | Scenarios | Notes |
 |---|---|---|---|---|
-| Free | $0 forever | — (Pro feature) | 1 saved | Full forecast, full debt strategy, full goals, cash-flow planner. No card. No bank password. |
-| Pro | $9 / month or $69 / year | 200 messages / month | Unlimited | Longer memory. Deeper analysis. Cancel any time. |
-| Founders Lifetime | $149 once | 200 messages / month | Unlimited | Lifetime Pro entitlement. Limited to 500 seats. |
+| Free | €0 forever | — (Pro feature) | 1 saved | Full forecast, full debt comparison, full goals, cash-flow model. No card. No bank password. |
+| Pro | €9 / month or €79 / year | 200 messages / month | Unlimited | Longer memory. Deeper analysis. Cancel any time. |
+| Premium | €19 / month or €169 / year | 500 messages / month | Unlimited | Higher Sage allowance + advanced reports. |
+| Founders Lifetime | €149 once | 200 messages / month | Unlimited | Lifetime Pro entitlement. Hard cap 100 seats. Expires day 30 of channel test. |
 
 > **Heads-up on renewal:** Pro is currently sold as an access pass — at the end of the period, you re-purchase manually from the billing page to extend. Auto-renewal is on the roadmap for Q2. Founders Lifetime is unaffected.
 
@@ -21,7 +22,7 @@ Single product, three tiers. No upsells beyond them.
 
 ## Pro tier — what Pro adds
 
-- Sage AI advisor — 200 messages a month
+- Sage AI assistant — 200 messages a month
 - Longer Sage conversational memory
 - Unlimited saved scenarios (Free is 1)
 - Deeper analysis on dashboard insights
