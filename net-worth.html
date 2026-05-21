@@ -182,6 +182,7 @@
   input[type=number]{-moz-appearance:textfield;appearance:textfield;}
 </style>
   <link rel="stylesheet" href="css/pfc-tokens.css">
+  <link rel="stylesheet" href="css/pfc-photos.css">
   <link rel="stylesheet" href="css/pfc-footer.css">
   <script src="js/pfc-export.js" defer></script>
   <!-- Supabase SDK + auth/storage/entitlements (must load before any inline script that uses them) -->
@@ -320,6 +321,15 @@
 
     <!-- EDITORIAL HERO -->
     <section class="nw-hero" aria-labelledby="nw-hero-headline">
+      <figure class="pfc-photo-figure">
+        <picture>
+          <source srcset="assets/img/photos/networth-archive-hero.webp" type="image/webp">
+          <img class="pfc-photo-hero" src="assets/img/photos/networth-archive-hero.webp"
+               alt="Three leather-bound ledgers stacked spines-facing-camera on walnut desk, gilt years readable — the archive made physical."
+               loading="lazy" decoding="async"
+               width="1672" height="941">
+        </picture>
+      </figure>
       <div class="nw-hero-eyebrow">The archive · Net worth</div>
       <h1 class="nw-hero-headline" id="nw-hero-headline">The story of your wealth, month by month.</h1>
       <p class="nw-hero-lede">

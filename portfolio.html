@@ -23,6 +23,7 @@
   <meta name="twitter:description" content="Pro feature — track your stock + crypto portfolio with live prices.">
 
   <link rel="stylesheet" href="css/pfc-tokens.css">
+  <link rel="stylesheet" href="css/pfc-photos.css">
   <link rel="stylesheet" href="css/pfc-footer.css">
 
 <style>
@@ -307,6 +308,15 @@
             </div>
           </div>
           <div id="pf-table-wrap">
+            <figure class="pfc-photo-figure">
+              <picture>
+                <source srcset="assets/img/photos/portfolio-holdings-eyebrow.webp" type="image/webp">
+                <img class="pfc-photo-eyebrow is-tall" src="assets/img/photos/portfolio-holdings-eyebrow.webp"
+                     alt="Row of antique paper share certificates fanned out on walnut desk — positions, period-correct."
+                     loading="lazy" decoding="async"
+                     width="2048" height="768">
+              </picture>
+            </figure>
             <table class="holdings-table" id="pf-table">
               <thead>
                 <tr>
@@ -353,6 +363,15 @@
     <!-- Empty state when Pro user has zero holdings -->
     <div class="card" id="pf-empty" style="display:none;">
       <div class="empty-state">
+        <figure class="pfc-photo-figure">
+          <picture>
+            <source srcset="assets/img/photos/portfolio-empty-vault.webp" type="image/webp">
+            <img class="pfc-photo-card" src="assets/img/photos/portfolio-empty-vault.webp"
+                 alt="Closed brass-bound deposit box on aged oak — the vault before anything goes in."
+                 loading="lazy" decoding="async"
+                 width="1448" height="1086">
+          </picture>
+        </figure>
         <strong>No holdings yet</strong>
         Add your first stock, ETF, or crypto using the form to start tracking live prices.
       </div>

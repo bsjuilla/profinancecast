@@ -72,6 +72,7 @@
   ::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:2px;}
 </style>
   <link rel="stylesheet" href="css/pfc-tokens.css">
+  <link rel="stylesheet" href="css/pfc-photos.css">
   <link rel="stylesheet" href="css/pfc-footer.css">
   <!-- Supabase SDK + auth/storage/entitlements (must load before any inline script that uses them) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -184,6 +185,15 @@
 
 <!-- MAIN -->
 <div class="main">
+  <figure class="pfc-photo-figure">
+    <picture>
+      <source srcset="assets/img/photos/journal-page-hero.webp" type="image/webp">
+      <img class="pfc-photo-hero" src="assets/img/photos/journal-page-hero.webp"
+           alt="Worn Moleskine open to a half-finished page beside a cobalt-edged teacup — private finance journaling."
+           loading="lazy" decoding="async"
+           width="1672" height="941">
+    </picture>
+  </figure>
   <div class="topbar">
     <div class="topbar-left">
       <div class="topbar-title">Journal</div>

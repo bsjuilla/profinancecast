@@ -165,6 +165,7 @@
   input[type=number]{-moz-appearance:textfield;appearance:textfield;}
 </style>
   <link rel="stylesheet" href="css/pfc-tokens.css">
+  <link rel="stylesheet" href="css/pfc-photos.css">
   <link rel="stylesheet" href="css/pfc-footer.css">
   <script src="js/pfc-export.js" defer></script>
   <!-- Supabase SDK + auth/storage/entitlements (must load before any inline script that uses them) -->
@@ -389,6 +390,15 @@
               <svg width="28" height="28" viewBox="0 0 28 28" fill="none"><path d="M14 4v12M8 10l6-6 6 6" stroke="#2BB67D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 20h20" stroke="#4A5A6E" stroke-width="1.5" stroke-linecap="round"/><path d="M7 24h14" stroke="#4A5A6E" stroke-width="1.5" stroke-linecap="round"/></svg>
             </div>
             <div style="font-family:var(--font-display);font-size:15px;font-weight:700;margin-bottom:6px;">No debts added yet</div>
+            <figure class="pfc-photo-figure">
+              <picture>
+                <source srcset="assets/img/photos/debt-empty-quiet.webp" type="image/webp">
+                <img class="pfc-photo-card" src="assets/img/photos/debt-empty-quiet.webp"
+                     alt="Snuffed wooden match beside an envelope stamped PAID — debts on the verge of being put to rest."
+                     loading="lazy" decoding="async"
+                     width="1448" height="1086">
+              </picture>
+            </figure>
             <div style="font-size:13px;color:var(--text3);margin-bottom:18px;">Add your loans, credit cards, and any other debts to see your optimised payoff plan.</div>
             <button onclick="openAddDebt()" class="topbar-btn primary" style="padding:9px 20px;">Add your first debt</button>
           </div>

@@ -133,6 +133,7 @@
   }
 </style>
   <link rel="stylesheet" href="css/pfc-tokens.css">
+  <link rel="stylesheet" href="css/pfc-photos.css">
   <link rel="stylesheet" href="css/pfc-app.css">
   <script src="js/pfc-export.js" defer></script>
   <!-- Supabase SDK + auth/storage/entitlements (must load before any inline script that uses them) -->
@@ -225,6 +226,16 @@
   <!-- STEP 1 — PERSONAL -->
   <div class="step-panel" id="step-1">
     <div class="step-eyebrow">About you</div>
+    <figure class="pfc-photo-figure">
+      <picture>
+        <source srcset="assets/img/photos/onboarding-welcome-vignette.webp" type="image/webp">
+        <img class="pfc-photo-card" src="assets/img/photos/onboarding-welcome-vignette.webp"
+             alt="Pressed olive sprig, two folded ivory letters, and a chestnut-wax-sealed envelope arranged on hand-torn cream linen paper — quiet welcome."
+             loading="lazy" decoding="async"
+             width="1448" height="1086">
+      </picture>
+      <figcaption>Open the books. The first page is the hardest.</figcaption>
+    </figure>
     <h2 class="step-heading">First, tell us about yourself</h2>
     <p class="step-sub">Just your name and currency. Age and employment status move to a progressive prompt on the dashboard — you can answer when it's relevant.</p>
     <div class="field">
@@ -461,6 +472,16 @@
       <div class="complete-icon">
         <svg width="30" height="30" viewBox="0 0 30 30" fill="none"><path d="M5 15l7 7L25 7" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </div>
+      <figure class="pfc-photo-figure">
+        <picture>
+          <source srcset="assets/img/photos/onboarding-complete-keepsake.webp" type="image/webp">
+          <img class="pfc-photo-square" src="assets/img/photos/onboarding-complete-keepsake.webp"
+               alt="Antique brass skeleton key resting beside a chestnut-wax-sealed vellum envelope on aged ivory paper — your account, sealed."
+               loading="lazy" decoding="async"
+               width="1254" height="1254">
+        </picture>
+        <figcaption>Welcome aboard. Your forecast is ready.</figcaption>
+      </figure>
       <h2 class="complete-heading" id="complete-name">You're all set!</h2>
       <p class="complete-sub">Your 12-month forecast is ready. Here's a snapshot of what Sage has calculated based on your numbers.</p>
       <div class="complete-metrics">

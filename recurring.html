@@ -181,6 +181,7 @@
   input[type=number]{-moz-appearance:textfield;appearance:textfield;}
 </style>
   <link rel="stylesheet" href="css/pfc-tokens.css">
+  <link rel="stylesheet" href="css/pfc-photos.css">
   <link rel="stylesheet" href="css/pfc-footer.css">
   <script src="js/pfc-export.js" defer></script>
   <!-- Supabase SDK + auth/storage/entitlements (must load before any inline script that uses them) -->
@@ -329,6 +330,15 @@
           <div style="font-size:13px;color:var(--text3);">or click to browse · Works with any bank export</div>
         </div>
         <div style="font-size:13px;color:var(--text2);line-height:1.7;max-width:520px;margin:0 auto;">
+          <figure class="pfc-photo-figure">
+            <picture>
+              <source srcset="assets/img/photos/recurring-csv-invitation.webp" type="image/webp">
+              <img class="pfc-photo-card" src="assets/img/photos/recurring-csv-invitation.webp"
+                   alt="Folded period bank statement held in a brass clip with pencil annotations — the artifact this feature ingests."
+                   loading="lazy" decoding="async"
+                   width="1448" height="1086">
+            </picture>
+          </figure>
           The detector automatically finds <strong style="color:var(--text)">every recurring charge</strong> in your statement —
           subscriptions, loan payments, insurance, utilities — and groups them by merchant.
           It then flags any that have <strong style="color:var(--amber)">increased in price</strong> so you always know when a company quietly raised your rate.

@@ -136,6 +136,7 @@
   ::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:2px;}
 </style>
   <link rel="stylesheet" href="../css/pfc-tokens.css">
+  <link rel="stylesheet" href="../css/pfc-photos.css">
   <link rel="stylesheet" href="../css/pfc-app.css">
   <link rel="stylesheet" href="../css/pfc-footer.css">
   <!-- Supabase SDK + auth/storage/entitlements (must load before any inline script that uses them) -->
@@ -309,6 +310,15 @@
 
       <div class="card" aria-live="polite">
         <span class="result-meta">Annual take-home</span>
+        <figure class="pfc-photo-figure">
+          <picture>
+            <source srcset="../assets/img/photos/takehome-result-coronation.webp" type="image/webp">
+            <img class="pfc-photo-square" src="../assets/img/photos/takehome-result-coronation.webp"
+                 alt="Banded stack of period banknotes on cream paper with brass paperclip — the actual money that lands."
+                 loading="lazy" decoding="async"
+                 width="1254" height="1254">
+          </picture>
+        </figure>
         <div class="result-hero" id="r-takehome">$0</div>
         <div class="result-sub">
           <div><span class="result-meta">Per month</span><span class="num" id="r-monthly">$0</span></div>

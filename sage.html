@@ -133,6 +133,7 @@
   @media(max-width:700px){.sidebar{display:none;} .input-area,.messages,.limit-wall{padding-left:16px;padding-right:16px;} .starters{grid-template-columns:1fr;}}
 </style>
   <link rel="stylesheet" href="css/pfc-tokens.css">
+  <link rel="stylesheet" href="css/pfc-photos.css">
   <link rel="stylesheet" href="css/pfc-footer.css">
   <script src="js/pfc-export.js" defer></script>
   <!-- Supabase SDK + auth/storage/entitlements (must load before any inline script that uses them) -->
@@ -276,6 +277,15 @@
     <div class="chat-col">
       <div class="messages" id="messages">
         <div class="welcome" id="welcome-screen">
+          <figure class="pfc-photo-figure">
+            <picture>
+              <source srcset="assets/img/photos/sage-welcome-portrait.webp" type="image/webp">
+              <img class="pfc-photo-square" src="assets/img/photos/sage-welcome-portrait.webp"
+                   alt="Brass-banded fountain pen laid across a leather-bound notebook on emerald velvet — Sage as patient counsel."
+                   loading="lazy" decoding="async"
+                   width="1254" height="1254">
+            </picture>
+          </figure>
           <div class="welcome-avatar">S</div>
           <h2>What can Sage forecast for you today?</h2>
           <p class="welcome-sub">Sage works from your real numbers — income, expenses, debt, goals, and your 12-month forecast. Ask anything; answers cite your data.</p>
@@ -317,6 +327,15 @@
       <div class="ctx-card" id="snapshot-card">
         <div class="ctx-title">Your financial snapshot</div>
         <div id="snapshot-empty" style="font-family:var(--font-body);font-size:13px;color:var(--text2);line-height:1.55;padding:4px 0;">
+          <figure class="pfc-photo-figure">
+            <picture>
+              <source srcset="assets/img/photos/sage-empty-context.webp" type="image/webp">
+              <img class="pfc-photo-card" src="assets/img/photos/sage-empty-context.webp"
+                   alt="Open blank ledger page with fountain pen across the right page — the page is receptive, not blank."
+                   loading="lazy" decoding="async"
+                   width="1536" height="1024">
+            </picture>
+          </figure>
           Your numbers aren't in yet — finish onboarding to give Sage context.
           <a href="onboarding.html" style="display:block;margin-top:8px;color:var(--teal);font-size:13px;">Continue onboarding →</a>
         </div>

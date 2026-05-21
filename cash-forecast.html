@@ -134,6 +134,7 @@
   .pfc-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:rgba(20,28,32,0.95);color:#fff;padding:10px 18px;border-radius:6px;font-size:13px;font-family:var(--font-body);box-shadow:0 4px 16px rgba(0,0,0,0.3);z-index:9999;border:1px solid rgba(255,255,255,0.1);}
 </style>
   <link rel="stylesheet" href="css/pfc-tokens.css">
+  <link rel="stylesheet" href="css/pfc-photos.css">
   <link rel="stylesheet" href="css/pfc-footer.css">
   <script src="js/pfc-export.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -278,6 +279,15 @@
 
 <main class="main">
   <div class="topbar">
+    <figure class="pfc-photo-figure">
+      <picture>
+        <source srcset="assets/img/photos/cashflow-tide-band.webp" type="image/webp">
+        <img class="pfc-photo-eyebrow is-tide" src="assets/img/photos/cashflow-tide-band.webp"
+             alt="Weathered limestone harbour-wall tide marks with brass mooring ring — money flowing in and out, measured."
+             loading="lazy" decoding="async"
+             width="2171" height="724">
+      </picture>
+    </figure>
     <div>
       <div class="tb-title">Cash forecast</div>
       <div class="tb-sub">Where this month's money flows — income in, expenses out, what's left.</div>

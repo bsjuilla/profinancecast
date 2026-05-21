@@ -394,6 +394,7 @@
   }
 </style>
   <link rel="stylesheet" href="css/pfc-tokens.css">
+  <link rel="stylesheet" href="css/pfc-photos.css">
   <link rel="stylesheet" href="css/pfc-footer.css">
   <link rel="stylesheet" href="css/pfc-app.css">
   <script src="js/pfc-export.js" defer></script>
@@ -728,6 +729,16 @@
          data-free-only is the standard convention used elsewhere in the
          app for Free-only UI elements. -->
     <div class="upgrade-banner" data-free-only style="display:none;">
+      <figure class="pfc-photo-figure">
+        <picture>
+          <source srcset="assets/img/photos/dashboard-upgrade-banner-flourish.webp" type="image/webp">
+          <img class="pfc-photo-square" src="assets/img/photos/dashboard-upgrade-banner-flourish.webp"
+               alt="A single antique gilded brass key on deep emerald velvet — what Pro unlocks."
+               loading="lazy" decoding="async"
+               width="1254" height="1254">
+        </picture>
+      </figure>
+            
       <div class="upgrade-text">
         <strong>You're on the Free plan — unlock your full financial picture</strong>
         Pro gives you 60 AI queries/month, multi-scenario planning, CSV import, and a completely ad-free experience.
@@ -736,6 +747,16 @@
     </div>
 
     <!-- TABS -->
+    <figure class="pfc-photo-figure">
+      <picture>
+        <source srcset="assets/img/photos/dashboard-masthead-band.webp" type="image/webp">
+        <img class="pfc-photo-eyebrow" src="assets/img/photos/dashboard-masthead-band.webp"
+             alt="Leather-bound ledger spine in profile on walnut desk, gilt-embossed roman numerals MCMLXII — the front page register for your dashboard."
+             loading="lazy" decoding="async"
+             width="2243" height="701">
+      </picture>
+    </figure>
+        
     <div class="tabs">
       <button class="tab active" onclick="setTab(this,'overview')">Overview</button>
       <button class="tab" onclick="setTab(this,'forecast')">Forecast</button>

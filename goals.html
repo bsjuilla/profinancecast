@@ -450,6 +450,7 @@
   @keyframes slideUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
 </style>
   <link rel="stylesheet" href="css/pfc-tokens.css">
+  <link rel="stylesheet" href="css/pfc-photos.css">
   <link rel="stylesheet" href="css/pfc-footer.css">
   <script src="js/pfc-export.js" defer></script>
   <!-- Supabase SDK + auth/storage/entitlements (must load before any inline script that uses them) -->
@@ -635,6 +636,15 @@
     </div>
 
     <!-- EMPTY STATE -->
+    <figure class="pfc-photo-figure">
+      <picture>
+        <source srcset="assets/img/photos/goals-empty-horizon.webp" type="image/webp">
+        <img class="pfc-photo-card" src="assets/img/photos/goals-empty-horizon.webp"
+             alt="Distant lighthouse seen through an arched Mediterranean window at dusk — what you walk toward."
+             loading="lazy" decoding="async"
+             width="1536" height="1024">
+      </picture>
+    </figure>
     <div class="empty-state" id="empty-state">
       <div class="empty-icon">
         <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="12" stroke="#2BB67D" stroke-width="1.5"/><circle cx="16" cy="16" r="5" stroke="#2BB67D" stroke-width="1.5"/><path d="M16 4v4M16 24v4M4 16h4M24 16h4" stroke="#2BB67D" stroke-width="1.5" stroke-linecap="round"/></svg>

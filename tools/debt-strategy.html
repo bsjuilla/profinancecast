@@ -156,6 +156,7 @@
   ::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:2px;}
 </style>
   <link rel="stylesheet" href="../css/pfc-tokens.css">
+  <link rel="stylesheet" href="../css/pfc-photos.css">
   <link rel="stylesheet" href="../css/pfc-app.css">
   <link rel="stylesheet" href="../css/pfc-footer.css">
   <!-- Supabase SDK + auth/storage/entitlements -->
@@ -323,6 +324,15 @@
 
     <!-- RESULTS -->
     <section class="results-grid" id="resultsGrid">
+      <figure class="pfc-photo-figure">
+        <picture>
+          <source srcset="../assets/img/photos/debt-strategy-vs-band.webp" type="image/webp">
+          <img class="pfc-photo-eyebrow is-cinema" src="../assets/img/photos/debt-strategy-vs-band.webp"
+               alt="Two stacks of stamped envelopes side by side on walnut desk, left stack taller — avalanche vs snowball, no illustration."
+               loading="lazy" decoding="async"
+               width="1659" height="948">
+        </picture>
+      </figure>
       <article class="card result-card" id="cardAvalanche" data-strategy="avalanche">
         <div class="strat-tag">Avalanche · highest APR first</div>
         <h3>Pays off in</h3>

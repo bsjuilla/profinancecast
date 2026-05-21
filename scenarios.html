@@ -580,6 +580,7 @@
   }
 </style>
   <link rel="stylesheet" href="css/pfc-tokens.css">
+  <link rel="stylesheet" href="css/pfc-photos.css">
   <link rel="stylesheet" href="css/pfc-footer.css">
   <script src="js/pfc-export.js" defer></script>
   <!-- Supabase SDK + auth/storage/entitlements (must load before any inline script that uses them) -->
@@ -702,6 +703,16 @@
 <main class="main">
 
   <!-- TOPBAR -->
+  <figure class="pfc-photo-figure">
+    <picture>
+      <source srcset="assets/img/photos/scenarios-page-hero.webp" type="image/webp">
+      <img class="pfc-photo-hero is-wide" src="assets/img/photos/scenarios-page-hero.webp"
+           alt="Antique mercury weather glass on polished marble with brass calibration ring — the instrument that measures possible futures."
+           loading="lazy" decoding="async"
+           width="1915" height="821">
+    </picture>
+  </figure>
+    
   <div class="topbar">
     <div class="topbar-left">
       <div class="topbar-title">Scenarios</div>
@@ -846,6 +857,15 @@
             <div class="card-title">Side-by-side comparison</div>
           </div>
           <div id="comparison-table-wrap">
+            <figure class="pfc-photo-figure">
+              <picture>
+                <source srcset="assets/img/photos/scenarios-empty-compass.webp" type="image/webp">
+                <img class="pfc-photo-card" src="assets/img/photos/scenarios-empty-compass.webp"
+                     alt="Antique brass navigation dividers mid-step across an aged nautical chart — measuring possible futures."
+                     loading="lazy" decoding="async"
+                     width="1536" height="1024">
+              </picture>
+            </figure>
             <div style="color:var(--text3);font-size:13px;">Add scenarios above to compare.</div>
           </div>
         </div>

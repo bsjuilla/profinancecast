@@ -224,6 +224,7 @@
      until a proper light-mode redesign of the grade card. */
 </style>
   <link rel="stylesheet" href="css/pfc-tokens.css">
+  <link rel="stylesheet" href="css/pfc-photos.css">
   <link rel="stylesheet" href="css/pfc-footer.css">
   <script src="js/pfc-export.js" defer></script>
   <!-- Supabase SDK + auth/storage/entitlements (must load before any inline script that uses them) -->
@@ -442,6 +443,16 @@
         <section class="rc-invitation" aria-labelledby="rc-invite-headline">
           <div class="eyebrow">Pro preview</div>
           <h2 id="rc-invite-headline" class="headline">Download and share your real report card with Pro.</h2>
+          <figure class="pfc-photo-figure">
+            <picture>
+              <source srcset="assets/img/photos/report-card-keepsake.webp" type="image/webp">
+              <img class="pfc-photo-portrait" src="assets/img/photos/report-card-keepsake.webp"
+                   alt="Framed letterpress merit certificate on aged ivory — the report card as an heirloom."
+                   loading="lazy" decoding="async"
+                   width="1122" height="1402">
+            </picture>
+          </figure>
+                      
           <p class="copy">The card above renders against your numbers. Pro removes the watermark, lets you download the PNG and post it anywhere, and unlocks the historical card archive so you can watch your grade move quarter to quarter.</p>
           <div class="cta-row">
             <a class="cta-primary" data-cta="pro-pill" href="billing.html?from=report-card">See Pro plans →</a>
