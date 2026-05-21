@@ -31,13 +31,19 @@ const COOKIE_NAME = 'pfc_audit_session';
 const COOKIE_MAX_AGE_SEC = 24 * 60 * 60; // 24h
 
 function _safeEqual(a, b) {
-  // Constant-time string equality — same length AND all chars match.
-  // String.charCodeAt diffs accumulated bitwise; resulting OR is 0 iff equal.
+  // Constant-time string equality.
+  //
+  // The previous version had `if (a.length !== b.length) return false` which
+  // leaks the token length via early-exit timing — a textbook side-channel.
+  // Fixed by accumulating the length-mismatch into `diff` and always iterating
+  // over max(a, b). `charCodeAt(i) || 0` returns 0 for out-of-bounds chars so
+  // the XOR loop produces non-zero `diff` for unequal lengths AND for unequal
+  // chars, without branching on length.
   if (typeof a !== 'string' || typeof b !== 'string') return false;
-  if (a.length !== b.length) return false;
-  let diff = 0;
-  for (let i = 0; i < a.length; i++) {
-    diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  const len = Math.max(a.length, b.length);
+  let diff = a.length ^ b.length;
+  for (let i = 0; i < len; i++) {
+    diff |= (a.charCodeAt(i) || 0) ^ (b.charCodeAt(i) || 0);
   }
   return diff === 0;
 }

@@ -63,8 +63,17 @@
   // dependency) so the data is visible before PFCStorage's async warm-up.
   try {
     const json = JSON.stringify(SAMPLE_USER);
-    localStorage.setItem('pfc_user_sync', json);
-    localStorage.setItem('pfc_cash_forecast_user', json);
+    // GUARD: only seed the LS sync mirrors if they're empty. A logged-in user
+    // who accidentally hits /api/audit-login would otherwise have their real
+    // sync mirror stomped by SAMPLE_USER until PFCStorage corrects the race
+    // (visible as a brief fake-data flash on slow connections). Security
+    // finding MED-4 from the 2026-05-21 audit.
+    if (!localStorage.getItem('pfc_user_sync')) {
+      localStorage.setItem('pfc_user_sync', json);
+    }
+    if (!localStorage.getItem('pfc_cash_forecast_user')) {
+      localStorage.setItem('pfc_cash_forecast_user', json);
+    }
     // Also seed a fake auth session so anything that calls
     // PFCAuth.getSession() gets a plausible response.
     window.__PFC_AUDIT_SAMPLE_USER = SAMPLE_USER;

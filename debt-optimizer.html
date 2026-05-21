@@ -285,7 +285,7 @@
   <div class="topbar">
     <div class="topbar-left">
       <div class="topbar-title">Debt Payoff Optimizer</div>
-      <div class="topbar-sub" id="topbar-sub">Add your debts below to get started</div>
+      <div class="topbar-sub" id="topbar-sub">Enter each obligation — the optimizer orders them by cost.</div>
     </div>
     <div class="topbar-right">
       <a href="dashboard.html" class="topbar-btn">← Dashboard</a>
@@ -333,12 +333,12 @@
         <div class="card-title" style="margin-bottom:14px;">Payoff strategy</div>
         <div class="strategy-row" style="margin-bottom:0;">
           <div class="strat-btn active" id="strat-avalanche" onclick="setStrategy('avalanche')">
-            <div class="strat-badge" style="background:rgba(224,82,82,0.12);color:var(--red);">🔥 Saves most money</div>
+            <div class="strat-badge" style="background:rgba(212,175,106,0.12);color:var(--gold);font-family:var(--font-mono,'JetBrains Mono',monospace);font-size:10.5px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;">Optimal</div>
             <div class="strat-title">Avalanche</div>
             <div class="strat-desc">Pay highest interest rate first. Minimises total interest paid. Mathematically optimal.</div>
           </div>
           <div class="strat-btn" id="strat-snowball" onclick="setStrategy('snowball')">
-            <div class="strat-badge" style="background:rgba(59,130,246,0.12);color:var(--blue);">⚡ Most motivating</div>
+            <div class="strat-badge" style="background:rgba(43,182,125,0.12);color:var(--teal);font-family:var(--font-mono,'JetBrains Mono',monospace);font-size:10.5px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;">Proven</div>
             <div class="strat-title">Snowball</div>
             <div class="strat-desc">Pay smallest balance first. Quick wins build momentum. Proven to improve completion rates.</div>
           </div>
@@ -389,7 +389,7 @@
             <div class="empty-debts-icon">
               <svg width="28" height="28" viewBox="0 0 28 28" fill="none"><path d="M14 4v12M8 10l6-6 6 6" stroke="#2BB67D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 20h20" stroke="#4A5A6E" stroke-width="1.5" stroke-linecap="round"/><path d="M7 24h14" stroke="#4A5A6E" stroke-width="1.5" stroke-linecap="round"/></svg>
             </div>
-            <div style="font-family:var(--font-display);font-size:15px;font-weight:700;margin-bottom:6px;">No debts added yet</div>
+            <div style="font-family:var(--font-display);font-size:15px;font-weight:700;margin-bottom:6px;">The ledger is clear.</div>
             <figure class="pfc-photo-figure">
               <picture>
                 <source srcset="assets/img/photos/debt-empty-quiet.webp" type="image/webp">
@@ -433,8 +433,8 @@
           <thead>
             <tr>
               <th>Metric</th>
-              <th>Avalanche 🔥</th>
-              <th>Snowball ⚡</th>
+              <th>Avalanche</th>
+              <th>Snowball</th>
             </tr>
           </thead>
           <tbody id="compare-body">

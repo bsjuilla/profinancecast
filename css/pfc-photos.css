@@ -72,7 +72,7 @@ img.pfc-photo-square {
 /* Thin band — drawer / archive / certificate-strip. Eyebrow-sized,
  * never a billboard. */
 .pfc-photo-eyebrow { aspect-ratio: 16 / 5; max-width: 640px; margin: 0 auto 18px; }
-.pfc-photo-eyebrow.is-tall { aspect-ratio: 16 / 6; }
+.pfc-photo-eyebrow.is-tall { aspect-ratio: 16 / 6; max-width: 640px; }
 .pfc-photo-eyebrow.is-cinema { aspect-ratio: 21 / 6; max-width: 720px; }
 .pfc-photo-eyebrow.is-tide { aspect-ratio: 21 / 7; max-width: 720px; }
 /* 4:3 — fits inside cards (Pro empty-states, blog hero) */
@@ -85,6 +85,12 @@ img.pfc-photo-square {
 .pfc-photo-square.sm { max-width: 96px; }
 .pfc-photo-square.md { max-width: 160px; }
 
+/* Child-img rule for the wrapper-div pattern (index.html `.pfc-photo-band`
+ * sits on a wrapper `<div>` with an `<img>` child). The element-selector
+ * rule above (`img.pfc-photo-*`) already wins for the direct-img pattern
+ * via !important. height: auto here (not 100%) so future wrapper-div
+ * usage of .pfc-photo-hero, etc. doesn't collapse to height:0 when the
+ * parent has no explicit height (it relies on aspect-ratio). */
 .pfc-photo-band img,
 .pfc-photo-hero img,
 .pfc-photo-eyebrow img,
@@ -93,7 +99,7 @@ img.pfc-photo-square {
 .pfc-photo-square img {
   display: block;
   width: 100%;
-  height: 100%;
+  height: auto;
   object-fit: cover;
   object-position: center;
 }
