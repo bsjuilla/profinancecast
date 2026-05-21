@@ -1,4 +1,5 @@
 // api/audit-login.js — Edge runtime audit-bypass cookie issuer.
+// rev: 2026-05-21-split-cookie
 //
 // PURPOSE
 // Lets the audit / dev agent access Pro-gated pages WITHOUT typing the
