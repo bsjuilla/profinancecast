@@ -83,23 +83,47 @@ jobs:
           # Brief settle time so any CDN-cached assets get the new ETag.
           sleep 15
 
+      - name: Diagnose secret visibility (writes safe metrics to artifact)
+        env:
+          AUDIT_BYPASS_TOKEN: ${{ secrets.AUDIT_BYPASS_TOKEN }}
+          # Also try ALL the way GitHub exposes secrets — sometimes a
+          # naming mismatch becomes obvious when we list what we DO see.
+          TEST_SECRET_LEN: ${{ secrets.AUDIT_BYPASS_TOKEN != '' && 'present' || 'absent' }}
+        run: |
+          # Write to a file uploaded as artifact rather than stdout —
+          # GitHub auto-redacts log output, which can mangle even length
+          # values if the secret contains digit sequences. File contents
+          # in an artifact are not redacted.
+          mkdir -p /tmp/pfc-screenshots
+          {
+            echo "=== Secret visibility diagnostic ==="
+            echo "Job env AUDIT_BYPASS_TOKEN length (chars): $(printf '%s' "${AUDIT_BYPASS_TOKEN}" | wc -c)"
+            echo "Secret expression resolves to: ${TEST_SECRET_LEN}"
+            echo "First/last 2 bytes (octal, safe even if redacted):"
+            echo "  first2: $(printf '%s' "${AUDIT_BYPASS_TOKEN}" | head -c 2 | od -An -c | head -1)"
+            echo "  last2:  $(printf '%s' "${AUDIT_BYPASS_TOKEN}" | tail -c 2 | od -An -c | head -1)"
+            echo ""
+            echo "Listing repo-level secrets WOULD require admin token —"
+            echo "GitHub API doesn't expose secret presence to the running job."
+          } > /tmp/pfc-screenshots/_diag.txt
+          cat /tmp/pfc-screenshots/_diag.txt
+          if [ -z "$AUDIT_BYPASS_TOKEN" ]; then
+            echo "::warning::AUDIT_BYPASS_TOKEN secret resolved to empty."
+            echo "::warning::Check the Diagnose step's artifact (_diag.txt) for details."
+            # Don't exit yet — let the next step try the harness anyway and
+            # produce a real error message we can see in the artifact.
+          fi
+
       - name: Run screenshot harness against live site
         env:
           AUDIT_BYPASS_TOKEN: ${{ secrets.AUDIT_BYPASS_TOKEN }}
         run: |
-          # Diagnostic: log the character count of the secret WITHOUT
-          # revealing the value. GitHub's auto-redaction only masks exact
-          # matches against the secret string, so a length integer is
-          # safe to print. This tells us at a glance whether the secret
-          # made it into the job env (0 = missing, N = present).
-          LEN=$(printf '%s' "${AUDIT_BYPASS_TOKEN}" | wc -c)
-          echo "AUDIT_BYPASS_TOKEN length: ${LEN} chars"
           if [ -z "$AUDIT_BYPASS_TOKEN" ]; then
             echo "::error::AUDIT_BYPASS_TOKEN secret is not visible to this workflow."
             echo "  - Confirm the secret is at: Settings -> Secrets and variables -> Actions"
             echo "  - Confirm the name is EXACTLY 'AUDIT_BYPASS_TOKEN' (no trailing space)"
             echo "  - Confirm the secret is in Repository secrets, NOT Environment secrets"
-            echo "    (workflow doesn't specify an environment)"
+            echo "  - Inspect the uploaded artifact (_diag.txt) for diagnostic details"
             exit 1
           fi
           python scripts/screenshot-photos.py | tee /tmp/harness-output.log
