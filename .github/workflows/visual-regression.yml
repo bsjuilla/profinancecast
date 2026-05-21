@@ -46,7 +46,9 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-          cache: 'pip'
+          # `cache: 'pip'` removed — it requires a requirements.txt or
+          # similar manifest at the repo root, which a static site
+          # doesn't have. Install is ~30s, acceptable without cache.
 
       - name: Install Playwright + browser
         run: |
