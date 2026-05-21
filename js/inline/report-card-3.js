@@ -81,6 +81,18 @@ function renderCard(d){
 
   document.getElementById('rc-grade-letter').textContent=g.l;
   document.getElementById('rc-grade-letter').style.color=g.color;
+
+  // Grade-conditional hero photo: A/B/C show the merit certificate (the
+  // default editorial keepsake); D/F swap in the overdue-stamp still-life
+  // so the user's eye lands on a photo whose mood matches their score.
+  // Brief origin: docs/superpowers/audits/2026-05-21-prompts-a11y-perf.md (E3 + E4 slots).
+  const low = (g.l === 'D' || g.l === 'F');
+  const merit = document.getElementById('rc-photo-merit');
+  const overdue = document.getElementById('rc-photo-overdue');
+  if (merit && overdue) {
+    merit.hidden = low;
+    overdue.hidden = !low;
+  }
   document.getElementById('rc-grade-score').textContent=d.total+' / 100';
   document.getElementById('rc-grade-label').textContent=g.label;
   document.getElementById('rc-grade-label').style.color=g.color;

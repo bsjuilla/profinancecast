@@ -360,13 +360,28 @@
   </div>
 
   <div class="content">
-    <figure class="pfc-photo-figure">
+    <!-- Hero photo is grade-conditional, set by js/inline/report-card-3.js:
+         * A / B / C grades       -> merit certificate (letterpress, gilt seal)
+         * D / F grades           -> overdue stamp (oxblood "OVERDUE", desk-bell)
+         Both photos are in the DOM; one carries [hidden] until the renderer
+         picks the right one. This avoids a layout reflow / lazy-load fetch
+         on grade transition. -->
+    <figure class="pfc-photo-figure" id="rc-photo-merit">
       <picture>
         <source srcset="assets/img/photos/report-card-merit-certificate.webp" type="image/webp">
         <img class="pfc-photo-hero" src="assets/img/photos/report-card-merit-certificate.webp"
              alt="Heirloom letterpress merit certificate on aged ivory linen with gilded olive-wreath border and chestnut wax seal — the report card as an heirloom."
              loading="lazy" decoding="async"
              width="1672" height="941">
+      </picture>
+    </figure>
+    <figure class="pfc-photo-figure" id="rc-photo-overdue" hidden>
+      <picture>
+        <source srcset="assets/img/photos/report-card-overdue-stamp.webp" type="image/webp">
+        <img class="pfc-photo-card" src="assets/img/photos/report-card-overdue-stamp.webp"
+             alt="Aged cream envelope on walnut desk stamped diagonally with oxblood-red OVERDUE letterpress, brass desk-bell behind — the score that needs attention."
+             loading="lazy" decoding="async"
+             width="1448" height="1086">
       </picture>
     </figure>
     <div class="page-layout">

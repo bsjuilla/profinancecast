@@ -40,6 +40,31 @@ const COOKIE_NAME_NONCE  = 'pfc_audit_session';     // HttpOnly, server-only
 const COOKIE_NAME_ACTIVE = 'pfc_audit_mode_active'; // JS-readable flag, no secret
 const COOKIE_MAX_AGE_SEC = 24 * 60 * 60; // 24h
 
+// Per-isolate rate-limit: 5 requests per IP per 5-minute window.
+// Edge functions execute in isolated v8 contexts; this map only survives
+// within a single isolate, so a determined attacker hitting many edge
+// nodes can amortize across them. But the realistic threat is a single
+// scripted brute-force hitting the same node — that this catches cleanly.
+// Persistent KV-backed limiting is queued for the next sprint (synthesis
+// queue Wave-2 #22). Defense-in-depth, not the only line.
+const RL_LIMIT = 5;
+const RL_WINDOW_MS = 5 * 60 * 1000;
+const _rlMap = new Map(); // ip -> { count, resetAt }
+
+function _rateLimit(ip) {
+  const now = Date.now();
+  const entry = _rlMap.get(ip);
+  if (!entry || entry.resetAt < now) {
+    _rlMap.set(ip, { count: 1, resetAt: now + RL_WINDOW_MS });
+    return { ok: true, remaining: RL_LIMIT - 1, retryAfterSec: 0 };
+  }
+  if (entry.count >= RL_LIMIT) {
+    return { ok: false, remaining: 0, retryAfterSec: Math.ceil((entry.resetAt - now) / 1000) };
+  }
+  entry.count += 1;
+  return { ok: true, remaining: RL_LIMIT - entry.count, retryAfterSec: 0 };
+}
+
 function _safeEqual(a, b) {
   // Constant-time string equality.
   //
@@ -103,6 +128,22 @@ export default function handler(req) {
   // here — just hop to /.
   if (url.searchParams.get('_ok') === '1') {
     return _redirect('/', null);
+  }
+
+  // Apply rate-limit BEFORE the constant-time compare so an attacker can't
+  // mount a high-throughput brute force. Use the Vercel-provided real-IP
+  // header when present (X-Forwarded-For, X-Real-IP), fall back to a
+  // catch-all bucket if no IP is available (still limits in aggregate).
+  const ip = (req.headers.get('x-forwarded-for') || '').split(',')[0].trim()
+          || req.headers.get('x-real-ip')
+          || 'unknown';
+  const rl = _rateLimit(ip);
+  if (!rl.ok) {
+    return _json(
+      { error: 'Too many attempts', code: 'RATE_LIMITED' },
+      429,
+      { 'Retry-After': String(rl.retryAfterSec) }
+    );
   }
 
   const supplied = url.searchParams.get('t') || '';
