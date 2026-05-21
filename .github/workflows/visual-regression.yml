@@ -1,0 +1,110 @@
+name: Visual-regression smoke test
+
+# Runs scripts/screenshot-photos.py against the live profinancecast.com
+# deploy after every push to main. The harness already encodes the
+# acceptance criteria: every <figure class="pfc-photo-figure"> must
+# render at sensible dimensions (no >1100px-wide elements, no
+# off-viewport positioning) on a 1440x900 viewport. Zero flags = pass.
+#
+# Why post-deploy rather than pre-deploy: Vercel deploys static sites
+# from git automatically, so by the time this workflow starts, the new
+# code is in the build queue. We poll until Vercel has shipped, then
+# screenshot. If a regression sneaks in, the workflow fails and the
+# screenshots are uploaded as a downloadable artifact for inspection.
+#
+# Future enhancement (deferred): swap "flags-only" pass criteria for
+# pixelmatch-against-baseline so visual regressions (color shifts,
+# typography breaks) are caught even when geometry is fine. That
+# requires committing baseline screenshots — its own PR.
+#
+# Origin: synthesis Wave-2 #20 (VPE's recommended "ONE refactor").
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:  # allow manual re-runs from the Actions tab
+
+permissions:
+  contents: read  # least privilege — workflow only reads repo to checkout
+
+concurrency:
+  # Coalesce consecutive pushes — a flurry of commits only runs the last one.
+  group: visual-regression-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    name: Screenshot 27 pages + check geometry
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Playwright + browser
+        run: |
+          python -m pip install --upgrade pip
+          pip install playwright
+          # `--with-deps` installs the OS packages (libnss, libxkbcommon, etc.)
+          # that Playwright needs on Ubuntu runners.
+          python -m playwright install --with-deps chromium
+
+      - name: Wait for Vercel deploy of this commit
+        # Vercel auto-deploys on push; the production alias usually lands
+        # within 30-60s for a static site. Poll the Edge function — its
+        # 302 response indicates the latest api/audit-login.js is live,
+        # which means static assets behind it have also propagated.
+        # Deadline: 5 minutes (matches Vercel's typical worst-case).
+        run: |
+          set -e
+          DEADLINE=$(($(date +%s) + 300))
+          ATTEMPT=0
+          until [ "$(curl -s -o /dev/null -w '%{http_code}' \
+                       https://www.profinancecast.com/api/audit-login?_ok=1)" = "302" ]
+          do
+            ATTEMPT=$((ATTEMPT + 1))
+            if [ $(date +%s) -ge $DEADLINE ]; then
+              echo "::error::Vercel deploy didn't go live within 5 minutes."
+              exit 1
+            fi
+            echo "  attempt $ATTEMPT — Edge function not yet live, sleeping 10s..."
+            sleep 10
+          done
+          echo "Edge function responding 302 — deploy live."
+          # Brief settle time so any CDN-cached assets get the new ETag.
+          sleep 15
+
+      - name: Run screenshot harness against live site
+        env:
+          AUDIT_BYPASS_TOKEN: ${{ secrets.AUDIT_BYPASS_TOKEN }}
+        run: |
+          if [ -z "$AUDIT_BYPASS_TOKEN" ]; then
+            echo "::error::AUDIT_BYPASS_TOKEN secret is not set in repo settings."
+            echo "Add at: Settings -> Secrets and variables -> Actions -> Repository secrets"
+            exit 1
+          fi
+          python scripts/screenshot-photos.py | tee /tmp/harness-output.log
+          # The harness prints "Total flags: N" at the end. Fail unless N=0.
+          if ! grep -qE "^Total flags: 0$" /tmp/harness-output.log; then
+            echo "::error::Visual regression detected. See uploaded screenshots."
+            exit 1
+          fi
+          echo "::notice::All 27 pages passed geometry checks."
+
+      - name: Upload screenshots as artifact
+        if: always()  # upload even on failure so we can inspect what broke
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-regression-screenshots-${{ github.sha }}
+          path: |
+            /tmp/pfc-screenshots/*.png
+            /tmp/pfc-screenshots/_report.json
+          retention-days: 14
+          if-no-files-found: warn
