@@ -1,0 +1,892 @@
+// ── STATE ──
+let USER = {};
+let activeRaisePct = 10;
+let lifetimeChart = null;
+
+// ── MARKET RATE DATABASE ──
+// Multipliers relative to a $50k baseline, adjusted by exp/country/industry/company
+const INDUSTRY_MULT = {
+  tech:1.45, finance:1.35, consulting:1.3, legal:1.3, engineering:1.2,
+  healthcare:1.15, design:1.05, marketing:1.0, hr:0.95, education:0.85,
+  hospitality:0.8, retail:0.8, other:1.0,
+};
+// COUNTRY_MULT — converts US median (USD) to LOCAL currency equivalents for
+// roles that don't have explicit per-country medians in PFC_WAGES_BY_COUNTRY.
+//
+// These multipliers were RECALIBRATED in May 2026 via regression against
+// the 31-point tier-1 per-country dataset (national statistical office
+// medians for the highest-traffic roles across GB / FR / DE / CA / AU / SG /
+// IE). Method: for each country, compute the ratio of (per-country wage in
+// local currency / US median in USD) for every SOC code with per-country
+// data, then take the median ratio across all SOCs. This gives a robust
+// central tendency that survives outliers in any single occupation.
+//
+// Pre-recalibration multipliers were set during the formula-baseline era
+// (when EVERY country wage was derived from $50k × multiplier) and were
+// systematically too generous for GB/FR/DE (because the formula was built
+// to produce reasonable-looking USD-equivalents, not local-currency medians).
+//
+// Markets without per-country tier-1 data (ZA, MU, IN, AE, NG, KE, GH, BR,
+// PH) keep their original PPP-adjusted approximations.
+const COUNTRY_MULT = {
+  US: 1.00,
+  // Recalibrated against the 31-point per-country dataset (May 2026):
+  GB: 0.47,   // was 0.82 — ONS ASHE median ratios across 31 SOCs
+  IE: 0.65,   // NEW entry — CSO Earnings Survey median ratios
+  FR: 0.48,   // was 0.72 — Insee/Apec median ratios
+  DE: 0.62,   // was 0.78 — Destatis Verdienste median ratios
+  CA: 0.89,   // was 0.85 — Statistics Canada LFS median ratios (CAD)
+  AU: 1.07,   // was 0.88 — ABS Employee Earnings median ratios (AUD)
+  SG: 0.85,   // was 0.80 — MOM Occupational Wages median ratios (SGD)
+  // Markets without tier-1 per-country data — PPP-adjusted approximations:
+  AE: 0.75, ZA: 0.35, MU: 0.28, IN: 0.22, NG: 0.25, KE: 0.22, GH: 0.20, BR: 0.32, PH: 0.25,
+};
+const COMPANY_MULT = { startup:0.9, small:0.95, mid:1.0, large:1.1, enterprise:1.18 };
+const EXP_MULT = (y) => {
+  if (y <= 1)  return 0.72;
+  if (y <= 3)  return 0.88;
+  if (y <= 6)  return 1.0;
+  if (y <= 10) return 1.18;
+  if (y <= 15) return 1.35;
+  return 1.5;
+};
+
+// Seniority multiplier inferred from the role text. Real titles carry signal
+// that a flat industry × country × company × experience formula misses (a
+// "Director of Engineering" earns 2× a "Junior Engineer" in the same industry
+// and country). Patterns are matched against the lowercased role string in
+// priority order — first match wins.
+const SENIORITY_PATTERNS = [
+  { re: /\b(chief|c[eo]o|cfo|cto|cpo|cmo)\b/, mult: 2.5,  label: 'C-suite' },
+  { re: /\b(vp|vice[\s-]?president)\b/,        mult: 2.0,  label: 'VP' },
+  { re: /\bhead of\b/,                         mult: 1.8,  label: 'Head of' },
+  { re: /\b(director)\b/,                      mult: 1.65, label: 'Director' },
+  { re: /\b(principal|staff)\b/,               mult: 1.5,  label: 'Principal / Staff' },
+  { re: /\b(manager|lead)\b/,                  mult: 1.35, label: 'Manager / Lead' },
+  { re: /\b(senior|sr\.?)\b/,                  mult: 1.25, label: 'Senior' },
+  { re: /\b(junior|jr\.?|associate|entry)\b/,  mult: 0.78, label: 'Junior / Associate' },
+  { re: /\b(intern|trainee|apprentice|graduate|grad)\b/, mult: 0.5, label: 'Intern / Trainee' },
+];
+function getSeniority(roleText) {
+  const t = (roleText || '').toLowerCase();
+  for (const p of SENIORITY_PATTERNS) {
+    if (p.re.test(t)) return { mult: p.mult, label: p.label };
+  }
+  return { mult: 1.0, label: 'Mid-level' };
+}
+
+function getMarketRange(salary) {
+  const role     = (document.getElementById('i-role').value || '').trim();
+  const industry = document.getElementById('i-industry').value;
+  const country  = document.getElementById('i-country').value;
+  const company  = document.getElementById('i-company').value;
+  const exp      = parseFloat(document.getElementById('i-exp').value) || 3;
+
+  const seniority = getSeniority(role);
+
+  // Try to anchor the band on a REAL BLS-sourced US median for the matched role.
+  // If found, multiply by COUNTRY_MULT (PPP-style adjustment) + COMPANY_MULT +
+  // a smaller EXP_MULT (because seniority keywords already shifted the band
+  // through getSeniority). Falls back to the original formula when no match.
+  let median, source, roleMatched;
+  const match = (window.PFCSalaryRoles && window.PFCSalaryRoles.findRoleMatch)
+    ? window.PFCSalaryRoles.findRoleMatch(role)
+    : null;
+
+  if (match && match.role && match.role.usMedian > 0) {
+    // Real-data path
+    roleMatched = match.role.title;
+    source = 'real';
+    // Prefer per-country median when available (sourced from each country's
+    // national statistical office, in that country's local currency). Falls
+    // back to US median × COUNTRY_MULT for roles outside the curated
+    // per-country table.
+    const perCountry = (window.PFCSalaryRoles && window.PFCSalaryRoles.getCountryWage)
+      ? window.PFCSalaryRoles.getCountryWage(match.role.soc, country)
+      : null;
+    const countryBase = (perCountry != null)
+      ? perCountry
+      : match.role.usMedian * (COUNTRY_MULT[country] || 0.5);
+    // Track whether this was a per-country hit (for the badge text).
+    source = (perCountry != null) ? 'real-country' : 'real';
+    // Seniority + experience + industry shims apply on top of the role anchor.
+    // "Senior X" should land above base "X" median; junior should land below.
+    const seniorityShim = seniority.mult >= 1.2 ? (seniority.mult * 0.85 + 0.15)
+                       : seniority.mult <= 0.8 ? (seniority.mult * 0.85 + 0.15)
+                       : 1.0;
+    const expShim = exp <= 1 ? 0.85 : exp <= 3 ? 0.95 : exp <= 8 ? 1.0 : 1.08;
+    // Industry shim: per-country median already averages across industries,
+    // so the full INDUSTRY_MULT swing (0.80–1.45 in the formula path) would
+    // double-count. We dampen the deviation from 1.0 to 40% of its formula
+    // value — a Software Developer in Healthcare lands ~6% below the role
+    // median (instead of -15%), and in Finance/Consulting ~14% above
+    // (instead of +30%). This captures real within-role industry variance
+    // without overpowering the role anchor.
+    const rawIndustryMult = INDUSTRY_MULT[industry] || 1;
+    const industryShim = 1 + (rawIndustryMult - 1) * 0.4;
+    median = countryBase
+      * (COMPANY_MULT[company] || 1)
+      * expShim
+      * seniorityShim
+      * industryShim;
+  } else {
+    // Formula fallback — same baseline as before the BLS taxonomy was added.
+    roleMatched = null;
+    source = 'estimate';
+    const base = 50000;
+    median = base
+      * (INDUSTRY_MULT[industry] || 1)
+      * (COUNTRY_MULT[country] || 0.5)
+      * (COMPANY_MULT[company] || 1)
+      * EXP_MULT(exp)
+      * seniority.mult;
+  }
+
+  // Spread depends on seniority — junior bands are narrow, senior bands are wide
+  // (a junior dev's pay sits within ±15% of median; a director's pay can range
+  // ±35% depending on company stage and equity comp). Real-data bands are
+  // slightly tighter because we have a stronger anchor.
+  const baseSpread = seniority.mult >= 1.5 ? 0.35 : (seniority.mult >= 1.2 ? 0.28 : 0.18);
+  const spread = source === 'real' ? baseSpread * 0.9 : baseSpread;
+
+  return {
+    low:    Math.round(median * (1 - spread)),
+    median: Math.round(median),
+    high:   Math.round(median * (1 + spread)),
+    seniority: seniority.label,
+    source: source,            // 'real' or 'estimate'
+    roleMatched: roleMatched,  // canonical title when real, null when estimate
+  };
+}
+
+// ── INIT ──
+// Map browser locale → the best-matching country option in our dropdown. The
+// dropdown's first <option> is MU which became a silent default for non-MU
+// visitors. With this mapping a US visitor lands on US, a UK visitor on GB,
+// etc. Falls back to MU only if neither the country nor language part of the
+// locale matches any supported region — which is also fine because the user
+// can change it.
+const SUPPORTED_COUNTRIES = ['MU','US','GB','FR','DE','ZA','IN','AU','CA','SG','AE','NG','KE','GH','BR','PH'];
+const LANG_TO_COUNTRY = {
+  'en': 'US', 'fr': 'FR', 'de': 'DE', 'pt': 'BR', 'tl': 'PH', 'fil': 'PH',
+  'sw': 'KE', 'af': 'ZA', 'zu': 'ZA', 'ar': 'AE', 'hi': 'IN', 'ta': 'IN',
+};
+function detectCountryFromLocale() {
+  try {
+    const langs = (navigator.languages && navigator.languages.length)
+      ? navigator.languages : [navigator.language || 'en-US'];
+    for (const tag of langs) {
+      if (!tag) continue;
+      const parts = tag.split('-');
+      const region = (parts[1] || '').toUpperCase();
+      if (region && SUPPORTED_COUNTRIES.indexOf(region) !== -1) return region;
+    }
+    // Region didn't match — try language part
+    for (const tag of langs) {
+      const lang = (tag.split('-')[0] || '').toLowerCase();
+      if (LANG_TO_COUNTRY[lang]) return LANG_TO_COUNTRY[lang];
+    }
+  } catch (_) {}
+  return 'US';
+}
+
+// Populate the role autocomplete datalist from the BLS-sourced taxonomy.
+// Browser-native <datalist> handles type-to-filter; we just have to seed it
+// with all canonical titles once at init.
+function populateRoleDatalist() {
+  const dl = document.getElementById('role-suggestions');
+  if (!dl || !window.PFCSalaryRoles || !window.PFCSalaryRoles.getAllTitlesForDatalist) return;
+  const titles = window.PFCSalaryRoles.getAllTitlesForDatalist();
+  dl.innerHTML = titles.map(t => '<option value="' + t.replace(/"/g, '&quot;') + '"></option>').join('');
+}
+
+function init() {
+  try { USER = (typeof PFCUser !== 'undefined') ? PFCUser.get() : (PFCStorage.getJSON('user') || {}); } catch(e) { USER = {}; }
+  const sym = USER.currency || '$';
+  ['sym-label','sym-custom','sym-offer'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = sym;
+  });
+  populateRoleDatalist();
+  // Set the country dropdown to match the browser's locale on first load.
+  // If the user already saved a country via onboarding (USER.country), prefer
+  // that; otherwise fall back to locale detection. Manual selection overrides
+  // both because the dropdown is editable.
+  const countrySelect = document.getElementById('i-country');
+  if (countrySelect) {
+    const preferred = (USER.country && SUPPORTED_COUNTRIES.indexOf(USER.country) !== -1)
+      ? USER.country
+      : detectCountryFromLocale();
+    countrySelect.value = preferred;
+  }
+  // Sidebar user-pill hydrated by js/pfc-sidebar.js;
+  // plan badge by PFCPlan.applyBadges().
+  // Pre-fill salary from USER data if available
+  if (USER.income) document.getElementById('i-salary').value = USER.income * 12;
+
+  buildRaiseGrid(null, null);
+  calc();
+}
+
+// ── RAISE GRID ──
+function buildRaiseGrid(salary, sym) {
+  const pcts = [3, 5, 8, 10, 12, 15, 18, 20, 25];
+  const grid = document.getElementById('raise-grid');
+  grid.style.gridTemplateColumns = `repeat(${pcts.length}, 1fr)`;
+  grid.innerHTML = pcts.map(p => {
+    const amt = salary ? Math.round(salary * p / 100) : null;
+    return `<div class="raise-btn ${p === activeRaisePct ? 'active' : ''}" onclick="selectRaise(${p})" id="rbtn-${p}">
+      <div class="pct">+${p}%</div>
+      <div class="amt">${amt ? (sym || '$') + Math.round(amt).toLocaleString() : '—'}</div>
+    </div>`;
+  }).join('');
+}
+
+function selectRaise(pct) {
+  activeRaisePct = pct;
+  const salary = parseFloat(document.getElementById('i-salary').value) || 0;
+  const target = salary ? Math.round(salary * (1 + pct / 100)) : '';
+  document.getElementById('i-target').value = target || '';
+  document.querySelectorAll('.raise-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('rbtn-' + pct)?.classList.add('active');
+  calc();
+}
+
+function setCustomTarget() {
+  document.querySelectorAll('.raise-btn').forEach(b => b.classList.remove('active'));
+  activeRaisePct = null;
+  calc();
+}
+
+// ── MAIN CALC ──
+function calc() {
+  const salary  = parseFloat(document.getElementById('i-salary').value) || 0;
+  const sym     = USER.currency || '$';
+  const exp     = parseFloat(document.getElementById('i-exp').value) || 0;
+
+  // Rebuild raise grid with amounts
+  buildRaiseGrid(salary, sym);
+  if (activeRaisePct) document.getElementById('rbtn-' + activeRaisePct)?.classList.add('active');
+
+  // Target salary
+  let target = parseFloat(document.getElementById('i-target').value) || 0;
+  if (!target && salary && activeRaisePct) {
+    target = Math.round(salary * (1 + activeRaisePct / 100));
+    document.getElementById('i-target').value = target;
+  }
+
+  // Market range
+  const range = getMarketRange(salary);
+  updateMarketRange(range, salary, target, sym);
+  updateTakeHomeCta();
+
+  if (!salary || !target || target <= salary) {
+    clearMetrics(sym);
+    return;
+  }
+
+  const raise      = target - salary;
+  const raisePct   = raise / salary * 100;
+  const monthly    = Math.round(raise / 12);
+  const careerYrs  = Math.max(5, 40 - exp);
+
+  // 5-year compounding (3% annual raise each year on new base)
+  let curr = salary, newB = target, cumGain = 0;
+  const yrRows = [];
+  for (let yr = 1; yr <= 5; yr++) {
+    curr  = Math.round(curr  * 1.03);
+    newB  = Math.round(newB  * 1.03);
+    const gain = newB - curr;
+    cumGain += gain;
+    yrRows.push({ yr, curr, newB, gain, cumGain });
+  }
+  const fiveYrExtra = cumGain;
+
+  // Lifetime compounding
+  let lCurr = salary, lNew = target, lifetimeGain = 0;
+  const ltCurr = [], ltNew = [];
+  for (let yr = 0; yr < careerYrs; yr++) {
+    ltCurr.push(Math.round(lCurr));
+    ltNew.push(Math.round(lNew));
+    lifetimeGain += lNew - lCurr;
+    lCurr *= 1.03;
+    lNew  *= 1.03;
+  }
+
+  // Update metrics
+  document.getElementById('m-raise').textContent  = sym + raise.toLocaleString();
+  document.getElementById('m-raise-hint').textContent = '+' + raisePct.toFixed(1) + '% per year';
+  document.getElementById('m-monthly').textContent = sym + monthly.toLocaleString();
+  document.getElementById('m-5yr').textContent    = sym + fiveYrExtra.toLocaleString();
+  document.getElementById('m-lifetime').textContent = sym + Math.round(lifetimeGain / 1000) + 'k';
+  document.getElementById('m-lifetime-hint').textContent = `over ~${careerYrs} more career years`;
+
+  // Topbar
+  const role = document.getElementById('i-role').value.trim() || 'your role';
+  document.getElementById('topbar-sub').textContent =
+    `${role} · ${sym}${salary.toLocaleString()} → ${sym}${target.toLocaleString()} · +${raisePct.toFixed(1)}% · ${sym}${monthly.toLocaleString()}/mo more`;
+
+  // 5-year table
+  const tbody = document.getElementById('yr-body');
+  tbody.innerHTML = yrRows.map(r => `
+    <tr class="${r.yr === 5 ? 'highlight-row' : ''}">
+      <td>Year ${r.yr}</td>
+      <td style="color:var(--text3);">${sym}${r.curr.toLocaleString()}</td>
+      <td style="color:var(--text);">${sym}${r.newB.toLocaleString()}</td>
+      <td class="gain">+${sym}${r.cumGain.toLocaleString()}</td>
+    </tr>`
+  ).join('');
+
+  // Lifetime chart
+  renderLifetimeChart(ltCurr, ltNew, sym, careerYrs);
+
+  // Benefits base
+  calcBenefits();
+
+  // Counter-offer
+  calcCounter();
+}
+
+function clearMetrics(sym) {
+  ['m-raise','m-monthly','m-5yr','m-lifetime'].forEach(id => document.getElementById(id).textContent = '—');
+  document.getElementById('yr-body').innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text3);padding:20px 0;">Enter your salary and target above</td></tr>';
+  if (lifetimeChart) { lifetimeChart.destroy(); lifetimeChart = null; }
+}
+
+// ── MARKET RANGE UI ──
+function updateMarketRange(range, salary, target, sym) {
+  document.getElementById('r-low').textContent  = sym + range.low.toLocaleString();
+  document.getElementById('r-mid').textContent  = sym + range.median.toLocaleString();
+  document.getElementById('r-high').textContent = sym + range.high.toLocaleString();
+
+  // Show the detected seniority label so users can verify the role input is
+  // actually influencing the band. Falls back to 'Mid-level' for any role
+  // without seniority keywords (which is fine — that's still real signal).
+  const senBadge = document.getElementById('seniority-badge');
+  if (senBadge) {
+    const roleText = (document.getElementById('i-role').value || '').trim();
+    if (roleText && range.seniority) {
+      senBadge.textContent = range.seniority;
+      senBadge.style.display = 'inline-block';
+    } else {
+      senBadge.style.display = 'none';
+    }
+  }
+
+  // Source badge: green "Real data" when the role text matched a BLS-sourced
+  // entry; gold "Estimate" otherwise. Lets the user know whether they're
+  // looking at a real anchor or the fallback formula.
+  const srcBadge = document.getElementById('source-badge');
+  if (srcBadge) {
+    if (range.source === 'real-country') {
+      // Best case: per-country median from ONS/Insee/Destatis/etc.
+      srcBadge.textContent = 'Real ' + ((document.getElementById('i-country').value || '').toUpperCase()) + ' data';
+      srcBadge.style.background = 'rgba(43,182,125,0.16)';
+      srcBadge.style.color = 'var(--money, #2BB67D)';
+      srcBadge.style.borderColor = 'rgba(43,182,125,0.40)';
+      srcBadge.style.display = 'inline-block';
+    } else if (range.source === 'real') {
+      // BLS US median + COUNTRY_MULT adjustment (no per-country entry yet)
+      srcBadge.textContent = 'BLS · adjusted';
+      srcBadge.style.background = 'rgba(43,182,125,0.10)';
+      srcBadge.style.color = 'var(--money, #2BB67D)';
+      srcBadge.style.borderColor = 'rgba(43,182,125,0.25)';
+      srcBadge.style.display = 'inline-block';
+    } else if ((document.getElementById('i-role').value || '').trim()) {
+      srcBadge.textContent = 'Estimate · formula';
+      srcBadge.style.background = 'var(--gold-soft)';
+      srcBadge.style.color = 'var(--gold)';
+      srcBadge.style.borderColor = 'rgba(212,175,106,0.25)';
+      srcBadge.style.display = 'inline-block';
+    } else {
+      srcBadge.style.display = 'none';
+    }
+  }
+
+  if (!salary) { document.getElementById('position-box').style.display = 'none'; return; }
+
+  // Position markers on bar
+  const span = range.high - range.low;
+  const youPct  = span > 0 ? Math.min(95, Math.max(5, (salary - range.low) / span * 100)) : 50;
+  const targPct = target && span > 0 ? Math.min(95, Math.max(5, (target - range.low) / span * 100)) : null;
+
+  document.getElementById('you-marker').style.left  = youPct + '%';
+  if (targPct !== null) {
+    document.getElementById('target-marker').style.left    = targPct + '%';
+    document.getElementById('target-marker').style.display = 'block';
+  } else {
+    document.getElementById('target-marker').style.display = 'none';
+  }
+
+  // Market-position gauge — needle climbs from 25th (left) to 75th (right) percentile
+  const gaugeSvg = document.getElementById('market-gauge');
+  const gaugeLabel = document.getElementById('market-gauge-label');
+  if (gaugeSvg && gaugeLabel) {
+    const gPct = targPct !== null ? Math.max(0, Math.min(100, targPct)) : 0;
+    if (window.PFCMotion) {
+      window.PFCMotion.gaugeNeedle(gaugeSvg, window._lastSalaryGaugePct || 0, gPct, {
+        minAngle: -90, maxAngle: 90, cx: 100, cy: 110, duration: 720
+      });
+    } else {
+      const a = -90 + 180 * (gPct / 100);
+      const needle = gaugeSvg.querySelector('#pfc-needle');
+      if (needle) needle.setAttribute('transform', 'rotate(' + a.toFixed(2) + ' 100 110)');
+    }
+    window._lastSalaryGaugePct = gPct;
+    if (target == null) gaugeLabel.textContent = 'Pick a target above to see your market position.';
+    else if (target < range.low) gaugeLabel.textContent = 'Below the 25th percentile — strong case for a raise.';
+    else if (target < range.median) gaugeLabel.textContent = 'Below median — a reasonable, well-supported ask.';
+    else if (target < range.high) gaugeLabel.textContent = 'Above median — defensible with strong evidence.';
+    else gaugeLabel.textContent = 'Top of market — focus negotiation on total comp.';
+  }
+
+  // Position assessment
+  const box = document.getElementById('position-box');
+  let msg = '', bg = '', color = '';
+  if (salary < range.low) {
+    msg = `⚠️ You're earning <strong>${sym}${(range.low - salary).toLocaleString()} below</strong> the 25th percentile for your role. You have a strong case for a significant raise — market data strongly supports you.`;
+    bg = 'rgba(224,82,82,0.08)'; color = 'var(--red)';
+  } else if (salary < range.median) {
+    msg = `📊 You're <strong>below the market median</strong> by ${sym}${(range.median - salary).toLocaleString()}. Asking to move to median is a very reasonable and data-backed request.`;
+    bg = 'rgba(245,166,35,0.08)'; color = 'var(--amber)';
+  } else if (salary < range.high) {
+    msg = `✅ You're <strong>above median</strong> and in the upper-mid range. To push to the 75th percentile, emphasise specialised skills and impact. This is achievable.`;
+    bg = 'rgba(43,182,125,0.08)'; color = 'var(--teal)';
+  } else {
+    msg = `🏆 You're <strong>at or above the 75th percentile</strong> for your role. Focus your negotiation on total comp — bonus, equity, benefits, and flexibility rather than base.`;
+    bg = 'rgba(59,130,246,0.08)'; color = 'var(--blue)';
+  }
+  box.style.display = 'block';
+  box.style.background = bg;
+  box.style.border = `1px solid ${color.replace('var(--','').replace(')','') === color ? color + '40' : color}22`;
+  box.style.color = 'var(--text2)';
+  box.innerHTML = msg;
+}
+
+// ── LIFETIME CHART ──
+function renderLifetimeChart(curr, newB, sym, years) {
+  const canvas = document.getElementById('lifetimeChart');
+  if (lifetimeChart) { lifetimeChart.destroy(); lifetimeChart = null; }
+
+  const labels = Array.from({ length: years }, (_, i) => 'Yr ' + (i + 1));
+
+  lifetimeChart = new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Without raise',
+          data: curr,
+          borderColor: '#E05252',
+          backgroundColor: 'rgba(224,82,82,0.05)',
+          borderWidth: 1.5,
+          borderDash: [4,3],
+          pointRadius: 0,
+          tension: 0.3,
+          fill: true,
+        },
+        {
+          label: 'With raise',
+          data: newB,
+          borderColor: '#2BB67D',
+          backgroundColor: 'rgba(43,182,125,0.07)',
+          borderWidth: 2,
+          pointRadius: 0,
+          tension: 0.3,
+          fill: true,
+        },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { intersect: false, mode: 'index' },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#16271F',
+          borderColor: 'rgba(255,255,255,0.1)',
+          borderWidth: 1,
+          titleColor: '#F0EDE2',
+          bodyColor: '#B8C2BC',
+          callbacks: { label: ctx => ' ' + ctx.dataset.label + ': ' + sym + ctx.parsed.y.toLocaleString() }
+        }
+      },
+      scales: {
+        x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#4A5A6E', font: { size: 10 }, maxTicksLimit: 10 } },
+        y: {
+          grid: { color: 'rgba(255,255,255,0.04)' },
+          ticks: { color: '#4A5A6E', font: { size: 10 }, callback: v => sym + (v >= 1000 ? (v/1000).toFixed(0)+'k' : v) }
+        }
+      }
+    }
+  });
+}
+
+// ── COUNTER OFFER ──
+function calcCounter() {
+  const sym    = USER.currency || '$';
+  const offer  = parseFloat(document.getElementById('i-offer').value) || 0;
+  const target = parseFloat(document.getElementById('i-target').value) || 0;
+  const salary = parseFloat(document.getElementById('i-salary').value) || 0;
+
+  document.getElementById('counter-results').style.display = offer ? 'block' : 'none';
+  document.getElementById('counter-empty').style.display   = offer ? 'none' : 'block';
+
+  if (!offer) return;
+
+  // Floor the anchor at three sensible reference points so the counter is
+  // ALWAYS above the offer:
+  //   1. your target (if set) or current salary +15%
+  //   2. the market median for the role
+  //   3. their offer + 5% (a polite counter must exceed the offer)
+  // Without this, a low current salary against a high offer used to produce
+  // a counter LESS than the offer and a negative "above" gap.
+  const range     = getMarketRange(salary);
+  const rawAnchor = target || (salary * 1.15);
+  const anchor    = Math.max(rawAnchor, range.median, offer * 1.05);
+  const walkaway  = Math.max(offer, salary * 1.02);
+  const counter   = Math.round(offer + (anchor - offer) * 0.65);
+  const dream     = Math.round(anchor * 1.05);
+
+  document.getElementById('c-offer').textContent    = sym + offer.toLocaleString();
+  document.getElementById('c-offer').style.color    = offer < (salary * 1.05) ? 'var(--red)' : 'var(--amber)';
+  document.getElementById('c-walkaway').textContent = sym + walkaway.toLocaleString();
+  document.getElementById('c-counter').textContent  = sym + counter.toLocaleString();
+  document.getElementById('c-dream').textContent    = sym + dream.toLocaleString();
+
+  // Zone bar (offer=0%, anchor=100%)
+  const span = anchor - offer;
+  const walkPct    = span > 0 ? ((walkaway - offer) / span * 100) : 5;
+  const counterPct = span > 0 ? ((counter - offer) / span * 100) : 65;
+  document.getElementById('counter-zone').style.cssText =
+    `left:${walkPct.toFixed(0)}%;width:${(counterPct - walkPct).toFixed(0)}%;position:absolute;height:100%;border-radius:4px;background:linear-gradient(90deg,rgba(245,166,35,0.4),rgba(43,182,125,0.4));transition:all .4s;`;
+
+  const gap = counter - offer;
+  document.getElementById('counter-advice').innerHTML =
+    `Counter with <strong style="color:var(--teal)">${sym}${counter.toLocaleString()}</strong> — that's ${sym}${gap.toLocaleString()} above their offer and leaves room to meet in the middle at ~${sym}${Math.round((offer+counter)/2).toLocaleString()}.
+Your absolute minimum is ${sym}${walkaway.toLocaleString()} — don't accept below this.`;
+}
+
+// ── BENEFITS ──
+function calcBenefits() {
+  const sym    = USER.currency || '$';
+  const salary = parseFloat(document.getElementById('i-target').value) || parseFloat(document.getElementById('i-salary').value) || 0;
+  if (!salary) return;
+
+  const bonusPctRaw = parseFloat(document.getElementById('b-bonus').value) || 0;
+  const bonus   = bonusPctRaw / 100 * salary;
+  const equity  = parseFloat(document.getElementById('b-equity').value)  || 0;
+  const health  = parseFloat(document.getElementById('b-health').value)  || 0;
+  const pension = (parseFloat(document.getElementById('b-pension').value) || 0) / 100 * salary;
+  const remote  = parseFloat(document.getElementById('b-remote').value)  || 0;
+  const leave   = (parseFloat(document.getElementById('b-leave').value)  || 0) * (salary / 260);
+
+  // Other benefits = everything that's not base/bonus/equity, lumped for
+  // visual brevity in the breakdown card.
+  const otherBenefits = Math.round(health + pension + remote + leave);
+  const totalComp = Math.round(salary + bonus + equity + otherBenefits);
+
+  // Update breakdown rows
+  document.getElementById('tc-base').textContent     = sym + salary.toLocaleString();
+  document.getElementById('tc-bonus').textContent    = sym + Math.round(bonus).toLocaleString();
+  document.getElementById('tc-bonus-pct').textContent = bonusPctRaw > 0 ? ' (' + bonusPctRaw + '% of base)' : '';
+  document.getElementById('tc-equity').textContent   = sym + equity.toLocaleString();
+  document.getElementById('tc-benefits').textContent = sym + otherBenefits.toLocaleString();
+  document.getElementById('tc-total').textContent    = sym + totalComp.toLocaleString();
+
+  // Composition bar — proportional widths summing to 100%. Width zeroes out
+  // for any component that contributes nothing, so the bar visually compresses
+  // (e.g. if equity is $0 the equity segment disappears and the others fill in).
+  if (totalComp > 0) {
+    const basePct    = (salary       / totalComp * 100).toFixed(2);
+    const bonusPctW  = (bonus        / totalComp * 100).toFixed(2);
+    const equityPctW = (equity       / totalComp * 100).toFixed(2);
+    const benefPctW  = (otherBenefits / totalComp * 100).toFixed(2);
+    const segs = [
+      ['tc-mix-base',     basePct],
+      ['tc-mix-bonus',    bonusPctW],
+      ['tc-mix-equity',   equityPctW],
+      ['tc-mix-benefits', benefPctW],
+    ];
+    segs.forEach(([id, pct]) => {
+      const el = document.getElementById(id);
+      if (el) { el.style.width = pct + '%'; el.style.transition = 'width 220ms ease-out'; }
+    });
+  }
+}
+
+// Tiny helper for percentile phrasing — 1st, 2nd, 3rd, 4th, … 21st, 22nd, …
+function ordinalSuffix(n) {
+  const tens = n % 100;
+  if (tens >= 11 && tens <= 13) return 'th';
+  switch (n % 10) {
+    case 1: return 'st';
+    case 2: return 'nd';
+    case 3: return 'rd';
+    default: return 'th';
+  }
+}
+
+// ── GENERATE SCRIPT ──
+// Accept letters, spaces, hyphens, slashes, ampersands, and apostrophes (covers
+// 99% of real job titles: "Senior Software Engineer", "Head of People & Culture",
+// "C++ Developer", "PR/Comms Lead"). Rejects gibberish like "rgbteybrt".
+const ROLE_REGEX = /^[a-zA-Z][a-zA-Z\s\-\/&'.+]{1,79}$/;
+function looksLikeRealRole(s) {
+  if (!ROLE_REGEX.test(s)) return false;
+  // Reject strings with no vowels (random keyboard mashing) — every real English
+  // job title has at least one vowel in every 6-char window.
+  const words = s.toLowerCase().split(/\s+/).filter(Boolean);
+  return words.every(w => /[aeiouy]/.test(w));
+}
+
+async function generateScript() {
+  const salary  = parseFloat(document.getElementById('i-salary').value) || 0;
+  const target  = parseFloat(document.getElementById('i-target').value) || 0;
+  const roleRaw = document.getElementById('i-role').value.trim();
+  const expNum  = parseFloat(document.getElementById('i-exp').value);
+  const exp     = (isFinite(expNum) && expNum >= 0 && expNum <= 50) ? expNum : 3;
+  const sym     = USER.currency || '$';
+
+  if (!salary) { showToast('Enter your current salary first'); return; }
+  if (!roleRaw || !looksLikeRealRole(roleRaw)) {
+    showToast('Enter a real job title (letters only) before generating the script');
+    document.getElementById('i-role').focus();
+    return;
+  }
+  const role = roleRaw;
+
+  const scriptBox = document.getElementById('script-box');
+  const copyBtn = document.getElementById('copy-btn');
+
+  // Pro-gate: Sage is a Pro-only feature. Show upgrade prompt instead of failing API call.
+  const plan = (typeof PFCPlan !== 'undefined' && PFCPlan.get) ? PFCPlan.get() : 'free';
+  if (plan === 'free') {
+    if (copyBtn) copyBtn.style.display = 'none';
+    scriptBox.innerHTML = '<div style="padding:8px 0;color:var(--text2);line-height:1.6;">'
+      + '<strong style="color:var(--text);display:block;margin-bottom:6px;">AI-generated scripts are a Pro feature.</strong>'
+      + 'Upgrade to get personalised negotiation scripts tailored to your role, market data, and target number — plus full Sage AI access.<br><br>'
+      + '<a href="/billing.html?upgrade=salary-script" style="display:inline-block;padding:8px 16px;background:var(--teal);color:var(--canvas);font-weight:700;border-radius:var(--r-sm);text-decoration:none;font-family:var(--font-body);">Upgrade to Pro &rarr;</a>'
+      + '</div>';
+    return;
+  }
+
+  const range   = getMarketRange(salary);
+  const raisePct = salary ? ((target - salary) / salary * 100).toFixed(1) : '10';
+  const industry = document.getElementById('i-industry').options[document.getElementById('i-industry').selectedIndex].text;
+  const country  = document.getElementById('i-country').options[document.getElementById('i-country').selectedIndex].text;
+  const countryCode = document.getElementById('i-country').value;
+
+  if (copyBtn) copyBtn.style.display = 'none';
+  scriptBox.innerHTML = `<div class="script-loading"><div class="spin"></div> Sage is writing your personalised negotiation script…</div>`;
+
+  const targetNum = target || range.median;
+  const askAmount = targetNum - salary;
+  const askPct    = salary ? ((targetNum - salary) / salary * 100).toFixed(1) : '10';
+
+  // ── Percentile computation ──────────────────────────────────────────────
+  // Assume the band is 25th/50th/75th percentile (matches the spread logic
+  // in getMarketRange). Linear-interpolate between the three anchor points;
+  // clamp above 95th and below 5th so we never claim implausible extremes.
+  function computePercentile(value, low, median, high) {
+    if (!isFinite(value) || value <= 0) return null;
+    if (value <= low) {
+      // Below 25th — extrapolate down to 5th, floor at 5
+      const ratio = low > 0 ? value / low : 0;
+      return Math.max(5, Math.round(25 * ratio));
+    }
+    if (value <= median) {
+      return Math.round(25 + 25 * (value - low) / (median - low));
+    }
+    if (value <= high) {
+      return Math.round(50 + 25 * (value - median) / (high - median));
+    }
+    // Above 75th — extrapolate up to 95th, cap at 95
+    const overshoot = (value - high) / (high - median);
+    return Math.min(95, Math.round(75 + 25 * Math.min(1, overshoot)));
+  }
+  const targetPct = computePercentile(targetNum, range.low, range.median, range.high);
+  const currentPct = salary > 0 ? computePercentile(salary, range.low, range.median, range.high) : null;
+
+  // ── Statistical source attribution ──────────────────────────────────────
+  // Each country gets the actual name of the national statistical office
+  // dataset its per-country median comes from. For roles without a per-
+  // country entry, the prompt cites BLS OEWS as the US baseline + the
+  // country adjustment factor (PPP-style multiplier from COUNTRY_MULT).
+  const STAT_SOURCE = {
+    US: 'BLS OEWS May 2024',
+    GB: 'UK ONS ASHE 2024',
+    FR: 'Insee / Apec 2024',
+    DE: 'Destatis Verdienste 2024',
+    CA: 'Statistics Canada LFS 2024',
+    AU: 'ABS Employee Earnings May 2024',
+    SG: 'Singapore MOM Occupational Wages 2024',
+    IE: 'CSO Earnings & Labour Costs 2024',
+  };
+  let sourceLine;
+  if (range.source === 'real-country') {
+    sourceLine = `${STAT_SOURCE[countryCode] || 'national statistics'} — median for ${range.roleMatched || role} in ${country}`;
+  } else if (range.source === 'real') {
+    sourceLine = `BLS OEWS May 2024 — US median for ${range.roleMatched || role}, adjusted to ${country} via official wage-ratio data`;
+  } else {
+    sourceLine = `industry/country/experience benchmarks (rough estimate — no role-specific data available)`;
+  }
+
+  // Percentile phrasing for the prompt — falls back gracefully if the
+  // computation returned null (no current salary entered).
+  const targetPctPhrase = targetPct != null
+    ? `Their target sits at approximately the ${targetPct}${ordinalSuffix(targetPct)} percentile of the band.`
+    : '';
+  const currentPctPhrase = currentPct != null
+    ? `Their CURRENT salary sits at approximately the ${currentPct}${ordinalSuffix(currentPct)} percentile of the band.`
+    : '';
+
+  const prompt = `You are writing a salary negotiation script that the user will read aloud almost verbatim in a real conversation. Write it for THIS specific person:
+
+ROLE: ${role}
+INDUSTRY: ${industry}
+COUNTRY: ${country}
+YEARS OF EXPERIENCE: ${exp}
+CURRENT SALARY: ${sym}${salary.toLocaleString()}
+TARGET SALARY: ${sym}${targetNum.toLocaleString()} (a ${askPct}% raise, ${sym}${askAmount.toLocaleString()} more per year)
+MARKET MEDIAN for this role/country/experience: ${sym}${range.median.toLocaleString()}
+MARKET BAND (25th–75th percentile): ${sym}${range.low.toLocaleString()} – ${sym}${range.high.toLocaleString()}
+DATA SOURCE: ${sourceLine}
+${currentPctPhrase}
+${targetPctPhrase}
+
+WRITE A COMPLETE SPOKEN SCRIPT, NOT A TEMPLATE.
+
+Hard rules (failing any of these means the script is unusable):
+1. DO NOT start with meta phrases like "Here is a script" or "Below you'll find". Start directly with the user's first line, as if they're speaking.
+2. DO NOT use markdown headers (###, ##) or bullet lists. Use plain spoken language. If you need section breaks, use a bracketed cue on its own line: [OPENING], [THE ASK], [JUSTIFICATION], [HANDLING PUSHBACK], [CLOSING].
+3. DO NOT use placeholders like [your achievement] or [insert specific example]. Invent plausible specifics that fit a ${exp}-year ${role} in ${industry}.
+4. Cite the SPECIFIC data source by name at least once in [JUSTIFICATION] — say "${sourceLine.split(' — ')[0]}" verbatim, not "market data" or "industry benchmarks". The credibility of the script depends on naming the source the user can verify.
+5. Cite the SPECIFIC PERCENTILE at least once: ${targetPctPhrase ? `state that their target sits at the ${targetPct}${ordinalSuffix(targetPct)} percentile of ${country} pay for this role` : 'reference the percentile if computable'}. Numbers are persuasive; vague claims are not.
+6. Use the actual currency-formatted numbers from the inputs above — the target ${sym}${targetNum.toLocaleString()} must appear at least once, the market median ${sym}${range.median.toLocaleString()} must be referenced as evidence.
+7. Tone: confident but understated. No hyperbole. No "I'm thrilled" or "I'm so passionate". Calm and factual. The user is presenting a case, not begging.
+8. Total length: 300–380 words. Don't pad. The source citation + percentile mention will add some length over a generic script — that's by design.
+9. The [HANDLING PUSHBACK] section must address ONE specific objection: "we don't have budget right now" — and the response should pivot to non-cash levers (signing bonus, equity refresh, accelerated review, remote/flex days, professional-development budget) rather than capitulating.
+10. End with one line the user can use if the answer is "no": polite, professional, leaves the door open.
+
+Write the script now. Just the script — no preamble, no afterword.`;
+
+  try {
+    const session = (typeof PFCAuth !== 'undefined') ? PFCAuth.getSession() : null;
+    const headers = { 'Content-Type': 'application/json' };
+    if (session?.access_token) headers.Authorization = 'Bearer ' + session.access_token;
+
+    // csvMode:false routes through the full Sage chat path with proper temperature
+    // (0.7) and the rich system prompt. csvMode:true used a deterministic 0.1-temp
+    // path that bypassed the system prompt and produced templated/amateur output.
+    const res = await fetch('/api/sage', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ message: prompt, csvMode: false }),
+    });
+    const data = await res.json();
+    const text = data.reply || data.error || 'Could not generate script. Try again.';
+
+    // Format the script nicely
+    const formatted = text
+      .replace(/\*\*(.*?)\*\*/g, '<strong style="color:var(--text)">$1</strong>')
+      .replace(/^##\s(.+)$/gm, '<div style="font-size:12px;font-weight:700;color:var(--teal);letter-spacing:.06em;text-transform:uppercase;margin:14px 0 6px;">$1</div>')
+      .replace(/^#\s(.+)$/gm,  '<div style="font-size:13px;font-weight:700;color:var(--text);margin:12px 0 5px;">$1</div>')
+      .replace(/^\d\.\s(.+)$/gm, '<div style="margin:5px 0;padding-left:14px;border-left:2px solid rgba(43,182,125,0.3);color:var(--text2);">$1</div>')
+      .replace(/^-\s(.+)$/gm,   '<div style="margin:4px 0;padding-left:14px;border-left:2px solid rgba(43,182,125,0.3);color:var(--text2);">• $1</div>')
+      .replace(/\n/g, '<br>');
+
+    scriptBox.innerHTML = formatted;
+    document.getElementById('copy-btn').style.display = 'block';
+  } catch(e) {
+    scriptBox.innerHTML = '<span style="color:var(--red)">Could not reach Sage. Check your connection and try again.</span>';
+  }
+}
+
+// ── TAKE-HOME PAY CROSS-LINK ──
+// Hands off to /tools/take-home-pay with the user's target salary (or
+// current salary if no target set) and selected country pre-filled via URL
+// params. take-home-pay.html reads them at init. Falls back to a plain
+// navigation if no salary is available — the destination still works
+// without params.
+function goToTakeHome() {
+  const target  = parseFloat(document.getElementById('i-target').value) || 0;
+  const current = parseFloat(document.getElementById('i-salary').value) || 0;
+  const salary  = target || current;
+  const country = document.getElementById('i-country').value || 'US';
+  const params = [];
+  if (salary > 0) params.push('salary=' + Math.round(salary));
+  if (country)    params.push('country=' + encodeURIComponent(country));
+  const qs = params.length ? '?' + params.join('&') : '';
+  window.location.href = '/tools/take-home-pay' + qs;
+}
+
+// Update the CTA label + sub-text reactively when the target/salary changes
+// so users know what number is about to get carried over.
+function updateTakeHomeCta() {
+  const sym    = (window.USER && USER.currency) || '$';
+  const target = parseFloat(document.getElementById('i-target').value) || 0;
+  const salary = parseFloat(document.getElementById('i-salary').value) || 0;
+  const amount = target || salary;
+  const label  = document.getElementById('takehome-cta-label');
+  const sub    = document.getElementById('takehome-cta-sub');
+  if (!label || !sub) return;
+  if (amount > 0) {
+    label.textContent = 'See take-home on ' + sym + amount.toLocaleString();
+    sub.textContent = 'We’ll carry the ' + sym + amount.toLocaleString() + ' across and break it down by income tax, social charges, and pension. Numbers stay in your browser.';
+  } else {
+    label.textContent = 'See your take-home pay';
+    sub.textContent = 'Pick a target above, then run it through the take-home pay calculator to see net pay after income tax, social charges, and pension contributions in your country.';
+  }
+}
+
+function copyScript() {
+  const text = document.getElementById('script-box').innerText;
+  navigator.clipboard.writeText(text).then(() => showToast('Script copied to clipboard'));
+}
+
+// ── TOAST ──
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity .3s'; }, 2800);
+  setTimeout(() => t.remove(), 3200);
+}
+
+// ── START ──
+init();
+
+// ── AUTH-AWARE RE-HYDRATION ──
+// init() ran synchronously before PFCAuth resolved the real userId — so USER
+// may reflect pfc:guest:* (often empty → no prefill). Once auth resolves and
+// pfc-storage.js finishes adoptGuestData, re-read and re-prefill.
+function _rehydrateFromStorage() {
+  const prevSalaryPrefill = USER.income ? USER.income * 12 : null;
+  try { USER = (typeof PFCUser !== 'undefined') ? PFCUser.get() : (PFCStorage.getJSON('user') || {}); } catch(e) { USER = {}; }
+  const sym = USER.currency || '$';
+  ['sym-label','sym-custom','sym-offer'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = sym;
+  });
+  // Only re-prefill salary if the input is empty or still at the previous
+  // (possibly stale) prefill — don't clobber a value the user has typed.
+  const salaryInput = document.getElementById('i-salary');
+  if (salaryInput && USER.income) {
+    const curr = salaryInput.value.trim();
+    if (curr === '' || (prevSalaryPrefill !== null && Number(curr) === prevSalaryPrefill)) {
+      salaryInput.value = USER.income * 12;
+    }
+  }
+  calc();
+}
+if (typeof PFCAuth !== 'undefined') {
+  PFCAuth.onReady(() => {
+    let fresh = {};
+    try { fresh = (typeof PFCUser !== 'undefined') ? PFCUser.get() : (PFCStorage.getJSON('user') || {}); } catch(e) {}
+    if (JSON.stringify(fresh) !== JSON.stringify(USER)) _rehydrateFromStorage();
+  });
+  PFCAuth.onAuthChange(_rehydrateFromStorage);
+}

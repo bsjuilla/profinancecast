@@ -1,0 +1,28 @@
+  (function () {
+    if (document.body.classList.contains('pfc-inapp')) return;
+    var ref = document.referrer || '';
+    var inApp = false;
+    try {
+      var refPath = new URL(ref || 'about:blank', location.href).pathname || '';
+      if (/\/(journal|dashboard|net-worth|goals|recurring|settings|billing|history|tools|salary-calculator|debt-optimizer|sage|scenarios|report-card)(\.html)?$/.test(refPath)) {
+        inApp = true;
+      }
+    } catch (e) {}
+    if (typeof PFCAuth !== 'undefined' && PFCAuth.isLoggedIn && PFCAuth.isLoggedIn()) {
+      inApp = true;
+    }
+    if (inApp) {
+      document.body.classList.add('pfc-inapp');
+      document.querySelectorAll('a').forEach(function (a) {
+        if (a.classList.contains('footer-col') || a.closest('footer')) return;
+        var raw = (a.textContent || '').trim();
+        // Match "Blog", "← Blog", "→ Blog", " Blog", or any single-arrow + Blog combination
+        if (/^[←→\s]*Blog[\s]*$/.test(raw) && /\/?blog\.html?$/.test(a.getAttribute('href') || '')) {
+          a.setAttribute('href', 'journal.html');
+          // Preserve any leading arrow when rewriting the visible text
+          var arrowMatch = raw.match(/^([←→])\s*Blog/);
+          a.textContent = arrowMatch ? arrowMatch[1] + ' Journal' : 'Journal';
+        }
+      });
+    }
+  })();
