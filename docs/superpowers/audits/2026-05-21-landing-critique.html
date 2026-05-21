@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Critique · ProFinanceCast landing</title>
+<style>
+  :root {
+    --canvas:#0B1410; --surface:#13201A; --surface-2:#1A2A22;
+    --ink:#F4EFE5; --ink-2:#C8C2B0; --ink-3:#7C7864; --ink-4:#52503E;
+    --line:rgba(244,239,229,0.10); --line-2:rgba(244,239,229,0.06);
+    --gold:#D4AF6A; --money:#2BB67D; --amber:#F5A623; --red:#E14747;
+    --r:14px; --r-sm:8px;
+  }
+  *,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+  body {
+    background:var(--canvas); color:var(--ink);
+    font-family:'Inter Tight', system-ui, sans-serif;
+    line-height:1.55; -webkit-font-smoothing:antialiased;
+    padding:48px 5vw 96px;
+  }
+  h1, h2, h3 { font-family:'Fraunces', 'Cormorant Garamond', Georgia, serif; font-weight:500; letter-spacing:-0.01em; }
+  .head { max-width:980px; margin:0 auto 36px; border-bottom:1px solid var(--line); padding-bottom:24px; }
+  .head .eyebrow { font-family:ui-monospace,monospace; font-size:11px; letter-spacing:0.18em; text-transform:uppercase; color:var(--gold); margin-bottom:10px; }
+  .head h1 { font-size:42px; line-height:1.05; margin-bottom:8px; }
+  .head .verdict { font-style:italic; color:var(--ink-2); font-size:17px; max-width:720px; }
+  .head .meta { display:flex; gap:24px; margin-top:18px; font-size:12px; color:var(--ink-3); font-family:ui-monospace,monospace; }
+
+  .layout { max-width:980px; margin:0 auto; display:grid; grid-template-columns:360px 1fr; gap:36px; align-items:start; }
+  @media (max-width:820px) { .layout { grid-template-columns:1fr; } }
+
+  .radar-card { background:var(--surface); border:1px solid var(--line); border-radius:var(--r); padding:24px; position:sticky; top:24px; }
+  .radar-card h2 { font-size:18px; margin-bottom:14px; }
+  .mean { font-family:ui-monospace,monospace; font-size:12px; color:var(--ink-3); margin-top:12px; }
+  .mean strong { color:var(--gold); font-size:14px; }
+
+  .dim { background:var(--surface); border:1px solid var(--line); border-radius:var(--r); padding:22px 24px; margin-bottom:18px; }
+  .dim-head { display:flex; justify-content:space-between; align-items:baseline; gap:16px; margin-bottom:10px; }
+  .dim-name { font-family:'Fraunces',serif; font-size:20px; font-weight:500; color:var(--ink); }
+  .dim-name .ch { color:var(--ink-3); margin-left:8px; font-size:14px; }
+  .dim-score { font-family:'Fraunces',serif; font-size:32px; font-weight:500; line-height:1; letter-spacing:-0.01em; }
+  .dim-score .of { color:var(--ink-3); font-size:18px; }
+  .band { font-family:ui-monospace,monospace; font-size:10.5px; letter-spacing:0.14em; text-transform:uppercase; padding:3px 8px; border-radius:4px; display:inline-block; margin-bottom:14px; }
+  .band-broken { background:rgba(225,71,71,0.12); color:var(--red); }
+  .band-fnctn  { background:rgba(245,166,35,0.12); color:var(--amber); }
+  .band-strong { background:rgba(43,182,125,0.12); color:var(--money); }
+  .band-excpt  { background:rgba(212,175,106,0.18); color:var(--gold); }
+  .evidence { font-size:14px; color:var(--ink-2); margin-bottom:14px; }
+  .evidence code { background:rgba(255,255,255,0.04); padding:1px 5px; border-radius:3px; font-size:12.5px; color:var(--ink); }
+  .micro { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; padding-top:14px; border-top:1px solid var(--line-2); }
+  .micro .pill { font-family:ui-monospace,monospace; font-size:10.5px; letter-spacing:0.1em; text-transform:uppercase; padding:8px 10px; border-radius:6px; }
+  .micro .pill.keep { background:rgba(43,182,125,0.08); color:var(--money); border:1px solid rgba(43,182,125,0.25); }
+  .micro .pill.fix  { background:rgba(225,71,71,0.08); color:var(--red); border:1px solid rgba(225,71,71,0.25); }
+  .micro .pill.quick{ background:rgba(212,175,106,0.08); color:var(--gold); border:1px solid rgba(212,175,106,0.25); }
+  .micro .pill .lbl { display:block; margin-bottom:5px; opacity:0.7; }
+  .micro .pill .body { font-family:'Inter Tight',sans-serif; font-size:12px; letter-spacing:0; text-transform:none; color:var(--ink-2); line-height:1.45; }
+
+  .actions { max-width:980px; margin:48px auto 0; display:grid; grid-template-columns:1fr 1fr 1fr; gap:18px; }
+  @media (max-width:820px) { .actions { grid-template-columns:1fr; } }
+  .actions section { background:var(--surface); border:1px solid var(--line); border-radius:var(--r); padding:22px 24px; }
+  .actions h3 { font-size:18px; margin-bottom:14px; display:flex; align-items:center; gap:10px; }
+  .actions h3 .dot { width:8px; height:8px; border-radius:50%; }
+  .actions .keep .dot { background:var(--money); }
+  .actions .fix .dot  { background:var(--red); }
+  .actions .quick .dot{ background:var(--gold); }
+  .actions ul { list-style:none; }
+  .actions li { display:flex; gap:10px; padding:8px 0; border-top:1px solid var(--line-2); font-size:14px; color:var(--ink-2); line-height:1.5; }
+  .actions li:first-child { border-top:none; }
+  .actions li::before { content:'☐'; color:var(--ink-3); flex-shrink:0; font-family:ui-monospace,monospace; font-size:13px; padding-top:2px; }
+  .actions li.done::before { content:'☑'; color:var(--money); }
+  .actions li code { background:rgba(255,255,255,0.04); padding:1px 5px; border-radius:3px; font-size:12.5px; }
+
+  .foot { max-width:980px; margin:48px auto 0; font-family:ui-monospace,monospace; font-size:11px; color:var(--ink-4); text-align:center; }
+</style>
+</head>
+<body>
+
+<div class="head">
+  <div class="eyebrow">5-Dimension Design Critique</div>
+  <h1>ProFinanceCast landing — May 2026</h1>
+  <p class="verdict">A magazine-style fintech site with a clear editorial thesis ("the numbers your grandfather worked on a ledger — now computed in your browser"), strong photography, and a polish gap in the small things. The big moves work; the 90/10 details bleed the score.</p>
+  <div class="meta">
+    <span>Reviewer · OD · critique skill</span>
+    <span>Date · 2026-05-21</span>
+    <span>Artifact · profinancecast.com (index.html, blog.html, ~10 sub-pages)</span>
+  </div>
+</div>
+
+<div class="layout">
+
+  <aside class="radar-card">
+    <h2>Five-axis read</h2>
+    <svg viewBox="0 0 320 320" width="100%" aria-label="Radar chart of five dimension scores" role="img">
+      <!-- grid rings -->
+      <g fill="none" stroke="rgba(244,239,229,0.10)" stroke-width="1">
+        <polygon points="160,40 270,103 235,233 85,233 50,103"/>
+        <polygon points="160,72 246,121 221,225 99,225 74,121"/>
+        <polygon points="160,104 222,138 207,217 113,217 98,138"/>
+        <polygon points="160,136 198,156 193,209 127,209 122,156"/>
+      </g>
+      <!-- axes -->
+      <g stroke="rgba(244,239,229,0.18)" stroke-width="1">
+        <line x1="160" y1="160" x2="160" y2="40"/>
+        <line x1="160" y1="160" x2="270" y2="103"/>
+        <line x1="160" y1="160" x2="235" y2="233"/>
+        <line x1="160" y1="160" x2="85"  y2="233"/>
+        <line x1="160" y1="160" x2="50"  y2="103"/>
+      </g>
+      <!-- data: 8, 7, 5, 7, 7 / 10 -->
+      <!-- Each axis projected from center (160,160) to its tip,
+           data point lies at fraction (score/10) along that axis. -->
+      <!-- 1 Philosophy=8 → 0.8 of (160,40)  → (160, 160+(40-160)*0.8) = (160, 64) -->
+      <!-- 2 Hierarchy =7 → 0.7 of (270,103) → (160+(270-160)*0.7, 160+(103-160)*0.7) = (237, 120) -->
+      <!-- 3 Detail   =5 → 0.5 of (235,233) → (197.5, 196.5) -->
+      <!-- 4 Function =7 → 0.7 of (85,233)  → (107.5, 211.1) -->
+      <!-- 5 Innovat. =7 → 0.7 of (50,103)  → (83, 120.1) -->
+      <polygon points="160,64 237,120 197.5,196.5 107.5,211.1 83,120.1"
+               fill="rgba(212,175,106,0.18)"
+               stroke="#D4AF6A" stroke-width="1.6" stroke-linejoin="round"/>
+      <!-- data point dots -->
+      <g fill="#D4AF6A">
+        <circle cx="160" cy="64" r="3"/>
+        <circle cx="237" cy="120" r="3"/>
+        <circle cx="197.5" cy="196.5" r="3"/>
+        <circle cx="107.5" cy="211.1" r="3"/>
+        <circle cx="83" cy="120.1" r="3"/>
+      </g>
+      <!-- labels -->
+      <g font-family="ui-monospace,monospace" font-size="11" fill="#C8C2B0">
+        <text x="160" y="28" text-anchor="middle">Philosophy · 8</text>
+        <text x="282" y="100" text-anchor="middle">Hierarchy · 7</text>
+        <text x="252" y="252" text-anchor="middle">Detail · 5</text>
+        <text x="68"  y="252" text-anchor="middle">Function · 7</text>
+        <text x="40"  y="100" text-anchor="middle">Innovation · 7</text>
+      </g>
+    </svg>
+    <div class="mean">Mean: <strong>6.8 / 10</strong> · band: <em>strong with rough spots</em>. Detail axis (5) is the asymmetric drag — every other axis is 7+. Polish those rough spots and the whole shape rounds out to a 7.5+ overall.</div>
+  </aside>
+
+  <main>
+
+    <article class="dim">
+      <div class="dim-head">
+        <div class="dim-name">1 · Philosophy consistency<span class="ch">· 哲学一致性</span></div>
+        <div class="dim-score">8<span class="of">/10</span></div>
+      </div>
+      <div class="band band-strong">Strong</div>
+      <p class="evidence">One declared direction — "editorial finance" / magazine aesthetic — and the site argues for it everywhere. Fraunces serif display + Inter sans body + ui-monospace meta + gold (#D4AF6A) accent ≤ 5%, used by the SAME rule across hero, steps, pricing, blog. The compass-on-paper photo (Step 02), future-value-formula paper, gold calligraphy flourish, hero-ledger image — all sit inside ONE visual vocabulary. The drift: dashboard chrome (when you sign in) is more "techy SaaS" than the landing's editorial register. Drops it from 9 to 8.</p>
+      <div class="micro">
+        <div class="pill keep"><span class="lbl">Keep</span><span class="body">Single-photo-per-section discipline (Step 02 compass + ledger). Don't let the marketing team add a stock photo of "happy people pointing at laptops".</span></div>
+        <div class="pill fix"><span class="lbl">Fix</span><span class="body">Carry the editorial photo aesthetic into the dashboard sidebar / topbar (or accept the register shift is deliberate and document it).</span></div>
+        <div class="pill quick"><span class="lbl">Quick win</span><span class="body">Bring the gold-flourish hairline into blog post H1 row — currently only on landing.</span></div>
+      </div>
+    </article>
+
+    <article class="dim">
+      <div class="dim-head">
+        <div class="dim-name">2 · Visual hierarchy<span class="ch">· 视觉层级</span></div>
+        <div class="dim-score">7<span class="of">/10</span></div>
+      </div>
+      <div class="band band-strong">Strong</div>
+      <p class="evidence">Hero h1 is unambiguously the loudest element on page 1 (<code>clamp(48px, 7.6vw, 104px)</code>). Section ledes use Fraunces serif at consistent sizes. Pricing cards mark the recommended tier with the "Most chosen" tag + gold border + tinted background (good). Drops from 9: the bento card 6 ("Encrypted by default") opens with a 120px photo instead of the 44×44 emerald icon tile that cards 1-5 use — visual rhythm breaks at row 3. Blog index article cards are all uniform — no eye direction, every card competes equally.</p>
+      <div class="micro">
+        <div class="pill keep"><span class="lbl">Keep</span><span class="body">Hero h1 + italic accent ("not advice."). It's the most memorable element on the site.</span></div>
+        <div class="pill fix"><span class="lbl">Fix</span><span class="body">Bento card 6 photo → either wrap in 44×44 icon slot like its siblings, or move photo to footer block under the body.</span></div>
+        <div class="pill quick"><span class="lbl">Quick win</span><span class="body">On blog index, make the featured card 2× wider (it's currently sized identically to siblings — the visual hierarchy says "featured" but the layout doesn't agree).</span></div>
+      </div>
+    </article>
+
+    <article class="dim">
+      <div class="dim-head">
+        <div class="dim-name">3 · Detail execution<span class="ch">· 细节执行</span></div>
+        <div class="dim-score">5<span class="of">/10</span></div>
+      </div>
+      <div class="band band-fnctn">Functional</div>
+      <p class="evidence">This is where the polish gap shows. One audit pass found 9 visual bugs: STEP 02 legend text overlapping the optimistic legend line and the endpoint dot (<code>index.html:1872-1878</code>, fixed); <code>scroll-padding-top</code> missing on landing/blog/about so every anchor link scrolled section title under the fixed nav (fixed); pricing-card resting <code>translateY(-4px)</code> on the Pro card meaning the three CTAs landed at three different y-positions (fixed); <code>.step</code> grid using <code>align-items:center</code> while Step 02's left column had an extra figure, floating the chart mid-air relative to copy (fixed); blog article-grid SVG captions clipped 2px by overflow:hidden (fixed). Multiple CSS values that diverged by 1-4 pixels in sibling components. This isn't broken — it's tape-and-string. After today's fixes the score moves up; at audit time it's 5.</p>
+      <div class="micro">
+        <div class="pill keep"><span class="lbl">Keep</span><span class="body">The pfc-tokens.css design-system file. Already enforces shared sizing for r, line, ink, gold, etc. Don't dilute.</span></div>
+        <div class="pill fix"><span class="lbl">Fix</span><span class="body">CTA copy inconsistency — 6 different wordings for the same primary action ("Start free" / "Start your free forecast" / "Run the forecast" / "Get started free" / "Try ProFinanceCast" / "Use the calculator free"). Pick one.</span></div>
+        <div class="pill quick"><span class="lbl">Quick win</span><span class="body">Footer link styles — some <code>/blog</code>, some <code>/blog.html</code>. Pick canonical form, repeat across all pages.</span></div>
+      </div>
+    </article>
+
+    <article class="dim">
+      <div class="dim-head">
+        <div class="dim-name">4 · Functionality<span class="ch">· 功能性</span></div>
+        <div class="dim-score">7<span class="of">/10</span></div>
+      </div>
+      <div class="band band-strong">Strong</div>
+      <p class="evidence">Sign-up → onboarding → dashboard flow works end-to-end. PayPal billing integrated. Pricing CTAs deep-link to <code>auth.html?next=/billing.html#founders</code> (well done). Anchor IDs all match nav targets — no dead <code>href="#"</code> links in the public surface. Blog filter chips work (lacking <code>aria-pressed</code> but visually functional). Drops from 9: <code>&lt;div class="field-icon" onclick="togglePw()"&gt;</code> in auth.html — not keyboard-accessible. Info pages (help/about/privacy/terms) lack a Sign-in + Start-free header, leaving visitors who land via search with no conversion path. CTA copy drift means analytics can't cleanly attribute clicks to a single button.</p>
+      <div class="micro">
+        <div class="pill keep"><span class="lbl">Keep</span><span class="body">Deep-link signup → billing flow. Reduces friction for users who decide on the pricing page.</span></div>
+        <div class="pill fix"><span class="lbl">Fix</span><span class="body">Add Sign-in + Start-free buttons to help / about / privacy / terms headers. Visitors from search drop without a conversion CTA.</span></div>
+        <div class="pill quick"><span class="lbl">Quick win</span><span class="body">Auth password-eye <code>&lt;div onclick&gt;</code> → <code>&lt;button type="button" aria-label="Show password"&gt;</code>. Keyboard + screen-reader accessible.</span></div>
+      </div>
+    </article>
+
+    <article class="dim">
+      <div class="dim-head">
+        <div class="dim-name">5 · Innovation<span class="ch">· 创新性</span></div>
+        <div class="dim-score">7<span class="of">/10</span></div>
+      </div>
+      <div class="band band-strong">Strong</div>
+      <p class="evidence">"Editorial finance" as positioning is genuinely fresh — not another generic fintech SaaS look. The compass-on-paper / future-value formula photography is earned (matches the "your grandfather's ledger, your browser's math" thesis). "We compound forward — to the day" is a memorable framing. The hero copy "Your money's path through the next decade. Without one regret." has a literary register most fintech sites would never attempt. Drops from 9: the blog index drops the photo-rich aesthetic entirely (pure SVG chart stand-ins) — the editorial promise breaks the moment a visitor clicks "Blog". The dashboard, when you reach it, doesn't pick up the editorial typography (separate critique).</p>
+      <div class="micro">
+        <div class="pill keep"><span class="lbl">Keep</span><span class="body">"We compound forward — to the day" framing. Hero italic accent. The eight editorial photos already deployed.</span></div>
+        <div class="pill fix"><span class="lbl">Fix</span><span class="body">Blog index → photo-rich. Replace 6 article-card SVG charts with topical 600×600 photography (jar of coins, brass typewriter key labeled RAISE, etc — list at docs/superpowers/audits/2026-05-21-image-placement.md).</span></div>
+        <div class="pill quick"><span class="lbl">Quick win</span><span class="body">Add one editorial banner above each blog post H1 — 1200×500 strip — extending the .pfc-photo-band pattern from index.html.</span></div>
+      </div>
+    </article>
+
+  </main>
+</div>
+
+<section class="actions">
+  <section class="keep">
+    <h3><span class="dot"></span>Keep</h3>
+    <ul>
+      <li><strong>Hero h1 + italic accent.</strong> Most memorable element. Don't touch.</li>
+      <li><strong>Editorial photo discipline.</strong> Eight images, all on-thesis, no stock filler. Maintain.</li>
+      <li><strong>Pricing deep-links.</strong> <code>auth.html?next=/billing.html#founders</code> works.</li>
+      <li><strong>pfc-tokens.css.</strong> Design-system file is the only reason the site is as consistent as it is.</li>
+      <li><strong>"We compound forward — to the day"</strong> framing. Don't rewrite to be more generic.</li>
+    </ul>
+  </section>
+  <section class="fix">
+    <h3><span class="dot"></span>Fix · P0/P1</h3>
+    <ul>
+      <li class="done">STEP 02 legend overlap — <em>shipped 3eae1a4</em></li>
+      <li class="done">scroll-padding-top on landing/blog/about — <em>shipped 3eae1a4</em></li>
+      <li class="done">Pricing card CTAs misaligned — <em>shipped 3eae1a4</em></li>
+      <li class="done">Step 02 grid alignment — <em>shipped 3eae1a4</em></li>
+      <li class="done">Blog SVG caption clipping — <em>shipped 3eae1a4</em></li>
+      <li>Bento card 6 photo breaking icon rhythm — wrap in 44×44 slot.</li>
+      <li>Info pages (help/about/privacy/terms) missing Sign-in + Start-free.</li>
+      <li>CTA copy: pick ONE wording for the primary action.</li>
+      <li>Blog index → real photography (6 article cards + featured).</li>
+    </ul>
+  </section>
+  <section class="quick">
+    <h3><span class="dot"></span>Quick wins</h3>
+    <ul>
+      <li>Auth password-eye <code>&lt;div onclick&gt;</code> → <code>&lt;button&gt;</code>. ~3 min.</li>
+      <li>Footer link styles — pick <code>/blog.html</code> form, replace across pages. ~5 min.</li>
+      <li>Gold flourish hairline below blog post H1 (matches landing). ~10 min.</li>
+      <li>Bento card 6 micro-glyph: move <code>top:22</code> → <code>bottom:22</code> to avoid photo at narrow widths. ~2 min.</li>
+      <li>Hero h1 <code>line-height: 0.96</code> → <code>1.02</code> — descender clipping at max viewport. ~1 min.</li>
+    </ul>
+  </section>
+</section>
+
+<p class="foot">Generated via the <code>critique</code> skill · 5-dimension scoring with evidence-backed cards. CEO-pattern parallel agents: image-placement, button audit, alignment hunt — synthesised by the orchestrator. Companion docs: 2026-05-21-image-placement.md.</p>
+
+</body>
+</html>
