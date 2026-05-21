@@ -25,7 +25,7 @@ function _authHeaders() {
 }
 
 // ── BILLING-INTERVAL TOGGLE ──
-// Updates the Pro card price + CTA SKU. Default is annual (anchors $5.75/mo).
+// Updates the Pro card price + CTA SKU. Default is annual (anchors €6.58/mo).
 function setBillingInterval(interval) {
   billingInterval = interval === 'monthly' ? 'monthly' : 'annual';
   document.getElementById('seg-monthly').classList.toggle('active', billingInterval === 'monthly');
@@ -37,11 +37,11 @@ function setBillingInterval(interval) {
   const suffix = document.getElementById('pro-price-suffix');
   const sash   = document.getElementById('sash-annual');
   if (billingInterval === 'monthly') {
-    num.textContent    = '$9';
+    num.textContent    = '€9';
     suffix.textContent = '· /month';
     if (sash) sash.hidden = true;
   } else {
-    num.textContent    = '$69';
+    num.textContent    = '€79';
     suffix.textContent = '· /year';
     if (sash) sash.hidden = false;
   }
@@ -52,7 +52,7 @@ function openProCheckout() {
   if (billingInterval === 'monthly') {
     openCheckout('pro_monthly', 9);
   } else {
-    openCheckout('pro_annual', 69);
+    openCheckout('pro_annual', 79);
   }
 }
 
@@ -250,7 +250,7 @@ async function refreshFoundersCount() {
     const data = await r.json();
     if (data.claimed == null) return; // fail-closed; keep placeholder
     const claimed = data.claimed;
-    const cap = data.cap || 500;
+    const cap = data.cap || 100;
     const remaining = Math.max(0, cap - claimed);
     let copy;
     if (remaining === 0) {
@@ -263,15 +263,15 @@ async function refreshFoundersCount() {
         cta.setAttribute('aria-disabled', 'true');
         const note = document.createElement('p');
         note.style.cssText = 'font-family:var(--font-display);font-style:italic;color:var(--ink-2);margin-top:8px;font-size:14px;';
-        note.textContent = 'Pro at $9 a month or $69 a year remains the same product.';
+        note.textContent = 'Pro at €9 a month or €79 a year remains the same product.';
         cta.parentNode.insertBefore(note, cta.nextSibling);
       }
-    } else if (remaining <= 25) {
+    } else if (remaining <= 10) {
       copy = 'Only ' + remaining + ' seats remaining — closes when sold out';
-    } else if (remaining <= 100) {
-      copy = remaining + ' of ' + cap + ' seats remaining';
+    } else if (remaining <= 50) {
+      copy = remaining + ' of ' + cap + ' seats remaining · closes day 30';
     } else {
-      copy = claimed + ' of ' + cap + ' claimed';
+      copy = claimed + ' of ' + cap + ' claimed · closes day 30';
     }
     els.forEach(el => el.textContent = copy);
   } catch (_) { /* keep placeholder */ }
