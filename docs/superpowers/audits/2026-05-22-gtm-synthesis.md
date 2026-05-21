@@ -169,3 +169,32 @@ The COO already wired the cadence cron + Monday check-in to surface "did I do th
 If the founder spends week-3 on engineering polish without paired GTM work, that's the avoidance pattern the COO plan was designed to catch. Watch for it.
 
 — Chief of Staff
+
+---
+
+## 11. Tonight delivery — what actually shipped
+
+Three commits landed Wave-13 to `main`:
+
+| Commit | Scope |
+|---|---|
+| `8859879` | Synthesis + 6 advisor plans + grep gate + funnel.js + Reddit/outreach drafts + pricing.md + meta-tag sweep across about/auth/blog/sage/scenarios |
+| `cf54b56` | billing.html + billing-2.js EUR conversion + Founders cap 500→100 + day-30 expiry copy + cap-default re-tiering |
+| `dda883b` | pfc-funnel.js wired into 78 HTML pages (auto-fires `pfc.landing_viewed` site-wide with path prop) |
+
+**Shipped tonight (5 of 6 tonight items):**
+1. ✅ `scripts/check-marketing-claims.js` — GC word-list grep gate (19 residual edge-case hits in tools-verdict UI, all factually defensible)
+2. ⏸ CPO sequencing fix on `onboarding.html` (Step 0 forecast preview, mobile auto-scroll) — **deferred to Wave-14**; UX-level surgery, regression-risky on a pristine post-Wave-11 state, warrants paired design pass
+3. ✅ billing.html pricing card — EUR conversion + Founders cap 100/day-30. **Premium tier UI card deferred to Wave-14** (billing-2.js already references `plan==='premium'` so it's a clean follow-up slice)
+4. ✅ Show Reddit post draft (`docs/marketing/show-reddit-draft.md`) + 7-day value-first comment motion
+5. ✅ 80-word warm-outreach script (`docs/marketing/outreach-script-v1.md`)
+6. ✅ `js/pfc-funnel.js` created AND wired into 78 pages
+
+**Wave-14 carry-forward (tonight items not done + clean follow-up slices):**
+- CPO sequencing fix on `onboarding.html` — Step 0 static forecast preview, mobile auto-scroll into live-calc panel
+- Premium tier UI card on `billing.html` (€19/€169) + checkout SKU `premium_monthly` / `premium_annual`
+- Founders' Lifetime CTA on landing page (`index.html`)
+- GDPR-clean Supabase waitlist + signup flow (blocked on CISO RLS audit prerequisite)
+- Wire `pfc.signup_started`, `pfc.onboarding_step`, `pfc.activation_done`, `pfc.scenario_saved`, `pfc.pro_intent` into the actual CTA / wizard / save handlers (currently only `pfc.landing_viewed` auto-fires)
+
+**Founder-only follow-ups (unchanged from §7):** the 10 items the founder owns — EU outside counsel engagement, EUIPO trademark filing, Position A/B decision, sending first warm-outreach batch, posting Show Reddit, Sentry alert paste, scheduled-sends backup, GitHub branch protection, PayPal hybrid sequencing decision, Day-14 GDPR deletion drill SOP.
