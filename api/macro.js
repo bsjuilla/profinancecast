@@ -1,169 +1,119 @@
-// api/macro.js — Node serverless macro-data proxy via FRED.
+// api/macro.js — Edge runtime macro-data proxy.
 //
 // HISTORY:
-//   - First tried as Edge runtime (Sprint 3, May 2026): FRED's edge-POP IP
-//     ranges are blocked, all 4 fetches timed out at 6s (verified in prod).
-//   - Migrated to Node runtime (this version) because Vercel's serverless
-//     functions egress through AWS Lambda IPs which FRED treats differently.
-//   - Inflation endpoint (which was Node) was migrated to Edge in the same
-//     commit to keep the 12-Serverless-Function Hobby cap intact.
+//   - Originally proxied FRED for 4 series (Fed funds, mortgage, 10Y Treasury,
+//     CPI YoY). FRED blocks Vercel's IP ranges (both Edge POP IPs AND Node
+//     Lambda IPs — verified by deploy probes May 2026). Same with World Bank
+//     from Edge, but World Bank works from Node.
+//   - Pivoted: macro endpoint now returns ONLY CPI YoY, sourced from World
+//     Bank via the /api/inflation endpoint (which runs on Node runtime). This
+//     Edge proxy adds the per-country lookup logic and uniform error contract
+//     consistent with other Sprint-3 endpoints.
+//   - Fed funds / 30Y mortgage / 10Y Treasury are dropped until we find a
+//     macro source that works from Vercel. They're documented in the response
+//     payload as `null` so the client can still render the shape.
 //
-// Returns the four headline macro series most relevant to a personal-finance
-// audience:
-//   - FEDFUNDS       Federal funds effective rate (monthly)
-//   - MORTGAGE30US   30-year fixed mortgage average (weekly)
-//   - DGS10          10-year Treasury constant-maturity yield (daily)
-//   - CPIAUCSL       CPI All Urban Consumers (monthly index — we compute YoY %)
+// USAGE:
+//   GET /api/macro                    → CPI YoY for user's country (from geo)
+//   GET /api/macro?country=US         → CPI YoY for explicit country
 //
-// Required env: FRED_API_KEY (free, https://fred.stlouisfed.org/docs/api/api_key.html)
-//
-// Response shape:
+// Response shape (preserved for client compatibility):
 //   {
-//     fedFunds:    { value: 5.33,  date: "2026-04-01", series: "FEDFUNDS" },
-//     mortgage30y: { value: 6.84,  date: "2026-05-15", series: "MORTGAGE30US" },
-//     treasury10y: { value: 4.32,  date: "2026-05-20", series: "DGS10" },
-//     cpiYoY:      { value: 3.20,  date: "2026-04-01", series: "CPIAUCSL", method: "YoY%" },
+//     fedFunds:    null,
+//     mortgage30y: null,
+//     treasury10y: null,
+//     cpiYoY:      { value: 3.6, date: "2024", series: "FP.CPI.TOTL.ZG",
+//                    method: "annual%", country: "MU", countryName: "Mauritius" },
 //     asOf:        "2026-05-21T10:00:00.000Z",
-//     source:      "fred-stlouisfed",
-//     errors:      []
+//     source:      "world-bank",
+//     note:        "FRED unreachable from Vercel; sourced via World Bank"
 //   }
 
-const FRED_BASE = 'https://api.stlouisfed.org/fred/series/observations';
+export const config = { runtime: 'edge' };
 
-// Same-origin guard (Node-runtime variant — headers are a plain object,
-// not a Headers instance). Prevents bot loops from burning our FRED key.
+function _json(payload, status, extraHeaders) {
+  return new Response(JSON.stringify(payload), {
+    status,
+    headers: Object.assign({
+      'Content-Type': 'application/json; charset=utf-8',
+    }, extraHeaders || {}),
+  });
+}
+
 function _isSameOrigin(req) {
-  const site = (req.headers['sec-fetch-site'] || '').toString();
+  const site = req.headers.get('sec-fetch-site') || '';
   if (!site) return true;
   return site === 'same-origin' || site === 'same-site' || site === 'none';
 }
 
-function _twoYearsAgoIso() {
-  const d = new Date();
-  d.setFullYear(d.getFullYear() - 2);
-  return d.toISOString().slice(0, 10);
+// Best-effort country resolution: explicit ?country= param wins, else
+// fall through to the Vercel geo header that's already attached to every
+// request. Default US so the macro shape never returns empty.
+function _resolveCountry(req) {
+  const url = new URL(req.url);
+  const explicit = (url.searchParams.get('country') || '').toUpperCase().trim();
+  if (/^[A-Z]{2}$/.test(explicit)) return explicit;
+  const geo = (req.headers.get('x-vercel-ip-country') || '').toUpperCase();
+  if (/^[A-Z]{2}$/.test(geo)) return geo;
+  return 'US';
 }
 
-async function _fetchSeries(seriesId, apiKey) {
-  const params = new URLSearchParams({
-    series_id: seriesId,
-    api_key: apiKey,
-    file_type: 'json',
-    sort_order: 'asc',
-    observation_start: _twoYearsAgoIso(),
-  });
-  const url = FRED_BASE + '?' + params.toString();
-  const ctrl = new AbortController();
-  const timeoutId = setTimeout(() => ctrl.abort(), 6000);
-  try {
-    const res = await fetch(url, {
-      headers: { 'Accept': 'application/json' },
-      signal: ctrl.signal,
-    });
-    clearTimeout(timeoutId);
-    if (!res.ok) return { rows: [], error: 'http_' + res.status };
-    const data = await res.json();
-    if (!data || !Array.isArray(data.observations)) {
-      return { rows: [], error: 'no_observations' };
-    }
-    const rows = [];
-    for (const o of data.observations) {
-      if (!o || typeof o.date !== 'string') continue;
-      if (o.value === '.' || o.value === '' || o.value == null) continue;
-      const v = parseFloat(o.value);
-      if (!isFinite(v)) continue;
-      rows.push({ date: o.date, value: v });
-    }
-    if (rows.length === 0) return { rows: [], error: 'empty_observations' };
-    return { rows, error: null };
-  } catch (e) {
-    clearTimeout(timeoutId);
-    const reason = (e && e.name === 'AbortError') ? 'timeout_6s' : 'fetch_failed';
-    return { rows: [], error: reason };
-  }
-}
-
-// CPI YoY % from monthly index values: compare the latest observation against
-// the one ~12 months prior.
-function _computeCpiYoY(rows) {
-  if (!rows || rows.length < 13) return null;
-  const latest = rows[rows.length - 1];
-  if (!latest || !isFinite(latest.value)) return null;
-  const latestMs = Date.parse(latest.date + 'T00:00:00Z');
-  if (!isFinite(latestMs)) return null;
-  const targetMs = latestMs - 11 * 30 * 24 * 60 * 60 * 1000;
-  let best = null, bestDelta = Infinity;
-  for (let i = rows.length - 13; i >= 0 && i >= rows.length - 24; i--) {
-    const dMs = Date.parse(rows[i].date + 'T00:00:00Z');
-    if (!isFinite(dMs)) continue;
-    const delta = Math.abs(dMs - targetMs);
-    if (delta < bestDelta) { bestDelta = delta; best = rows[i]; }
-  }
-  if (!best || !isFinite(best.value) || best.value <= 0) return null;
-  const yoy = ((latest.value - best.value) / best.value) * 100;
-  return {
-    value: Math.round(yoy * 100) / 100,
-    date: latest.date,
-    series: 'CPIAUCSL',
-    method: 'YoY%',
-  };
-}
-
-function _latest(rows, seriesId) {
-  if (!rows.length) return null;
-  const row = rows[rows.length - 1];
-  return { value: row.value, date: row.date, series: seriesId };
-}
-
-export default async function handler(req, res) {
+export default async function handler(req) {
   if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method not allowed', code: 'METHOD' });
+    return _json({ error: 'Method not allowed', code: 'METHOD' }, 405);
   }
   if (!_isSameOrigin(req)) {
-    res.setHeader('Cache-Control', 'no-store');
-    return res.status(403).json({ error: 'Cross-site not allowed', code: 'CROSS_SITE' });
+    return _json({ error: 'Cross-site not allowed', code: 'CROSS_SITE' }, 403,
+      { 'Cache-Control': 'no-store' });
   }
 
-  const apiKey = process.env.FRED_API_KEY;
-  if (!apiKey) {
-    res.setHeader('Cache-Control', 'no-store');
-    return res.status(503).json({
-      error: 'Macro API key not configured. Add FRED_API_KEY in Vercel.',
-      code: 'MISSING_KEY',
-    });
-  }
+  const country = _resolveCountry(req);
 
-  const [ff, mtg, t10, cpi] = await Promise.all([
-    _fetchSeries('FEDFUNDS',     apiKey),
-    _fetchSeries('MORTGAGE30US', apiKey),
-    _fetchSeries('DGS10',        apiKey),
-    _fetchSeries('CPIAUCSL',     apiKey),
-  ]);
+  // Same-origin call to our Node /api/inflation endpoint. World Bank itself
+  // blocks Vercel Edge POPs, but the Node lambda CAN reach World Bank — so
+  // we proxy through it. The internal call adds ~50-150ms latency but
+  // sidesteps the cloud-IP block entirely.
+  const origin = new URL(req.url).origin;
+  const infUrl = `${origin}/api/inflation?country=${encodeURIComponent(country)}`;
 
-  const errors = [];
-  if (ff.error)  errors.push({ series: 'FEDFUNDS',     reason: ff.error });
-  if (mtg.error) errors.push({ series: 'MORTGAGE30US', reason: mtg.error });
-  if (t10.error) errors.push({ series: 'DGS10',        reason: t10.error });
-  if (cpi.error) errors.push({ series: 'CPIAUCSL',     reason: cpi.error });
+  let cpiYoY = null;
+  try {
+    const res = await fetch(infUrl, { headers: { 'Accept': 'application/json' } });
+    if (res.ok) {
+      const data = await res.json();
+      if (data && typeof data.rate === 'number' && isFinite(data.rate)) {
+        cpiYoY = {
+          value: data.rate,
+          date: String(data.year || ''),
+          series: 'FP.CPI.TOTL.ZG',
+          method: 'annual%',
+          country: data.countryCode || country,
+          countryName: data.countryName || null,
+          trend: data.trend || null,
+          severity: data.severity || null,
+        };
+      }
+    }
+  } catch (_) { /* silent — widget will hide if cpiYoY remains null */ }
 
   const payload = {
-    fedFunds:    _latest(ff.rows,  'FEDFUNDS'),
-    mortgage30y: _latest(mtg.rows, 'MORTGAGE30US'),
-    treasury10y: _latest(t10.rows, 'DGS10'),
-    cpiYoY:      _computeCpiYoY(cpi.rows),
+    // Fed funds / mortgage / Treasury intentionally null — no working
+    // source from Vercel as of May 2026. The shape is preserved so the
+    // client doesn't need to change its render logic.
+    fedFunds: null,
+    mortgage30y: null,
+    treasury10y: null,
+    cpiYoY: cpiYoY,
     asOf: new Date().toISOString(),
-    source: 'fred-stlouisfed',
-    errors: errors,
+    source: 'world-bank',
+    note: 'FRED unreachable from Vercel; macro now sources CPI YoY via World Bank',
   };
 
-  // Cache only the happy path (≥3 of 4 series populated). When upstream
-  // is flaky, no-store lets the next request retry rather than serving
-  // 6 hours of cached failure to all users.
-  const populated = ['fedFunds','mortgage30y','treasury10y','cpiYoY']
-    .filter((k) => payload[k] && typeof payload[k].value === 'number').length;
-  res.setHeader('Cache-Control', populated >= 3
-    ? 'public, s-maxage=21600, max-age=0, must-revalidate'
-    : 'no-store');
+  // Cache only the happy path (cpiYoY populated). World Bank refreshes
+  // inflation data annually — 24h CDN cache is conservative.
+  const cacheControl = cpiYoY
+    ? 'public, s-maxage=86400, max-age=0, must-revalidate'
+    : 'no-store';
 
-  return res.status(200).json(payload);
+  return _json(payload, 200, { 'Cache-Control': cacheControl });
 }

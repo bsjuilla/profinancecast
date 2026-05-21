@@ -1,15 +1,13 @@
-// api/inflation.js — Edge runtime World Bank inflation proxy.
+// api/inflation.js — Node serverless World Bank inflation proxy.
 //
-// Moved from Node serverless to Edge runtime in the macro-data swap: the
-// /api/macro endpoint needs Node runtime to escape FRED's edge-POP IP block,
-// and we're at the Hobby 12-Serverless-Function cap. Inflation is a stateless
-// World Bank proxy with no DB / auth dependencies — perfect Edge fit. Net
-// function count is unchanged.
+// NOTE on runtime: tried as Edge runtime briefly but World Bank's API
+// appears to filter cloud-CDN edge POP IPs (502 responses every time).
+// Reverted to Node runtime where Vercel egresses through AWS Lambda IPs
+// which World Bank accepts. (Same class of issue as FRED, but FRED blocks
+// both runtimes while World Bank blocks only Edge.)
 //
 // USAGE: GET /api/inflation?country=MU
 // country = ISO 3166-1 alpha-2 country code (2 letters)
-
-export const config = { runtime: 'edge' };
 
 // World Bank country code map — alpha-2 → World Bank code
 const WB_CODE_MAP = {
@@ -47,51 +45,39 @@ const COUNTRY_NAMES = {
   'EC': 'Ecuador', 'PE': 'Peru', 'UY': 'Uruguay',
 };
 
-function _json(payload, status, extraHeaders) {
-  return new Response(JSON.stringify(payload), {
-    status,
-    headers: Object.assign({
-      'Content-Type': 'application/json; charset=utf-8',
-    }, extraHeaders || {}),
-  });
-}
-
-export default async function handler(req) {
+export default async function handler(req, res) {
   if (req.method !== 'GET') {
-    return _json({ error: 'Method not allowed' }, 405);
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const url = new URL(req.url);
-  const countryCode = (url.searchParams.get('country') || 'US').toUpperCase().trim();
+  const countryCode = (req.query.country || 'US').toUpperCase().trim();
   if (!/^[A-Z]{2}$/.test(countryCode)) {
-    return _json({ error: 'Invalid country code. Use 2-letter ISO code e.g. MU, US, GB' }, 400);
+    return res.status(400).json({ error: 'Invalid country code. Use 2-letter ISO code e.g. MU, US, GB' });
   }
 
   const wbCode = WB_CODE_MAP[countryCode] || countryCode;
 
   try {
-    // World Bank API — FP.CPI.TOTL.ZG = Consumer Price Index, annual inflation %
-    // mrv=3 = most recent 3 values; format=json = JSON response
-    const wbUrl = `https://api.worldbank.org/v2/country/${wbCode}/indicator/FP.CPI.TOTL.ZG?format=json&mrv=3&per_page=3`;
-
-    const response = await fetch(wbUrl, { headers: { 'Accept': 'application/json' } });
+    const url = `https://api.worldbank.org/v2/country/${wbCode}/indicator/FP.CPI.TOTL.ZG?format=json&mrv=3&per_page=3`;
+    const response = await fetch(url, { headers: { 'Accept': 'application/json' } });
 
     if (!response.ok) {
-      return _json({ error: 'World Bank API unavailable. Please try again.', fallback: true }, 502);
+      return res.status(502).json({
+        error: 'World Bank API unavailable. Please try again.',
+        fallback: true,
+      });
     }
 
     const data = await response.json();
-
     if (!Array.isArray(data) || data.length < 2 || !Array.isArray(data[1])) {
-      return _json({ error: 'Unexpected data format from World Bank API', fallback: true }, 502);
+      return res.status(502).json({ error: 'Unexpected data format from World Bank API', fallback: true });
     }
 
     const datapoints = data[1];
     const valid = datapoints.filter(d => d.value !== null);
 
     if (valid.length === 0) {
-      // Graceful fallback: return a global average so dashboards don't show 0
-      return _json({
+      return res.status(200).json({
         countryCode,
         countryName: COUNTRY_NAMES[countryCode] || countryCode,
         rate: 3.5,
@@ -105,7 +91,7 @@ export default async function handler(req) {
         sourceUrl: null,
         lastUpdated: new Date().toISOString(),
         fallback: true,
-      }, 200);
+      });
     }
 
     const latest = valid[0];
@@ -124,7 +110,7 @@ export default async function handler(req) {
     else if (latest.value >= 5) severity = 'elevated';
     else if (latest.value <= 0) severity = 'deflation';
 
-    return _json({
+    return res.status(200).json({
       countryCode,
       countryName: COUNTRY_NAMES[countryCode] || countryCode,
       rate: Math.round(latest.value * 10) / 10,
@@ -137,13 +123,13 @@ export default async function handler(req) {
       source: 'World Bank — Consumer Price Index (FP.CPI.TOTL.ZG)',
       sourceUrl: `https://data.worldbank.org/indicator/FP.CPI.TOTL.ZG?locations=${wbCode}`,
       lastUpdated: new Date().toISOString(),
-    }, 200, {
-      // World Bank annual data — 24h CDN cache is conservative.
-      'Cache-Control': 'public, s-maxage=86400, max-age=0, must-revalidate',
     });
 
   } catch (err) {
-    console.error('Inflation API error:', err && err.message);
-    return _json({ error: 'Could not fetch inflation data. Please try again.', fallback: true }, 500);
+    console.error('Inflation API error:', err);
+    return res.status(500).json({
+      error: 'Could not fetch inflation data. Please try again.',
+      fallback: true,
+    });
   }
 }

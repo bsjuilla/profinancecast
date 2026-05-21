@@ -2,11 +2,27 @@
       if (typeof PFCAuth !== 'undefined') PFCAuth.requireAuth();
     });
 
-    // Macro context strip — populates the macro-widget div with FRED data.
-    // Hides itself entirely when all 4 series are null (e.g., FRED is
-    // IP-blocking Vercel's edge POPs — a known reachability issue with
-    // their public API). Better to show nothing than 4 cells of "—".
+    // Macro context strip — currently only shows CPI YoY (inflation) for the
+    // user's country, sourced via World Bank. FRED's Fed-funds/Treasury/
+    // mortgage series proved unreachable from Vercel (blocks both Edge POPs
+    // and Lambda IPs). Inflation is arguably the most personally-relevant
+    // macro indicator anyway — "is my savings outpacing it?".
     (function _renderMacroWidget() {
+      function _esc(s) {
+        return String(s || '').replace(/[&<>"']/g, (c) =>
+          ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+      }
+      function _trendArrow(trend) {
+        if (trend === 'rising')  return '<span style="color:var(--amber,#F5A623);">▲</span>';
+        if (trend === 'falling') return '<span style="color:var(--teal,#2BB67D);">▼</span>';
+        return '';
+      }
+      function _severityHint(severity) {
+        if (severity === 'high')      return ' &middot; <span style="color:var(--red,#E14747);">high inflation</span>';
+        if (severity === 'elevated')  return ' &middot; <span style="color:var(--amber,#F5A623);">elevated</span>';
+        if (severity === 'deflation') return ' &middot; <span style="color:var(--blue,#7BA8E0);">deflation</span>';
+        return '';
+      }
       function _go() {
         try {
           if (typeof PFCMacro === 'undefined') return;
@@ -14,34 +30,25 @@
           if (!el) return;
           PFCMacro.get().then((d) => {
             if (!d || !el) return;
-            const series = [d.fedFunds, d.mortgage30y, d.treasury10y, d.cpiYoY];
-            const populated = series.filter(
-              (s) => s && typeof s.value === 'number' && isFinite(s.value)
-            );
-            // If FRED is unreachable from this Vercel POP, hide silently.
-            // The dashboard renders fine without macro context; better than
-            // showing a row of useless "—" placeholders.
-            if (populated.length === 0) {
-              el.style.display = 'none';
-              return;
-            }
-            function _fmtPct(v) {
-              return (typeof v === 'number' && isFinite(v)) ? v.toFixed(2) + '%' : '—';
-            }
-            function _cell(label, val) {
-              return '<div style="display:inline-block;margin-right:22px;">' +
-                '<span style="display:block;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3,#8a9189);margin-bottom:2px;">' +
-                  label + '</span>' +
-                '<span style="font-family:var(--font-display);font-weight:600;font-size:14px;color:var(--ink,#F0EDE2);">' +
-                  val + '</span></div>';
-            }
+            const cpi = d.cpiYoY;
+            const cpiPopulated = cpi && typeof cpi.value === 'number' && isFinite(cpi.value);
+            if (!cpiPopulated) { el.style.display = 'none'; return; }
+            const label = cpi.countryName
+              ? 'Inflation in ' + _esc(cpi.countryName)
+              : 'Inflation (CPI YoY)';
+            const val = cpi.value.toFixed(1) + '%';
             el.innerHTML =
-              _cell('Fed funds',    d.fedFunds    ? _fmtPct(d.fedFunds.value)    : '—') +
-              _cell('30Y mortgage', d.mortgage30y ? _fmtPct(d.mortgage30y.value) : '—') +
-              _cell('10Y Treasury', d.treasury10y ? _fmtPct(d.treasury10y.value) : '—') +
-              _cell('CPI YoY',      d.cpiYoY      ? _fmtPct(d.cpiYoY.value)      : '—') +
-              '<span style="float:right;font-size:10.5px;color:var(--text3,#8a9189);">FRED &middot; ' +
-                (d.cpiYoY && d.cpiYoY.date ? d.cpiYoY.date : 'live') + '</span>';
+              '<div style="display:flex;align-items:center;justify-content:space-between;">' +
+                '<div>' +
+                  '<span style="font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3,#8a9189);margin-right:10px;">' +
+                    _esc(label) + '</span>' +
+                  '<span style="font-family:var(--font-display);font-weight:600;font-size:16px;color:var(--ink,#F0EDE2);">' +
+                    val + '</span>' +
+                  ' ' + _trendArrow(cpi.trend) + _severityHint(cpi.severity) +
+                '</div>' +
+                '<span style="font-size:10.5px;color:var(--text3,#8a9189);">World Bank &middot; ' +
+                  _esc(cpi.date || 'latest') + '</span>' +
+              '</div>';
             el.style.display = 'block';
           }).catch(() => { /* silent — widget stays hidden */ });
         } catch (_) {}
