@@ -1,27 +1,26 @@
-// api/geo.js
+// api/geo.js — Edge runtime (does NOT count against the Hobby 12-function cap).
 //
-// Returns the visitor's country + best-guess currency, derived from Vercel's
-// edge geo headers (x-vercel-ip-country, x-vercel-ip-country-region, etc).
-// Zero network calls — all data lives on Vercel's edge nodes already.
+// Returns the visitor's country + best-guess currency derived from Vercel's
+// edge-network headers. Zero network calls; no IP address is logged or
+// returned to the client. Used by onboarding.html and cash-forecast.html.
 //
-// Used by onboarding.html to pre-select the country dropdown + currency picker,
-// instead of defaulting USD for everyone. Saves the user a 100-currency scroll.
-//
-// Privacy: no IP address is logged or returned to the client. We only emit
-// the derived country / region / currency code. ProFinanceCast's privacy
-// posture: visitor sees their own geo, we don't store it.
+// Privacy: the user sees their own geo, we don't persist it. The IP itself
+// never crosses out of Vercel's edge.
 //
 // Response shape:
-//   { countryCode: "MU", countryName: "Mauritius", region: "Plaines Wilhems",
-//     city: "Quatre Bornes", currencyCode: "MUR", currencySymbol: "₨",
-//     source: "vercel-headers" }
+//   { countryCode, countryName, region, city, currencyCode, currencySymbol, source }
 //
-// On localhost or where headers are missing, returns sensible USD defaults.
+// Edge runtime advantages here:
+//   - Runs at the closest POP — sub-50ms even from Mauritius.
+//   - Does not count toward the 12 Serverless Function cap on Hobby (the
+//     reason we converted from the Node runtime).
+//   - Native access to `req.geo` and `req.headers.get(...)` for the
+//     `x-vercel-ip-country*` headers.
 
-// Country → ISO 4217 currency code. Covers every country in Vercel's coverage
-// (~250) plus territories. Sourced from ISO 3166 + the central-bank-published
-// currency for each region. Pinned to the dominant currency where multiple
-// circulate (e.g. ZW → USD, not ZWL, since USD is the practical day-to-day).
+export const config = { runtime: 'edge' };
+
+// Country → ISO 4217 currency. Pinned to the dominant currency where multiple
+// circulate (e.g. ZW → USD in practice, not ZWL). ~250 rows.
 const COUNTRY_TO_CURRENCY = {
   AD:'EUR', AE:'AED', AF:'AFN', AG:'XCD', AI:'XCD', AL:'ALL', AM:'AMD',
   AO:'AOA', AR:'ARS', AS:'USD', AT:'EUR', AU:'AUD', AW:'AWG', AX:'EUR',
@@ -61,18 +60,12 @@ const COUNTRY_TO_CURRENCY = {
   YT:'EUR', ZA:'ZAR', ZM:'ZMW', ZW:'USD',
 };
 
-// Display symbols for the 20 most common currencies our users land in.
-// (Full symbol table lives in js/pfc-currency.js — duplicated here only
-// for the most-common cases so we can return a fully populated payload
-// without a second client-side lookup.)
 const CURRENCY_SYMBOL_QUICK = {
   USD:'$', EUR:'€', GBP:'£', JPY:'¥', CNY:'¥', INR:'₹', AUD:'A$', CAD:'CA$',
   CHF:'CHF', SGD:'S$', HKD:'HK$', NZD:'NZ$', SEK:'kr', NOK:'kr', DKK:'kr',
   ZAR:'R', BRL:'R$', MXN:'Mex$', KRW:'₩', NGN:'₦', MUR:'₨', AED:'د.إ',
 };
 
-// Country-code → display name for the most common, so the client can show
-// a friendly "Detected: Mauritius (MUR)" hint without a country-name table.
 const COUNTRY_NAME_QUICK = {
   US:'United States', GB:'United Kingdom', CA:'Canada', AU:'Australia',
   NZ:'New Zealand', DE:'Germany', FR:'France', ES:'Spain', IT:'Italy',
@@ -91,34 +84,39 @@ function _decode(v) {
   try { return decodeURIComponent(v); } catch (_) { return String(v); }
 }
 
-export default function handler(req, res) {
-  // Vercel attaches edge geo headers automatically on the request.
-  // Header docs: https://vercel.com/docs/edge-network/headers
-  const h = req.headers || {};
-  const countryCode = String(h['x-vercel-ip-country'] || '').toUpperCase();
-  const region      = _decode(h['x-vercel-ip-country-region']);
-  const city        = _decode(h['x-vercel-ip-city']);
+export default function handler(req) {
+  // Edge runtime exposes both `req.geo` (parsed by Vercel) AND the raw
+  // x-vercel-ip-* headers. We use headers for the country since that's
+  // the well-documented stable contract; `req.geo` is convenient but
+  // we don't depend on the runtime-side parser.
+  const hCountry = req.headers.get('x-vercel-ip-country') || '';
+  const hRegion  = req.headers.get('x-vercel-ip-country-region') || '';
+  const hCity    = req.headers.get('x-vercel-ip-city') || '';
 
   // Fall back to USD if Vercel didn't supply a country header (Tor / VPN /
-  // localhost dev), so the client gets a stable shape and no NaN downstream.
-  const cc = countryCode || 'US';
+  // localhost dev).
+  const cc = (hCountry || 'US').toUpperCase();
   const currencyCode = COUNTRY_TO_CURRENCY[cc] || 'USD';
   const currencySymbol = CURRENCY_SYMBOL_QUICK[currencyCode] || currencyCode;
   const countryName = COUNTRY_NAME_QUICK[cc] || '';
 
-  // Cache for an hour at the edge — geo per IP doesn't change on the minute
-  // scale, and re-fetching costs nothing. s-maxage is for the CDN; no client
-  // cache so a user who moves countries still sees fresh data on next visit.
-  res.setHeader('Cache-Control', 'public, s-maxage=3600, max-age=0, must-revalidate');
-  res.setHeader('Content-Type', 'application/json; charset=utf-8');
-
-  res.status(200).json({
+  const payload = {
     countryCode: cc,
-    countryName: countryName,
-    region: region || null,
-    city: city || null,
-    currencyCode: currencyCode,
-    currencySymbol: currencySymbol,
-    source: countryCode ? 'vercel-headers' : 'fallback-usd',
+    countryName,
+    region: _decode(hRegion) || null,
+    city: _decode(hCity) || null,
+    currencyCode,
+    currencySymbol,
+    source: hCountry ? 'vercel-headers' : 'fallback-usd',
+  };
+
+  return new Response(JSON.stringify(payload), {
+    status: 200,
+    headers: {
+      'Content-Type': 'application/json; charset=utf-8',
+      // CDN may cache for 1h — geo doesn't change minute-to-minute.
+      // No client cache so a user who moves countries sees fresh data next visit.
+      'Cache-Control': 'public, s-maxage=3600, max-age=0, must-revalidate',
+    },
   });
 }
