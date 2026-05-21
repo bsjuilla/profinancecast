@@ -61,25 +61,29 @@ img.pfc-photo-square {
  * vignettes rather than billboards. */
 
 /* 16:7 — section divider band, only used on landing */
-.pfc-photo-band  { aspect-ratio: 16 / 7;  max-width: 1100px; margin: 0 auto; }
-/* 16:9 / 21:9 — page-hero. Sits above an h1/h2; never dominates. */
-.pfc-photo-hero  { aspect-ratio: 16 / 9; max-width: 880px; margin: 0 auto 20px; }
-.pfc-photo-hero.is-wide  { aspect-ratio: 21 / 9; max-width: 880px; }
-.pfc-photo-hero.is-cinema { aspect-ratio: 21 / 7; max-width: 1000px; }
-/* Thin band — drawer / archive / certificate-strip */
-.pfc-photo-eyebrow { aspect-ratio: 16 / 5; max-width: 980px; margin: 0 auto 18px; }
+.pfc-photo-band  { aspect-ratio: 16 / 7;  max-width: 920px; margin: 0 auto; }
+/* 16:9 / 21:9 — page-hero ACCENT. Must NEVER dominate over the page
+ * title. ~40% smaller than v1 after journal/net-worth visual QA showed
+ * the 880px hero ate 50% of viewport-height and pushed the h1 below
+ * the fold. New target: ~480px wide / ~270px tall = ~30% of viewport-h. */
+.pfc-photo-hero  { aspect-ratio: 16 / 9; max-width: 480px; margin: 0 auto 20px; }
+.pfc-photo-hero.is-wide  { aspect-ratio: 21 / 9; max-width: 560px; }
+.pfc-photo-hero.is-cinema { aspect-ratio: 21 / 7; max-width: 620px; }
+/* Thin band — drawer / archive / certificate-strip. Eyebrow-sized,
+ * never a billboard. */
+.pfc-photo-eyebrow { aspect-ratio: 16 / 5; max-width: 640px; margin: 0 auto 18px; }
 .pfc-photo-eyebrow.is-tall { aspect-ratio: 16 / 6; }
-.pfc-photo-eyebrow.is-cinema { aspect-ratio: 21 / 6; max-width: 1080px; }
-.pfc-photo-eyebrow.is-tide { aspect-ratio: 21 / 7; max-width: 1080px; }
+.pfc-photo-eyebrow.is-cinema { aspect-ratio: 21 / 6; max-width: 720px; }
+.pfc-photo-eyebrow.is-tide { aspect-ratio: 21 / 7; max-width: 720px; }
 /* 4:3 — fits inside cards (Pro empty-states, blog hero) */
-.pfc-photo-card    { aspect-ratio: 4 / 3; max-width: 440px; margin: 0 auto 18px; }
+.pfc-photo-card    { aspect-ratio: 4 / 3; max-width: 320px; margin: 0 auto 18px; }
 /* Vertical — CTAs, auth side panel */
-.pfc-photo-portrait        { aspect-ratio: 4 / 5; max-width: 260px; margin: 0 auto 18px; }
-.pfc-photo-portrait.is-tall { aspect-ratio: 3 / 4; max-width: 280px; }
-/* Square — talisman. Default 280px, .sm for 96px upgrade-banner key */
-.pfc-photo-square { aspect-ratio: 1 / 1; max-width: 280px; margin: 0 auto; }
+.pfc-photo-portrait        { aspect-ratio: 4 / 5; max-width: 220px; margin: 0 auto 18px; }
+.pfc-photo-portrait.is-tall { aspect-ratio: 3 / 4; max-width: 220px; }
+/* Square — talisman. Default 200px, .sm for 96px upgrade-banner key */
+.pfc-photo-square { aspect-ratio: 1 / 1; max-width: 200px; margin: 0 auto; }
 .pfc-photo-square.sm { max-width: 96px; }
-.pfc-photo-square.md { max-width: 200px; }
+.pfc-photo-square.md { max-width: 160px; }
 
 .pfc-photo-band img,
 .pfc-photo-hero img,

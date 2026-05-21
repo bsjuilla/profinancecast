@@ -133,7 +133,7 @@
   @keyframes cardIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
 </style>
   <link rel="stylesheet" href="css/pfc-tokens.css">
-  <link rel="stylesheet" href="css/pfc-photos.css">
+  <link rel="stylesheet" href="css/pfc-photos.css?v=2">
   <script src="js/pfc-export.js" defer></script>
   <!-- Supabase SDK + auth/storage/entitlements (must load before any inline script that uses them) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -247,15 +247,6 @@
 
 <!-- MAIN -->
 <div class="main">
-  <figure class="pfc-photo-figure">
-    <picture>
-      <source srcset="assets/img/photos/history-archive-eyebrow.webp" type="image/webp">
-      <img class="pfc-photo-eyebrow" src="assets/img/photos/history-archive-eyebrow.webp"
-           alt="Library card-catalog drawer pulled half-open with manila tabs — your full history rendered as a real archive."
-           loading="lazy" decoding="async"
-           width="2243" height="701">
-    </picture>
-  </figure>
   <div class="topbar">
     <div class="topbar-left">
       <div class="topbar-title">History</div>
@@ -267,6 +258,15 @@
   </div>
 
   <div class="content">
+    <figure class="pfc-photo-figure">
+      <picture>
+        <source srcset="assets/img/photos/history-archive-eyebrow.webp" type="image/webp">
+        <img class="pfc-photo-eyebrow" src="assets/img/photos/history-archive-eyebrow.webp"
+             alt="Library card-catalog drawer pulled half-open with manila tabs — your full history rendered as a real archive."
+             loading="lazy" decoding="async"
+             width="2243" height="701">
+      </picture>
+    </figure>
 
     <!-- TAB STRIP -->
     <div class="tab-strip" role="tablist" aria-label="History sections">
