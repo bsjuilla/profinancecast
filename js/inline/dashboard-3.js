@@ -58,6 +58,94 @@
       } else { _go(); }
     })();
 
+    // FX PANEL — full-card currency board on the dashboard overview.
+    // Renders the user's base currency against 6 common foreign currencies
+    // using PFCFx (Frankfurter / ECB). Hidden until the first fetch
+    // resolves so the panel never appears empty.
+    //
+    // Origin: synthesis Wave-2 #8 — provides the editorial home for the
+    // E8 currency-triptych photo (already in DOM as the panel's eyebrow).
+    (function _renderFxPanel() {
+      // Six default counter-currencies — a deliberately small set that
+      // spans the major Frankfurter-tracked corridors. The user's home
+      // currency is filtered out of this list if it appears.
+      const COUNTERS_USD_BASE = ['EUR', 'GBP', 'JPY', 'CHF', 'AUD', 'CAD'];
+      const COUNTERS_EU_BASE  = ['USD', 'GBP', 'JPY', 'CHF', 'AUD', 'CAD'];
+
+      function _go() {
+        try {
+          if (typeof PFCFx === 'undefined') return;
+          const panel = document.getElementById('fx-panel');
+          const grid  = document.getElementById('fx-grid');
+          const baseEl = document.getElementById('fx-base');
+          if (!panel || !grid) return;
+
+          // Pick the base currency. Use the user's home if Frankfurter
+          // supports it; otherwise USD. PFCUser may not be ready yet —
+          // tolerate undefined gracefully (defaults to USD).
+          let base = 'USD';
+          try {
+            const user = (typeof PFCUser !== 'undefined') ? PFCUser.get() : null;
+            const code = (user && user.currencyCode) ||
+                         (typeof PFCCurrency !== 'undefined' && user
+                            ? PFCCurrency.toISO(user.currency) : 'USD');
+            if (code && PFCFx.isSupported(code)) base = code;
+          } catch (_) {}
+          baseEl.textContent = base;
+
+          const counters = (base === 'USD' ? COUNTERS_USD_BASE : COUNTERS_EU_BASE)
+            .filter(c => c !== base);
+
+          PFCFx.getRates(base).then((rates) => {
+            if (!rates || typeof rates !== 'object') return;
+            const html = counters
+              .map(c => {
+                const r = rates[c];
+                if (!isFinite(r) || r <= 0) return '';
+                // Format precision: 4dp for sub-1 (EUR 0.92), 2dp for 1-100
+                // range (CAD 1.36), 0dp for high-magnitude (JPY 150).
+                const v = r >= 100 ? r.toFixed(0)
+                        : r >= 10  ? r.toFixed(2)
+                        : r.toFixed(4);
+                return (
+                  '<div style="background:var(--surface-2,rgba(244,239,229,0.04));' +
+                  'border:1px solid var(--line-2,rgba(244,239,229,0.06));' +
+                  'border-radius:var(--r-sm,8px);padding:10px 14px;">' +
+                  '<div style="font-family:var(--font-mono,monospace);font-size:10.5px;' +
+                  'letter-spacing:0.18em;text-transform:uppercase;color:var(--gold,#D4AF6A);' +
+                  'margin-bottom:4px;">' + c + '</div>' +
+                  '<div style="font-family:var(--font-display,serif);font-size:18px;' +
+                  'font-weight:500;color:var(--ink,#F4EFE5);line-height:1.1;">' + v + '</div>' +
+                  '</div>'
+                );
+              })
+              .join('');
+            if (!html) return; // No rates resolved -> stay hidden
+            grid.innerHTML = html;
+            panel.style.display = 'block';
+
+            // Surface the cache timestamp if available.
+            const updated = document.getElementById('fx-updated');
+            if (updated && typeof PFCFx.lastUpdated === 'function') {
+              const iso = PFCFx.lastUpdated();
+              if (iso) {
+                try {
+                  const d = new Date(iso);
+                  updated.textContent = d.toLocaleDateString(undefined,
+                    { day: 'numeric', month: 'short', year: 'numeric' });
+                } catch (_) {}
+              }
+            }
+          }).catch(() => { /* silent — panel stays hidden */ });
+        } catch (_) {}
+      }
+      if (typeof PFCUser !== 'undefined' && typeof PFCUser.onReady === 'function') {
+        PFCUser.onReady(_go);
+      } else if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', _go, { once: true });
+      } else { _go(); }
+    })();
+
     // FX widget — show today's rate from USD to the user's currency in the
     // topbar subheader. Silent if user is already on USD or their currency
     // isn't in Frankfurter's coverage (~30 ECB-tracked currencies).
