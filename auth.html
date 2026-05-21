@@ -26,7 +26,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500;1,9..144,600&family=Inter+Tight:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
-<link rel="stylesheet" media="print" onload="this.media='all'" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500;1,9..144,600&family=Inter+Tight:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" media="print" data-defer-style href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500;1,9..144,600&family=Inter+Tight:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<script src="js/pfc-fonts.js" defer></script>
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500;1,9..144,600&family=Inter+Tight:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"></noscript>
 <link rel="stylesheet" href="css/pfc-tokens.css">
   <link rel="stylesheet" href="css/pfc-photos.css?v=3">
@@ -641,13 +642,13 @@
     <!-- ── LOGIN VIEW ── -->
     <div class="view" id="view-login">
       <div class="auth-heading">Sign in</div>
-      <div class="auth-sub">No account yet? <a href="#signup" onclick="showView('signup'); return false;">Create one free →</a></div>
+      <div class="auth-sub">No account yet? <a href="#signup" data-action="showView" data-target="signup">Create one free →</a></div>
 
       <div class="alert alert-error" id="login-error">Invalid email or password. Please try again.</div>
       <div class="alert alert-error" id="google-error" style="display:none;"></div>
 
       <!-- Google -->
-      <button class="social-btn" id="google-btn" onclick="handleGoogle()">
+      <button class="social-btn" id="google-btn" type="button">
         <svg width="17" height="17" viewBox="0 0 18 18" fill="none">
           <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 01-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.616z" fill="#4285F4"/>
           <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 009 18z" fill="#34A853"/>
@@ -668,7 +669,7 @@
         <label for="login-pw">Password</label>
         <div class="field-row">
           <input type="password" id="login-pw" placeholder="Your password" autocomplete="current-password">
-          <div class="field-icon" onclick="togglePw('login-pw', this)">
+          <div class="field-icon" data-action="togglePw" data-target="login-pw" role="button" tabindex="0" aria-label="Show password">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="2.5" stroke="currentColor" stroke-width="1.4"/><path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z" stroke="currentColor" stroke-width="1.4"/></svg>
           </div>
         </div>
@@ -676,10 +677,10 @@
 
       <div class="forgot-row">
         <div></div>
-        <span class="forgot-link" onclick="showView('forgot')">Forgot password?</span>
+        <span class="forgot-link" data-action="showView" data-target="forgot" role="button" tabindex="0">Forgot password?</span>
       </div>
 
-      <button class="btn-full btn-primary-full" id="login-btn" onclick="handleLogin()">
+      <button class="btn-full btn-primary-full" id="login-btn" type="button">
         <span>Sign in</span>
         <div class="spinner" id="login-spinner"></div>
       </button>
@@ -688,11 +689,11 @@
     <!-- ── SIGNUP VIEW ── -->
     <div class="view active" id="view-signup">
       <div class="auth-heading">Start your free forecast</div>
-      <div class="auth-sub">Already have an account? <a href="#login" onclick="showView('login'); return false;">Sign in →</a></div>
+      <div class="auth-sub">Already have an account? <a href="#login" data-action="showView" data-target="login">Sign in →</a></div>
 
       <div class="alert alert-error" id="signup-error"></div>
 
-      <button class="social-btn" onclick="handleGoogle()">
+      <button class="social-btn" type="button">
         <svg width="17" height="17" viewBox="0 0 18 18" fill="none">
           <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 01-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.616z" fill="#4285F4"/>
           <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 009 18z" fill="#34A853"/>
@@ -712,7 +713,7 @@
       <div class="field">
         <label>Email address</label>
         <div class="field-row">
-          <input type="email" id="signup-email" placeholder="you@example.com" autocomplete="email" oninput="validateEmail(this)">
+          <input type="email" id="signup-email" placeholder="you@example.com" autocomplete="email">
           <div class="field-icon" id="email-icon" style="pointer-events:none;"></div>
         </div>
         <div class="field-hint" id="email-hint"></div>
@@ -721,8 +722,8 @@
       <div class="field">
         <label>Password</label>
         <div class="field-row">
-          <input type="password" id="signup-pw" placeholder="At least 8 characters" oninput="checkPwStrength(this.value)" autocomplete="new-password">
-          <div class="field-icon" onclick="togglePw('signup-pw', this)">
+          <input type="password" id="signup-pw" placeholder="At least 8 characters" autocomplete="new-password">
+          <div class="field-icon" data-action="togglePw" data-target="signup-pw" role="button" tabindex="0" aria-label="Show password">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="2.5" stroke="currentColor" stroke-width="1.4"/><path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z" stroke="currentColor" stroke-width="1.4"/></svg>
           </div>
         </div>
@@ -744,7 +745,7 @@
         </label>
       </div>
 
-      <button class="btn-full btn-primary-full" id="signup-btn" onclick="handleSignup()">
+      <button class="btn-full btn-primary-full" id="signup-btn" type="button">
         <span>Create free account</span>
         <div class="spinner" id="signup-spinner"></div>
       </button>
@@ -756,7 +757,7 @@
 
     <!-- ── FORGOT VIEW ── -->
     <div class="view" id="view-forgot">
-      <div class="back-link" onclick="showView('login')">
+      <div class="back-link" data-action="showView" data-target="login" role="button" tabindex="0">
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 2L4 7l5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
         Back to sign in
       </div>
@@ -773,7 +774,7 @@
         <input type="email" id="forgot-email" placeholder="you@example.com">
       </div>
 
-      <button class="btn-full btn-primary-full" id="forgot-btn" onclick="handleForgot()">
+      <button class="btn-full btn-primary-full" id="forgot-btn" type="button">
         <span>Send reset link</span>
         <div class="spinner" id="forgot-spinner"></div>
       </button>
@@ -805,7 +806,7 @@
           </ul>
         </div>
       </div>
-      <button class="btn-full btn-outline-full" onclick="showView('signup')" style="border:1px solid var(--line-2)!important;">← Try a different email</button>
+      <button class="btn-full btn-outline-full" type="button" data-action="showView" data-target="signup" style="border:1px solid var(--line-2)!important;">← Try a different email</button>
     </div>
 
   </div>

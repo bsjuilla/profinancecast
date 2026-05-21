@@ -290,6 +290,49 @@ async function handleGoogle() {
   }
 }
 
+// ── EVENT WIRING (replaces 15 inline on* handlers per 2026-05-21 audit) ──
+// Goal: zero inline event attributes in auth.html so script-src-attr in the
+// CSP can eventually be tightened to 'none' (this is the single most
+// security-sensitive page in the app, so doing it first is high-value even
+// though the rest of the codebase still uses inline handlers).
+function _wireAuthEvents() {
+  // Generic data-action="showView" data-target="signup" wiring covers all
+  // 5 view-switch clicks (signup link, signin link, forgot link, back-link,
+  // "try different email" button).
+  document.querySelectorAll('[data-action="showView"]').forEach(el => {
+    el.addEventListener('click', (e) => {
+      e.preventDefault();
+      showView(el.dataset.target);
+    });
+  });
+  // Password-toggle icons (2 instances: login + signup)
+  document.querySelectorAll('[data-action="togglePw"]').forEach(el => {
+    el.addEventListener('click', () => togglePw(el.dataset.target, el));
+  });
+  // Specific button handlers — each only fires once, ID-based for precision.
+  const wire = (id, fn) => {
+    const el = document.getElementById(id);
+    if (el && fn) el.addEventListener('click', fn);
+  };
+  wire('login-btn',  handleLogin);
+  wire('signup-btn', handleSignup);
+  wire('forgot-btn', handleForgot);
+  wire('google-btn', function () { handleGoogle(this); });
+  // The second Google button on the signup view shares the .social-btn class
+  // but has no ID — wire by selector exclusion.
+  document.querySelectorAll('.social-btn').forEach(btn => {
+    if (btn.id === 'google-btn') return;
+    btn.addEventListener('click', function () { handleGoogle(this); });
+  });
+  // Input validators
+  const emailEl = document.getElementById('signup-email');
+  if (emailEl) emailEl.addEventListener('input', (e) => validateEmail(e.target));
+  const pwEl = document.getElementById('signup-pw');
+  if (pwEl) pwEl.addEventListener('input', (e) => checkPwStrength(e.target.value));
+}
+if (document.readyState !== 'loading') _wireAuthEvents();
+else document.addEventListener('DOMContentLoaded', _wireAuthEvents, { once: true });
+
 // ── CHECK SESSION (if already logged in, redirect to ?next or dashboard) ──
 async function checkSession() {
   if (!supabaseClient) return;
