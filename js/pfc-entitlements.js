@@ -123,14 +123,15 @@ const PFCPlan = (() => {
 
   function applyBadges(root) {
     const scope = root || document;
+    const isPaid = (_plan === 'pro' || _plan === 'premium');
+
     scope.querySelectorAll('[data-plan-badge]').forEach(el => {
       el.textContent = `${_label(_plan)} plan`;
       el.dataset.plan = _plan;
     });
     scope.querySelectorAll('[data-pro-only]').forEach(a => {
-      const allowed = (_plan === 'pro' || _plan === 'premium');
-      a.classList.toggle('is-locked', !allowed);
-      if (!allowed && !a.dataset.proOnlyHandlerBound) {
+      a.classList.toggle('is-locked', !isPaid);
+      if (!isPaid && !a.dataset.proOnlyHandlerBound) {
         a.dataset.proOnlyHandlerBound = '1';
         a.addEventListener('click', e => {
           e.preventDefault();
@@ -139,10 +140,30 @@ const PFCPlan = (() => {
       }
     });
     scope.querySelectorAll('[data-pro-action]').forEach(btn => {
-      const allowed = (_plan === 'pro' || _plan === 'premium');
-      btn.disabled = !allowed;
-      btn.title = allowed ? '' : 'Upgrade to Pro to unlock';
-      btn.classList.toggle('is-locked', !allowed);
+      btn.disabled = !isPaid;
+      btn.title = isPaid ? '' : 'Upgrade to Pro to unlock';
+      btn.classList.toggle('is-locked', !isPaid);
+    });
+
+    // Free-only UI (upgrade banners, "Upgrade to Pro" buttons): hidden when
+    // user is paid. Previously this was driven by dashboard-2.js's
+    // hideUpgradeBannerIfPro() listening on a custom 'pfc:plan-changed'
+    // event — but that event was NEVER dispatched, so the function only
+    // ran on the initial PFCAuth.onReady tick and via setTimeout fallbacks.
+    // Race result: applyBadges wrote "Pro plan" in the sidebar, but the
+    // upgrade banner stayed visible because no event fired to re-evaluate.
+    // Folding the toggle into applyBadges (which runs after every refresh)
+    // eliminates the race — every plan-resolution updates the banner state
+    // even when _plan === prev (no _emit) or the listener was registered
+    // after the initial _emit fired.
+    scope.querySelectorAll('[data-free-only]').forEach(el => {
+      if (isPaid) {
+        el.style.display = 'none';
+      } else {
+        // Restore the element's documented show-state (default: empty
+        // string, which lets the CSS rule for the element class take over).
+        el.style.display = el.dataset.freeOnlyShow || '';
+      }
     });
   }
 
