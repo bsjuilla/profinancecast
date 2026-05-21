@@ -182,7 +182,9 @@
   /* Above-the-fold reset + critical layout (mirrors first inline <style> block,
      this duplicate runs BEFORE the page <style> to remove FOUC entirely). */
   *,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
-  html { scroll-behavior: smooth; }
+  /* scroll-padding-top offsets the fixed nav (~68px tall + 16px top
+     margin) so #features / #pricing / #how anchors don't land under it. */
+  html { scroll-behavior: smooth; scroll-padding-top: 88px; }
   body {
     font-family: var(--font-body);
     background: var(--canvas);
@@ -620,7 +622,11 @@
 
   /* ── HOW IT WORKS ───────────────────────────────────────────────── */
   .steps { display: grid; gap: 80px; }
-  .step { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: center; }
+  /* align-items: start so Step 02's extra figure (compass-on-paper.webp in
+     the left copy column) doesn't push the right column's chart down via
+     center-alignment. Each step now anchors at its top edge — visual rhythm
+     across Steps 01/02/03 is consistent regardless of column-content height. */
+  .step { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: start; }
   .step:nth-child(even) .step-visual { order: -1; }
   /* W4.4 — step-num demoted from gold to muted ink-3 (structural label, not accent). */
   .step-num {
@@ -671,7 +677,11 @@
     border: 1px solid var(--gold);
     background: linear-gradient(180deg, rgba(212,175,106,0.06) 0%, var(--surface) 60%);
     box-shadow: 0 30px 80px rgba(212,175,106,0.10), 0 0 0 1px rgba(212,175,106,0.30) inset;
-    transform: translateY(-4px);
+    /* Resting translateY(-4px) removed — it lifted the Pro card permanently
+       above the other two, which meant the Subscribe/Get started/Claim CTAs
+       landed at three different y-positions. The Most-chosen tag, gold
+       border, and gold tinted background already mark Pro as recommended;
+       the hover lift on line 680 still gives it a kinetic distinction. */
   }
   /* W4.5.4 — hot card's hover lifts deeper, same champagne shadow. */
   .price-card.hot:hover {
@@ -683,7 +693,7 @@
      the transform target is still set — strip it explicitly here. */
   @media (prefers-reduced-motion: reduce) {
     .price-card:hover { transform: none; }
-    .price-card.hot:hover { transform: translateY(-4px); }
+    .price-card.hot:hover { transform: none; }
   }
   .price-tag {
     position: absolute; top: -14px; left: 50%; transform: translateX(-50%);
@@ -1869,12 +1879,18 @@
           <text x="40"  y="190" text-anchor="middle" fill="var(--ink-4)" font-family="ui-monospace, monospace" font-size="8.5">M0</text>
           <text x="172" y="190" text-anchor="middle" fill="var(--ink-4)" font-family="ui-monospace, monospace" font-size="8.5">M6</text>
           <text x="304" y="190" text-anchor="middle" fill="var(--ink-4)" font-family="ui-monospace, monospace" font-size="8.5">M12</text>
-          <!-- Legend -->
+          <!-- Legend (moved from y=6 to y=22 — at the original position the
+               "Projected" text (~x=216-261) overlapped the "Optimistic"
+               legend line (x=252), and the gold endpoint dot at (304,12)
+               sat right against "Optimistic" text. y=22 puts it on the
+               same baseline as the €/mo label where horizontal space is
+               clear. Also widened the Projected→Optimistic gap from 36px
+               to 56px so the two entries breathe. -->
           <g font-family="ui-monospace, monospace" font-size="8.5">
-            <line x1="200" y1="6" x2="212" y2="6" stroke="var(--money)" stroke-width="1.6"/>
-            <text x="216" y="9" fill="var(--ink-3)">Projected</text>
-            <line x1="252" y1="6" x2="264" y2="6" stroke="var(--gold)" stroke-width="1.4" stroke-dasharray="2 2"/>
-            <text x="268" y="9" fill="var(--ink-3)">Optimistic</text>
+            <line x1="170" y1="22" x2="182" y2="22" stroke="var(--money)" stroke-width="1.6"/>
+            <text x="186" y="25" fill="var(--ink-3)">Projected</text>
+            <line x1="238" y1="22" x2="250" y2="22" stroke="var(--gold)" stroke-width="1.4" stroke-dasharray="2 2"/>
+            <text x="254" y="25" fill="var(--ink-3)">Optimistic</text>
           </g>
         </svg>
       </div>

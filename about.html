@@ -36,6 +36,9 @@
      (which forces flex layout for the dashboard chrome), so static pages
      bring their own reset + body rules. Mirrors privacy.html. */
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  /* Sticky nav top offset — anchor links (e.g. #methodology from JSON-LD)
+     don't land under the about-nav anymore. */
+  html { scroll-behavior: smooth; scroll-padding-top: 80px; }
   body { font-family: var(--font-body); background: var(--canvas); color: var(--ink-2); line-height: 1.7; -webkit-font-smoothing: antialiased; }
   .skip-link { position: absolute; top: -40px; left: 0; padding: 8px 16px; background: var(--canvas); color: var(--ink); border: 1px solid var(--gold); border-radius: var(--r-xs); font-size: 13px; z-index: 200; text-decoration: none; }
   .skip-link:focus { top: 8px; left: 8px; }

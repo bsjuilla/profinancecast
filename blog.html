@@ -26,6 +26,8 @@
   /* Blog visual system — aligned with index.html (Fraunces display, emerald
      canvas, single gold accent ≤ 5%, hairline rules). Tokens from pfc-tokens.css. */
   *,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+  /* Sticky nav top offset — anchor links don't land under it. */
+  html { scroll-behavior: smooth; scroll-padding-top: 80px; }
   body {
     font-family: var(--font-body);
     background: var(--canvas);
@@ -458,7 +460,7 @@ body.pfc-inapp a[href="index.html#pricing"]:not(.footer-col a) {
         <circle cx="190" cy="12" r="4" fill="#2BB67D"/>
         <text x="30" y="30" font-family="Inter,system-ui,sans-serif" font-size="11" fill="rgba(255,255,255,0.5)">Avalanche</text>
         <text x="30" y="55" font-family="Inter,system-ui,sans-serif" font-size="11" fill="rgba(59,130,246,0.8)">Snowball</text>
-        <text x="100" y="155" font-family="Inter,sans-serif" font-size="10" fill="rgba(255,255,255,0.3)" text-anchor="middle">months to debt-free</text>
+        <text x="100" y="150" font-family="Inter,sans-serif" font-size="10" fill="rgba(255,255,255,0.3)" text-anchor="middle">months to debt-free</text>
       </svg>
     </div>
     <div class="feat-body">
@@ -508,7 +510,7 @@ body.pfc-inapp a[href="index.html#pricing"]:not(.footer-col a) {
 
     <a href="blog-salary-negotiation.html" class="art-card" data-cat="salary">
       <div class="art-card-img">
-        <svg width="100" height="60" viewBox="0 0 100 60"><path d="M10 50 L30 35 L50 38 L70 20 L90 8" fill="none" stroke="#F5A623" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="90" cy="8" r="3.5" fill="#F5A623"/><text x="50" y="58" font-family="Inter,system-ui,sans-serif" font-size="9" fill="rgba(245,166,35,0.6)" text-anchor="middle">5-year wealth impact</text></svg>
+        <svg width="100" height="60" viewBox="0 0 100 60"><path d="M10 50 L30 35 L50 38 L70 20 L90 8" fill="none" stroke="#F5A623" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="90" cy="8" r="3.5" fill="#F5A623"/><text x="50" y="52" font-family="Inter,system-ui,sans-serif" font-size="9" fill="rgba(245,166,35,0.6)" text-anchor="middle">5-year wealth impact</text></svg>
       </div>
       <div class="art-card-body">
         <span class="art-tag tag-salary">Salary</span>
@@ -538,7 +540,7 @@ body.pfc-inapp a[href="index.html#pricing"]:not(.footer-col a) {
 
     <a href="blog-inflation.html" class="art-card" data-cat="inflation">
       <div class="art-card-img">
-        <svg width="100" height="60" viewBox="0 0 100 60"><path d="M5 50 Q20 48 35 42 Q50 35 60 28 Q75 18 95 8" fill="none" stroke="#E05252" stroke-width="2" stroke-linecap="round"/><text x="50" y="58" font-family="Inter,sans-serif" font-size="9" fill="rgba(224,82,82,0.5)" text-anchor="middle">purchasing power decline</text><circle cx="95" cy="8" r="3" fill="#E05252"/></svg>
+        <svg width="100" height="60" viewBox="0 0 100 60"><path d="M5 50 Q20 48 35 42 Q50 35 60 28 Q75 18 95 8" fill="none" stroke="#E05252" stroke-width="2" stroke-linecap="round"/><text x="50" y="52" font-family="Inter,sans-serif" font-size="9" fill="rgba(224,82,82,0.5)" text-anchor="middle">purchasing power decline</text><circle cx="95" cy="8" r="3" fill="#E05252"/></svg>
       </div>
       <div class="art-card-body">
         <span class="art-tag tag-inflation">Inflation</span>
