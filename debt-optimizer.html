@@ -166,6 +166,7 @@
 </style>
   <link rel="stylesheet" href="css/pfc-tokens.css">
   <link rel="stylesheet" href="css/pfc-photos.css?v=2">
+  <link rel="stylesheet" href="css/pfc-anim.css?v=1">
   <link rel="stylesheet" href="css/pfc-footer.css">
   <script src="js/pfc-export.js" defer></script>
   <!-- Supabase SDK + auth/storage/entitlements (must load before any inline script that uses them) -->
@@ -197,6 +198,7 @@
   <!-- Privacy-friendly analytics by Plausible -->
   <script async src="https://plausible.io/js/pa-EvYdfUp4d9vvohwl_Yy2j.js"></script>
   <script src="./js/inline/debt-optimizer-1.js"></script>
+  <script src="js/pfc-anim.js" defer></script>
 </head>
 <body>
 
@@ -330,6 +332,15 @@
     <div class="grid-2" style="margin-bottom:20px;">
       <!-- Strategy -->
       <div class="card">
+        <figure class="pfc-photo-figure">
+          <picture>
+            <source srcset="assets/img/photos/debt-avalanche-vs-snowball-still-life.webp" type="image/webp">
+            <img class="pfc-photo-eyebrow is-cinema" src="assets/img/photos/debt-avalanche-vs-snowball-still-life.webp"
+                 alt="Two parallel rows of period coins on walnut — left graduated largest-to-smallest, right inverted, a brass ruler across the midline. Two methods compared as objects."
+                 loading="lazy" decoding="async"
+                 width="2174" height="723">
+          </picture>
+        </figure>
         <div class="card-title" style="margin-bottom:14px;">Payoff strategy</div>
         <div class="strategy-row" style="margin-bottom:0;">
           <div class="strat-btn active" id="strat-avalanche" onclick="setStrategy('avalanche')">

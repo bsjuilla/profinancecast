@@ -1,0 +1,121 @@
+/* ════════════════════════════════════════════════════════════════════════
+   pfc-anim.css — Subtle motion library for ProFinanceCast.
+
+   Tone: ink drying, not rocket boost. Default easing: var(--pfc-ease-hero).
+   Reduced-motion: inherited from pfc-tokens.css (the global
+   `*, *::before, *::after` rule already collapses every animation /
+   transition duration to ~0ms under prefers-reduced-motion: reduce).
+   All animations transform / opacity / clip-path only → GPU-composited.
+
+   Origin: docs/superpowers/audits/2026-05-21-anim-library.md (agent deliverable).
+   ════════════════════════════════════════════════════════════════════════ */
+
+/* 1 ─ Ledger-pen underline */
+.pfc-ink-underline { position: relative; display: inline-block; }
+.pfc-ink-underline::after {
+  content: ""; position: absolute;
+  left: 0; right: 0; bottom: -6px; height: 2px;
+  background: linear-gradient(90deg,
+    transparent 0%, var(--gold, #D4AF6A) 6%, var(--gold, #D4AF6A) 94%, transparent 100%);
+  clip-path: inset(0 100% 0 0);
+  transition: clip-path 1200ms var(--pfc-ease-hero, cubic-bezier(0.16, 1, 0.3, 1));
+  will-change: clip-path;
+}
+.pfc-ink-underline.is-inked::after { clip-path: inset(0 0 0 0); }
+
+/* 2 ─ KPI count-up: no CSS, see pfc-anim.js (delegates to PFCMotion.countTo) */
+
+/* 3 ─ Card fade-in stagger */
+.pfc-stagger > .card {
+  opacity: 0; transform: translateY(8px);
+  transition:
+    opacity 480ms var(--pfc-ease-hero, cubic-bezier(0.16, 1, 0.3, 1)),
+    transform 480ms var(--pfc-ease-hero, cubic-bezier(0.16, 1, 0.3, 1));
+  will-change: opacity, transform;
+}
+.pfc-stagger.is-in > .card { opacity: 1; transform: none; }
+.pfc-stagger.is-in > .card:nth-child(1) { transition-delay:   0ms; }
+.pfc-stagger.is-in > .card:nth-child(2) { transition-delay:  80ms; }
+.pfc-stagger.is-in > .card:nth-child(3) { transition-delay: 160ms; }
+.pfc-stagger.is-in > .card:nth-child(4) { transition-delay: 240ms; }
+.pfc-stagger.is-in > .card:nth-child(5) { transition-delay: 320ms; }
+.pfc-stagger.is-in > .card:nth-child(6) { transition-delay: 400ms; }
+.pfc-stagger.is-in > .card:nth-child(n+7) { transition-delay: 480ms; }
+
+/* 4 ─ Hero image patina fade — applied via `.is-loaded` from pfc-anim.js */
+.pfc-photo-hero picture,
+.pfc-photo-figure picture {
+  opacity: 0;
+  transition: opacity 600ms var(--pfc-ease-hero, cubic-bezier(0.16, 1, 0.3, 1));
+}
+.pfc-photo-hero.is-loaded picture,
+.pfc-photo-figure.is-loaded picture { opacity: 1; }
+
+/* 5 ─ Sage typing indicator */
+.pfc-typing {
+  display: inline-flex; gap: 4px; align-items: center; height: 1em;
+}
+.pfc-typing span {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: var(--sage, #6B8E7F); opacity: 0.25;
+  animation: pfc-typing-dot 1400ms var(--pfc-ease-micro, ease-out) infinite;
+}
+.pfc-typing span:nth-child(2) { animation-delay: 200ms; }
+.pfc-typing span:nth-child(3) { animation-delay: 400ms; }
+@keyframes pfc-typing-dot {
+  0%, 60%, 100% { opacity: 0.25; }
+  30%           { opacity: 1; }
+}
+
+/* 6 ─ Empty-state breath */
+.pfc-empty-breath {
+  animation: pfc-breath 3000ms ease-in-out infinite;
+  will-change: opacity;
+}
+@keyframes pfc-breath {
+  0%, 100% { opacity: 0.92; }
+  50%      { opacity: 1.00; }
+}
+
+/* 7 ─ Topbar slide-in (one-shot on first paint, via pfc-anim.js) */
+.topbar {
+  opacity: 0; transform: translateY(-4px);
+  transition:
+    opacity 280ms var(--pfc-ease-hero, cubic-bezier(0.16, 1, 0.3, 1)),
+    transform 280ms var(--pfc-ease-hero, cubic-bezier(0.16, 1, 0.3, 1));
+  will-change: opacity, transform;
+}
+.topbar.is-mounted { opacity: 1; transform: none; }
+
+/* 8 ─ Pro badge shimmer (one-shot brass sweep) */
+[data-pro-only].pfc-shimmer-init {
+  background-image: linear-gradient(100deg,
+    var(--gold-soft, rgba(212,175,106,0.18)) 0%,
+    var(--gold-soft, rgba(212,175,106,0.18)) 40%,
+    rgba(212,175,106,0.55) 50%,
+    var(--gold-soft, rgba(212,175,106,0.18)) 60%,
+    var(--gold-soft, rgba(212,175,106,0.18)) 100%);
+  background-size: 220% 100%;
+  background-position: 100% 0;
+  animation: pfc-shimmer 1100ms var(--pfc-ease-hero, cubic-bezier(0.16, 1, 0.3, 1)) 1 forwards;
+}
+@keyframes pfc-shimmer {
+  from { background-position: 100% 0; }
+  to   { background-position:   0% 0; }
+}
+
+/* 9 ─ Chart enter: no CSS — see PFCAnim.chartEnterOptions in pfc-anim.js */
+
+/* 10 ─ Save-button success pulse */
+.save-btn {
+  transition: background-color 240ms var(--pfc-ease-hero, cubic-bezier(0.16, 1, 0.3, 1));
+}
+.save-btn.saved {
+  animation: pfc-save-pulse 350ms var(--pfc-ease-hero, cubic-bezier(0.16, 1, 0.3, 1)) 1;
+  background-color: var(--money-soft, rgba(43,182,125,0.15));
+}
+@keyframes pfc-save-pulse {
+  0%   { transform: scale(1);    background-color: var(--surface-2, rgba(244,239,229,0.04)); }
+  45%  { transform: scale(1.04); background-color: var(--money, #2BB67D); }
+  100% { transform: scale(1);    background-color: var(--money-soft, rgba(43,182,125,0.15)); }
+}

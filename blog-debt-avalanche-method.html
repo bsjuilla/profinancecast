@@ -27,6 +27,7 @@
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500;1,9..144,600&family=Inter+Tight:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"></noscript>
 <link rel="stylesheet" href="css/pfc-tokens.css">
   <link rel="stylesheet" href="css/pfc-photos.css?v=2">
+  <link rel="stylesheet" href="css/pfc-anim.css?v=1">
   <link rel="stylesheet" href="css/pfc-footer.css">
 <link rel="stylesheet" href="css/pfc-blog.css">
 
@@ -96,6 +97,7 @@
   <!-- Privacy-friendly analytics by Plausible -->
   <script async src="https://plausible.io/js/pa-EvYdfUp4d9vvohwl_Yy2j.js"></script>
   <script src="./js/inline/blog-debt-avalanche-method-1.js"></script>
+  <script src="js/pfc-anim.js" defer></script>
 </head>
 <body>
 <!-- Context-aware back affordance: shows "Back to Journal" if user came from /journal, otherwise "All articles" -->
@@ -209,6 +211,15 @@ article ol li::marker { color: var(--gold, #D4AF6A); font-family: 'JetBrains Mon
     <p><strong>Method note.</strong> Numbers above use a daily-compounding amortisation with constant minimum-as-percentage-of-balance, no new charges, and no rate changes. We round monthly interest to the cent. See <a href="/about#methodology">our methodology page</a> for the full formula tree, primary sources, and assumption catalog.</p>
   </div>
 
+  <figure class="pfc-photo-figure">
+    <picture>
+      <source srcset="assets/img/photos/blog-debt-avalanche-toppling-matches.webp" type="image/webp">
+      <img class="pfc-photo-card" src="assets/img/photos/blog-debt-avalanche-toppling-matches.webp"
+           alt="A row of seven wooden matches mid-cascade on walnut — the avalanche metaphor made tactile."
+           loading="lazy" decoding="async"
+           width="1448" height="1086">
+    </picture>
+  </figure>
   <h2>Where avalanche underperforms â€” quietly</h2>
 
   <p>The avalanche assumes you will stay in the plan for the full duration. That assumption is doing a lot of heavy lifting.</p>
