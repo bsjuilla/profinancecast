@@ -1,0 +1,169 @@
+"""
+e2e-smoke.py — Two hand-picked click flows that MUST work post-Wave-11.
+
+Flow A: Audit-mode entry
+  /api/audit-login -> sets cookies -> /dashboard.html renders ->
+  AUDIT MODE banner visible AND sidebar nav present.
+
+Flow B: Dashboard interactivity (proves Wave-11 bootstrap dispatcher works)
+  Click a topbar button on dashboard via its data-pfc-on-click handler.
+  Verify the expected DOM state change (e.g. notifications panel toggles).
+
+This proves that the data-pfc-on-* bootstrap dispatcher is wired
+correctly for the surfaces that gate first-run experience. Visual-
+regression CI catches geometry; this catches BEHAVIOR — wrong arg order
+in data-pfc-arg-* dispatch, lost `this` context, bootstrap registration
+ordering bugs that screenshots never reveal.
+
+Run:  python scripts/e2e-smoke.py
+Env:  AUDIT_BYPASS_TOKEN  (same as scripts/screenshot-photos.py)
+Exit: 0 = both flows green; 1 = at least one flow red; 2 = config error.
+
+Origin: VPE Wave-12 plan ITEM A.
+"""
+import os
+import sys
+from urllib.parse import quote as _urlquote
+from playwright.sync_api import sync_playwright, TimeoutError as PWTimeout
+
+BASE = os.environ.get("PFC_BASE_URL", "https://www.profinancecast.com")
+TOKEN = os.environ.get("AUDIT_BYPASS_TOKEN")
+if not TOKEN:
+    print("FATAL: AUDIT_BYPASS_TOKEN not set", file=sys.stderr)
+    sys.exit(2)
+
+
+def collect_console(page, sink):
+    """Capture console errors + uncaught page errors into a list."""
+    page.on("console", lambda msg: msg.type == "error" and sink.append(msg.text))
+    page.on("pageerror", lambda e: sink.append(f"pageerror: {e}"))
+
+
+def flow_a_audit_dashboard(context):
+    """Audit login -> dashboard renders + AUDIT MODE banner visible."""
+    errors = []
+    page = context.new_page()
+    collect_console(page, errors)
+
+    # 1. Hit audit-login endpoint (URL-encode in case token has &, #, $, etc.)
+    resp = page.goto(
+        f"{BASE}/api/audit-login?t={_urlquote(TOKEN, safe='')}",
+        wait_until="domcontentloaded",
+        timeout=15000,
+    )
+    if not resp or resp.status not in (200, 204, 302):
+        return False, f"audit-login status={resp.status if resp else 'none'}", errors
+
+    # 2. Dashboard renders
+    page.goto(f"{BASE}/dashboard.html", wait_until="networkidle", timeout=20000)
+
+    # 3. AUDIT MODE banner must be present (proves cookie split flow worked
+    #    end-to-end: HttpOnly nonce + JS-readable flag both reached the page).
+    try:
+        page.wait_for_selector("#pfc-audit-banner", timeout=5000)
+    except PWTimeout:
+        return False, "AUDIT MODE banner did not render — cookie split flow broken", errors
+
+    # 4. Sidebar nav must be present with at least one nav item.
+    try:
+        nav_count = page.locator("nav.sidebar .nav-item").count()
+    except Exception as e:
+        return False, f"sidebar query failed: {e}", errors
+    if nav_count < 3:
+        return False, f"sidebar nav-item count = {nav_count} (expected >=3)", errors
+
+    # Console error budget — Wave-11 dispatcher should produce zero uncaught errors.
+    if errors:
+        return False, f"console errors during dashboard load: {errors[:5]}", errors
+
+    return True, f"dashboard rendered with {nav_count} sidebar items + banner", errors
+
+
+def flow_b_dashboard_button(context):
+    """Click a data-pfc-on-click button on dashboard, verify DOM state change.
+
+    Specifically: click the 'Notifications' topbar button (which has
+    data-pfc-on-click="toggleNotifications") and verify the notifications
+    panel becomes visible. This proves the Wave-11 bootstrap dispatcher
+    actually fires the click handler, not just visually preserves the button.
+    """
+    errors = []
+    page = context.new_page()
+    collect_console(page, errors)
+
+    # Re-issue audit cookie in this fresh page context
+    page.goto(
+        f"{BASE}/api/audit-login?t={_urlquote(TOKEN, safe='')}",
+        wait_until="domcontentloaded",
+        timeout=15000,
+    )
+    page.goto(f"{BASE}/dashboard.html", wait_until="networkidle", timeout=20000)
+
+    # Find the Notifications button by its data-pfc-on-click attribute.
+    notif_btn = page.locator('[data-pfc-on-click="toggleNotifications"]').first
+    try:
+        notif_btn.wait_for(state="visible", timeout=5000)
+    except PWTimeout:
+        return False, "Notifications button not found — Wave-11 attribute missing", errors
+
+    # Capture initial panel state.
+    panel_selector = "#notif-panel"
+    initial_visible = page.locator(panel_selector).is_visible() if page.locator(panel_selector).count() else False
+
+    # Click the button.
+    notif_btn.click(timeout=3000)
+    page.wait_for_timeout(400)  # let any toggle animation settle
+
+    # Verify panel state changed (we don't care WHICH direction, just that
+    # the click actually triggered the handler).
+    final_visible = page.locator(panel_selector).is_visible() if page.locator(panel_selector).count() else False
+    if initial_visible == final_visible:
+        return False, (
+            f"toggleNotifications click had no effect — panel visibility "
+            f"unchanged ({initial_visible}). Wave-11 bootstrap dispatcher "
+            f"is failing to fire handlers."
+        ), errors
+
+    # Console error budget.
+    if errors:
+        return False, f"console errors during button click: {errors[:5]}", errors
+
+    return True, f"Notifications panel toggled {initial_visible}->{final_visible}", errors
+
+
+def main():
+    failed = 0
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+
+        for flow_name, flow_fn in [("A audit-dashboard", flow_a_audit_dashboard),
+                                    ("B dashboard-button", flow_b_dashboard_button)]:
+            context = browser.new_context(
+                viewport={"width": 1440, "height": 900},
+                device_scale_factor=1,
+            )
+            try:
+                ok, msg, errors = flow_fn(context)
+            except Exception as e:
+                ok = False
+                msg = f"unhandled exception: {e}"
+                errors = []
+            status = "[PASS]" if ok else "[FAIL]"
+            print(f"{status} flow {flow_name}: {msg}")
+            if errors and ok:
+                print(f"        (suppressed console noise: {len(errors)} items)")
+            if not ok:
+                failed += 1
+            context.close()
+
+        browser.close()
+
+    if failed:
+        print(f"\n=== SUMMARY: {failed} flow(s) FAILED ===")
+        sys.exit(1)
+    print("\n=== SUMMARY: both flows PASSED ===")
+    sys.exit(0)
+
+
+if __name__ == "__main__":
+    main()

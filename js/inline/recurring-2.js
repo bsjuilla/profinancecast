@@ -1,3 +1,13 @@
+// Local copy of escHtml — identical to goals-2.js + debt-optimizer-2.js.
+// CISO Wave-12 plan: this should be promoted to a shared js/lib/pfc-escape.js
+// module to eliminate drift risk. For now ships the bugfix on line 458
+// (the r.name interpolation that was unescaped) without churning load order.
+function escHtml(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
 // ── STATE ──
 let USER = {};
 let RECURRINGS = [];   // detected recurring items
@@ -455,7 +465,7 @@ function renderCards() {
       <div class="rec-top">
         <div class="rec-icon" style="background:${meta.color}18;">${r.icon}</div>
         <div class="rec-info">
-          <div class="rec-name">${r.name}</div>
+          <div class="rec-name">${escHtml(r.name)}</div>
           <div class="rec-meta">Since ${firstFmt} · ${r.occurrences.length} charges · last ${lastFmt}</div>
         </div>
         <div class="rec-amount">

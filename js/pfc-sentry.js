@@ -25,6 +25,11 @@
       tracesSampleRate: 0,
       replaysSessionSampleRate: 0,
       replaysOnErrorSampleRate: 0,
+      // Enable session tracking so release-health (crash-free sessions)
+      // alert rule has data to fire against. Sessions are aggregate
+      // counts (start/end pings only) — no PII. Adds ~5KB to the SDK
+      // payload, negligible on our budget.
+      autoSessionTracking: true,
       ignoreErrors: [
         'ResizeObserver loop limit exceeded',
         'ResizeObserver loop completed with undelivered notifications',
@@ -41,5 +46,12 @@
       beforeSend: typeof PFC_scrubPII === 'function' ? PFC_scrubPII : undefined,
       beforeBreadcrumb: typeof PFC_scrubBreadcrumb === 'function' ? PFC_scrubBreadcrumb : undefined,
     });
+
+    // Tag every event with the Wave-11 bootstrap-dispatcher status, so
+    // the "new issue" alert email is diagnosable from the email alone
+    // without opening Sentry. Set by the bootstrap script at end-of-init.
+    try {
+      Sentry.setTag('pfc.bootstrap', window.__PFC_BOOTSTRAP_READY__ ? 'ready' : 'not-ready');
+    } catch (_) {}
   });
 })();

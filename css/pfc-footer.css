@@ -65,3 +65,41 @@ footer.site-footer .footer-stamp {
 @media (max-width: 480px) {
   footer.site-footer .footer-grid { grid-template-columns: 1fr; }
 }
+
+/* Not-financial-advice disclaimer. GC Wave-12 recommendation: ship a
+ * site-wide explicit notice to mitigate consumer-finance regulatory
+ * misclassification risk under MiFID II / national financial-promotion
+ * rules. Wording chosen to (a) explicitly disclaim being a regulated
+ * firm, (b) explicitly disclaim providing advice/recommendations/
+ * suitability, (c) direct users to consult a qualified adviser. Style
+ * intentionally subdued — legal text reads as legal text, not as a
+ * marketing banner.
+ *
+ * Implemented as a real <p class="footer-disclaimer"> element on each
+ * page rather than CSS ::after content, because (1) screen-reader
+ * support for ::after generated content is inconsistent across
+ * NVDA/JAWS/VoiceOver versions and (2) regulators expect to be able to
+ * cite the disclaimer text in HTML form, not as a computed style.
+ *
+ * Sites that load pfc-footer.css automatically get the styling once
+ * the HTML node is injected (via the per-page footer template or via
+ * a small bootstrap snippet). For pages without the footer (auth-gated
+ * app pages), the audit-mode banner already carries a different
+ * disclaimer; the financial-advice disclaimer is only legally needed
+ * on PUBLIC pages where a regulator/non-user could land. */
+footer.site-footer .footer-disclaimer {
+  max-width: 1080px;
+  margin: var(--space-6, 32px) auto 0;
+  padding: var(--space-4, 16px) var(--space-4, 16px) 0;
+  border-top: 1px solid var(--line-2, rgba(244,239,229,0.06));
+  font-family: var(--font-body);
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--ink-3, #8B9590);
+  text-align: left;
+  letter-spacing: 0.01em;
+}
+footer.site-footer .footer-disclaimer strong {
+  color: var(--ink-2, #C8C2B0);
+  font-weight: 600;
+}

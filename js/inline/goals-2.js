@@ -183,7 +183,7 @@ function render() {
           </svg>
         </div>
         <div class="goal-info">
-          <div class="goal-name" title="${g.name}">${g.name}</div>
+          <div class="goal-name" title="${escHtml(g.name)}">${escHtml(g.name)}</div>
           <div class="goal-amounts">${USER.sym}${Math.round(g.current||0).toLocaleString()} of ${USER.sym}${Math.round(g.target||0).toLocaleString()}</div>
           <div class="goal-status-badge ${statusClass}">${statusLabel}</div>
         </div>

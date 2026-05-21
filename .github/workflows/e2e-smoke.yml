@@ -1,0 +1,75 @@
+name: E2E smoke test
+
+# Runs scripts/e2e-smoke.py against live profinancecast.com after each
+# push to main. Two click-flows that MUST work post-Wave-11:
+#   A: audit-login -> dashboard renders + AUDIT MODE banner visible
+#   B: click a data-pfc-on-click handler, verify the DOM state changes
+#
+# Catches the failure modes visual-regression cannot:
+#   - wrong arg order in data-pfc-arg-* dispatch
+#   - lost `this` context on event handlers
+#   - bootstrap registration ordering bugs
+#
+# Origin: VPE Wave-12 plan ITEM A.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: e2e-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    name: Click 2 hand-picked flows
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Playwright + browser
+        run: |
+          python -m pip install --upgrade pip
+          pip install playwright
+          python -m playwright install --with-deps chromium
+
+      - name: Wait for Vercel deploy of this commit
+        run: |
+          set -e
+          DEADLINE=$(($(date +%s) + 300))
+          ATTEMPT=0
+          until [ "$(curl -s -o /dev/null -w '%{http_code}' \
+                       https://www.profinancecast.com/api/audit-login?_ok=1)" = "302" ]
+          do
+            ATTEMPT=$((ATTEMPT + 1))
+            if [ $(date +%s) -ge $DEADLINE ]; then
+              echo "::error::Vercel deploy didn't go live within 5 minutes."
+              exit 1
+            fi
+            echo "  attempt $ATTEMPT — Edge function not yet live, sleeping 10s..."
+            sleep 10
+          done
+          echo "Edge function responding 302 — deploy live."
+          sleep 10  # brief settle for static asset propagation
+
+      - name: Run e2e smoke harness
+        env:
+          AUDIT_BYPASS_TOKEN: ${{ secrets.AUDIT_BYPASS_TOKEN }}
+        run: |
+          if [ -z "$AUDIT_BYPASS_TOKEN" ]; then
+            echo "::error::AUDIT_BYPASS_TOKEN secret is not visible to this workflow."
+            exit 1
+          fi
+          python scripts/e2e-smoke.py
