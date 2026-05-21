@@ -9,23 +9,58 @@ const USER_CTX = {
 };
 const LIMITS = { pro:200, premium:500 };
 
+// Derive the snapshot metrics (netWorth, monthlySavings, healthScore,
+// forecast12mo) from the raw onboarding inputs. PFCUser stores raw fields
+// (income, housing, food, ..., savings, debt) — the dashboard recomputes
+// these derived numbers on every render. Sage was reading them directly
+// from PFCUser, which doesn't store them, so every value rendered as 0.
+function _deriveSnapshot(u) {
+  u = u || {};
+  const n = (v) => (typeof v === 'number' && Number.isFinite(v)) ? v : (parseFloat(v) || 0);
+  const income     = n(u.income) + n(u.otherIncome);
+  const expenses   = n(u.housing) + n(u.food) + n(u.transport) + n(u.otherExp);
+  const monthlySavings = income - expenses;
+  const netWorth   = n(u.savings) + n(u.investments) - n(u.debt);
+  const debt       = n(u.debt);
+  const forecast12mo = netWorth + (monthlySavings * 12);
+  // Simple 0-100 health: positive savings rate weighted 60, low debt-to-income weighted 40.
+  const savingsRate = income > 0 ? Math.max(0, Math.min(1, monthlySavings / income)) : 0;
+  const dti         = income > 0 ? Math.max(0, Math.min(1, debt / (income * 12))) : 1;
+  const healthScore = Math.round((savingsRate * 60) + ((1 - dti) * 40));
+  return { netWorth, monthlySavings, debt, healthScore, forecast12mo };
+}
+
 function hydrateContext(){
   try {
-    const stored = (window.PFC && window.PFC.user) ||
-                   (window.PFCUser && window.PFCUser.get && window.PFCUser.get()) ||
-                   (window.PFCStorage && window.PFCStorage.get && window.PFCStorage.getJSON && window.PFCStorage.getJSON('user')) ||
+    // PFCUser is the canonical store; prefer it over the legacy window.PFC
+    // shim and over a direct PFCStorage read (which may be pre-warm).
+    const stored = (window.PFCUser && window.PFCUser.get && window.PFCUser.get()) ||
+                   (window.PFC && window.PFC.user) ||
                    null;
-    if (!stored || !stored.income) return; // empty state stays
-    Object.assign(USER_CTX, stored);
+    if (!stored) return; // empty state stays until PFCUser resolves
+    Object.assign(USER_CTX, stored, _deriveSnapshot(stored));
+    // Reveal the panel when ANY meaningful input field is set, not just
+    // income. A user who hasn't entered income yet but has set savings/debt
+    // should still see their snapshot.
+    const hasData = stored.income || stored.savings || stored.investments ||
+                    stored.debt   || stored.housing || stored.food ||
+                    stored.transport || stored.otherExp;
     const empty = document.getElementById('snapshot-empty');
     const stats = document.getElementById('snapshot-stats');
+    if (!hasData) {
+      if (empty) empty.style.display = '';
+      if (stats) stats.style.display = 'none';
+      return;
+    }
     if (empty) empty.style.display = 'none';
     if (stats) stats.style.display = '';
     document.querySelectorAll('[data-snap]').forEach(el => {
       const key = el.dataset.snap;
       const v = USER_CTX[key];
-      if (typeof v === 'number') {
-        el.textContent = (key === 'healthScore' ? v + ' / 100' : '$' + v.toLocaleString('en-US'));
+      if (typeof v === 'number' && Number.isFinite(v)) {
+        el.textContent = (key === 'healthScore'
+          ? Math.round(v) + ' / 100'
+          : '$' + Math.round(v).toLocaleString('en-US'));
       }
     });
   } catch(_) {}
@@ -291,6 +326,13 @@ function _rehydrateFromStorage() { hydrateContext(); hydratePlanInfo(); updateUs
 if (typeof PFCAuth !== 'undefined') {
   PFCAuth.onReady(_rehydrateFromStorage);
   PFCAuth.onAuthChange(_rehydrateFromStorage);
+}
+// Cross-page state sync: when settings.html / dashboard / cash-forecast
+// writes USER updates, the snapshot panel should refresh. Without this,
+// the panel reads a stale local PFCUser snapshot from page-load.
+if (typeof PFCUser !== 'undefined' && PFCUser.onChange) {
+  PFCUser.onChange(_rehydrateFromStorage);
+  if (PFCUser.onReady) PFCUser.onReady(_rehydrateFromStorage);
 }
 if (typeof PFCPlan !== 'undefined' && PFCPlan.onChange) {
   PFCPlan.onChange(() => { hydratePlanInfo(); updateUsage(); });

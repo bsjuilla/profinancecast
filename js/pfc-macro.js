@@ -22,7 +22,12 @@
 (function () {
   'use strict';
 
-  const CACHE_KEY = 'pfc_macro_v1';
+  // v2 bump (2026-05-21): evicts poisoned v1 entries left over from when
+  // /api/macro was returning all-null FRED timeouts. Old v1 cache held
+  // {cpiYoY: null} for 24h, which made the dashboard widget invisible
+  // even after the World Bank pivot landed and the endpoint started
+  // returning real data. Bumping the key forces a fresh fetch.
+  const CACHE_KEY = 'pfc_macro_v2';
   const TTL_MS = 24 * 60 * 60 * 1000;
   let _inflight = null;
 
@@ -40,6 +45,12 @@
   }
 
   function _cacheSet(data) {
+    // Don't cache failure payloads. If the headline metric (cpiYoY) is
+    // missing or non-numeric, the upstream call partially failed — let
+    // the next page load retry rather than serving the null for 24h.
+    // (This is the root-cause fix for the "macro widget hidden" bug.)
+    const cpi = data && data.cpiYoY;
+    if (!cpi || typeof cpi.value !== 'number' || !isFinite(cpi.value)) return;
     try {
       localStorage.setItem(CACHE_KEY, JSON.stringify({ data: data, fetchedAt: _now() }));
     } catch (_) {}
