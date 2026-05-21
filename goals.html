@@ -579,7 +579,7 @@
         <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><rect x="1.5" y="1.5" width="4" height="4" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="7.5" y="1.5" width="4" height="4" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="1.5" y="7.5" width="4" height="4" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="7.5" y="7.5" width="4" height="4" rx="1" stroke="currentColor" stroke-width="1.3"/></svg>
         Dashboard
       </a>
-      <button class="topbar-btn primary" onclick="openAddGoal()">
+      <button class="topbar-btn primary"  data-pfc-on-click="openAddGoal">
         <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1v11M1 6.5h11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
         Add goal
       </button>
@@ -651,7 +651,7 @@
       </div>
       <div class="empty-title">Set your first goal</div>
       <div class="empty-sub">Goals turn your financial data into a real plan. Add your first goal and see exactly when you'll reach it — and how much you need each month.</div>
-      <button class="topbar-btn primary" onclick="openAddGoal()" style="padding:10px 24px;font-size:14px;">
+      <button class="topbar-btn primary"  data-pfc-on-click="openAddGoal" style="padding:10px 24px;font-size:14px;">
         <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1v11M1 6.5h11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
         Add your first goal
       </button>
@@ -667,22 +667,22 @@
   <div class="modal-box">
     <div class="modal-head">
       <div class="modal-title" id="modal-title">Add new goal</div>
-      <div class="modal-close" onclick="closeModal()">✕</div>
+      <div class="modal-close"  data-pfc-on-click="closeModal">✕</div>
     </div>
     <div class="modal-body">
 
       <!-- Category picker -->
       <label class="field-label" style="margin-bottom:10px;">Category</label>
       <div class="cat-grid" id="cat-grid">
-        <div class="cat-opt selected" data-cat="emergency" onclick="selectCat(this)"><div class="cat-opt-icon">🛡️</div>Emergency</div>
-        <div class="cat-opt" data-cat="home" onclick="selectCat(this)"><div class="cat-opt-icon">🏠</div>Home</div>
-        <div class="cat-opt" data-cat="car" onclick="selectCat(this)"><div class="cat-opt-icon">🚗</div>Car</div>
-        <div class="cat-opt" data-cat="travel" onclick="selectCat(this)"><div class="cat-opt-icon">✈️</div>Travel</div>
-        <div class="cat-opt" data-cat="invest" onclick="selectCat(this)"><div class="cat-opt-icon">📈</div>Invest</div>
-        <div class="cat-opt" data-cat="retire" onclick="selectCat(this)"><div class="cat-opt-icon">🌅</div>Retire</div>
-        <div class="cat-opt" data-cat="education" onclick="selectCat(this)"><div class="cat-opt-icon">🎓</div>Education</div>
-        <div class="cat-opt" data-cat="wedding" onclick="selectCat(this)"><div class="cat-opt-icon">💍</div>Wedding</div>
-        <div class="cat-opt" data-cat="custom" onclick="selectCat(this)"><div class="cat-opt-icon">⭐</div>Custom</div>
+        <div class="cat-opt selected" data-cat="emergency"  data-pfc-on-click="selectCat" data-pfc-arg-this><div class="cat-opt-icon">🛡️</div>Emergency</div>
+        <div class="cat-opt" data-cat="home"  data-pfc-on-click="selectCat" data-pfc-arg-this><div class="cat-opt-icon">🏠</div>Home</div>
+        <div class="cat-opt" data-cat="car"  data-pfc-on-click="selectCat" data-pfc-arg-this><div class="cat-opt-icon">🚗</div>Car</div>
+        <div class="cat-opt" data-cat="travel"  data-pfc-on-click="selectCat" data-pfc-arg-this><div class="cat-opt-icon">✈️</div>Travel</div>
+        <div class="cat-opt" data-cat="invest"  data-pfc-on-click="selectCat" data-pfc-arg-this><div class="cat-opt-icon">📈</div>Invest</div>
+        <div class="cat-opt" data-cat="retire"  data-pfc-on-click="selectCat" data-pfc-arg-this><div class="cat-opt-icon">🌅</div>Retire</div>
+        <div class="cat-opt" data-cat="education"  data-pfc-on-click="selectCat" data-pfc-arg-this><div class="cat-opt-icon">🎓</div>Education</div>
+        <div class="cat-opt" data-cat="wedding"  data-pfc-on-click="selectCat" data-pfc-arg-this><div class="cat-opt-icon">💍</div>Wedding</div>
+        <div class="cat-opt" data-cat="custom"  data-pfc-on-click="selectCat" data-pfc-arg-this><div class="cat-opt-icon">⭐</div>Custom</div>
       </div>
 
       <!-- Smart target hint -->
@@ -691,37 +691,37 @@
       <!-- Name -->
       <div style="margin-bottom:14px;">
         <label class="field-label">Goal name</label>
-        <input type="text" class="field-input" id="m-name" placeholder="e.g. Emergency fund, Dream holiday…" oninput="modalCalc()">
+        <input type="text" class="field-input" id="m-name" placeholder="e.g. Emergency fund, Dream holiday…"  data-pfc-on-input="modalCalc">
       </div>
 
       <!-- Amounts -->
       <div class="field-row" style="margin-bottom:14px;">
         <div>
           <label class="field-label">Already saved</label>
-          <input type="number" class="field-input" id="m-current" placeholder="0" min="0" oninput="modalCalc()">
+          <input type="number" class="field-input" id="m-current" placeholder="0" min="0"  data-pfc-on-input="modalCalc">
         </div>
         <div>
           <label class="field-label">Target amount</label>
-          <input type="number" class="field-input" id="m-target" placeholder="10000" min="1" oninput="modalCalc()">
+          <input type="number" class="field-input" id="m-target" placeholder="10000" min="1"  data-pfc-on-input="modalCalc">
         </div>
       </div>
 
       <!-- Target date (optional) -->
       <div style="margin-bottom:14px;">
         <label class="field-label">Target date <span style="color:var(--text3);">(optional)</span></label>
-        <input type="month" class="field-input" id="m-date" oninput="modalCalc()" style="color-scheme:dark;">
+        <input type="month" class="field-input" id="m-date"  data-pfc-on-input="modalCalc" style="color-scheme:dark;">
       </div>
 
       <!-- Colour -->
       <div style="margin-bottom:16px;">
         <label class="field-label" style="margin-bottom:8px;">Colour</label>
         <div class="color-row" id="color-row">
-          <div class="color-opt selected" data-color="var(--money)" style="background:var(--money);" onclick="selectColor(this)"></div>
-          <div class="color-opt" data-color="#3B82F6" style="background:#3B82F6;" onclick="selectColor(this)"></div>
-          <div class="color-opt" data-color="#F5A623" style="background:#F5A623;" onclick="selectColor(this)"></div>
-          <div class="color-opt" data-color="#A78BFA" style="background:#A78BFA;" onclick="selectColor(this)"></div>
-          <div class="color-opt" data-color="#E05252" style="background:#E05252;" onclick="selectColor(this)"></div>
-          <div class="color-opt" data-color="#22C55E" style="background:#22C55E;" onclick="selectColor(this)"></div>
+          <div class="color-opt selected" data-color="var(--money)" style="background:var(--money);"  data-pfc-on-click="selectColor" data-pfc-arg-this></div>
+          <div class="color-opt" data-color="#3B82F6" style="background:#3B82F6;"  data-pfc-on-click="selectColor" data-pfc-arg-this></div>
+          <div class="color-opt" data-color="#F5A623" style="background:#F5A623;"  data-pfc-on-click="selectColor" data-pfc-arg-this></div>
+          <div class="color-opt" data-color="#A78BFA" style="background:#A78BFA;"  data-pfc-on-click="selectColor" data-pfc-arg-this></div>
+          <div class="color-opt" data-color="#E05252" style="background:#E05252;"  data-pfc-on-click="selectColor" data-pfc-arg-this></div>
+          <div class="color-opt" data-color="#22C55E" style="background:#22C55E;"  data-pfc-on-click="selectColor" data-pfc-arg-this></div>
         </div>
       </div>
 
@@ -747,8 +747,8 @@
 
       <!-- Buttons -->
       <div style="display:flex;gap:10px;">
-        <button onclick="saveGoal()" style="flex:1;padding:11px;background:var(--teal);border:none;border-radius:var(--r-sm);font-size:14px;font-weight:700;color:var(--canvas);font-family:var(--font-body);cursor:pointer;">Save goal</button>
-        <button onclick="closeModal()" style="padding:11px 18px;background:transparent;border:1px solid var(--border2);border-radius:var(--r-sm);font-size:13px;color:var(--text2);font-family:var(--font-body);cursor:pointer;">Cancel</button>
+        <button  data-pfc-on-click="saveGoal" style="flex:1;padding:11px;background:var(--teal);border:none;border-radius:var(--r-sm);font-size:14px;font-weight:700;color:var(--canvas);font-family:var(--font-body);cursor:pointer;">Save goal</button>
+        <button  data-pfc-on-click="closeModal" style="padding:11px 18px;background:transparent;border:1px solid var(--border2);border-radius:var(--r-sm);font-size:13px;color:var(--text2);font-family:var(--font-body);cursor:pointer;">Cancel</button>
       </div>
     </div>
   </div>
@@ -809,5 +809,41 @@
   </div>
 </footer>
 </div><!-- /main -->
+<script>
+/* PFC_INLINE_BOOTSTRAP_v1 — wires data-pfc-on-* attributes to addEventListener.
+   Generated by scripts/convert-inline-handlers.js. Do not edit by hand. */
+(function(){'use strict';
+  function call(name, arg){
+    var fn = window[name];
+    if (typeof fn === 'function') {
+      try { return fn(arg); } catch(e){ console.error('[pfc-inline] '+name+': '+e.message); }
+    } else {
+      console.warn('[pfc-inline] handler not defined: '+name);
+    }
+  }
+  var EV = ["click","input","change","submit","keyup","keydown","keypress","focus","blur","mouseover","mouseout","mouseenter","mouseleave","wheel"];
+  EV.forEach(function(ev){
+    var attr = 'data-pfc-on-' + ev;
+    document.querySelectorAll('['+attr+']').forEach(function(el){
+      el.addEventListener(ev, function(e){
+        var fn = el.getAttribute(attr);
+        if (el.hasAttribute('data-pfc-arg-this')) return call(fn, el);
+        if (el.hasAttribute('data-pfc-arg-this-value')) return call(fn, el.value);
+        if (el.hasAttribute('data-pfc-href')) { window.location.href = el.getAttribute('data-pfc-href'); return; }
+        if (el.hasAttribute('data-pfc-target')) {
+          var tgt = document.getElementById(el.getAttribute('data-pfc-target'));
+          if (tgt) tgt.textContent = el.value;
+          return;
+        }
+        if (el.hasAttribute('data-pfc-arg')) {
+          try { return call(fn, JSON.parse(el.getAttribute('data-pfc-arg'))); }
+          catch(_){ return call(fn, el.getAttribute('data-pfc-arg')); }
+        }
+        return call(fn);
+      });
+    });
+  });
+})();
+</script>
 </body>
 </html>

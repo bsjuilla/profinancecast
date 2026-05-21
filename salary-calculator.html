@@ -288,7 +288,7 @@
       <div class="topbar-sub" id="topbar-sub">Enter your details to see your full negotiation picture</div>
     </div>
     <div class="topbar-right">
-      <button class="topbar-btn" onclick="generateScript()" id="script-btn">
+      <button class="topbar-btn"  data-pfc-on-click="generateScript" id="script-btn">
         <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 3h9M2 6.5h6M2 10h4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="10.5" cy="10" r="2" stroke="currentColor" stroke-width="1.2"/></svg>
         Generate negotiation script
       </button>
@@ -310,7 +310,7 @@
             <label class="field-label">Job title / Role</label>
             <input type="text" class="field-input" id="i-role" list="role-suggestions"
                    placeholder="e.g. Software Engineer, Registered Nurse, Marketing Manager…"
-                   autocomplete="off" oninput="calc()">
+                   autocomplete="off"  data-pfc-on-input="calc">
             <!-- Populated on init by populateRoleDatalist() from window.PFC_SALARY_ROLES.
                  When a user picks a suggestion, getMarketRange() looks up the real BLS
                  median wage for that role instead of using the generic $50k formula. -->
@@ -322,19 +322,19 @@
               <label class="field-label">Current annual salary</label>
               <div style="position:relative;">
                 <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:13px;" id="sym-label">$</span>
-                <input type="number" class="field-input" id="i-salary" placeholder="50000" min="1" style="padding-left:26px;" oninput="calc()">
+                <input type="number" class="field-input" id="i-salary" placeholder="50000" min="1" style="padding-left:26px;"  data-pfc-on-input="calc">
               </div>
             </div>
             <div>
               <label class="field-label">Years of experience</label>
-              <input type="number" class="field-input" id="i-exp" placeholder="3" min="0" max="50" oninput="calc()">
+              <input type="number" class="field-input" id="i-exp" placeholder="3" min="0" max="50"  data-pfc-on-input="calc">
             </div>
           </div>
 
           <div class="field-row" style="margin-bottom:14px;">
             <div>
               <label class="field-label">Industry</label>
-              <select class="field-input" id="i-industry" onchange="calc()">
+              <select class="field-input" id="i-industry"  data-pfc-on-change="calc">
                 <option value="tech">Technology / Software</option>
                 <option value="finance">Finance / Banking</option>
                 <option value="healthcare">Healthcare / Medical</option>
@@ -352,7 +352,7 @@
             </div>
             <div>
               <label class="field-label">Country / Region</label>
-              <select class="field-input" id="i-country" onchange="calc()">
+              <select class="field-input" id="i-country"  data-pfc-on-change="calc">
                 <option value="MU">🇲🇺 Mauritius</option>
                 <option value="US">🇺🇸 United States</option>
                 <option value="GB">🇬🇧 United Kingdom</option>
@@ -375,7 +375,7 @@
 
           <div>
             <label class="field-label">Company size</label>
-            <select class="field-input" id="i-company" onchange="calc()">
+            <select class="field-input" id="i-company"  data-pfc-on-change="calc">
               <option value="startup">Startup (1–50)</option>
               <option value="small">Small (51–200)</option>
               <option value="mid" selected>Mid-size (201–1000)</option>
@@ -489,7 +489,7 @@
             <label class="field-label" style="margin:0;white-space:nowrap;">Custom target:</label>
             <div style="position:relative;">
               <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:13px;" id="sym-custom">$</span>
-              <input type="number" class="field-input" id="i-target" placeholder="60000" min="1" style="padding-left:24px;width:130px;" oninput="setCustomTarget()">
+              <input type="number" class="field-input" id="i-target" placeholder="60000" min="1" style="padding-left:24px;width:130px;"  data-pfc-on-input="setCustomTarget">
             </div>
           </div>
         </div>
@@ -572,7 +572,7 @@
             <label class="field-label">Their offer</label>
             <div style="position:relative;">
               <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:13px;" id="sym-offer">$</span>
-              <input type="number" class="field-input" id="i-offer" placeholder="55000" min="1" style="padding-left:26px;" oninput="calcCounter()">
+              <input type="number" class="field-input" id="i-offer" placeholder="55000" min="1" style="padding-left:26px;"  data-pfc-on-input="calcCounter">
             </div>
           </div>
 
@@ -628,7 +628,7 @@
               <div style="font-size:13px;font-weight:500;">Annual bonus</div>
               <div style="font-size:11px;color:var(--text3);">% of base salary (target on-track)</div>
             </div>
-            <input type="number" class="benefit-input" id="b-bonus" value="0" placeholder="10" oninput="calcBenefits()">
+            <input type="number" class="benefit-input" id="b-bonus" value="0" placeholder="10"  data-pfc-on-input="calcBenefits">
           </div>
           <!-- Equity / RSU row (added May 2026). Levels.fyi-style total-comp
                breakdown — for a typical 4-year grant with a 1-year cliff,
@@ -641,35 +641,35 @@
               </div>
               <div style="font-size:11px;color:var(--text3);">Annualised $ value (4-yr grant ÷ 4)</div>
             </div>
-            <input type="number" class="benefit-input" id="b-equity" value="0" placeholder="25000" oninput="calcBenefits()">
+            <input type="number" class="benefit-input" id="b-equity" value="0" placeholder="25000"  data-pfc-on-input="calcBenefits">
           </div>
           <div class="benefit-row">
             <div>
               <div style="font-size:13px;font-weight:500;">Health insurance</div>
               <div style="font-size:11px;color:var(--text3);">Annual value (if employer-paid)</div>
             </div>
-            <input type="number" class="benefit-input" id="b-health" value="0" placeholder="3000" oninput="calcBenefits()">
+            <input type="number" class="benefit-input" id="b-health" value="0" placeholder="3000"  data-pfc-on-input="calcBenefits">
           </div>
           <div class="benefit-row">
             <div>
               <div style="font-size:13px;font-weight:500;">Pension / 401k match</div>
               <div style="font-size:11px;color:var(--text3);">% of salary matched</div>
             </div>
-            <input type="number" class="benefit-input" id="b-pension" value="0" placeholder="5" oninput="calcBenefits()">
+            <input type="number" class="benefit-input" id="b-pension" value="0" placeholder="5"  data-pfc-on-input="calcBenefits">
           </div>
           <div class="benefit-row">
             <div>
               <div style="font-size:13px;font-weight:500;">Remote work / WFH</div>
               <div style="font-size:11px;color:var(--text3);">Commute cost saved annually</div>
             </div>
-            <input type="number" class="benefit-input" id="b-remote" value="0" placeholder="2400" oninput="calcBenefits()">
+            <input type="number" class="benefit-input" id="b-remote" value="0" placeholder="2400"  data-pfc-on-input="calcBenefits">
           </div>
           <div class="benefit-row">
             <div>
               <div style="font-size:13px;font-weight:500;">Annual leave days</div>
               <div style="font-size:11px;color:var(--text3);">Days above legal minimum</div>
             </div>
-            <input type="number" class="benefit-input" id="b-leave" value="0" placeholder="5" oninput="calcBenefits()">
+            <input type="number" class="benefit-input" id="b-leave" value="0" placeholder="5"  data-pfc-on-input="calcBenefits">
           </div>
 
           <!-- Levels.fyi-style total-comp breakdown. Each component is
@@ -735,7 +735,7 @@
             Pick a target above, then run it through the take-home pay calculator to see net pay after income tax, social charges, and pension contributions in your country.
           </div>
         </div>
-        <button onclick="goToTakeHome()"
+        <button  data-pfc-on-click="goToTakeHome"
                 data-pfc-track="salary_to_takehome_click"
                 data-pfc-track-target-tool="take-home-pay"
                 style="padding:11px 22px;background:var(--teal);border:none;border-radius:var(--r-sm);font-size:13px;font-weight:700;color:var(--canvas);cursor:pointer;font-family:var(--font-body);display:inline-flex;align-items:center;gap:8px;white-space:nowrap;transition:transform 160ms,box-shadow 160ms;"
@@ -758,8 +758,8 @@
             <div class="card-sub">Personalised talking points based on your numbers — generated by Sage</div>
           </div>
           <div style="display:flex;gap:8px;">
-            <button onclick="copyScript()" id="copy-btn" style="display:none;padding:6px 14px;background:transparent;border:1px solid var(--border2);border-radius:var(--r-sm);font-size:12px;color:var(--text2);cursor:pointer;font-family:var(--font-body);">Copy script</button>
-            <button onclick="generateScript()" style="padding:6px 14px;background:var(--teal);border:none;border-radius:var(--r-sm);font-size:12px;font-weight:700;color:var(--canvas);cursor:pointer;font-family:var(--font-body);">Generate with Sage</button>
+            <button  data-pfc-on-click="copyScript" id="copy-btn" style="display:none;padding:6px 14px;background:transparent;border:1px solid var(--border2);border-radius:var(--r-sm);font-size:12px;color:var(--text2);cursor:pointer;font-family:var(--font-body);">Copy script</button>
+            <button  data-pfc-on-click="generateScript" style="padding:6px 14px;background:var(--teal);border:none;border-radius:var(--r-sm);font-size:12px;font-weight:700;color:var(--canvas);cursor:pointer;font-family:var(--font-body);">Generate with Sage</button>
           </div>
         </div>
         <div class="script-box" id="script-box">
@@ -819,5 +819,41 @@
   </div>
 </footer>
 </div><!-- /main -->
+<script>
+/* PFC_INLINE_BOOTSTRAP_v1 — wires data-pfc-on-* attributes to addEventListener.
+   Generated by scripts/convert-inline-handlers.js. Do not edit by hand. */
+(function(){'use strict';
+  function call(name, arg){
+    var fn = window[name];
+    if (typeof fn === 'function') {
+      try { return fn(arg); } catch(e){ console.error('[pfc-inline] '+name+': '+e.message); }
+    } else {
+      console.warn('[pfc-inline] handler not defined: '+name);
+    }
+  }
+  var EV = ["click","input","change","submit","keyup","keydown","keypress","focus","blur","mouseover","mouseout","mouseenter","mouseleave","wheel"];
+  EV.forEach(function(ev){
+    var attr = 'data-pfc-on-' + ev;
+    document.querySelectorAll('['+attr+']').forEach(function(el){
+      el.addEventListener(ev, function(e){
+        var fn = el.getAttribute(attr);
+        if (el.hasAttribute('data-pfc-arg-this')) return call(fn, el);
+        if (el.hasAttribute('data-pfc-arg-this-value')) return call(fn, el.value);
+        if (el.hasAttribute('data-pfc-href')) { window.location.href = el.getAttribute('data-pfc-href'); return; }
+        if (el.hasAttribute('data-pfc-target')) {
+          var tgt = document.getElementById(el.getAttribute('data-pfc-target'));
+          if (tgt) tgt.textContent = el.value;
+          return;
+        }
+        if (el.hasAttribute('data-pfc-arg')) {
+          try { return call(fn, JSON.parse(el.getAttribute('data-pfc-arg'))); }
+          catch(_){ return call(fn, el.getAttribute('data-pfc-arg')); }
+        }
+        return call(fn);
+      });
+    });
+  });
+})();
+</script>
 </body>
 </html>

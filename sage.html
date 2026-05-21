@@ -268,7 +268,7 @@
         <span id="usage-label">0 / 200 messages</span>
         <div class="usage-bar-track"><div class="usage-bar-fill" id="usage-bar" style="width:0%;background:var(--teal);"></div></div>
       </div>
-      <button class="tb-btn" onclick="clearChat()">Clear chat</button>
+      <button class="tb-btn"  data-pfc-on-click="clearChat">Clear chat</button>
     </div>
   </div>
 
@@ -289,12 +289,12 @@
           <h2>What can Sage forecast for you today?</h2>
           <p class="welcome-sub">Sage works from your real numbers — income, expenses, debt, goals, and your 12-month forecast. Ask anything; answers cite your data.</p>
           <div class="starters">
-            <button class="starter" onclick="sendStarter('Can I afford a holiday in 3 months?')"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1v11M1 6.5h11" stroke="#8A9BB0" stroke-width="1.4" stroke-linecap="round"/></svg>Can I afford a holiday in 3 months?</button>
-            <button class="starter" onclick="sendStarter('When will I be completely debt-free?')"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 9l3-4 2.5 2L11 3" stroke="#8A9BB0" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>When will I be debt-free?</button>
-            <button class="starter" onclick="sendStarter('How does a 10% salary raise change my net worth forecast?')"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="5.5" r="2.5" stroke="#8A9BB0" stroke-width="1.3"/><path d="M1 12c0-2 2.5-3.5 5.5-3.5s5.5 1.5 5.5 3.5" stroke="#8A9BB0" stroke-width="1.3" stroke-linecap="round"/></svg>How does a 10% raise change my forecast?</button>
-            <button class="starter" onclick="sendStarter('Am I on track for my savings goals?')"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5l2.5 2.5L11 3" stroke="#8A9BB0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Am I on track for my goals?</button>
-            <button class="starter" onclick="sendStarter('Should I pay off debt or save more money first?')"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><rect x="1.5" y="3" width="10" height="7" rx="1.5" stroke="#8A9BB0" stroke-width="1.3"/><path d="M4.5 3V2a2 2 0 014 0v1" stroke="#8A9BB0" stroke-width="1.3" stroke-linecap="round"/></svg>Pay off debt or save more first?</button>
-            <button class="starter" onclick="sendStarter('What happens to my finances if inflation rises to 6%?')"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M3 10L10 3M7.5 3h2.5v2.5" stroke="#8A9BB0" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>What if inflation rises to 6%?</button>
+            <button class="starter"  data-pfc-on-click="sendStarter" data-pfc-arg='"Can I afford a holiday in 3 months?"'><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1v11M1 6.5h11" stroke="#8A9BB0" stroke-width="1.4" stroke-linecap="round"/></svg>Can I afford a holiday in 3 months?</button>
+            <button class="starter"  data-pfc-on-click="sendStarter" data-pfc-arg='"When will I be completely debt-free?"'><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 9l3-4 2.5 2L11 3" stroke="#8A9BB0" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>When will I be debt-free?</button>
+            <button class="starter"  data-pfc-on-click="sendStarter" data-pfc-arg='"How does a 10% salary raise change my net worth forecast?"'><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="5.5" r="2.5" stroke="#8A9BB0" stroke-width="1.3"/><path d="M1 12c0-2 2.5-3.5 5.5-3.5s5.5 1.5 5.5 3.5" stroke="#8A9BB0" stroke-width="1.3" stroke-linecap="round"/></svg>How does a 10% raise change my forecast?</button>
+            <button class="starter"  data-pfc-on-click="sendStarter" data-pfc-arg='"Am I on track for my savings goals?"'><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5l2.5 2.5L11 3" stroke="#8A9BB0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Am I on track for my goals?</button>
+            <button class="starter"  data-pfc-on-click="sendStarter" data-pfc-arg='"Should I pay off debt or save more money first?"'><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><rect x="1.5" y="3" width="10" height="7" rx="1.5" stroke="#8A9BB0" stroke-width="1.3"/><path d="M4.5 3V2a2 2 0 014 0v1" stroke="#8A9BB0" stroke-width="1.3" stroke-linecap="round"/></svg>Pay off debt or save more first?</button>
+            <button class="starter"  data-pfc-on-click="sendStarter" data-pfc-arg='"What happens to my finances if inflation rises to 6%?"'><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M3 10L10 3M7.5 3h2.5v2.5" stroke="#8A9BB0" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>What if inflation rises to 6%?</button>
           </div>
         </div>
       </div>
@@ -310,8 +310,8 @@
 
       <div class="input-area">
         <div class="input-wrap">
-          <textarea class="msg-textarea" id="msg-input" placeholder="Ask Sage anything about your finances…" rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
-          <button class="send-btn" id="send-btn" onclick="sendMessage()">
+          <textarea class="msg-textarea" id="msg-input" placeholder="Ask Sage anything about your finances…" rows="1" onkeydown="handleKey(event)"  data-pfc-on-input="autoResize" data-pfc-arg-this></textarea>
+          <button class="send-btn" id="send-btn"  data-pfc-on-click="sendMessage">
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 7h12M7.5 2l5.5 5-5.5 5" stroke="#0B1410" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </button>
         </div>
@@ -349,12 +349,12 @@
       <div class="ctx-card">
         <div class="ctx-title">Quick topics</div>
         <div class="ctx-topics">
-          <button class="ctx-topic" onclick="sendStarter('How do I reduce my monthly expenses?')">Reduce expenses</button>
-          <button class="ctx-topic" onclick="sendStarter('What is the avalanche debt strategy?')">Debt strategy</button>
-          <button class="ctx-topic" onclick="sendStarter('When can I start investing?')">Investing</button>
-          <button class="ctx-topic" onclick="sendStarter('How to build a proper emergency fund?')">Emergency fund</button>
-          <button class="ctx-topic" onclick="sendStarter('How does inflation affect my savings?')">Inflation</button>
-          <button class="ctx-topic" onclick="sendStarter('Give me 3 tips to save more this month')">Save more</button>
+          <button class="ctx-topic"  data-pfc-on-click="sendStarter" data-pfc-arg='"How do I reduce my monthly expenses?"'>Reduce expenses</button>
+          <button class="ctx-topic"  data-pfc-on-click="sendStarter" data-pfc-arg='"What is the avalanche debt strategy?"'>Debt strategy</button>
+          <button class="ctx-topic"  data-pfc-on-click="sendStarter" data-pfc-arg='"When can I start investing?"'>Investing</button>
+          <button class="ctx-topic"  data-pfc-on-click="sendStarter" data-pfc-arg='"How to build a proper emergency fund?"'>Emergency fund</button>
+          <button class="ctx-topic"  data-pfc-on-click="sendStarter" data-pfc-arg='"How does inflation affect my savings?"'>Inflation</button>
+          <button class="ctx-topic"  data-pfc-on-click="sendStarter" data-pfc-arg='"Give me 3 tips to save more this month"'>Save more</button>
         </div>
       </div>
       <div class="ctx-card" id="history-card" style="display:none;">
@@ -366,5 +366,41 @@
 </main>
 
 <script src="./js/inline/sage-3.js"></script>
+<script>
+/* PFC_INLINE_BOOTSTRAP_v1 — wires data-pfc-on-* attributes to addEventListener.
+   Generated by scripts/convert-inline-handlers.js. Do not edit by hand. */
+(function(){'use strict';
+  function call(name, arg){
+    var fn = window[name];
+    if (typeof fn === 'function') {
+      try { return fn(arg); } catch(e){ console.error('[pfc-inline] '+name+': '+e.message); }
+    } else {
+      console.warn('[pfc-inline] handler not defined: '+name);
+    }
+  }
+  var EV = ["click","input","change","submit","keyup","keydown","keypress","focus","blur","mouseover","mouseout","mouseenter","mouseleave","wheel"];
+  EV.forEach(function(ev){
+    var attr = 'data-pfc-on-' + ev;
+    document.querySelectorAll('['+attr+']').forEach(function(el){
+      el.addEventListener(ev, function(e){
+        var fn = el.getAttribute(attr);
+        if (el.hasAttribute('data-pfc-arg-this')) return call(fn, el);
+        if (el.hasAttribute('data-pfc-arg-this-value')) return call(fn, el.value);
+        if (el.hasAttribute('data-pfc-href')) { window.location.href = el.getAttribute('data-pfc-href'); return; }
+        if (el.hasAttribute('data-pfc-target')) {
+          var tgt = document.getElementById(el.getAttribute('data-pfc-target'));
+          if (tgt) tgt.textContent = el.value;
+          return;
+        }
+        if (el.hasAttribute('data-pfc-arg')) {
+          try { return call(fn, JSON.parse(el.getAttribute('data-pfc-arg'))); }
+          catch(_){ return call(fn, el.getAttribute('data-pfc-arg')); }
+        }
+        return call(fn);
+      });
+    });
+  });
+})();
+</script>
 </body>
 </html>

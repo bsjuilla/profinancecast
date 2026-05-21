@@ -263,7 +263,7 @@
       <div class="tb-title">Settings</div>
       <div class="tb-sub">Manage your account, privacy, and preferences</div>
     </div>
-    <button class="save-btn" id="save-btn" onclick="saveSettings()">
+    <button class="save-btn" id="save-btn"  data-pfc-on-click="saveSettings">
       <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 7l3 3 6-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
       Save changes
     </button>
@@ -292,7 +292,7 @@
                 <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M12.5 2.5a2 2 0 012.8 2.8L5 15.5H2.5V13L12.5 2.5z" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
               </div>
             </div>
-            <input type="file" id="avatar-input" accept="image/*" style="display:none" onchange="handleAvatar(this)">
+            <input type="file" id="avatar-input" accept="image/*" style="display:none"  data-pfc-on-change="handleAvatar" data-pfc-arg-this>
             <div>
               <div class="avatar-info"><strong id="profile-display-name">—</strong><span id="profile-meta">Free plan</span></div>
               <button class="avatar-upload-btn" onclick="document.getElementById('avatar-input').click()">Change photo</button>
@@ -481,7 +481,7 @@
             <div class="field"><label>New password</label><input type="password" id="s-new-pw" placeholder="At least 8 characters"></div>
             <div class="field"><label>Confirm new password</label><input type="password" id="s-confirm-pw" placeholder="Repeat new password"></div>
           </div>
-          <button style="padding:9px 18px;background:transparent;border:1px solid var(--border2);border-radius:var(--r-sm);font-size:13px;color:var(--text2);cursor:pointer;font-family:var(--font-body);transition:all .15s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--text2)'" onclick="changePassword()">Update password</button>
+          <button style="padding:9px 18px;background:transparent;border:1px solid var(--border2);border-radius:var(--r-sm);font-size:13px;color:var(--text2);cursor:pointer;font-family:var(--font-body);transition:all .15s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--text2)'"  data-pfc-on-click="changePassword">Update password</button>
         </div>
       </div>
     </div>
@@ -496,42 +496,42 @@
               <div class="toggle-icon" style="background:var(--teal-dim);"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 9L5.5 5l2.5 2L11 3" stroke="#2BB67D" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
               <div><div class="toggle-title">Weekly wealth digest</div><div class="toggle-desc">Every Monday — how your net worth changed this week</div></div>
             </div>
-            <button class="toggle-switch on" onclick="toggleSwitch(this)"><div class="toggle-thumb"></div></button>
+            <button class="toggle-switch on"  data-pfc-on-click="toggleSwitch" data-pfc-arg-this><div class="toggle-thumb"></div></button>
           </div>
           <div class="toggle-row">
             <div class="toggle-left">
               <div class="toggle-icon" style="background:rgba(245,166,35,0.1);"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1.5v7M4 10.5l3 2 3-2" stroke="#F5A623" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
               <div><div class="toggle-title">Off-track alerts</div><div class="toggle-desc">If your spending is threatening a savings goal</div></div>
             </div>
-            <button class="toggle-switch on" onclick="toggleSwitch(this)"><div class="toggle-thumb"></div></button>
+            <button class="toggle-switch on"  data-pfc-on-click="toggleSwitch" data-pfc-arg-this><div class="toggle-thumb"></div></button>
           </div>
           <div class="toggle-row">
             <div class="toggle-left">
               <div class="toggle-icon" style="background:rgba(59,130,246,0.1);"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5.5" stroke="#3B82F6" stroke-width="1.4"/><path d="M7 4v3.5l2 1" stroke="#3B82F6" stroke-width="1.4" stroke-linecap="round"/></svg></div>
               <div><div class="toggle-title">Monthly forecast update</div><div class="toggle-desc">Your 12-month forecast refreshed with any new data</div></div>
             </div>
-            <button class="toggle-switch on" onclick="toggleSwitch(this)"><div class="toggle-thumb"></div></button>
+            <button class="toggle-switch on"  data-pfc-on-click="toggleSwitch" data-pfc-arg-this><div class="toggle-thumb"></div></button>
           </div>
           <div class="toggle-row">
             <div class="toggle-left">
               <div class="toggle-icon" style="background:rgba(167,139,250,0.1);"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1l1.5 4H13L9.5 7.5l1 4L7 9.5 3.5 11.5l1-4L1 5h4.5z" stroke="#A78BFA" stroke-width="1.3" stroke-linejoin="round"/></svg></div>
               <div><div class="toggle-title">Tips & financial advice</div><div class="toggle-desc">Occasional personalised tips from Sage (max 2/month)</div></div>
             </div>
-            <button class="toggle-switch off" onclick="toggleSwitch(this)"><div class="toggle-thumb"></div></button>
+            <button class="toggle-switch off"  data-pfc-on-click="toggleSwitch" data-pfc-arg-this><div class="toggle-thumb"></div></button>
           </div>
           <div class="toggle-row">
             <div class="toggle-left">
               <div class="toggle-icon" style="background:rgba(34,197,94,0.1);"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7l3 3 7-7" stroke="#22C55E" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
               <div><div class="toggle-title">Goal milestone celebrations</div><div class="toggle-desc">When you hit 25%, 50%, 75%, 100% of a goal</div></div>
             </div>
-            <button class="toggle-switch on" onclick="toggleSwitch(this)"><div class="toggle-thumb"></div></button>
+            <button class="toggle-switch on"  data-pfc-on-click="toggleSwitch" data-pfc-arg-this><div class="toggle-thumb"></div></button>
           </div>
           <div class="toggle-row">
             <div class="toggle-left">
               <div class="toggle-icon" style="background:rgba(224,82,82,0.1);"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2v4M7 9.5v1" stroke="#E05252" stroke-width="1.6" stroke-linecap="round"/><circle cx="7" cy="7" r="6" stroke="#E05252" stroke-width="1.3"/></svg></div>
               <div><div class="toggle-title">Product updates & new features</div><div class="toggle-desc">When we launch something new that affects you</div></div>
             </div>
-            <button class="toggle-switch off" onclick="toggleSwitch(this)"><div class="toggle-thumb"></div></button>
+            <button class="toggle-switch off"  data-pfc-on-click="toggleSwitch" data-pfc-arg-this><div class="toggle-thumb"></div></button>
           </div>
         </div>
       </div>
@@ -539,10 +539,10 @@
         <div class="section-head"><div><div class="section-title">Digest frequency</div><div class="section-sub">How often would you like your wealth digest?</div></div></div>
         <div class="section-body">
           <div class="freq-options">
-            <button class="freq-opt active" onclick="setFreq(this)">Weekly</button>
-            <button class="freq-opt" onclick="setFreq(this)">Bi-weekly</button>
-            <button class="freq-opt" onclick="setFreq(this)">Monthly</button>
-            <button class="freq-opt" onclick="setFreq(this)">Off</button>
+            <button class="freq-opt active"  data-pfc-on-click="setFreq" data-pfc-arg-this>Weekly</button>
+            <button class="freq-opt"  data-pfc-on-click="setFreq" data-pfc-arg-this>Bi-weekly</button>
+            <button class="freq-opt"  data-pfc-on-click="setFreq" data-pfc-arg-this>Monthly</button>
+            <button class="freq-opt"  data-pfc-on-click="setFreq" data-pfc-arg-this>Off</button>
           </div>
         </div>
       </div>
@@ -594,14 +594,14 @@
               <div class="toggle-icon" style="background:rgba(59,130,246,0.1);"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2.5a4.5 4.5 0 100 9 4.5 4.5 0 000-9zM1 7h1M12 7h1M7 1v1M7 12v1" stroke="#3B82F6" stroke-width="1.3" stroke-linecap="round"/></svg></div>
               <div><div class="toggle-title">Anonymous usage analytics</div><div class="toggle-desc">Helps us improve the app — no personal data included</div></div>
             </div>
-            <button class="toggle-switch on" onclick="toggleSwitch(this)"><div class="toggle-thumb"></div></button>
+            <button class="toggle-switch on"  data-pfc-on-click="toggleSwitch" data-pfc-arg-this><div class="toggle-thumb"></div></button>
           </div>
           <div class="toggle-row">
             <div class="toggle-left">
               <div class="toggle-icon" style="background:rgba(167,139,250,0.1);"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 12s1.5-4 5-4 5 4 5 4M7 2a3 3 0 100 6 3 3 0 000-6z" stroke="#A78BFA" stroke-width="1.3" stroke-linecap="round"/></svg></div>
               <div><div class="toggle-title">Personalised financial product ads</div><div class="toggle-desc">Relevant ads based on your financial profile (free plan only)</div></div>
             </div>
-            <button class="toggle-switch on" onclick="toggleSwitch(this)"><div class="toggle-thumb"></div></button>
+            <button class="toggle-switch on"  data-pfc-on-click="toggleSwitch" data-pfc-arg-this><div class="toggle-thumb"></div></button>
           </div>
         </div>
       </div>
@@ -662,15 +662,15 @@
         <div class="section-body">
           <div class="export-row">
             <div><div class="export-title">Financial data (CSV)</div><div class="export-desc">All your income, expenses, savings, debts, and goals</div></div>
-            <button class="export-btn" onclick="exportData('csv')">Download CSV</button>
+            <button class="export-btn"  data-pfc-on-click="exportData" data-pfc-arg='"csv"'>Download CSV</button>
           </div>
           <div class="export-row">
             <div><div class="export-title">Complete account data (JSON)</div><div class="export-desc">Everything — including settings, history, and preferences</div></div>
-            <button class="export-btn" onclick="exportData('json')">Download JSON</button>
+            <button class="export-btn"  data-pfc-on-click="exportData" data-pfc-arg='"json"'>Download JSON</button>
           </div>
           <div class="export-row">
             <div><div class="export-title">12-month forecast report (PDF)</div><div class="export-desc">Your full financial forecast as a printable PDF</div></div>
-            <button class="export-btn" onclick="exportData('pdf')">Download PDF</button>
+            <button class="export-btn"  data-pfc-on-click="exportData" data-pfc-arg='"pdf"'>Download PDF</button>
           </div>
         </div>
       </div>
@@ -680,7 +680,7 @@
         <div class="section-body">
           <div class="export-row" style="border-bottom:none;">
             <div><div class="export-title">Clear all financial entries</div><div class="export-desc">Removes income, expenses, debts, and goals. Account and settings stay intact.</div></div>
-            <button class="export-btn" style="border-color:rgba(224,82,82,.3);color:var(--red);" onclick="confirmReset()">Reset data</button>
+            <button class="export-btn" style="border-color:rgba(224,82,82,.3);color:var(--red);"  data-pfc-on-click="confirmReset">Reset data</button>
           </div>
         </div>
       </div>
@@ -688,7 +688,7 @@
       <div class="danger-section">
         <div class="danger-title">Delete account</div>
         <div class="danger-desc">Permanently deletes your ProFinanceCast account and all associated data within 24 hours. This action cannot be undone. Your subscription (if any) will be cancelled immediately.</div>
-        <button class="danger-btn" onclick="confirmDelete()">Delete my account permanently</button>
+        <button class="danger-btn"  data-pfc-on-click="confirmDelete">Delete my account permanently</button>
       </div>
     </div>
 
@@ -751,5 +751,41 @@
   </div>
 </footer>
 </main>
+<script>
+/* PFC_INLINE_BOOTSTRAP_v1 — wires data-pfc-on-* attributes to addEventListener.
+   Generated by scripts/convert-inline-handlers.js. Do not edit by hand. */
+(function(){'use strict';
+  function call(name, arg){
+    var fn = window[name];
+    if (typeof fn === 'function') {
+      try { return fn(arg); } catch(e){ console.error('[pfc-inline] '+name+': '+e.message); }
+    } else {
+      console.warn('[pfc-inline] handler not defined: '+name);
+    }
+  }
+  var EV = ["click","input","change","submit","keyup","keydown","keypress","focus","blur","mouseover","mouseout","mouseenter","mouseleave","wheel"];
+  EV.forEach(function(ev){
+    var attr = 'data-pfc-on-' + ev;
+    document.querySelectorAll('['+attr+']').forEach(function(el){
+      el.addEventListener(ev, function(e){
+        var fn = el.getAttribute(attr);
+        if (el.hasAttribute('data-pfc-arg-this')) return call(fn, el);
+        if (el.hasAttribute('data-pfc-arg-this-value')) return call(fn, el.value);
+        if (el.hasAttribute('data-pfc-href')) { window.location.href = el.getAttribute('data-pfc-href'); return; }
+        if (el.hasAttribute('data-pfc-target')) {
+          var tgt = document.getElementById(el.getAttribute('data-pfc-target'));
+          if (tgt) tgt.textContent = el.value;
+          return;
+        }
+        if (el.hasAttribute('data-pfc-arg')) {
+          try { return call(fn, JSON.parse(el.getAttribute('data-pfc-arg'))); }
+          catch(_){ return call(fn, el.getAttribute('data-pfc-arg')); }
+        }
+        return call(fn);
+      });
+    });
+  });
+})();
+</script>
 </body>
 </html>

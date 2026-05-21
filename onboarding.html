@@ -172,7 +172,7 @@
 <nav class="topnav">
   <a href="index.html" class="nav-logo"><span class="pfc-brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32" width="32" height="32" aria-hidden="true"><text x="16" y="19" text-anchor="middle" font-family="&apos;Fraunces&apos;,&apos;Cormorant Garamond&apos;,Georgia,serif" font-size="14" font-weight="500" letter-spacing="-0.4" fill="#D4AF6A">PFC</text><rect x="14.5" y="23" width="3" height="3" fill="#D4AF6A" transform="rotate(45 16 24.5)"/></svg></span>ProFinanceCast</a>
   <span class="nav-step-label" id="step-label">Step 1 of 6</span>
-  <button class="nav-skip" onclick="skipOnboarding()">Skip setup →</button>
+  <button class="nav-skip"  data-pfc-on-click="skipOnboarding">Skip setup →</button>
 </nav>
 
 <div class="progress-wrap">
@@ -240,11 +240,11 @@
     <p class="step-sub">Just your name and currency. Age and employment status move to a progressive prompt on the dashboard — you can answer when it's relevant.</p>
     <div class="field">
       <div class="field-label"><label for="f-fullname">Full name</label></div>
-      <input type="text" class="pfc-input--bottom" id="f-fullname" placeholder="Alex Smith" autocomplete="name" inputmode="text" enterkeyhint="next" oninput="syncName()">
+      <input type="text" class="pfc-input--bottom" id="f-fullname" placeholder="Alex Smith" autocomplete="name" inputmode="text" enterkeyhint="next"  data-pfc-on-input="syncName">
     </div>
     <div class="field">
       <div class="field-label"><label>Currency</label></div>
-      <select class="pfc-input--bottom" id="f-currency" onchange="updateCurrency()">
+      <select class="pfc-input--bottom" id="f-currency"  data-pfc-on-change="updateCurrency">
         <option value="USD" data-sym="$">US Dollar (USD)</option>
         <option value="EUR" data-sym="€">Euro (EUR)</option>
         <option value="GBP" data-sym="£">British Pound (GBP)</option>
@@ -267,14 +267,14 @@
         <div class="field-label"><label>Monthly income (take-home)</label><span class="hint">After tax</span></div>
         <div class="field-wrap has-prefix">
           <span class="field-prefix" id="sym-income">$</span>
-          <input type="number" class="pfc-input--bottom" id="f-income" placeholder="3000" min="0" oninput="calcLive()">
+          <input type="number" class="pfc-input--bottom" id="f-income" placeholder="3000" min="0"  data-pfc-on-input="calcLive">
         </div>
       </div>
       <div class="field">
         <div class="field-label"><label>Other income (optional)</label><span class="hint">Side income, rent, etc.</span></div>
         <div class="field-wrap has-prefix">
           <span class="field-prefix" id="sym-other">$</span>
-          <input type="number" class="pfc-input--bottom" id="f-other-income" placeholder="0" min="0" oninput="calcLive()">
+          <input type="number" class="pfc-input--bottom" id="f-other-income" placeholder="0" min="0"  data-pfc-on-input="calcLive">
         </div>
       </div>
     </div>
@@ -283,14 +283,14 @@
         <div class="field-label"><label>Housing (rent / mortgage)</label></div>
         <div class="field-wrap has-prefix">
           <span class="field-prefix" id="sym-housing">$</span>
-          <input type="number" class="pfc-input--bottom" id="f-housing" placeholder="1000" min="0" oninput="calcLive()">
+          <input type="number" class="pfc-input--bottom" id="f-housing" placeholder="1000" min="0"  data-pfc-on-input="calcLive">
         </div>
       </div>
       <div class="field">
         <div class="field-label"><label>Food & groceries</label></div>
         <div class="field-wrap has-prefix">
           <span class="field-prefix" id="sym-food">$</span>
-          <input type="number" class="pfc-input--bottom" id="f-food" placeholder="400" min="0" oninput="calcLive()">
+          <input type="number" class="pfc-input--bottom" id="f-food" placeholder="400" min="0"  data-pfc-on-input="calcLive">
         </div>
       </div>
     </div>
@@ -299,14 +299,14 @@
         <div class="field-label"><label>Transport</label></div>
         <div class="field-wrap has-prefix">
           <span class="field-prefix" id="sym-transport">$</span>
-          <input type="number" class="pfc-input--bottom" id="f-transport" placeholder="200" min="0" oninput="calcLive()">
+          <input type="number" class="pfc-input--bottom" id="f-transport" placeholder="200" min="0"  data-pfc-on-input="calcLive">
         </div>
       </div>
       <div class="field">
         <div class="field-label"><label>Other monthly expenses</label></div>
         <div class="field-wrap has-prefix">
           <span class="field-prefix" id="sym-other-exp">$</span>
-          <input type="number" class="pfc-input--bottom" id="f-other-exp" placeholder="300" min="0" oninput="calcLive()">
+          <input type="number" class="pfc-input--bottom" id="f-other-exp" placeholder="300" min="0"  data-pfc-on-input="calcLive">
         </div>
       </div>
     </div>
@@ -329,7 +329,7 @@
         <div class="field-label"><label>Current savings / cash</label></div>
         <div class="field-wrap has-prefix">
           <span class="field-prefix" id="sym-savings">$</span>
-          <input type="number" class="pfc-input--bottom" id="f-savings" placeholder="5000" min="0" oninput="calcDebt()">
+          <input type="number" class="pfc-input--bottom" id="f-savings" placeholder="5000" min="0"  data-pfc-on-input="calcDebt">
         </div>
         <div class="field-row-note">Include all bank accounts and accessible cash</div>
       </div>
@@ -337,7 +337,7 @@
         <div class="field-label"><label>Investments (optional)</label></div>
         <div class="field-wrap has-prefix">
           <span class="field-prefix" id="sym-invest">$</span>
-          <input type="number" class="pfc-input--bottom" id="f-investments" placeholder="0" min="0" oninput="calcDebt()">
+          <input type="number" class="pfc-input--bottom" id="f-investments" placeholder="0" min="0"  data-pfc-on-input="calcDebt">
         </div>
         <div class="field-row-note">Stocks, funds, crypto etc.</div>
       </div>
@@ -347,7 +347,7 @@
         <div class="field-label"><label>Total debt</label></div>
         <div class="field-wrap has-prefix">
           <span class="field-prefix" id="sym-debt">$</span>
-          <input type="number" class="pfc-input--bottom" id="f-debt" placeholder="0" min="0" oninput="calcDebt()">
+          <input type="number" class="pfc-input--bottom" id="f-debt" placeholder="0" min="0"  data-pfc-on-input="calcDebt">
         </div>
         <div class="field-row-note">Loans, credit cards, buy-now-pay-later</div>
       </div>
@@ -355,7 +355,7 @@
         <div class="field-label"><label>Monthly debt payment</label></div>
         <div class="field-wrap has-prefix">
           <span class="field-prefix" id="sym-debtpay">$</span>
-          <input type="number" class="pfc-input--bottom" id="f-debtpay" placeholder="0" min="0" oninput="calcDebt()">
+          <input type="number" class="pfc-input--bottom" id="f-debtpay" placeholder="0" min="0"  data-pfc-on-input="calcDebt">
         </div>
         <div class="field-row-note">Combined minimum payments</div>
       </div>
@@ -431,35 +431,35 @@
         <div class="privacy-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="3" y="7" width="10" height="7" rx="1.5" stroke="#2BB67D" stroke-width="1.3"/><path d="M5 7V5a3 3 0 016 0v2" stroke="#2BB67D" stroke-width="1.3" stroke-linecap="round"/></svg></div>
         <div><div class="privacy-label">AES-256 encryption</div><div class="privacy-desc">All data encrypted at rest and in transit</div></div>
       </div>
-      <button class="toggle" id="tog-encrypt" onclick="togglePrivacy(this)" data-locked="true"><div class="toggle-thumb"></div></button>
+      <button class="toggle" id="tog-encrypt"  data-pfc-on-click="togglePrivacy" data-pfc-arg-this data-locked="true"><div class="toggle-thumb"></div></button>
     </div>
     <div class="privacy-row">
       <div class="privacy-row-left">
         <div class="privacy-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="#2BB67D" stroke-width="1.3"/><path d="M5 8l2 2 4-4" stroke="#2BB67D" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
         <div><div class="privacy-label">Never sold or shared</div><div class="privacy-desc">Your financial data stays private always</div></div>
       </div>
-      <button class="toggle" id="tog-share" onclick="togglePrivacy(this)" data-locked="true"><div class="toggle-thumb"></div></button>
+      <button class="toggle" id="tog-share"  data-pfc-on-click="togglePrivacy" data-pfc-arg-this data-locked="true"><div class="toggle-thumb"></div></button>
     </div>
     <div class="privacy-row">
       <div class="privacy-row-left">
         <div class="privacy-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2l3 1.5v4c0 2.5-3 5-3 5S5 9.5 5 7.5v-4z" stroke="#2BB67D" stroke-width="1.3"/></svg></div>
         <div><div class="privacy-label">No AI training on your data</div><div class="privacy-desc">Your numbers never train any AI model</div></div>
       </div>
-      <button class="toggle" id="tog-ai" onclick="togglePrivacy(this)" data-locked="true"><div class="toggle-thumb"></div></button>
+      <button class="toggle" id="tog-ai"  data-pfc-on-click="togglePrivacy" data-pfc-arg-this data-locked="true"><div class="toggle-thumb"></div></button>
     </div>
     <div class="privacy-row">
       <div class="privacy-row-left">
         <div class="privacy-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="9" rx="1.5" stroke="#2BB67D" stroke-width="1.3"/><path d="M5 13h6M8 12v1" stroke="#2BB67D" stroke-width="1.3" stroke-linecap="round"/></svg></div>
         <div><div class="privacy-label">Weekly email digest</div><div class="privacy-desc">"Your wealth grew $X this week" every Monday</div></div>
       </div>
-      <button class="toggle" id="tog-email" onclick="togglePrivacy(this)"><div class="toggle-thumb"></div></button>
+      <button class="toggle" id="tog-email"  data-pfc-on-click="togglePrivacy" data-pfc-arg-this><div class="toggle-thumb"></div></button>
     </div>
     <div class="privacy-row">
       <div class="privacy-row-left">
         <div class="privacy-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2v8M4 7l4 3 4-3" stroke="#2BB67D" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 13h10" stroke="#2BB67D" stroke-width="1.3" stroke-linecap="round"/></svg></div>
         <div><div class="privacy-label">Data export available</div><div class="privacy-desc">Download or delete all your data anytime</div></div>
       </div>
-      <button class="toggle" id="tog-export" onclick="togglePrivacy(this)" data-locked="true"><div class="toggle-thumb"></div></button>
+      <button class="toggle" id="tog-export"  data-pfc-on-click="togglePrivacy" data-pfc-arg-this data-locked="true"><div class="toggle-thumb"></div></button>
     </div>
     <div style="background:rgba(43,182,125,0.06);border:1px solid rgba(43,182,125,0.15);border-radius:var(--r-sm);padding:12px 14px;margin-top:6px;">
       <p style="font-size:13px;color:var(--text2);line-height:1.6;">The three locked settings can never be turned off — they are core to how ProFinanceCast protects you. You can delete your entire account and all data at any time from Settings.</p>
@@ -510,12 +510,12 @@
 </div>
 
 <div class="wizard-footer" id="wizard-footer">
-  <button class="btn-back" id="btn-back" onclick="prevStep()" disabled>
+  <button class="btn-back" id="btn-back"  data-pfc-on-click="prevStep" disabled>
     <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 2L4 7l5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
     Back
   </button>
   <span class="footer-hint" id="footer-hint">Your data is encrypted and never shared</span>
-  <button class="btn-next" id="btn-next" onclick="nextStep()">
+  <button class="btn-next" id="btn-next"  data-pfc-on-click="nextStep">
     <span id="btn-next-text">Let's go</span>
     <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M5 2l5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
   </button>
@@ -526,5 +526,41 @@
 <script src="./js/inline/onboarding-2.js"></script>
   <!-- Route guard: redirect unauthed users to sign-in -->
   <script src="./js/inline/onboarding-3.js"></script>
+<script>
+/* PFC_INLINE_BOOTSTRAP_v1 — wires data-pfc-on-* attributes to addEventListener.
+   Generated by scripts/convert-inline-handlers.js. Do not edit by hand. */
+(function(){'use strict';
+  function call(name, arg){
+    var fn = window[name];
+    if (typeof fn === 'function') {
+      try { return fn(arg); } catch(e){ console.error('[pfc-inline] '+name+': '+e.message); }
+    } else {
+      console.warn('[pfc-inline] handler not defined: '+name);
+    }
+  }
+  var EV = ["click","input","change","submit","keyup","keydown","keypress","focus","blur","mouseover","mouseout","mouseenter","mouseleave","wheel"];
+  EV.forEach(function(ev){
+    var attr = 'data-pfc-on-' + ev;
+    document.querySelectorAll('['+attr+']').forEach(function(el){
+      el.addEventListener(ev, function(e){
+        var fn = el.getAttribute(attr);
+        if (el.hasAttribute('data-pfc-arg-this')) return call(fn, el);
+        if (el.hasAttribute('data-pfc-arg-this-value')) return call(fn, el.value);
+        if (el.hasAttribute('data-pfc-href')) { window.location.href = el.getAttribute('data-pfc-href'); return; }
+        if (el.hasAttribute('data-pfc-target')) {
+          var tgt = document.getElementById(el.getAttribute('data-pfc-target'));
+          if (tgt) tgt.textContent = el.value;
+          return;
+        }
+        if (el.hasAttribute('data-pfc-arg')) {
+          try { return call(fn, JSON.parse(el.getAttribute('data-pfc-arg'))); }
+          catch(_){ return call(fn, el.getAttribute('data-pfc-arg')); }
+        }
+        return call(fn);
+      });
+    });
+  });
+})();
+</script>
 </body>
 </html>

@@ -521,20 +521,20 @@
       <div class="topbar-sub" id="topbar-date">Last updated · just now · <span id="today-date"></span><span id="topbar-fx" style="margin-left:10px;color:var(--text3);"></span></div>
     </div>
     <div class="topbar-right">
-      <button class="topbar-btn" onclick="openCSV()">
+      <button class="topbar-btn"  data-pfc-on-click="openCSV">
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
         Import CSV
       </button>
-      <button class="topbar-btn" onclick="openEditFinances()" style="border-color:rgba(43,182,125,0.35);color:var(--teal);">
+      <button class="topbar-btn"  data-pfc-on-click="openEditFinances" style="border-color:rgba(43,182,125,0.35);color:var(--teal);">
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9.5 1.5a1.5 1.5 0 012.1 2.1L4.5 10.7 2 11.5l.8-2.5z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>
         Edit finances
       </button>
-      <button class="topbar-btn" onclick="toggleNotifications(this)" aria-label="Notifications">
+      <button class="topbar-btn"  data-pfc-on-click="toggleNotifications" data-pfc-arg-this aria-label="Notifications">
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.4"/><path d="M7 4v3.5l2 1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
         Notifications
         <span role="status" aria-live="polite" aria-label="Unread notifications" class="notif-dot" id="notif-dot"></span>
       </button>
-      <button class="topbar-btn primary" data-free-only style="display:none;" onclick="window.location.href='billing.html'">
+      <button class="topbar-btn primary" data-free-only style="display:none;"  data-pfc-on-click="_pfc_nav" data-pfc-href="billing.html">
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1l1.5 3.5L13 5.5l-3 3 .7 4-3.7-2-3.7 2 .7-4-3-3 4.5-.9z" fill="currentColor"/></svg>
         Upgrade to Pro
       </button>
@@ -545,7 +545,7 @@
   <div id="notif-panel" style="display:none;position:fixed;top:70px;right:20px;width:340px;background:var(--card);border:1px solid var(--border2);border-radius:var(--r);z-index:50;box-shadow:0 8px 32px rgba(0,0,0,0.4);">
     <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
       <span style="font-family:var(--font-display);font-size:14px;font-weight:700;">Notifications</span>
-      <span style="font-size:12px;color:var(--teal);cursor:pointer;" onclick="markAllRead()">Mark all read</span>
+      <span style="font-size:12px;color:var(--teal);cursor:pointer;"  data-pfc-on-click="markAllRead">Mark all read</span>
     </div>
     <div id="notif-list" style="max-height:320px;overflow-y:auto;">
       <div class="notif-empty" style="padding:32px 18px;text-align:center;color:var(--text3);font-size:13px;">No notifications</div>
@@ -567,7 +567,7 @@
           <div style="font-family:var(--font-display);font-size:17px;font-weight:700;">Import bank statement</div>
           <div style="font-size:12px;color:var(--text3);margin-top:2px;">Real analysis · AI categorisation · Dashboard sync</div>
         </div>
-        <div onclick="closeCSV()" style="width:28px;height:28px;border-radius:50%;background:var(--bg3);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2);">✕</div>
+        <div  data-pfc-on-click="closeCSV" style="width:28px;height:28px;border-radius:50%;background:var(--bg3);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2);">✕</div>
       </div>
       <div style="padding:22px 24px;">
         <div id="csv-drop" onclick="document.getElementById('csv-file').click()"
@@ -578,7 +578,7 @@
           <svg width="36" height="36" viewBox="0 0 36 36" fill="none" style="margin:0 auto 12px;display:block;"><path d="M18 4v20M8 14l10-10 10 10" stroke="#2BB67D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 28h28" stroke="#4A5A6E" stroke-width="2" stroke-linecap="round"/></svg>
           <div style="font-size:14px;font-weight:600;margin-bottom:5px;">Drop your CSV here or click to browse</div>
           <div style="font-size:12px;color:var(--text3);">Works with MCB, Barclays, HSBC, SBM, standard exports · Max 10MB</div>
-          <input type="file" id="csv-file" accept=".csv,.txt" style="display:none" onchange="handleCSVFile(this)">
+          <input type="file" id="csv-file" accept=".csv,.txt" style="display:none"  data-pfc-on-change="handleCSVFile" data-pfc-arg-this>
         </div>
         <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px 14px;margin-bottom:12px;">
           <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:7px;">How to export from your bank:</div>
@@ -617,8 +617,8 @@
           <div style="font-size:12px;color:var(--text3);margin-top:2px;" id="rpt-filename">—</div>
         </div>
         <div style="display:flex;align-items:center;gap:10px;">
-          <button onclick="csvStage('upload')" style="padding:6px 14px;background:transparent;border:1px solid var(--border2);border-radius:var(--r-sm);font-size:12px;color:var(--text2);cursor:pointer;font-family:var(--font-body);">← New file</button>
-          <div onclick="closeCSV()" style="width:28px;height:28px;border-radius:50%;background:var(--bg3);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2);">✕</div>
+          <button  data-pfc-on-click="csvStage" data-pfc-arg='"upload"' style="padding:6px 14px;background:transparent;border:1px solid var(--border2);border-radius:var(--r-sm);font-size:12px;color:var(--text2);cursor:pointer;font-family:var(--font-body);">← New file</button>
+          <div  data-pfc-on-click="closeCSV" style="width:28px;height:28px;border-radius:50%;background:var(--bg3);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2);">✕</div>
         </div>
       </div>
 
@@ -669,9 +669,9 @@
         <div style="display:flex;flex-direction:column;max-height:520px;">
           <!-- Table toolbar -->
           <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0;">
-            <input id="txn-search" type="text" placeholder="Search transactions…" oninput="filterTxns()"
+            <input id="txn-search" type="text" placeholder="Search transactions…"  data-pfc-on-input="filterTxns"
               style="flex:1;padding:7px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:13px;color:var(--text);font-family:var(--font-body);outline:none;">
-            <select id="txn-filter-cat" onchange="filterTxns()"
+            <select id="txn-filter-cat"  data-pfc-on-change="filterTxns"
               style="padding:7px 10px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:12px;color:var(--text2);cursor:pointer;font-family:var(--font-body);outline:none;">
               <option value="">All categories</option>
               <option value="income">Income</option>
@@ -706,8 +706,8 @@
       <div style="padding:14px 24px;border-top:1px solid var(--border);background:var(--bg);display:flex;align-items:center;justify-content:space-between;gap:16px;">
         <div style="font-size:13px;color:var(--text2);" id="rpt-apply-hint">Review categories above, then apply real numbers to your dashboard.</div>
         <div style="display:flex;gap:10px;flex-shrink:0;">
-          <button onclick="closeCSV()" style="padding:9px 18px;background:transparent;border:1px solid var(--border2);border-radius:var(--r-sm);font-size:13px;color:var(--text2);cursor:pointer;font-family:var(--font-body);">Close</button>
-          <button onclick="applyToDashboard()" style="padding:9px 20px;background:var(--teal);border:none;border-radius:var(--r-sm);font-size:13px;font-weight:700;color:var(--canvas);cursor:pointer;font-family:var(--font-body);display:flex;align-items:center;gap:7px;">
+          <button  data-pfc-on-click="closeCSV" style="padding:9px 18px;background:transparent;border:1px solid var(--border2);border-radius:var(--r-sm);font-size:13px;color:var(--text2);cursor:pointer;font-family:var(--font-body);">Close</button>
+          <button  data-pfc-on-click="applyToDashboard" style="padding:9px 20px;background:var(--teal);border:none;border-radius:var(--r-sm);font-size:13px;font-weight:700;color:var(--canvas);cursor:pointer;font-family:var(--font-body);display:flex;align-items:center;gap:7px;">
             <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 7l3.5 3.5L11 3" stroke="#0B1410" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
             Apply to dashboard
           </button>
@@ -1080,7 +1080,7 @@
             <div style="font-size:11px;color:var(--text3);margin-top:4px;">~2 months to reach goal</div>
           </div>
         </div>
-        <button id="add-goal-btn" onclick="openAddGoal()" style="width:100%;margin-top:16px;padding:8px;background:transparent;border:1px dashed rgba(255,255,255,0.1);border-radius:var(--r-sm);font-size:13px;color:var(--text3);cursor:pointer;font-family:var(--font-body);transition:all .15s;" onmouseover="this.style.borderColor='rgba(43,182,125,0.3)';this.style.color='var(--teal)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.1)';this.style.color='var(--text3)'">+ Add new goal</button>
+        <button id="add-goal-btn"  data-pfc-on-click="openAddGoal" style="width:100%;margin-top:16px;padding:8px;background:transparent;border:1px dashed rgba(255,255,255,0.1);border-radius:var(--r-sm);font-size:13px;color:var(--text3);cursor:pointer;font-family:var(--font-body);transition:all .15s;" onmouseover="this.style.borderColor='rgba(43,182,125,0.3)';this.style.color='var(--teal)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.1)';this.style.color='var(--text3)'">+ Add new goal</button>
       </div>
     </div>
 
@@ -1120,7 +1120,7 @@
             <div class="card-sub" id="infl-sub">How inflation erodes your purchasing power</div>
           </div>
           <div style="display:flex;align-items:center;gap:8px;">
-            <button onclick="openInflCountry()" style="display:flex;align-items:center;gap:5px;padding:5px 10px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:11.5px;color:var(--text2);cursor:pointer;font-family:var(--font-body);transition:all .15s;" onmouseover="this.style.borderColor='rgba(43,182,125,0.4)';this.style.color='var(--teal)'" onmouseout="this.style.borderColor='';this.style.color=''">
+            <button  data-pfc-on-click="openInflCountry" style="display:flex;align-items:center;gap:5px;padding:5px 10px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:11.5px;color:var(--text2);cursor:pointer;font-family:var(--font-body);transition:all .15s;" onmouseover="this.style.borderColor='rgba(43,182,125,0.4)';this.style.color='var(--teal)'" onmouseout="this.style.borderColor='';this.style.color=''">
               <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><circle cx="5.5" cy="5.5" r="4.5" stroke="currentColor" stroke-width="1.2"/><ellipse cx="5.5" cy="5.5" rx="2" ry="4.5" stroke="currentColor" stroke-width="1.2"/><line x1="1" y1="5.5" x2="10" y2="5.5" stroke="currentColor" stroke-width="1.2"/></svg>
               Live rate
             </button>
@@ -1132,7 +1132,7 @@
         <div id="infl-country-modal" style="display:none;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);padding:16px;margin-bottom:16px;position:relative;">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
             <div style="font-size:13px;font-weight:600;color:var(--text);">Select your country</div>
-            <span onclick="closeInflCountry()" style="cursor:pointer;color:var(--text3);font-size:15px;line-height:1;">✕</span>
+            <span  data-pfc-on-click="closeInflCountry" style="cursor:pointer;color:var(--text3);font-size:15px;line-height:1;">✕</span>
           </div>
           <select id="infl-country-select" style="width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:13.5px;color:var(--text);font-family:var(--font-body);outline:none;cursor:pointer;margin-bottom:10px;">
             <option value="">— Choose a country —</option>
@@ -1167,7 +1167,7 @@
             <option value="NO">🇳🇴 Norway</option>
             <option value="NZ">🇳🇿 New Zealand</option>
           </select>
-          <button onclick="fetchLiveInflation()" style="width:100%;padding:9px;background:var(--teal);border:none;border-radius:var(--r-sm);font-size:13px;font-weight:700;color:var(--canvas);font-family:var(--font-body);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;" id="infl-fetch-btn">
+          <button  data-pfc-on-click="fetchLiveInflation" style="width:100%;padding:9px;background:var(--teal);border:none;border-radius:var(--r-sm);font-size:13px;font-weight:700;color:var(--canvas);font-family:var(--font-body);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;" id="infl-fetch-btn">
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M10 6A4 4 0 1 1 6 2" stroke="#0B1410" stroke-width="1.5" stroke-linecap="round"/><path d="M10 2v4H6" stroke="#0B1410" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
             Fetch live rate
           </button>
@@ -1249,7 +1249,7 @@
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
           <div style="font-family:var(--font-display);font-size:14px;font-weight:700;">My Goals</div>
           <div style="display:flex;gap:8px;">
-            <button onclick="openAddGoal()" style="display:flex;align-items:center;gap:6px;padding:6px 12px;background:var(--teal-dim);border:1px solid rgba(43,182,125,0.3);border-radius:var(--r-sm);font-size:12px;color:var(--teal);cursor:pointer;font-family:var(--font-body);font-weight:500;">
+            <button  data-pfc-on-click="openAddGoal" style="display:flex;align-items:center;gap:6px;padding:6px 12px;background:var(--teal-dim);border:1px solid rgba(43,182,125,0.3);border-radius:var(--r-sm);font-size:12px;color:var(--teal);cursor:pointer;font-family:var(--font-body);font-weight:500;">
               + Add goal
             </button>
             <a href="goals.html" style="display:flex;align-items:center;gap:6px;padding:6px 12px;background:none;border:1px solid var(--border2);border-radius:var(--r-sm);font-size:12px;color:var(--text2);cursor:pointer;font-family:var(--font-body);text-decoration:none;">
@@ -1376,7 +1376,7 @@
   <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:16px;width:100%;max-width:420px;overflow:hidden;">
     <div style="padding:18px 22px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
       <div style="font-family:var(--font-display);font-size:16px;font-weight:700;" id="goal-modal-title">Add new goal</div>
-      <div onclick="closeGoalModal()" style="width:28px;height:28px;border-radius:50%;background:var(--bg3);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2);font-size:15px;">✕</div>
+      <div  data-pfc-on-click="closeGoalModal" style="width:28px;height:28px;border-radius:50%;background:var(--bg3);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2);font-size:15px;">✕</div>
     </div>
     <div style="padding:20px 22px;">
       <div style="margin-bottom:14px;">
@@ -1386,11 +1386,11 @@
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
         <div>
           <label style="font-size:12px;color:var(--text2);display:block;margin-bottom:5px;">Current amount</label>
-          <input type="number" id="goal-current" placeholder="0" min="0" style="width:100%;padding:10px 13px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:var(--font-body);outline:none;" oninput="goalCalcPreview()">
+          <input type="number" id="goal-current" placeholder="0" min="0" style="width:100%;padding:10px 13px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:var(--font-body);outline:none;"  data-pfc-on-input="goalCalcPreview">
         </div>
         <div>
           <label style="font-size:12px;color:var(--text2);display:block;margin-bottom:5px;">Target amount</label>
-          <input type="number" id="goal-target" placeholder="10000" min="1" style="width:100%;padding:10px 13px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:var(--font-body);outline:none;" oninput="goalCalcPreview()">
+          <input type="number" id="goal-target" placeholder="10000" min="1" style="width:100%;padding:10px 13px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:var(--font-body);outline:none;"  data-pfc-on-input="goalCalcPreview">
         </div>
       </div>
       <div style="margin-bottom:18px;">
@@ -1415,8 +1415,8 @@
         <div id="gp-months" style="font-size:11px;color:var(--text3);"></div>
       </div>
       <div style="display:flex;gap:10px;">
-        <button onclick="saveGoal()" style="flex:1;padding:11px;background:var(--teal);border:none;border-radius:var(--r-sm);font-size:14px;font-weight:700;color:var(--canvas);font-family:var(--font-body);cursor:pointer;">Save goal</button>
-        <button onclick="closeGoalModal()" style="padding:11px 18px;background:transparent;border:1px solid var(--border2);border-radius:var(--r-sm);font-size:13px;color:var(--text2);font-family:var(--font-body);cursor:pointer;">Cancel</button>
+        <button  data-pfc-on-click="saveGoal" style="flex:1;padding:11px;background:var(--teal);border:none;border-radius:var(--r-sm);font-size:14px;font-weight:700;color:var(--canvas);font-family:var(--font-body);cursor:pointer;">Save goal</button>
+        <button  data-pfc-on-click="closeGoalModal" style="padding:11px 18px;background:transparent;border:1px solid var(--border2);border-radius:var(--r-sm);font-size:13px;color:var(--text2);font-family:var(--font-body);cursor:pointer;">Cancel</button>
       </div>
     </div>
   </div>
@@ -1432,7 +1432,7 @@
         <div style="font-family:var(--font-display);font-size:18px;font-weight:700;">Edit my finances</div>
         <div style="font-size:12px;color:var(--text3);margin-top:2px;">Changes update your forecast, health score and all charts instantly</div>
       </div>
-      <div onclick="closeEditFinances()" style="width:30px;height:30px;border-radius:50%;background:var(--bg3);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2);font-size:16px;">✕</div>
+      <div  data-pfc-on-click="closeEditFinances" style="width:30px;height:30px;border-radius:50%;background:var(--bg3);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2);font-size:16px;">✕</div>
     </div>
 
     <div style="padding:22px 24px;">
@@ -1460,14 +1460,14 @@
           <label style="font-size:12px;color:var(--text2);display:block;margin-bottom:5px;">Monthly take-home pay</label>
           <div style="position:relative;">
             <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:14px;" id="ef-sym1">$</span>
-            <input type="number" id="ef-income" style="width:100%;padding:9px 12px 9px 26px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:var(--font-body);outline:none;" oninput="efCalc()">
+            <input type="number" id="ef-income" style="width:100%;padding:9px 12px 9px 26px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:var(--font-body);outline:none;"  data-pfc-on-input="efCalc">
           </div>
         </div>
         <div>
           <label style="font-size:12px;color:var(--text2);display:block;margin-bottom:5px;">Other income (optional)</label>
           <div style="position:relative;">
             <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:14px;" id="ef-sym2">$</span>
-            <input type="number" id="ef-other-income" style="width:100%;padding:9px 12px 9px 26px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:var(--font-body);outline:none;" oninput="efCalc()">
+            <input type="number" id="ef-other-income" style="width:100%;padding:9px 12px 9px 26px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:var(--font-body);outline:none;"  data-pfc-on-input="efCalc">
           </div>
         </div>
       </div>
@@ -1477,19 +1477,19 @@
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px;">
         <div>
           <label style="font-size:12px;color:var(--text2);display:block;margin-bottom:5px;">Housing (rent/mortgage)</label>
-          <input type="number" id="ef-housing" style="width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:var(--font-body);outline:none;" oninput="efCalc()">
+          <input type="number" id="ef-housing" style="width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:var(--font-body);outline:none;"  data-pfc-on-input="efCalc">
         </div>
         <div>
           <label style="font-size:12px;color:var(--text2);display:block;margin-bottom:5px;">Food & groceries</label>
-          <input type="number" id="ef-food" style="width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:var(--font-body);outline:none;" oninput="efCalc()">
+          <input type="number" id="ef-food" style="width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:var(--font-body);outline:none;"  data-pfc-on-input="efCalc">
         </div>
         <div>
           <label style="font-size:12px;color:var(--text2);display:block;margin-bottom:5px;">Transport</label>
-          <input type="number" id="ef-transport" style="width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:var(--font-body);outline:none;" oninput="efCalc()">
+          <input type="number" id="ef-transport" style="width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:var(--font-body);outline:none;"  data-pfc-on-input="efCalc">
         </div>
         <div>
           <label style="font-size:12px;color:var(--text2);display:block;margin-bottom:5px;">Other expenses</label>
-          <input type="number" id="ef-other-exp" style="width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:var(--font-body);outline:none;" oninput="efCalc()">
+          <input type="number" id="ef-other-exp" style="width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:var(--font-body);outline:none;"  data-pfc-on-input="efCalc">
         </div>
       </div>
 
@@ -1498,19 +1498,19 @@
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:22px;">
         <div>
           <label style="font-size:12px;color:var(--text2);display:block;margin-bottom:5px;">Current savings / cash</label>
-          <input type="number" id="ef-savings" style="width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:var(--font-body);outline:none;" oninput="efCalc()">
+          <input type="number" id="ef-savings" style="width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:var(--font-body);outline:none;"  data-pfc-on-input="efCalc">
         </div>
         <div>
           <label style="font-size:12px;color:var(--text2);display:block;margin-bottom:5px;">Investments (optional)</label>
-          <input type="number" id="ef-investments" style="width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:var(--font-body);outline:none;" oninput="efCalc()">
+          <input type="number" id="ef-investments" style="width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:var(--font-body);outline:none;"  data-pfc-on-input="efCalc">
         </div>
         <div>
           <label style="font-size:12px;color:var(--text2);display:block;margin-bottom:5px;">Total debt</label>
-          <input type="number" id="ef-debt" style="width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:var(--font-body);outline:none;" oninput="efCalc()">
+          <input type="number" id="ef-debt" style="width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:var(--font-body);outline:none;"  data-pfc-on-input="efCalc">
         </div>
         <div>
           <label style="font-size:12px;color:var(--text2);display:block;margin-bottom:5px;">Monthly debt payment</label>
-          <input type="number" id="ef-debtpay" style="width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:var(--font-body);outline:none;" oninput="efCalc()">
+          <input type="number" id="ef-debtpay" style="width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:var(--font-body);outline:none;"  data-pfc-on-input="efCalc">
         </div>
       </div>
 
@@ -1518,7 +1518,7 @@
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:22px;">
         <div style="flex:1;">
           <label style="font-size:12px;color:var(--text2);display:block;margin-bottom:5px;">Currency</label>
-          <select id="ef-currency" style="width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:var(--font-body);outline:none;" onchange="efCalc()">
+          <select id="ef-currency" style="width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:var(--font-body);outline:none;"  data-pfc-on-change="efCalc">
             <option value="$">US Dollar ($)</option>
             <option value="€">Euro (€)</option>
             <option value="£">British Pound (£)</option>
@@ -1533,10 +1533,10 @@
 
       <!-- BUTTONS -->
       <div style="display:flex;gap:10px;">
-        <button onclick="saveEditFinances()" style="flex:1;padding:12px;background:var(--teal);border:none;border-radius:var(--r-sm);font-size:14px;font-weight:700;color:var(--canvas);font-family:var(--font-body);cursor:pointer;transition:opacity .15s;" onmouseover="this.style.opacity='.88'" onmouseout="this.style.opacity='1'">
+        <button  data-pfc-on-click="saveEditFinances" style="flex:1;padding:12px;background:var(--teal);border:none;border-radius:var(--r-sm);font-size:14px;font-weight:700;color:var(--canvas);font-family:var(--font-body);cursor:pointer;transition:opacity .15s;" onmouseover="this.style.opacity='.88'" onmouseout="this.style.opacity='1'">
           Save & update dashboard
         </button>
-        <button onclick="resetFinances()" style="padding:12px 18px;background:transparent;border:1px solid var(--border2);border-radius:var(--r-sm);font-size:13px;color:var(--text2);font-family:var(--font-body);cursor:pointer;transition:all .15s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--text2)'">
+        <button  data-pfc-on-click="resetFinances" style="padding:12px 18px;background:transparent;border:1px solid var(--border2);border-radius:var(--r-sm);font-size:13px;color:var(--text2);font-family:var(--font-body);cursor:pointer;transition:all .15s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--text2)'">
           Reset to defaults
         </button>
       </div>
@@ -1597,5 +1597,41 @@
   </div>
 </footer>
 </main><!-- /main -->
+<script>
+/* PFC_INLINE_BOOTSTRAP_v1 — wires data-pfc-on-* attributes to addEventListener.
+   Generated by scripts/convert-inline-handlers.js. Do not edit by hand. */
+(function(){'use strict';
+  function call(name, arg){
+    var fn = window[name];
+    if (typeof fn === 'function') {
+      try { return fn(arg); } catch(e){ console.error('[pfc-inline] '+name+': '+e.message); }
+    } else {
+      console.warn('[pfc-inline] handler not defined: '+name);
+    }
+  }
+  var EV = ["click","input","change","submit","keyup","keydown","keypress","focus","blur","mouseover","mouseout","mouseenter","mouseleave","wheel"];
+  EV.forEach(function(ev){
+    var attr = 'data-pfc-on-' + ev;
+    document.querySelectorAll('['+attr+']').forEach(function(el){
+      el.addEventListener(ev, function(e){
+        var fn = el.getAttribute(attr);
+        if (el.hasAttribute('data-pfc-arg-this')) return call(fn, el);
+        if (el.hasAttribute('data-pfc-arg-this-value')) return call(fn, el.value);
+        if (el.hasAttribute('data-pfc-href')) { window.location.href = el.getAttribute('data-pfc-href'); return; }
+        if (el.hasAttribute('data-pfc-target')) {
+          var tgt = document.getElementById(el.getAttribute('data-pfc-target'));
+          if (tgt) tgt.textContent = el.value;
+          return;
+        }
+        if (el.hasAttribute('data-pfc-arg')) {
+          try { return call(fn, JSON.parse(el.getAttribute('data-pfc-arg'))); }
+          catch(_){ return call(fn, el.getAttribute('data-pfc-arg')); }
+        }
+        return call(fn);
+      });
+    });
+  });
+})();
+</script>
 </body>
 </html>

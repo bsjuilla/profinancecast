@@ -708,11 +708,11 @@
       <div class="topbar-sub" id="today-date"></div>
     </div>
     <div class="topbar-right">
-      <button class="topbar-btn" onclick="openModal()">
+      <button class="topbar-btn"  data-pfc-on-click="openModal">
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2v10M2 7h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
         New scenario
       </button>
-      <button class="topbar-btn primary" onclick="window.location.href='dashboard.html'">
+      <button class="topbar-btn primary"  data-pfc-on-click="_pfc_nav" data-pfc-href="dashboard.html">
         ← Dashboard
       </button>
     </div>
@@ -815,7 +815,7 @@
         <!-- SCENARIO CARDS LIST -->
         <div id="scenario-cards-list" class="scenario-cards scenarios-pro-only"></div>
 
-        <button class="add-scenario-btn scenarios-pro-only" id="add-btn" onclick="openModal()">
+        <button class="add-scenario-btn scenarios-pro-only" id="add-btn"  data-pfc-on-click="openModal">
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2v10M2 7h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
           Add new scenario
         </button>
@@ -879,7 +879,7 @@
   <div class="modal">
     <div class="modal-header">
       <div class="modal-title" id="modal-title">New scenario</div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
+      <button class="modal-close"  data-pfc-on-click="closeModal">✕</button>
     </div>
     <div class="modal-body">
 
@@ -901,7 +901,7 @@
 
       <div class="form-row">
         <label>Scenario name *</label>
-        <input type="text" id="sc-name" placeholder="e.g. If I get promoted, Move to London..." oninput="updatePreview()">
+        <input type="text" id="sc-name" placeholder="e.g. If I get promoted, Move to London..."  data-pfc-on-input="updatePreview">
       </div>
 
       <div class="form-row">
@@ -912,14 +912,14 @@
       <div class="form-row">
         <label>Colour</label>
         <div class="color-options" id="color-picker">
-          <div class="color-opt selected" data-color="var(--money)" style="background:var(--money)" onclick="selectColor(this)"><svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>
-          <div class="color-opt" data-color="#3B82F6" style="background:#3B82F6" onclick="selectColor(this)"><svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>
-          <div class="color-opt" data-color="#A78BFA" style="background:#A78BFA" onclick="selectColor(this)"><svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>
-          <div class="color-opt" data-color="#F5A623" style="background:#F5A623" onclick="selectColor(this)"><svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>
-          <div class="color-opt" data-color="#E05252" style="background:#E05252" onclick="selectColor(this)"><svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>
-          <div class="color-opt" data-color="#F472B6" style="background:#F472B6" onclick="selectColor(this)"><svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>
-          <div class="color-opt" data-color="#34D399" style="background:#34D399" onclick="selectColor(this)"><svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>
-          <div class="color-opt" data-color="#FBBF24" style="background:#FBBF24" onclick="selectColor(this)"><svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>
+          <div class="color-opt selected" data-color="var(--money)" style="background:var(--money)"  data-pfc-on-click="selectColor" data-pfc-arg-this><svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>
+          <div class="color-opt" data-color="#3B82F6" style="background:#3B82F6"  data-pfc-on-click="selectColor" data-pfc-arg-this><svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>
+          <div class="color-opt" data-color="#A78BFA" style="background:#A78BFA"  data-pfc-on-click="selectColor" data-pfc-arg-this><svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>
+          <div class="color-opt" data-color="#F5A623" style="background:#F5A623"  data-pfc-on-click="selectColor" data-pfc-arg-this><svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>
+          <div class="color-opt" data-color="#E05252" style="background:#E05252"  data-pfc-on-click="selectColor" data-pfc-arg-this><svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>
+          <div class="color-opt" data-color="#F472B6" style="background:#F472B6"  data-pfc-on-click="selectColor" data-pfc-arg-this><svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>
+          <div class="color-opt" data-color="#34D399" style="background:#34D399"  data-pfc-on-click="selectColor" data-pfc-arg-this><svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>
+          <div class="color-opt" data-color="#FBBF24" style="background:#FBBF24"  data-pfc-on-click="selectColor" data-pfc-arg-this><svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>
         </div>
       </div>
 
@@ -927,11 +927,11 @@
       <div class="form-grid-2">
         <div class="form-row">
           <label>Monthly take-home</label>
-          <input type="number" id="sc-income" placeholder="3000" oninput="updatePreview()">
+          <input type="number" id="sc-income" placeholder="3000"  data-pfc-on-input="updatePreview">
         </div>
         <div class="form-row">
           <label>Other income</label>
-          <input type="number" id="sc-other-income" placeholder="0" oninput="updatePreview()">
+          <input type="number" id="sc-other-income" placeholder="0"  data-pfc-on-input="updatePreview">
         </div>
       </div>
 
@@ -939,19 +939,19 @@
       <div class="form-grid-2">
         <div class="form-row">
           <label>Housing / rent</label>
-          <input type="number" id="sc-housing" placeholder="1200" oninput="updatePreview()">
+          <input type="number" id="sc-housing" placeholder="1200"  data-pfc-on-input="updatePreview">
         </div>
         <div class="form-row">
           <label>Food / groceries</label>
-          <input type="number" id="sc-food" placeholder="540" oninput="updatePreview()">
+          <input type="number" id="sc-food" placeholder="540"  data-pfc-on-input="updatePreview">
         </div>
         <div class="form-row">
           <label>Transport</label>
-          <input type="number" id="sc-transport" placeholder="310" oninput="updatePreview()">
+          <input type="number" id="sc-transport" placeholder="310"  data-pfc-on-input="updatePreview">
         </div>
         <div class="form-row">
           <label>Other expenses</label>
-          <input type="number" id="sc-other-exp" placeholder="380" oninput="updatePreview()">
+          <input type="number" id="sc-other-exp" placeholder="380"  data-pfc-on-input="updatePreview">
         </div>
       </div>
 
@@ -959,26 +959,26 @@
       <div class="form-grid-2">
         <div class="form-row">
           <label>Current savings</label>
-          <input type="number" id="sc-savings" placeholder="11580" oninput="updatePreview()">
+          <input type="number" id="sc-savings" placeholder="11580"  data-pfc-on-input="updatePreview">
         </div>
         <div class="form-row">
           <label>Investments</label>
-          <input type="number" id="sc-investments" placeholder="0" oninput="updatePreview()">
+          <input type="number" id="sc-investments" placeholder="0"  data-pfc-on-input="updatePreview">
         </div>
         <div class="form-row">
           <label>Total debt</label>
-          <input type="number" id="sc-debt" placeholder="8000" oninput="updatePreview()">
+          <input type="number" id="sc-debt" placeholder="8000"  data-pfc-on-input="updatePreview">
         </div>
         <div class="form-row">
           <label>Monthly debt payment</label>
-          <input type="number" id="sc-debt-pay" placeholder="550" oninput="updatePreview()">
+          <input type="number" id="sc-debt-pay" placeholder="550"  data-pfc-on-input="updatePreview">
         </div>
       </div>
 
     </div>
     <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-teal" onclick="saveScenario()">Save scenario</button>
+      <button class="btn btn-ghost"  data-pfc-on-click="closeModal">Cancel</button>
+      <button class="btn btn-teal"  data-pfc-on-click="saveScenario">Save scenario</button>
     </div>
   </div>
 </div>
@@ -1027,5 +1027,41 @@
   </div>
 </footer>
 </main>
+<script>
+/* PFC_INLINE_BOOTSTRAP_v1 — wires data-pfc-on-* attributes to addEventListener.
+   Generated by scripts/convert-inline-handlers.js. Do not edit by hand. */
+(function(){'use strict';
+  function call(name, arg){
+    var fn = window[name];
+    if (typeof fn === 'function') {
+      try { return fn(arg); } catch(e){ console.error('[pfc-inline] '+name+': '+e.message); }
+    } else {
+      console.warn('[pfc-inline] handler not defined: '+name);
+    }
+  }
+  var EV = ["click","input","change","submit","keyup","keydown","keypress","focus","blur","mouseover","mouseout","mouseenter","mouseleave","wheel"];
+  EV.forEach(function(ev){
+    var attr = 'data-pfc-on-' + ev;
+    document.querySelectorAll('['+attr+']').forEach(function(el){
+      el.addEventListener(ev, function(e){
+        var fn = el.getAttribute(attr);
+        if (el.hasAttribute('data-pfc-arg-this')) return call(fn, el);
+        if (el.hasAttribute('data-pfc-arg-this-value')) return call(fn, el.value);
+        if (el.hasAttribute('data-pfc-href')) { window.location.href = el.getAttribute('data-pfc-href'); return; }
+        if (el.hasAttribute('data-pfc-target')) {
+          var tgt = document.getElementById(el.getAttribute('data-pfc-target'));
+          if (tgt) tgt.textContent = el.value;
+          return;
+        }
+        if (el.hasAttribute('data-pfc-arg')) {
+          try { return call(fn, JSON.parse(el.getAttribute('data-pfc-arg'))); }
+          catch(_){ return call(fn, el.getAttribute('data-pfc-arg')); }
+        }
+        return call(fn);
+      });
+    });
+  });
+})();
+</script>
 </body>
 </html>

@@ -289,7 +289,7 @@
     </div>
     <div class="topbar-right">
       <a href="dashboard.html" class="topbar-btn">← Dashboard</a>
-      <button class="topbar-btn primary" onclick="openAddDebt()">
+      <button class="topbar-btn primary"  data-pfc-on-click="openAddDebt">
         <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1v11M1 6.5h11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
         Add debt
       </button>
@@ -341,12 +341,12 @@
         </figure>
         <div class="card-title" style="margin-bottom:14px;">Payoff strategy</div>
         <div class="strategy-row" style="margin-bottom:0;">
-          <div class="strat-btn active" id="strat-avalanche" onclick="setStrategy('avalanche')">
+          <div class="strat-btn active" id="strat-avalanche"  data-pfc-on-click="setStrategy" data-pfc-arg='"avalanche"'>
             <div class="strat-badge" style="background:rgba(212,175,106,0.12);color:var(--gold);font-family:var(--font-mono,'JetBrains Mono',monospace);font-size:10.5px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;">Optimal</div>
             <div class="strat-title">Avalanche</div>
             <div class="strat-desc">Pay highest interest rate first. Minimises total interest paid. Mathematically optimal.</div>
           </div>
-          <div class="strat-btn" id="strat-snowball" onclick="setStrategy('snowball')">
+          <div class="strat-btn" id="strat-snowball"  data-pfc-on-click="setStrategy" data-pfc-arg='"snowball"'>
             <div class="strat-badge" style="background:rgba(43,182,125,0.12);color:var(--teal);font-family:var(--font-mono,'JetBrains Mono',monospace);font-size:10.5px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;">Proven</div>
             <div class="strat-title">Snowball</div>
             <div class="strat-desc">Pay smallest balance first. Quick wins build momentum. Proven to improve completion rates.</div>
@@ -364,7 +364,7 @@
           <div style="font-family:var(--font-display);font-size:22px;font-weight:700;color:var(--teal);" id="extra-val">+$0</div>
         </div>
         <input class="slider-track" type="range" id="extra-slider" min="0" max="1000" step="25" value="0"
-          oninput="updateExtra(this.value)">
+           data-pfc-on-input="updateExtra" data-pfc-arg-this-value>
         <div class="extra-impact">
           <div class="impact-box">
             <div class="impact-val" id="imp-months" style="color:var(--teal);">—</div>
@@ -391,7 +391,7 @@
             <div class="card-title">Your debts</div>
             <div class="card-sub" id="debt-order-hint">Ordered by payoff priority</div>
           </div>
-          <button onclick="openAddDebt()" style="padding:6px 13px;background:transparent;border:1px dashed rgba(43,182,125,0.3);border-radius:var(--r-sm);font-size:12px;color:var(--teal);cursor:pointer;font-family:var(--font-body);transition:all .15s;" onmouseover="this.style.background='var(--teal-dim)'" onmouseout="this.style.background='transparent'">+ Add debt</button>
+          <button  data-pfc-on-click="openAddDebt" style="padding:6px 13px;background:transparent;border:1px dashed rgba(43,182,125,0.3);border-radius:var(--r-sm);font-size:12px;color:var(--teal);cursor:pointer;font-family:var(--font-body);transition:all .15s;" onmouseover="this.style.background='var(--teal-dim)'" onmouseout="this.style.background='transparent'">+ Add debt</button>
         </div>
         <div id="debt-list">
           <div class="empty-debts" id="empty-debts">
@@ -410,7 +410,7 @@
             <figcaption>Paid in full, or not yet started.</figcaption>
             </figure>
             <div style="font-size:13px;color:var(--text3);margin-bottom:18px;">Add your loans, credit cards, and any other debts to see your optimised payoff plan.</div>
-            <button onclick="openAddDebt()" class="topbar-btn primary" style="padding:9px 20px;">Add your first debt</button>
+            <button  data-pfc-on-click="openAddDebt" class="topbar-btn primary" style="padding:9px 20px;">Add your first debt</button>
           </div>
         </div>
       </div>
@@ -461,7 +461,7 @@
             <div class="card-sub">Exact payoff dates per debt</div>
           </div>
           <div style="display:flex;gap:6px;">
-            <button onclick="exportScheduleCSV()" style="padding:5px 11px;background:transparent;border:1px solid var(--border2);border-radius:var(--r-sm);font-size:11.5px;color:var(--text2);cursor:pointer;font-family:var(--font-body);">Export CSV</button>
+            <button  data-pfc-on-click="exportScheduleCSV" style="padding:5px 11px;background:transparent;border:1px solid var(--border2);border-radius:var(--r-sm);font-size:11.5px;color:var(--text2);cursor:pointer;font-family:var(--font-body);">Export CSV</button>
           </div>
         </div>
         <div style="max-height:280px;overflow-y:auto;">
@@ -501,7 +501,7 @@
   <div class="modal-box">
     <div class="modal-head">
       <div class="modal-title" id="modal-title">Add new debt</div>
-      <div class="modal-close" onclick="closeModal()">✕</div>
+      <div class="modal-close"  data-pfc-on-click="closeModal">✕</div>
     </div>
     <div class="modal-body">
 
@@ -515,12 +515,12 @@
           <label class="field-label">Current balance</label>
           <div style="position:relative;">
             <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:14px;" id="m-sym">$</span>
-            <input type="number" class="field-input" id="m-balance" placeholder="5000" min="1" style="padding-left:26px;" oninput="modalCalc()">
+            <input type="number" class="field-input" id="m-balance" placeholder="5000" min="1" style="padding-left:26px;"  data-pfc-on-input="modalCalc">
           </div>
         </div>
         <div>
           <label class="field-label">Annual interest rate (%)</label>
-          <input type="number" class="field-input" id="m-rate" placeholder="19.9" min="0" max="100" step="0.1" oninput="modalCalc()">
+          <input type="number" class="field-input" id="m-rate" placeholder="19.9" min="0" max="100" step="0.1"  data-pfc-on-input="modalCalc">
         </div>
       </div>
 
@@ -529,7 +529,7 @@
           <label class="field-label">Minimum monthly payment</label>
           <div style="position:relative;">
             <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:14px;">$</span>
-            <input type="number" class="field-input" id="m-minpay" placeholder="150" min="1" style="padding-left:26px;" oninput="modalCalc()">
+            <input type="number" class="field-input" id="m-minpay" placeholder="150" min="1" style="padding-left:26px;"  data-pfc-on-input="modalCalc">
           </div>
         </div>
         <div>
@@ -564,8 +564,8 @@
       </div>
 
       <div style="display:flex;gap:10px;">
-        <button onclick="saveDebt()" style="flex:1;padding:11px;background:var(--teal);border:none;border-radius:var(--r-sm);font-size:14px;font-weight:700;color:var(--canvas);font-family:var(--font-body);cursor:pointer;">Save debt</button>
-        <button onclick="closeModal()" style="padding:11px 18px;background:transparent;border:1px solid var(--border2);border-radius:var(--r-sm);font-size:13px;color:var(--text2);font-family:var(--font-body);cursor:pointer;">Cancel</button>
+        <button  data-pfc-on-click="saveDebt" style="flex:1;padding:11px;background:var(--teal);border:none;border-radius:var(--r-sm);font-size:14px;font-weight:700;color:var(--canvas);font-family:var(--font-body);cursor:pointer;">Save debt</button>
+        <button  data-pfc-on-click="closeModal" style="padding:11px 18px;background:transparent;border:1px solid var(--border2);border-radius:var(--r-sm);font-size:13px;color:var(--text2);font-family:var(--font-body);cursor:pointer;">Cancel</button>
       </div>
     </div>
   </div>
@@ -617,5 +617,41 @@
   </div>
 </footer>
 </div><!-- /main -->
+<script>
+/* PFC_INLINE_BOOTSTRAP_v1 — wires data-pfc-on-* attributes to addEventListener.
+   Generated by scripts/convert-inline-handlers.js. Do not edit by hand. */
+(function(){'use strict';
+  function call(name, arg){
+    var fn = window[name];
+    if (typeof fn === 'function') {
+      try { return fn(arg); } catch(e){ console.error('[pfc-inline] '+name+': '+e.message); }
+    } else {
+      console.warn('[pfc-inline] handler not defined: '+name);
+    }
+  }
+  var EV = ["click","input","change","submit","keyup","keydown","keypress","focus","blur","mouseover","mouseout","mouseenter","mouseleave","wheel"];
+  EV.forEach(function(ev){
+    var attr = 'data-pfc-on-' + ev;
+    document.querySelectorAll('['+attr+']').forEach(function(el){
+      el.addEventListener(ev, function(e){
+        var fn = el.getAttribute(attr);
+        if (el.hasAttribute('data-pfc-arg-this')) return call(fn, el);
+        if (el.hasAttribute('data-pfc-arg-this-value')) return call(fn, el.value);
+        if (el.hasAttribute('data-pfc-href')) { window.location.href = el.getAttribute('data-pfc-href'); return; }
+        if (el.hasAttribute('data-pfc-target')) {
+          var tgt = document.getElementById(el.getAttribute('data-pfc-target'));
+          if (tgt) tgt.textContent = el.value;
+          return;
+        }
+        if (el.hasAttribute('data-pfc-arg')) {
+          try { return call(fn, JSON.parse(el.getAttribute('data-pfc-arg'))); }
+          catch(_){ return call(fn, el.getAttribute('data-pfc-arg')); }
+        }
+        return call(fn);
+      });
+    });
+  });
+})();
+</script>
 </body>
 </html>
