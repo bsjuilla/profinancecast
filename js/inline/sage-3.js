@@ -129,6 +129,26 @@ async function sendMessage(text) {
   document.getElementById('send-btn').disabled = false;
 }
 
+// Recent financial-news context (Marketaux). Fetched once at page load
+// (1h cache in sessionStorage via PFCNews), passed to /api/sage so Gemini
+// can ground answers in real-world headlines. Silent fallback to no-news
+// if MARKETAUX_API_KEY isn't configured server-side.
+let _sageNewsContext = null;
+(function _preloadNews() {
+  if (typeof PFCNews === 'undefined' || !PFCNews.getHeadlines) return;
+  PFCNews.getHeadlines({ limit: 5 })
+    .then((articles) => {
+      if (Array.isArray(articles) && articles.length > 0) {
+        _sageNewsContext = articles.map((a) => ({
+          title: String(a.title || '').slice(0, 180),
+          source: String(a.source || '').slice(0, 60),
+          published_at: a.published_at || null,
+        }));
+      }
+    })
+    .catch(() => { /* silent — Sage works fine without news context */ });
+})();
+
 async function callSage(msg) {
   const session = (typeof PFCAuth !== 'undefined') ? PFCAuth.getSession() : null;
   const headers = { 'Content-Type': 'application/json' };
@@ -147,6 +167,11 @@ async function callSage(msg) {
   const body = { message: msg };
   if (histPayload.length) body.history = histPayload;
   if (userContext)        body.userContext = userContext;
+  // Attach recent news context. Server validates structure + caps length
+  // independently so the client just sends best-effort.
+  if (Array.isArray(_sageNewsContext) && _sageNewsContext.length > 0) {
+    body.news_context = _sageNewsContext;
+  }
 
   const res = await fetch('/api/sage', {
     method:'POST',

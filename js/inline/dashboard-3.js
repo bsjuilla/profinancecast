@@ -2,6 +2,49 @@
       if (typeof PFCAuth !== 'undefined') PFCAuth.requireAuth();
     });
 
+    // Macro context strip — populates the macro-widget div with FRED data.
+    // Renders 4 mini cells (Fed funds, 30Y mortgage, 10Y Treasury, CPI YoY)
+    // plus a 'real yield' hint if the user's savings field is non-zero.
+    (function _renderMacroWidget() {
+      function _go() {
+        try {
+          if (typeof PFCMacro === 'undefined') return;
+          const el = document.getElementById('macro-widget');
+          if (!el) return;
+          PFCMacro.get().then((d) => {
+            if (!d || !el) return;
+            function _fmtPct(v) {
+              return (typeof v === 'number' && isFinite(v)) ? v.toFixed(2) + '%' : '—';
+            }
+            function _cell(label, val, note) {
+              return '<div style="display:inline-block;margin-right:22px;">' +
+                '<span style="display:block;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3,#8a9189);margin-bottom:2px;">' +
+                  label + '</span>' +
+                '<span style="font-family:var(--font-display);font-weight:600;font-size:14px;color:var(--ink,#F0EDE2);">' +
+                  val + '</span>' +
+                (note ? '<span style="font-size:11px;color:var(--text3,#8a9189);margin-left:6px;">' + note + '</span>' : '') +
+                '</div>';
+            }
+            const ff  = d.fedFunds    ? _fmtPct(d.fedFunds.value)    : '—';
+            const mtg = d.mortgage30y ? _fmtPct(d.mortgage30y.value) : '—';
+            const t10 = d.treasury10y ? _fmtPct(d.treasury10y.value) : '—';
+            const cpi = d.cpiYoY      ? _fmtPct(d.cpiYoY.value)      : '—';
+            el.innerHTML =
+              _cell('Fed funds', ff) +
+              _cell('30Y mortgage', mtg) +
+              _cell('10Y Treasury', t10) +
+              _cell('CPI YoY', cpi) +
+              '<span style="float:right;font-size:10.5px;color:var(--text3,#8a9189);">FRED &middot; ' +
+                (d.cpiYoY && d.cpiYoY.date ? d.cpiYoY.date : 'live') + '</span>';
+            el.style.display = 'block';
+          }).catch(() => { /* silent — widget stays hidden */ });
+        } catch (_) {}
+      }
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', _go, { once: true });
+      } else { _go(); }
+    })();
+
     // FX widget — show today's rate from USD to the user's currency in the
     // topbar subheader. Silent if user is already on USD or their currency
     // isn't in Frankfurter's coverage (~30 ECB-tracked currencies).
