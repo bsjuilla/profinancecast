@@ -1,0 +1,102 @@
+name: Quarterly Audit Reminder
+
+# Auto-opens a GitHub Issue 14 days before each quarterly audit date,
+# pre-filled with the MVA checklist from docs/quarterly-audit-cadence.md.
+# The issue stares at you every time you open the repo. Closing it
+# requires a linked commit OR a comment beginning `SKIP:` — forcing an
+# explicit, logged decision. Two SKIP comments in the history is the
+# audit finding (per the COO plan, docs/superpowers/audits/2026-05-22-coo-cadence-plan.md).
+
+on:
+  schedule:
+    # 08:00 UTC on the -14 day before each scheduled audit date.
+    # Aug 21 audit  → fires Aug 7
+    - cron: '0 8 7 8 *'
+    # Nov 21 audit  → fires Nov 7
+    - cron: '0 8 7 11 *'
+    # Feb 21 audit  → fires Feb 7
+    - cron: '0 8 7 2 *'
+    # May 21 audit  → fires May 7  (annual full 8-agent re-run)
+    - cron: '0 8 7 5 *'
+  workflow_dispatch:  # allow manual trigger from the Actions tab
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  open-audit-issue:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Determine audit date + variant
+        id: date
+        run: |
+          MONTH=$(date +%-m)
+          YEAR=$(date +%Y)
+          case "$MONTH" in
+            8)  AUDIT_DATE="${YEAR}-08-21"; VARIANT="quarterly" ;;
+            11) AUDIT_DATE="${YEAR}-11-21"; VARIANT="quarterly" ;;
+            2)  AUDIT_DATE="${YEAR}-02-21"; VARIANT="quarterly" ;;
+            5)  AUDIT_DATE="${YEAR}-05-21"; VARIANT="annual"    ;;
+            *)  AUDIT_DATE="${YEAR}-$(printf '%02d' $MONTH)-21"; VARIANT="manual" ;;
+          esac
+          echo "audit_date=$AUDIT_DATE" >> $GITHUB_OUTPUT
+          echo "variant=$VARIANT" >> $GITHUB_OUTPUT
+
+      - name: Open audit issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const auditDate = '${{ steps.date.outputs.audit_date }}';
+            const variant = '${{ steps.date.outputs.variant }}';
+            const title = `[AUDIT DUE] ${variant === 'annual' ? 'Annual' : 'Quarterly'} Audit — ${auditDate}`;
+            const isAnnual = variant === 'annual';
+            const body = [
+              `## ${isAnnual ? 'Annual' : 'Quarterly'} Audit Checklist`,
+              ``,
+              `**Due:** ${auditDate}  |  **Owner:** Founder  |  **Est. time:** ${isAnnual ? '4-6 hrs' : '30-90 min'}`,
+              ``,
+              `### Minimum Viable Audit (30 min — never skip)`,
+              `- [ ] **Voice compliance.** Grep new pages added since the last audit for the eyebrow mandate, emoji, and "no X yet" / "get started" empty-state copy:`,
+              `      \`\`\``,
+              `      git diff --name-only $(git describe --tags --abbrev=0)..HEAD -- '*.html' | xargs grep -l "get started\\|no .* yet" 2>/dev/null`,
+              `      grep -rn -E "[\\x{1F300}-\\x{1F9FF}]" *.html tools/*.html 2>/dev/null`,
+              `      \`\`\``,
+              `      Flag anything that surfaces. Fix it inline or open a ticket.`,
+              ``,
+              `- [ ] **CSP integrity.** Diff against the locked baseline in \`docs/quarterly-audit-cadence.md\`:`,
+              `      \`\`\``,
+              `      curl -sI https://www.profinancecast.com | grep -i content-security-policy`,
+              `      \`\`\``,
+              `      Any new directive not in the baseline = stop and investigate before closing this issue.`,
+              ``,
+              `- [ ] **CI history.** Open the Actions tab → last 90 days of visual-regression runs all green or have a dated explanation. A silent red run with no explanation IS the audit finding.`,
+              ``,
+              `### Full Audit (add if time allows, ${isAnnual ? '**REQUIRED for annual**' : 'optional for quarterly'})`,
+              `- [ ] Photo-class taxonomy compliance (every new photo follows \`docs/photo-classes.md\`)`,
+              `- [ ] Lighthouse perf history (no regression > 5 pts vs baseline)`,
+              `- [ ] a11y regression check (axe-core against critical surfaces)`,
+              `- [ ] STYLE-GUIDE.md voice rules 1-3 spot-check on new pages`,
+              `${isAnnual ? '- [ ] **Re-run the 8 audit agents** from 2026-05-21 against current state, diff findings\\n- [ ] **Review the year of `skips:` entries** in `docs/quarterly-audit-cadence.md` — what pattern do you see?' : ''}`,
+              ``,
+              `### How to close this issue`,
+              `1. **Link a commit** containing audit findings (preferred), OR`,
+              `2. **Comment** with the first word \`SKIP:\` followed by your reason, AND log the skip in the \`skips:\` section of \`docs/quarterly-audit-cadence.md\`.`,
+              ``,
+              `> Two consecutive \`SKIP:\` comments across audit issues = CEO red flag. The cadence isn't real. Mandatory async retro before scheduling more polish work.`,
+              ``,
+              `### Operating rhythm reminder`,
+              `Per the COO plan: every Monday before opening a code editor, answer in a running doc:`,
+              `1. What did I ship toward **ICP / message house / channel test** last week?`,
+              `2. What is blocking it this week?`,
+              `3. What did I do last week that I should have said no to?`,
+              ``,
+              `"Nothing" on Q1 two Mondays in a row IS the avoidance flag.`,
+            ].join('\n');
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title,
+              body,
+              labels: ['audit', 'cadence', variant]
+            });
