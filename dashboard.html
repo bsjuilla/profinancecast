@@ -405,6 +405,7 @@
   <script src="js/pfc-storage.js"></script>
   <script src="js/pfc-currency.js"></script>
   <script src="js/pfc-user.js"></script>
+  <script src="js/pfc-fx.js"></script>
   <script src="js/pfc-entitlements.js"></script>
   <script src="js/pfc-motion.js" defer></script>
   <!-- v3 reskin: new fonts + emerald palette overrides -->
@@ -510,7 +511,7 @@
   <div class="topbar">
     <div class="topbar-left">
       <div class="topbar-title">My Dashboard <span id="masthead-month" style="display:inline-block;font-family:var(--font-display);font-style:italic;font-weight:500;color:var(--gold);margin-left:8px;font-size:15px;">—</span></div>
-      <div class="topbar-sub" id="topbar-date">Last updated · just now · <span id="today-date"></span></div>
+      <div class="topbar-sub" id="topbar-date">Last updated · just now · <span id="today-date"></span><span id="topbar-fx" style="margin-left:10px;color:var(--text3);"></span></div>
     </div>
     <div class="topbar-right">
       <button class="topbar-btn" onclick="openCSV()">

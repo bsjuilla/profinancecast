@@ -143,6 +143,7 @@
   <script src="js/pfc-storage.js"></script>
   <script src="js/pfc-currency.js"></script>
   <script src="js/pfc-user.js"></script>
+  <script src="js/pfc-holidays.js"></script>
   <script src="js/pfc-entitlements.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -297,6 +298,10 @@
     <div class="empty-hint" id="empty-hint" style="display:none;">
       Your numbers aren't in yet. <a href="onboarding.html">Finish onboarding</a> or edit the rows below — the forecast updates as you type and persists in your browser.
     </div>
+    <!-- Holiday-aware business-day chip. Populated by holiday-init in
+         cash-forecast-2.js after PFCHolidays resolves the user's country.
+         Silent if the user's country isn't supported by Nager.Date. -->
+    <div id="cf-holiday-info" style="display:none;margin-bottom:18px;padding:10px 14px;background:rgba(28,51,40,0.5);border:1px solid var(--line-2,rgba(244,239,229,0.10));border-radius:var(--r-sm,8px);font-size:12.5px;color:var(--ink-2,#B8C2BC);line-height:1.5;"></div>
 
     <!-- ── Three KPI cards ── -->
     <div class="kpi-grid">

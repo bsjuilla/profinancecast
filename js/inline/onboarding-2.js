@@ -3,6 +3,101 @@ const TOTAL_STEPS = 6;
 let currencySymbol = '$';
 let selectedGoals = new Set();
 
+// Auto-detect the user's country + currency from Vercel's edge geo headers
+// (free, instant, no third-party PII). Pre-selects the currency dropdown so
+// the user in Mauritius doesn't have to scroll past 99 other currencies just
+// to start onboarding. If the detected currency isn't in the dropdown, we
+// add it on the fly with a friendly label. Fires once on DOMContentLoaded;
+// completely silent on failure (USD default stands).
+(function _pfcAutoDetectCurrency() {
+  // Centralised currency-code → display name map for any code we don't
+  // already list in the dropdown. Kept short to ~30 codes — the long tail
+  // gets a "{ISO} ({ISO})" label which is functional but not pretty.
+  const CURRENCY_LABELS = {
+    USD:'US Dollar', EUR:'Euro', GBP:'British Pound', JPY:'Japanese Yen',
+    CNY:'Chinese Yuan', INR:'Indian Rupee', AUD:'Australian Dollar',
+    CAD:'Canadian Dollar', CHF:'Swiss Franc', SGD:'Singapore Dollar',
+    HKD:'Hong Kong Dollar', NZD:'New Zealand Dollar', SEK:'Swedish Krona',
+    NOK:'Norwegian Krone', DKK:'Danish Krone', ZAR:'South African Rand',
+    BRL:'Brazilian Real', MXN:'Mexican Peso', KRW:'South Korean Won',
+    NGN:'Nigerian Naira', MUR:'Mauritian Rupee', AED:'UAE Dirham',
+    SAR:'Saudi Riyal', TRY:'Turkish Lira', RUB:'Russian Ruble',
+    PLN:'Polish Złoty', THB:'Thai Baht', PHP:'Philippine Peso',
+    IDR:'Indonesian Rupiah', MYR:'Malaysian Ringgit', VND:'Vietnamese Đồng',
+    PKR:'Pakistani Rupee', BDT:'Bangladeshi Taka', EGP:'Egyptian Pound',
+    KES:'Kenyan Shilling', GHS:'Ghanaian Cedi', ARS:'Argentine Peso',
+    COP:'Colombian Peso', CLP:'Chilean Peso', PEN:'Peruvian Sol',
+  };
+
+  function _esc(s) {
+    return String(s).replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  function _selectOrInsertCurrency(code, symbol) {
+    const sel = document.getElementById('f-currency');
+    if (!sel) return false;
+    // Already in the list?
+    for (const o of sel.options) {
+      if (o.value === code) { sel.value = code; return true; }
+    }
+    // Insert at the top (right under USD) so the user sees their detected
+    // currency without scrolling. The data-sym attribute is what
+    // updateCurrency() reads to set the $/₨/€ prefix on every money input.
+    const opt = document.createElement('option');
+    opt.value = code;
+    opt.dataset.sym = symbol || code;
+    opt.textContent = (CURRENCY_LABELS[code] ? CURRENCY_LABELS[code] : code) + ' (' + code + ')';
+    sel.insertBefore(opt, sel.options[1] || null); // after USD
+    sel.value = code;
+    return true;
+  }
+
+  function _showDetectedHint(countryName, currencyCode) {
+    const sel = document.getElementById('f-currency');
+    if (!sel || !countryName) return;
+    // Don't duplicate the hint if onboarding's already been initialised once.
+    if (document.getElementById('pfc-geo-hint')) return;
+    const hint = document.createElement('div');
+    hint.id = 'pfc-geo-hint';
+    hint.setAttribute('role', 'status');
+    hint.style.cssText = 'margin-top:6px;font-size:12px;color:var(--text3,#8a9189);display:flex;align-items:center;gap:6px;';
+    hint.innerHTML =
+      '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">' +
+      '<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 1 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>' +
+      'Detected: ' + _esc(countryName) + ' &middot; <a href="#" id="pfc-geo-reset" style="color:var(--teal,#2BB67D);text-decoration:none;">change</a>';
+    sel.parentNode.appendChild(hint);
+    document.getElementById('pfc-geo-reset').addEventListener('click', (e) => {
+      e.preventDefault();
+      sel.value = 'USD';
+      if (typeof updateCurrency === 'function') updateCurrency();
+      hint.remove();
+    });
+  }
+
+  function _apply() {
+    fetch('/api/geo', { credentials: 'omit' })
+      .then((res) => res.ok ? res.json() : null)
+      .then((geo) => {
+        if (!geo || !geo.currencyCode) return;
+        // Vercel returns "fallback-usd" for localhost / Tor / VPN — leave the
+        // dropdown at the default USD selection in that case.
+        if (geo.source === 'fallback-usd') return;
+        const inserted = _selectOrInsertCurrency(geo.currencyCode, geo.currencySymbol);
+        if (inserted) {
+          if (typeof updateCurrency === 'function') updateCurrency();
+          _showDetectedHint(geo.countryName || geo.countryCode, geo.currencyCode);
+        }
+      })
+      .catch(() => { /* silent: USD default still works */ });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', _apply, { once: true });
+  } else {
+    _apply();
+  }
+})();
+
 function getSymbol() {
   const sel = document.getElementById('f-currency');
   const opt = sel.options[sel.selectedIndex];

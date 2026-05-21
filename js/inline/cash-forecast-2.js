@@ -664,3 +664,104 @@ document.addEventListener('visibilitychange', () => {
     if (fixedChanged || customChanged) { USER = fresh; renderRows(); renderTotalsAndCharts(); }
   }
 });
+
+// ── Holiday-aware business-day chip ──────────────────────────────────────
+// Shows the user "April 2026 · 22 business days · 1 bank holiday: Good Friday"
+// based on the current month-selector value and the user's country (detected
+// from Vercel geo headers). Silent if Nager.Date doesn't support the country
+// or geo lookup fails.
+(function _bootHolidayInfo() {
+  const el = document.getElementById('cf-holiday-info');
+  if (!el || typeof PFCHolidays === 'undefined') return;
+
+  let _country = null;
+
+  function _esc(s) {
+    return String(s).replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  function _getSelectedMonth() {
+    const sel = document.getElementById('month-select');
+    if (!sel || !sel.value) return null;
+    const m = /^(\d{4})-(\d{2})$/.exec(sel.value);
+    if (!m) return null;
+    return { year: parseInt(m[1], 10), monthIdx: parseInt(m[2], 10) - 1 };
+  }
+
+  function _typicalBusinessDays(year, monthIdx) {
+    const daysInMonth = new Date(year, monthIdx + 1, 0).getDate();
+    let n = 0;
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dow = new Date(year, monthIdx, d).getDay();
+      if (dow !== 0 && dow !== 6) n++;
+    }
+    return n;
+  }
+
+  function _monthName(year, monthIdx) {
+    try {
+      return new Date(year, monthIdx, 1).toLocaleDateString(navigator.language || 'en-US',
+        { month: 'long', year: 'numeric' });
+    } catch (_) {
+      return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][monthIdx] + ' ' + year;
+    }
+  }
+
+  async function _render() {
+    if (!_country) { el.style.display = 'none'; return; }
+    const sel = _getSelectedMonth();
+    if (!sel) { el.style.display = 'none'; return; }
+    try {
+      const [bizDays, hols] = await Promise.all([
+        PFCHolidays.businessDaysInMonth(sel.year, sel.monthIdx, _country),
+        PFCHolidays.getForMonth(sel.year, sel.monthIdx, _country),
+      ]);
+      const typical = _typicalBusinessDays(sel.year, sel.monthIdx);
+      const monthLabel = _monthName(sel.year, sel.monthIdx);
+      const delta = bizDays - typical;
+      const deltaTxt = delta === 0 ? ''
+        : delta < 0 ? ' <span style="color:var(--amber,#F5A623);">(' + Math.abs(delta) + ' fewer than usual)</span>'
+        : ' <span style="color:var(--teal,#2BB67D);">(' + delta + ' more than usual)</span>';
+      const bankClosed = hols.filter((h) => {
+        if (!h.types || !Array.isArray(h.types)) return true;
+        return h.types.includes('Public') || h.types.includes('Bank');
+      });
+      let holidaysTxt = '';
+      if (bankClosed.length > 0) {
+        const list = bankClosed.slice(0, 3).map((h) => _esc(h.localName || h.name) + ' (' + h.date.slice(5) + ')').join(', ');
+        const more = bankClosed.length > 3 ? ' +' + (bankClosed.length - 3) + ' more' : '';
+        holidaysTxt = ' &middot; ' + bankClosed.length + ' bank holiday' + (bankClosed.length>1?'s':'') + ': ' + list + more;
+      }
+      el.innerHTML = '<strong style="color:var(--ink,#F0EDE2);font-weight:600;">' +
+        _esc(monthLabel) + '</strong> &middot; ' + bizDays + ' business day' +
+        (bizDays === 1 ? '' : 's') + deltaTxt + holidaysTxt;
+      el.style.display = 'block';
+    } catch (_) { el.style.display = 'none'; }
+  }
+
+  function _resolveCountry() {
+    try {
+      const cached = sessionStorage.getItem('pfc_geo_country');
+      if (cached) { _country = cached; _render(); return; }
+    } catch (_) {}
+    fetch('/api/geo', { credentials: 'omit' })
+      .then((res) => res.ok ? res.json() : null)
+      .then((geo) => {
+        if (!geo || !geo.countryCode) return;
+        if (geo.source === 'fallback-usd') return;
+        if (!PFCHolidays.isSupported(geo.countryCode)) return;
+        _country = geo.countryCode;
+        try { sessionStorage.setItem('pfc_geo_country', _country); } catch (_) {}
+        _render();
+      })
+      .catch(() => { /* silent */ });
+  }
+
+  const sel = document.getElementById('month-select');
+  if (sel) sel.addEventListener('change', _render);
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', _resolveCountry, { once: true });
+  } else {
+    _resolveCountry();
+  }
+})();
