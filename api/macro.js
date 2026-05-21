@@ -29,7 +29,11 @@
 
 export const config = { runtime: 'edge' };
 
-const FRED_BASE = 'https://fred.stlouisfed.org/graph/fredgraph.csv';
+// FRED official JSON API. We originally tried the keyless fredgraph.csv
+// endpoint but FRED blocks Vercel's edge POPs (cloud-provider IP block +
+// User-Agent filtering — and Fetch-spec forbidden-header rules strip our
+// custom UA on Edge runtime). The JSON API with a free key works reliably.
+const FRED_BASE = 'https://api.stlouisfed.org/fred/series/observations';
 
 function _json(payload, status, extraHeaders) {
   return new Response(JSON.stringify(payload), {
@@ -40,55 +44,45 @@ function _json(payload, status, extraHeaders) {
   });
 }
 
-// Parse FRED's two-column CSV: "observation_date,SERIES\n2026-04-01,5.33\n…"
-// Returns [{date, value}] sorted oldest-first. Skips "." rows (FRED's sentinel
-// for missing data). Defensive against trailing whitespace and CRLF lines.
-function _parseFredCsv(text) {
-  const rows = [];
-  if (!text) return rows;
-  const lines = text.split(/\r?\n/);
-  // Skip header (lines[0]); FRED always has one.
-  for (let i = 1; i < lines.length; i++) {
-    const line = lines[i].trim();
-    if (!line) continue;
-    const comma = line.indexOf(',');
-    if (comma === -1) continue;
-    const date = line.slice(0, comma).trim();
-    const raw = line.slice(comma + 1).trim();
-    if (!date || raw === '.' || raw === '') continue;
-    const v = parseFloat(raw);
-    if (!isFinite(v)) continue;
-    rows.push({ date, value: v });
-  }
-  return rows;
-}
-
-// Limit each fetch to the last 24 months. Without `cosd`, fredgraph returns
-// the FULL historical series (CPIAUCSL goes back to 1947 → ~900 rows × 30KB).
-// On Vercel Edge's 1s CPU budget that single parse can blow past timeout;
-// 24 months is plenty for "latest value" + CPI YoY calculation (we need
-// 13 months for YoY) and keeps each payload tiny.
 function _twoYearsAgoIso() {
   const d = new Date();
   d.setFullYear(d.getFullYear() - 2);
-  return d.toISOString().slice(0, 10); // YYYY-MM-DD
+  return d.toISOString().slice(0, 10);
 }
 
-async function _fetchSeries(seriesId) {
-  const url = `${FRED_BASE}?id=${encodeURIComponent(seriesId)}&cosd=${_twoYearsAgoIso()}`;
-  // AbortController per fetch — if one series hangs, the others still respond.
+async function _fetchSeries(seriesId, apiKey) {
+  const params = new URLSearchParams({
+    series_id: seriesId,
+    api_key: apiKey,
+    file_type: 'json',
+    sort_order: 'asc',
+    observation_start: _twoYearsAgoIso(),
+  });
+  const url = FRED_BASE + '?' + params.toString();
   const ctrl = new AbortController();
   const timeoutId = setTimeout(() => ctrl.abort(), 6000);
   try {
     const res = await fetch(url, {
-      headers: { 'Accept': 'text/csv', 'User-Agent': 'profinancecast-macro/1.0' },
+      headers: { 'Accept': 'application/json' },
       signal: ctrl.signal,
     });
     clearTimeout(timeoutId);
     if (!res.ok) return { rows: [], error: 'http_' + res.status };
-    const text = await res.text();
-    const rows = _parseFredCsv(text);
-    if (rows.length === 0) return { rows: [], error: 'empty_csv' };
+    const data = await res.json();
+    // FRED JSON shape: { observations: [{date:"2026-04-01", value:"5.33"}, ...] }
+    if (!data || !Array.isArray(data.observations)) {
+      return { rows: [], error: 'no_observations' };
+    }
+    const rows = [];
+    for (const o of data.observations) {
+      if (!o || typeof o.date !== 'string') continue;
+      // FRED uses '.' for missing values — skip.
+      if (o.value === '.' || o.value === '' || o.value == null) continue;
+      const v = parseFloat(o.value);
+      if (!isFinite(v)) continue;
+      rows.push({ date: o.date, value: v });
+    }
+    if (rows.length === 0) return { rows: [], error: 'empty_observations' };
     return { rows, error: null };
   } catch (e) {
     clearTimeout(timeoutId);
@@ -138,13 +132,26 @@ export default async function handler(req) {
     return _json({ error: 'Method not allowed' }, 405);
   }
 
-  // Fan-out: fetch all four series in parallel. Edge runtime gives us low
-  // latency to FRED (US-east-2 etc); whole call typically resolves in <1s.
+  const apiKey = process.env.FRED_API_KEY;
+  if (!apiKey) {
+    return _json(
+      {
+        error: 'Macro API key not configured. Add FRED_API_KEY in Vercel.',
+        code: 'MISSING_KEY',
+      },
+      503,
+      { 'Cache-Control': 'no-store' }
+    );
+  }
+
+  // Fan-out: fetch all four series in parallel. JSON API is fast (~150ms
+  // each typical), so even with the 6s per-fetch abort guard we're nowhere
+  // close to Edge timeout.
   const [ff, mtg, t10, cpi] = await Promise.all([
-    _fetchSeries('FEDFUNDS'),
-    _fetchSeries('MORTGAGE30US'),
-    _fetchSeries('DGS10'),
-    _fetchSeries('CPIAUCSL'),
+    _fetchSeries('FEDFUNDS',     apiKey),
+    _fetchSeries('MORTGAGE30US', apiKey),
+    _fetchSeries('DGS10',        apiKey),
+    _fetchSeries('CPIAUCSL',     apiKey),
   ]);
 
   const errors = [];
