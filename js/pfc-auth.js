@@ -79,13 +79,29 @@ const PFCAuth = (() => {
   }
 
   return {
-    getUserId: () => _userId,
-    getSession: () => _session,
+    getUserId: () => (typeof window !== 'undefined' && window.__PFC_AUDIT_MODE) ? 'audit-user' : _userId,
+    getSession: () => {
+      // In audit mode, return a synthetic session so consumers reading
+      // session.user.user_metadata / email get plausible values without
+      // triggering Supabase auth flows.
+      if (typeof window !== 'undefined' && window.__PFC_AUDIT_MODE) {
+        const u = window.__PFC_AUDIT_SAMPLE_USER || {};
+        return { user: { id: 'audit-user', email: u.email || 'audit@profinancecast.local',
+                         user_metadata: { full_name: u.name || 'Audit User',
+                                          first_name: u.firstName, last_name: u.lastName } } };
+      }
+      return _session;
+    },
     getClient: () => _client,
-    isReady: () => _ready,
+    isReady: () => _ready || (typeof window !== 'undefined' && window.__PFC_AUDIT_MODE === true),
     isFailed: () => _failed,
-    isLoggedIn: () => _userId !== 'guest' && _session !== null,
+    isLoggedIn: () => (typeof window !== 'undefined' && window.__PFC_AUDIT_MODE === true) || (_userId !== 'guest' && _session !== null),
     onReady(fn) {
+      // In audit mode, fire ready callbacks synchronously with audit uid.
+      if (typeof window !== 'undefined' && window.__PFC_AUDIT_MODE) {
+        try { fn('audit-user'); } catch(_) {}
+        return;
+      }
       if (_ready) { try { fn(_userId); } catch(_) {} }
       else _readyCb.push(fn);
     },
@@ -101,6 +117,10 @@ const PFCAuth = (() => {
      * (audit L3)
      */
     requireAuth() {
+      // Audit-mode bypass — see js/pfc-audit-mode.js. The audit module
+      // sets window.__PFC_AUDIT_MODE synchronously BEFORE this module
+      // loads, so checking the flag here is reliable.
+      if (typeof window !== 'undefined' && window.__PFC_AUDIT_MODE === true) return;
       this.onReady(uid => {
         if (_failed) {
           _renderUnavailableBanner();

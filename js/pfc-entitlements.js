@@ -119,7 +119,12 @@ const PFCPlan = (() => {
     return _plan;
   }
 
-  function get() { return _plan; }
+  function get() {
+    // Audit-mode bypass: js/pfc-audit-mode.js sets the flag synchronously
+    // before this module loads when the pfc_audit_session cookie is present.
+    if (typeof window !== 'undefined' && window.__PFC_AUDIT_MODE === true) return 'pro';
+    return _plan;
+  }
 
   function applyBadges(root) {
     const scope = root || document;
@@ -173,6 +178,12 @@ const PFCPlan = (() => {
    * Free users never see the page contents (no flicker).
    */
   function requirePlan(allowed) {
+    // Audit-mode bypass — page renders as Pro, no redirects.
+    if (typeof window !== 'undefined' && window.__PFC_AUDIT_MODE === true) {
+      _plan = 'pro';
+      applyBadges();
+      return;
+    }
     const allowSet = new Set(Array.isArray(allowed) ? allowed : [allowed]);
     document.documentElement.style.visibility = 'hidden';
 
