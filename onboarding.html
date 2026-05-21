@@ -375,32 +375,32 @@
     <h2 class="step-heading">What are you working towards?</h2>
     <p class="step-sub">Select all that apply — Sage will prioritise its advice around your goals.</p>
     <div class="goal-grid">
-      <div class="goal-card" onclick="toggleGoal(this,'emergency')">
+      <div class="goal-card"  data-pfc-on-click="toggleGoal" data-pfc-arg-this data-pfc-arg='"emergency"'>
         <div class="goal-card-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1l3.5 2v5c0 3-3.5 6-3.5 6S4.5 11 4.5 8V3z" stroke="#2BB67D" stroke-width="1.3"/></svg></div>
         <div style="flex:1;"><div class="goal-card-title">Emergency fund</div><div class="goal-card-desc">3–6 months of expenses saved</div></div>
         <div class="goal-check"><svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M1 4l2 2 4-4" stroke="#0B1410" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
       </div>
-      <div class="goal-card" onclick="toggleGoal(this,'debt')">
+      <div class="goal-card"  data-pfc-on-click="toggleGoal" data-pfc-arg-this data-pfc-arg='"debt"'>
         <div class="goal-card-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l2.5 2.5L13 3" stroke="#2BB67D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
         <div style="flex:1;"><div class="goal-card-title">Pay off debt</div><div class="goal-card-desc">Become completely debt-free</div></div>
         <div class="goal-check"><svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M1 4l2 2 4-4" stroke="#0B1410" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
       </div>
-      <div class="goal-card" onclick="toggleGoal(this,'home')">
+      <div class="goal-card"  data-pfc-on-click="toggleGoal" data-pfc-arg-this data-pfc-arg='"home"'>
         <div class="goal-card-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 7.5L8 2l6 5.5V14H10v-3.5H6V14H2V7.5z" stroke="#2BB67D" stroke-width="1.3" stroke-linejoin="round"/></svg></div>
         <div style="flex:1;"><div class="goal-card-title">Buy a home</div><div class="goal-card-desc">Save for a deposit</div></div>
         <div class="goal-check"><svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M1 4l2 2 4-4" stroke="#0B1410" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
       </div>
-      <div class="goal-card" onclick="toggleGoal(this,'invest')">
+      <div class="goal-card"  data-pfc-on-click="toggleGoal" data-pfc-arg-this data-pfc-arg='"invest"'>
         <div class="goal-card-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 11.5L5.5 7 9 9.5 13.5 4" stroke="#2BB67D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
         <div style="flex:1;"><div class="goal-card-title">Start investing</div><div class="goal-card-desc">Grow wealth through markets</div></div>
         <div class="goal-check"><svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M1 4l2 2 4-4" stroke="#0B1410" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
       </div>
-      <div class="goal-card" onclick="toggleGoal(this,'retire')">
+      <div class="goal-card"  data-pfc-on-click="toggleGoal" data-pfc-arg-this data-pfc-arg='"retire"'>
         <div class="goal-card-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="#2BB67D" stroke-width="1.3"/><path d="M8 5v3.5l2 1" stroke="#2BB67D" stroke-width="1.3" stroke-linecap="round"/></svg></div>
         <div style="flex:1;"><div class="goal-card-title">Retire early</div><div class="goal-card-desc">Build long-term financial freedom</div></div>
         <div class="goal-check"><svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M1 4l2 2 4-4" stroke="#0B1410" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
       </div>
-      <div class="goal-card" onclick="toggleGoal(this,'travel')">
+      <div class="goal-card"  data-pfc-on-click="toggleGoal" data-pfc-arg-this data-pfc-arg='"travel"'>
         <div class="goal-card-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 8h12M8 2c-2 2-3 4-3 6s1 4 3 6M8 2c2 2 3 4 3 6s-1 4-3 6" stroke="#2BB67D" stroke-width="1.3"/></svg></div>
         <div style="flex:1;"><div class="goal-card-title">Travel / holiday</div><div class="goal-card-desc">Save for trips and experiences</div></div>
         <div class="goal-check"><svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M1 4l2 2 4-4" stroke="#0B1410" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
@@ -499,7 +499,7 @@
           <div class="cm-label">Financial health score</div>
         </div>
       </div>
-      <a href="dashboard.html" class="btn-go" onclick="goToDashboard(event)">
+      <a href="dashboard.html" class="btn-go"  data-pfc-on-click="goToDashboard" data-pfc-arg-event>
         <span id="go-dashboard-text">Go to my dashboard</span>
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </a>
@@ -526,37 +526,71 @@
 <script src="./js/inline/onboarding-2.js"></script>
   <!-- Route guard: redirect unauthed users to sign-in -->
   <script src="./js/inline/onboarding-3.js"></script>
+
+
+
 <script>
-/* PFC_INLINE_BOOTSTRAP_v1 — wires data-pfc-on-* attributes to addEventListener.
+/* PFC_INLINE_BOOTSTRAP_v3 — wires data-pfc-on-* attributes to addEventListener.
    Generated by scripts/convert-inline-handlers.js. Do not edit by hand. */
 (function(){'use strict';
-  function call(name, arg){
+  function callFn(name, args){
     var fn = window[name];
     if (typeof fn === 'function') {
-      try { return fn(arg); } catch(e){ console.error('[pfc-inline] '+name+': '+e.message); }
-    } else {
+      try { return fn.apply(null, args); }
+      catch(e){ console.error('[pfc-inline] '+name+': '+e.message); }
+    } else if (name.charAt(0) !== '_') {
       console.warn('[pfc-inline] handler not defined: '+name);
     }
   }
+  var INTERNAL = {
+    _pfc_nav: function(el){ window.location.href = el.getAttribute('data-pfc-href'); },
+    _pfc_settext: function(el){
+      var tgt = document.getElementById(el.getAttribute('data-pfc-target'));
+      if (tgt) tgt.textContent = el.value;
+    },
+    _pfc_trigger_click: function(el){
+      var tgt = document.getElementById(el.getAttribute('data-pfc-target'));
+      if (tgt) tgt.click();
+    },
+    _pfc_style: function(el){
+      el.style[el.getAttribute('data-pfc-style-prop')] = el.getAttribute('data-pfc-style-value');
+    },
+    _pfc_style2: function(el){
+      try {
+        var spec = JSON.parse(el.getAttribute('data-pfc-style'));
+        for (var k in spec) el.style[k] = spec[k];
+      } catch(_){}
+    }
+  };
   var EV = ["click","input","change","submit","keyup","keydown","keypress","focus","blur","mouseover","mouseout","mouseenter","mouseleave","wheel"];
   EV.forEach(function(ev){
     var attr = 'data-pfc-on-' + ev;
     document.querySelectorAll('['+attr+']').forEach(function(el){
       el.addEventListener(ev, function(e){
         var fn = el.getAttribute(attr);
-        if (el.hasAttribute('data-pfc-arg-this')) return call(fn, el);
-        if (el.hasAttribute('data-pfc-arg-this-value')) return call(fn, el.value);
-        if (el.hasAttribute('data-pfc-href')) { window.location.href = el.getAttribute('data-pfc-href'); return; }
-        if (el.hasAttribute('data-pfc-target')) {
-          var tgt = document.getElementById(el.getAttribute('data-pfc-target'));
-          if (tgt) tgt.textContent = el.value;
-          return;
-        }
+        var requiredKey = el.getAttribute('data-pfc-key');
+        if (requiredKey && e.key !== requiredKey) return;
+        if (INTERNAL[fn]) return INTERNAL[fn](el);
+        var args = [];
+        if (el.hasAttribute('data-pfc-arg-event')) args.push(e);
+        else if (el.hasAttribute('data-pfc-arg-this')) args.push(el);
+        else if (el.hasAttribute('data-pfc-arg-this-value')) args.push(el.value);
         if (el.hasAttribute('data-pfc-arg')) {
-          try { return call(fn, JSON.parse(el.getAttribute('data-pfc-arg'))); }
-          catch(_){ return call(fn, el.getAttribute('data-pfc-arg')); }
+          var raw = el.getAttribute('data-pfc-arg');
+          try {
+            var parsed = JSON.parse(raw);
+            if (Array.isArray(parsed) && !el.hasAttribute('data-pfc-arg-this')) {
+              args = args.concat(parsed);
+            } else {
+              args.push(parsed);
+            }
+          } catch(_) { args.push(raw); }
         }
-        return call(fn);
+        if (el.hasAttribute('data-pfc-arg-this-trailing')) args.push(el);
+        var rv = callFn(fn, args);
+        var then = el.getAttribute('data-pfc-then');
+        if (then) then.split(',').forEach(function(name){ name = name.trim(); if (name) callFn(name, []); });
+        return rv;
       });
     });
   });

@@ -570,7 +570,7 @@
         <div  data-pfc-on-click="closeCSV" style="width:28px;height:28px;border-radius:50%;background:var(--bg3);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2);">✕</div>
       </div>
       <div style="padding:22px 24px;">
-        <div id="csv-drop" onclick="document.getElementById('csv-file').click()"
+        <div id="csv-drop"  data-pfc-on-click="_pfc_trigger_click" data-pfc-target="csv-file"
           ondragover="event.preventDefault();this.style.borderColor='var(--teal)';this.style.background='rgba(43,182,125,0.04)'"
           ondragleave="this.style.borderColor='';this.style.background=''"
           ondrop="handleDrop(event)"
@@ -757,11 +757,11 @@
     </figure>
         
     <div class="tabs">
-      <button class="tab active" onclick="setTab(this,'overview')">Overview</button>
-      <button class="tab" onclick="setTab(this,'forecast')">Forecast</button>
-      <button class="tab" onclick="setTab(this,'debts')">Debts</button>
-      <button class="tab" onclick="setTab(this,'goals')">Goals</button>
-      <button class="tab" onclick="setTab(this,'networth')">Net Worth</button>
+      <button class="tab active"  data-pfc-on-click="setTab" data-pfc-arg-this data-pfc-arg='"overview"'>Overview</button>
+      <button class="tab"  data-pfc-on-click="setTab" data-pfc-arg-this data-pfc-arg='"forecast"'>Forecast</button>
+      <button class="tab"  data-pfc-on-click="setTab" data-pfc-arg-this data-pfc-arg='"debts"'>Debts</button>
+      <button class="tab"  data-pfc-on-click="setTab" data-pfc-arg-this data-pfc-arg='"goals"'>Goals</button>
+      <button class="tab"  data-pfc-on-click="setTab" data-pfc-arg-this data-pfc-arg='"networth"'>Net Worth</button>
     </div>
 
     <!-- ═══ OVERVIEW PANEL ═══ -->
@@ -904,19 +904,19 @@
         <div style="margin-bottom:16px;">
           <div style="font-size:11px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px;font-weight:600;">Quick life events</div>
           <div class="event-btns">
-            <button class="event-btn" onclick="applyEvent(this,'raise')">
+            <button class="event-btn"  data-pfc-on-click="applyEvent" data-pfc-arg-this data-pfc-arg='"raise"'>
               <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1v11M1 6.5l5.5-5.5 5.5 5.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
               Got a raise
             </button>
-            <button class="event-btn" onclick="applyEvent(this,'jobloss')">
+            <button class="event-btn"  data-pfc-on-click="applyEvent" data-pfc-arg-this data-pfc-arg='"jobloss"'>
               <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1v11M1 6.5l5.5 5.5 5.5-5.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
               Lost my job
             </button>
-            <button class="event-btn" onclick="applyEvent(this,'baby')">
+            <button class="event-btn"  data-pfc-on-click="applyEvent" data-pfc-arg-this data-pfc-arg='"baby"'>
               <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="4" r="2.5" stroke="currentColor" stroke-width="1.4"/><path d="M1 12c0-2.5 2.5-4 5.5-4s5.5 1.5 5.5 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
               New baby
             </button>
-            <button class="event-btn" onclick="applyEvent(this,'car')">
+            <button class="event-btn"  data-pfc-on-click="applyEvent" data-pfc-arg-this data-pfc-arg='"car"'>
               <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><rect x="1" y="5" width="11" height="5" rx="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M3 5l1.5-2.5h4L10 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="3.5" cy="10.5" r="1" fill="currentColor"/><circle cx="9.5" cy="10.5" r="1" fill="currentColor"/></svg>
               Buy a car
             </button>
@@ -927,22 +927,22 @@
           <div style="font-size:11px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:12px;font-weight:600;">Fine-tune</div>
           <div class="slider-row">
             <div class="slider-label">Inflation rate</div>
-            <input class="slider-track" type="range" min="1" max="12" step="0.5" value="3.5" id="sl-inflation" oninput="updateSlider('sl-inflation','sv-inflation','%'); recalcForecast(); refreshInflBoxes()">
+            <input class="slider-track" type="range" min="1" max="12" step="0.5" value="3.5" id="sl-inflation"  data-pfc-on-input="updateSlider" data-pfc-arg='["sl-inflation","sv-inflation","%"]' data-pfc-then="recalcForecast,refreshInflBoxes">
             <div class="slider-val" id="sv-inflation">3.5%</div>
           </div>
           <div class="slider-row">
             <div class="slider-label">Income change</div>
-            <input class="slider-track" type="range" min="-30" max="50" step="1" value="0" id="sl-income" oninput="updateSlider('sl-income','sv-income','%',true); recalcForecast()">
+            <input class="slider-track" type="range" min="-30" max="50" step="1" value="0" id="sl-income"  data-pfc-on-input="updateSlider" data-pfc-arg='["sl-income","sv-income","%",true]' data-pfc-then="recalcForecast">
             <div class="slider-val" id="sv-income">0%</div>
           </div>
           <div class="slider-row">
             <div class="slider-label">Extra monthly saving</div>
-            <input class="slider-track" type="range" min="0" max="600" step="25" value="0" id="sl-extra" oninput="updateSlider('sl-extra','sv-extra','$',false,true); recalcForecast()">
+            <input class="slider-track" type="range" min="0" max="600" step="25" value="0" id="sl-extra"  data-pfc-on-input="updateSlider" data-pfc-arg='["sl-extra","sv-extra","$",false,true]' data-pfc-then="recalcForecast">
             <div class="slider-val" id="sv-extra">$0</div>
           </div>
           <div class="slider-row">
             <div class="slider-label">Interest rate</div>
-            <input class="slider-track" type="range" min="1" max="15" step="0.5" value="5" id="sl-interest" oninput="updateSlider('sl-interest','sv-interest','%'); recalcForecast()">
+            <input class="slider-track" type="range" min="1" max="15" step="0.5" value="5" id="sl-interest"  data-pfc-on-input="updateSlider" data-pfc-arg='["sl-interest","sv-interest","%"]' data-pfc-then="recalcForecast">
             <div class="slider-val" id="sv-interest">5.0%</div>
           </div>
         </div>
@@ -1080,7 +1080,7 @@
             <div style="font-size:11px;color:var(--text3);margin-top:4px;">~2 months to reach goal</div>
           </div>
         </div>
-        <button id="add-goal-btn"  data-pfc-on-click="openAddGoal" style="width:100%;margin-top:16px;padding:8px;background:transparent;border:1px dashed rgba(255,255,255,0.1);border-radius:var(--r-sm);font-size:13px;color:var(--text3);cursor:pointer;font-family:var(--font-body);transition:all .15s;" onmouseover="this.style.borderColor='rgba(43,182,125,0.3)';this.style.color='var(--teal)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.1)';this.style.color='var(--text3)'">+ Add new goal</button>
+        <button id="add-goal-btn"  data-pfc-on-click="openAddGoal" style="width:100%;margin-top:16px;padding:8px;background:transparent;border:1px dashed rgba(255,255,255,0.1);border-radius:var(--r-sm);font-size:13px;color:var(--text3);cursor:pointer;font-family:var(--font-body);transition:all .15s;"  data-pfc-on-mouseover="_pfc_style2" data-pfc-style='{"borderColor":"rgba(43,182,125,0.3)","color":"var(--teal)"}'  data-pfc-on-mouseout="_pfc_style2" data-pfc-style='{"borderColor":"rgba(255,255,255,0.1)","color":"var(--text3)"}'>+ Add new goal</button>
       </div>
     </div>
 
@@ -1120,7 +1120,7 @@
             <div class="card-sub" id="infl-sub">How inflation erodes your purchasing power</div>
           </div>
           <div style="display:flex;align-items:center;gap:8px;">
-            <button  data-pfc-on-click="openInflCountry" style="display:flex;align-items:center;gap:5px;padding:5px 10px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:11.5px;color:var(--text2);cursor:pointer;font-family:var(--font-body);transition:all .15s;" onmouseover="this.style.borderColor='rgba(43,182,125,0.4)';this.style.color='var(--teal)'" onmouseout="this.style.borderColor='';this.style.color=''">
+            <button  data-pfc-on-click="openInflCountry" style="display:flex;align-items:center;gap:5px;padding:5px 10px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:11.5px;color:var(--text2);cursor:pointer;font-family:var(--font-body);transition:all .15s;"  data-pfc-on-mouseover="_pfc_style2" data-pfc-style='{"borderColor":"rgba(43,182,125,0.4)","color":"var(--teal)"}'  data-pfc-on-mouseout="_pfc_style2" data-pfc-style='{"borderColor":"","color":""}'>
               <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><circle cx="5.5" cy="5.5" r="4.5" stroke="currentColor" stroke-width="1.2"/><ellipse cx="5.5" cy="5.5" rx="2" ry="4.5" stroke="currentColor" stroke-width="1.2"/><line x1="1" y1="5.5" x2="10" y2="5.5" stroke="currentColor" stroke-width="1.2"/></svg>
               Live rate
             </button>
@@ -1533,10 +1533,10 @@
 
       <!-- BUTTONS -->
       <div style="display:flex;gap:10px;">
-        <button  data-pfc-on-click="saveEditFinances" style="flex:1;padding:12px;background:var(--teal);border:none;border-radius:var(--r-sm);font-size:14px;font-weight:700;color:var(--canvas);font-family:var(--font-body);cursor:pointer;transition:opacity .15s;" onmouseover="this.style.opacity='.88'" onmouseout="this.style.opacity='1'">
+        <button  data-pfc-on-click="saveEditFinances" style="flex:1;padding:12px;background:var(--teal);border:none;border-radius:var(--r-sm);font-size:14px;font-weight:700;color:var(--canvas);font-family:var(--font-body);cursor:pointer;transition:opacity .15s;"  data-pfc-on-mouseover="_pfc_style" data-pfc-style-prop="opacity" data-pfc-style-value=".88"  data-pfc-on-mouseout="_pfc_style" data-pfc-style-prop="opacity" data-pfc-style-value="1">
           Save & update dashboard
         </button>
-        <button  data-pfc-on-click="resetFinances" style="padding:12px 18px;background:transparent;border:1px solid var(--border2);border-radius:var(--r-sm);font-size:13px;color:var(--text2);font-family:var(--font-body);cursor:pointer;transition:all .15s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--text2)'">
+        <button  data-pfc-on-click="resetFinances" style="padding:12px 18px;background:transparent;border:1px solid var(--border2);border-radius:var(--r-sm);font-size:13px;color:var(--text2);font-family:var(--font-body);cursor:pointer;transition:all .15s;"  data-pfc-on-mouseover="_pfc_style" data-pfc-style-prop="color" data-pfc-style-value="var(--text)"  data-pfc-on-mouseout="_pfc_style" data-pfc-style-prop="color" data-pfc-style-value="var(--text2)">
           Reset to defaults
         </button>
       </div>
@@ -1597,37 +1597,71 @@
   </div>
 </footer>
 </main><!-- /main -->
+
+
+
 <script>
-/* PFC_INLINE_BOOTSTRAP_v1 — wires data-pfc-on-* attributes to addEventListener.
+/* PFC_INLINE_BOOTSTRAP_v3 — wires data-pfc-on-* attributes to addEventListener.
    Generated by scripts/convert-inline-handlers.js. Do not edit by hand. */
 (function(){'use strict';
-  function call(name, arg){
+  function callFn(name, args){
     var fn = window[name];
     if (typeof fn === 'function') {
-      try { return fn(arg); } catch(e){ console.error('[pfc-inline] '+name+': '+e.message); }
-    } else {
+      try { return fn.apply(null, args); }
+      catch(e){ console.error('[pfc-inline] '+name+': '+e.message); }
+    } else if (name.charAt(0) !== '_') {
       console.warn('[pfc-inline] handler not defined: '+name);
     }
   }
+  var INTERNAL = {
+    _pfc_nav: function(el){ window.location.href = el.getAttribute('data-pfc-href'); },
+    _pfc_settext: function(el){
+      var tgt = document.getElementById(el.getAttribute('data-pfc-target'));
+      if (tgt) tgt.textContent = el.value;
+    },
+    _pfc_trigger_click: function(el){
+      var tgt = document.getElementById(el.getAttribute('data-pfc-target'));
+      if (tgt) tgt.click();
+    },
+    _pfc_style: function(el){
+      el.style[el.getAttribute('data-pfc-style-prop')] = el.getAttribute('data-pfc-style-value');
+    },
+    _pfc_style2: function(el){
+      try {
+        var spec = JSON.parse(el.getAttribute('data-pfc-style'));
+        for (var k in spec) el.style[k] = spec[k];
+      } catch(_){}
+    }
+  };
   var EV = ["click","input","change","submit","keyup","keydown","keypress","focus","blur","mouseover","mouseout","mouseenter","mouseleave","wheel"];
   EV.forEach(function(ev){
     var attr = 'data-pfc-on-' + ev;
     document.querySelectorAll('['+attr+']').forEach(function(el){
       el.addEventListener(ev, function(e){
         var fn = el.getAttribute(attr);
-        if (el.hasAttribute('data-pfc-arg-this')) return call(fn, el);
-        if (el.hasAttribute('data-pfc-arg-this-value')) return call(fn, el.value);
-        if (el.hasAttribute('data-pfc-href')) { window.location.href = el.getAttribute('data-pfc-href'); return; }
-        if (el.hasAttribute('data-pfc-target')) {
-          var tgt = document.getElementById(el.getAttribute('data-pfc-target'));
-          if (tgt) tgt.textContent = el.value;
-          return;
-        }
+        var requiredKey = el.getAttribute('data-pfc-key');
+        if (requiredKey && e.key !== requiredKey) return;
+        if (INTERNAL[fn]) return INTERNAL[fn](el);
+        var args = [];
+        if (el.hasAttribute('data-pfc-arg-event')) args.push(e);
+        else if (el.hasAttribute('data-pfc-arg-this')) args.push(el);
+        else if (el.hasAttribute('data-pfc-arg-this-value')) args.push(el.value);
         if (el.hasAttribute('data-pfc-arg')) {
-          try { return call(fn, JSON.parse(el.getAttribute('data-pfc-arg'))); }
-          catch(_){ return call(fn, el.getAttribute('data-pfc-arg')); }
+          var raw = el.getAttribute('data-pfc-arg');
+          try {
+            var parsed = JSON.parse(raw);
+            if (Array.isArray(parsed) && !el.hasAttribute('data-pfc-arg-this')) {
+              args = args.concat(parsed);
+            } else {
+              args.push(parsed);
+            }
+          } catch(_) { args.push(raw); }
         }
-        return call(fn);
+        if (el.hasAttribute('data-pfc-arg-this-trailing')) args.push(el);
+        var rv = callFn(fn, args);
+        var then = el.getAttribute('data-pfc-then');
+        if (then) then.split(',').forEach(function(name){ name = name.trim(); if (name) callFn(name, []); });
+        return rv;
       });
     });
   });

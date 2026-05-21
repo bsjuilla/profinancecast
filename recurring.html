@@ -306,7 +306,7 @@
     <div class="topbar-right">
       <button class="topbar-btn" id="btn-add-manual"  data-pfc-on-click="openManualAdd" style="display:none;">+ Add manually</button>
       <button class="topbar-btn danger" id="btn-clear"  data-pfc-on-click="clearAll" style="display:none;">Clear & re-upload</button>
-      <button class="topbar-btn primary" onclick="document.getElementById('csv-file').click()">
+      <button class="topbar-btn primary"  data-pfc-on-click="_pfc_trigger_click" data-pfc-target="csv-file">
         <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1v8M3 6l3.5 3.5L10 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M1 11h11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
         Upload CSV
       </button>
@@ -323,7 +323,7 @@
           ondragover="event.preventDefault();this.classList.add('drag')"
           ondragleave="this.classList.remove('drag')"
           ondrop="handleDrop(event)"
-          onclick="document.getElementById('csv-file').click()">
+           data-pfc-on-click="_pfc_trigger_click" data-pfc-target="csv-file">
           <svg width="44" height="44" viewBox="0 0 44 44" fill="none" style="margin:0 auto 14px;display:block;"><circle cx="22" cy="22" r="20" fill="rgba(43,182,125,0.08)" stroke="rgba(43,182,125,0.2)" stroke-width="1.5"/><path d="M22 14v12M16 20l6-6 6 6" stroke="#2BB67D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M15 30h14" stroke="#4A5A6E" stroke-width="2" stroke-linecap="round"/></svg>
           <div style="font-family:var(--font-display);font-size:16px;font-weight:700;margin-bottom:6px;">Drop your bank CSV here</div>
           <div style="font-size:13px;color:var(--text3);">or click to browse · Works with any bank export</div>
@@ -428,15 +428,15 @@
       <!-- Filters + sort -->
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:10px;">
         <div class="filter-tabs" id="filter-tabs" style="margin-bottom:0;">
-          <button class="filter-tab active" data-filter="all" onclick="setFilter('all',this)">All</button>
-          <button class="filter-tab" data-filter="streaming" onclick="setFilter('streaming',this)">🎬 Streaming</button>
-          <button class="filter-tab" data-filter="software" onclick="setFilter('software',this)">💻 Software</button>
-          <button class="filter-tab" data-filter="utilities" onclick="setFilter('utilities',this)">⚡ Utilities</button>
-          <button class="filter-tab" data-filter="insurance" onclick="setFilter('insurance',this)">🛡️ Insurance</button>
-          <button class="filter-tab" data-filter="finance" onclick="setFilter('finance',this)">🏦 Finance</button>
-          <button class="filter-tab" data-filter="health" onclick="setFilter('health',this)">❤️ Health</button>
-          <button class="filter-tab danger-tab" data-filter="flagged" onclick="setFilter('flagged',this)">⚠️ Price increased</button>
-          <button class="filter-tab amber-tab" data-filter="cancelled" onclick="setFilter('cancelled',this)">✕ Cancelled</button>
+          <button class="filter-tab active" data-filter="all"  data-pfc-on-click="setFilter" data-pfc-arg='"all"' data-pfc-arg-this-trailing>All</button>
+          <button class="filter-tab" data-filter="streaming"  data-pfc-on-click="setFilter" data-pfc-arg='"streaming"' data-pfc-arg-this-trailing>🎬 Streaming</button>
+          <button class="filter-tab" data-filter="software"  data-pfc-on-click="setFilter" data-pfc-arg='"software"' data-pfc-arg-this-trailing>💻 Software</button>
+          <button class="filter-tab" data-filter="utilities"  data-pfc-on-click="setFilter" data-pfc-arg='"utilities"' data-pfc-arg-this-trailing>⚡ Utilities</button>
+          <button class="filter-tab" data-filter="insurance"  data-pfc-on-click="setFilter" data-pfc-arg='"insurance"' data-pfc-arg-this-trailing>🛡️ Insurance</button>
+          <button class="filter-tab" data-filter="finance"  data-pfc-on-click="setFilter" data-pfc-arg='"finance"' data-pfc-arg-this-trailing>🏦 Finance</button>
+          <button class="filter-tab" data-filter="health"  data-pfc-on-click="setFilter" data-pfc-arg='"health"' data-pfc-arg-this-trailing>❤️ Health</button>
+          <button class="filter-tab danger-tab" data-filter="flagged"  data-pfc-on-click="setFilter" data-pfc-arg='"flagged"' data-pfc-arg-this-trailing>⚠️ Price increased</button>
+          <button class="filter-tab amber-tab" data-filter="cancelled"  data-pfc-on-click="setFilter" data-pfc-arg='"cancelled"' data-pfc-arg-this-trailing>✕ Cancelled</button>
         </div>
         <div class="sort-bar" style="margin-bottom:0;">
           <span class="sort-label">Sort:</span>
@@ -548,37 +548,71 @@
   </div>
 </footer>
 </div><!-- /main -->
+
+
+
 <script>
-/* PFC_INLINE_BOOTSTRAP_v1 — wires data-pfc-on-* attributes to addEventListener.
+/* PFC_INLINE_BOOTSTRAP_v3 — wires data-pfc-on-* attributes to addEventListener.
    Generated by scripts/convert-inline-handlers.js. Do not edit by hand. */
 (function(){'use strict';
-  function call(name, arg){
+  function callFn(name, args){
     var fn = window[name];
     if (typeof fn === 'function') {
-      try { return fn(arg); } catch(e){ console.error('[pfc-inline] '+name+': '+e.message); }
-    } else {
+      try { return fn.apply(null, args); }
+      catch(e){ console.error('[pfc-inline] '+name+': '+e.message); }
+    } else if (name.charAt(0) !== '_') {
       console.warn('[pfc-inline] handler not defined: '+name);
     }
   }
+  var INTERNAL = {
+    _pfc_nav: function(el){ window.location.href = el.getAttribute('data-pfc-href'); },
+    _pfc_settext: function(el){
+      var tgt = document.getElementById(el.getAttribute('data-pfc-target'));
+      if (tgt) tgt.textContent = el.value;
+    },
+    _pfc_trigger_click: function(el){
+      var tgt = document.getElementById(el.getAttribute('data-pfc-target'));
+      if (tgt) tgt.click();
+    },
+    _pfc_style: function(el){
+      el.style[el.getAttribute('data-pfc-style-prop')] = el.getAttribute('data-pfc-style-value');
+    },
+    _pfc_style2: function(el){
+      try {
+        var spec = JSON.parse(el.getAttribute('data-pfc-style'));
+        for (var k in spec) el.style[k] = spec[k];
+      } catch(_){}
+    }
+  };
   var EV = ["click","input","change","submit","keyup","keydown","keypress","focus","blur","mouseover","mouseout","mouseenter","mouseleave","wheel"];
   EV.forEach(function(ev){
     var attr = 'data-pfc-on-' + ev;
     document.querySelectorAll('['+attr+']').forEach(function(el){
       el.addEventListener(ev, function(e){
         var fn = el.getAttribute(attr);
-        if (el.hasAttribute('data-pfc-arg-this')) return call(fn, el);
-        if (el.hasAttribute('data-pfc-arg-this-value')) return call(fn, el.value);
-        if (el.hasAttribute('data-pfc-href')) { window.location.href = el.getAttribute('data-pfc-href'); return; }
-        if (el.hasAttribute('data-pfc-target')) {
-          var tgt = document.getElementById(el.getAttribute('data-pfc-target'));
-          if (tgt) tgt.textContent = el.value;
-          return;
-        }
+        var requiredKey = el.getAttribute('data-pfc-key');
+        if (requiredKey && e.key !== requiredKey) return;
+        if (INTERNAL[fn]) return INTERNAL[fn](el);
+        var args = [];
+        if (el.hasAttribute('data-pfc-arg-event')) args.push(e);
+        else if (el.hasAttribute('data-pfc-arg-this')) args.push(el);
+        else if (el.hasAttribute('data-pfc-arg-this-value')) args.push(el.value);
         if (el.hasAttribute('data-pfc-arg')) {
-          try { return call(fn, JSON.parse(el.getAttribute('data-pfc-arg'))); }
-          catch(_){ return call(fn, el.getAttribute('data-pfc-arg')); }
+          var raw = el.getAttribute('data-pfc-arg');
+          try {
+            var parsed = JSON.parse(raw);
+            if (Array.isArray(parsed) && !el.hasAttribute('data-pfc-arg-this')) {
+              args = args.concat(parsed);
+            } else {
+              args.push(parsed);
+            }
+          } catch(_) { args.push(raw); }
         }
-        return call(fn);
+        if (el.hasAttribute('data-pfc-arg-this-trailing')) args.push(el);
+        var rv = callFn(fn, args);
+        var then = el.getAttribute('data-pfc-then');
+        if (then) then.split(',').forEach(function(name){ name = name.trim(); if (name) callFn(name, []); });
+        return rv;
       });
     });
   });
