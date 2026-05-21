@@ -264,9 +264,22 @@
       document.getElementById('pf-sub').textContent = 'No holdings yet';
     } else {
       const errs = valuations.filter((v) => v.error).length;
-      document.getElementById('pf-sub').textContent = errs > 0
+      // Crypto fallback notice: if any crypto holding got a different vs_currency
+      // than requested, surface "Displayed in USD — your local currency isn't
+      // in CoinGecko's fiat list" so users understand why MUR/PKR/etc isn't
+      // showing on their portfolio.
+      const cryptoFallback = valuations.find((v) =>
+        v.quote && v.quote.requested_vs_currency &&
+        v.quote.requested_vs_currency !== v.quote.vs_currency
+      );
+      let baseMsg = errs > 0
         ? `Tracking ${valuations.length} holding${valuations.length===1?'':'s'} · ${errs} pricing error${errs===1?'':'s'}`
         : `Tracking ${valuations.length} holding${valuations.length===1?'':'s'} · live`;
+      if (cryptoFallback) {
+        const req = String(cryptoFallback.quote.requested_vs_currency).toUpperCase();
+        baseMsg += ` · crypto shown in USD (CoinGecko doesn't price in ${req})`;
+      }
+      document.getElementById('pf-sub').textContent = baseMsg;
     }
   }
 

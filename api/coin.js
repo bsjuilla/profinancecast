@@ -29,6 +29,20 @@ const COINGECKO_BASE = 'https://api.coingecko.com/api/v3';
 const ID_RE = /^[a-z0-9\-,]{1,200}$/;
 const VS_RE = /^[a-z]{3}$/;
 
+// CoinGecko's `vs_currencies` accepts ~50 fiats; many exotic ones like MUR,
+// PKR, AED aren't included. When a user's local currency isn't supported,
+// silently fall back to USD so the page doesn't render "Coin not found"
+// for an entirely-supported coin. The client can then convert with PFCFx
+// if it wants — though for crypto, USD display is most users' default
+// mental model anyway.
+const SUPPORTED_VS = new Set([
+  'btc','eth','ltc','bch','bnb','eos','xrp','xlm','link','dot','yfi','sol',
+  'usd','aed','ars','aud','bdt','bhd','bmd','brl','cad','chf','clp','cny',
+  'czk','dkk','eur','gbp','gel','hkd','huf','idr','ils','inr','jpy','krw',
+  'kwd','lkr','mmk','mxn','myr','ngn','nok','nzd','php','pkr','pln','rub',
+  'sar','sek','sgd','thb','try','twd','uah','vef','vnd','zar',
+]);
+
 // Map common ticker symbols → CoinGecko slugs for convenience, since the
 // portfolio UI lets users type "BTC" or "ETH" naturally. Unknown tickers
 // pass through as-is and CoinGecko will 404 if invalid.
@@ -68,6 +82,16 @@ export default async function handler(req) {
   if (!idsRaw) return _json({ error: 'Missing ?id=', code: 'MISSING_ID' }, 400);
   if (!VS_RE.test(vs)) return _json({ error: 'Invalid vs currency', code: 'BAD_VS' }, 400);
 
+  // Graceful fallback: CoinGecko doesn't support every fiat (MUR, PKR, AED,
+  // etc are missing). Swap to USD silently and note it in the response so
+  // the client can show "Displayed in USD — CoinGecko doesn't list MUR".
+  let effectiveVs = vs;
+  let vsFallbackFromUser = null;
+  if (!SUPPORTED_VS.has(vs)) {
+    vsFallbackFromUser = vs;
+    effectiveVs = 'usd';
+  }
+
   // Resolve any tickers ("BTC,ETH") to CoinGecko ids ("bitcoin,ethereum").
   const ids = idsRaw
     .split(',')
@@ -84,7 +108,7 @@ export default async function handler(req) {
   const upstream =
     `${COINGECKO_BASE}/simple/price` +
     `?ids=${encodeURIComponent(joined)}` +
-    `&vs_currencies=${encodeURIComponent(vs)}` +
+    `&vs_currencies=${encodeURIComponent(effectiveVs)}` +
     `&include_24hr_change=true` +
     `&include_market_cap=true` +
     `&include_last_updated_at=true`;
@@ -112,14 +136,17 @@ export default async function handler(req) {
   //   { "bitcoin": { "usd": 65000, "usd_market_cap": ..., "usd_24h_change": 1.5, "last_updated_at": 1716000000 } }
   function _mapOne(coinId) {
     const row = data[coinId];
-    if (!row || typeof row[vs] !== 'number') return null;
+    if (!row || typeof row[effectiveVs] !== 'number') return null;
     return {
       coinId,
-      symbol: coinId.toUpperCase(), // not strictly the symbol but works for display fallback
-      price: row[vs],
-      vs_currency: vs,
-      change_pct_24h: typeof row[vs + '_24h_change'] === 'number' ? row[vs + '_24h_change'] : null,
-      market_cap: typeof row[vs + '_market_cap'] === 'number' ? row[vs + '_market_cap'] : null,
+      symbol: coinId.toUpperCase(),
+      price: row[effectiveVs],
+      vs_currency: effectiveVs,
+      // If we fell back from MUR → USD, tell the client so it can render
+      // the disclaimer "Displayed in USD — CoinGecko doesn't list MUR".
+      requested_vs_currency: vsFallbackFromUser,
+      change_pct_24h: typeof row[effectiveVs + '_24h_change'] === 'number' ? row[effectiveVs + '_24h_change'] : null,
+      market_cap: typeof row[effectiveVs + '_market_cap'] === 'number' ? row[effectiveVs + '_market_cap'] : null,
       last_updated_at: row.last_updated_at || null,
       source: 'coingecko',
     };

@@ -261,7 +261,7 @@
     <!-- Pro-gate banner for Free users -->
     <div id="pf-pro-gate" class="pro-gate">
       <h2>Portfolio tracking is a Pro feature</h2>
-      <p>Add your stock + crypto holdings and see a live total updated daily. Pro tier supports up to 50 holdings across US, UK (LSE), and German (XETRA) exchanges plus 13,000+ cryptocurrencies.</p>
+      <p>Add your stock + crypto holdings and see a live total updated daily. Free-tier coverage includes US-listed stocks and ETFs (NYSE, NASDAQ) plus 13,000+ cryptocurrencies. International exchanges (LSE, XETRA) require upgrading the underlying data plan.</p>
       <a class="topbar-btn primary" href="billing.html">
         <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1l1.5 3.5L12 5l-3 3 .7 3.7L6.5 10l-3.2 1.7L4 8l-3-3 4.5-.5z" fill="currentColor"/></svg>
         Upgrade to Pro
@@ -300,7 +300,7 @@
           <div class="card-header">
             <div>
               <div class="card-title">Holdings</div>
-              <div class="card-sub">Prices refresh once per page load · cache 15 min</div>
+              <div class="card-sub">US stocks &amp; ETFs (NYSE / NASDAQ) · 13,000+ cryptos · 15-min cache</div>
             </div>
           </div>
           <div id="pf-table-wrap">
@@ -323,7 +323,7 @@
               <option value="stock">Stock / ETF</option>
               <option value="crypto">Crypto</option>
             </select>
-            <input id="pf-symbol" type="text" placeholder="AAPL, VWRL.LON, BTC…" autocomplete="off" maxlength="20" aria-label="Ticker symbol">
+            <input id="pf-symbol" type="text" placeholder="AAPL, VTI, BTC, ETH…" autocomplete="off" maxlength="20" aria-label="Ticker symbol">
             <input id="pf-qty" type="number" placeholder="Quantity" min="0" step="any" aria-label="Quantity">
             <input id="pf-cost" type="number" placeholder="Cost basis (optional)" min="0" step="any" aria-label="Cost basis">
             <button id="pf-add" class="add-btn">Add holding</button>
