@@ -49,6 +49,17 @@ function _json(payload, status, extraHeaders) {
 // Anything else returns a 400 — prevents key leakage via malformed URLs.
 const SYMBOL_RE = /^[A-Z0-9.\-,]{1,80}$/i;
 
+// Block cross-site callers from burning our Twelve Data quota via cache-busted
+// hot-loops. Browsers attach Sec-Fetch-Site automatically and JS cannot spoof
+// it. We accept 'same-origin' (our pages), 'same-site' (subdomain hop),
+// 'none' (typed URL bar, curl) and reject 'cross-site'. Absent header = older
+// browser or non-browser client; accept so curl-debugging still works.
+function _isSameOrigin(req) {
+  const site = req.headers.get('sec-fetch-site') || '';
+  if (!site) return true;
+  return site === 'same-origin' || site === 'same-site' || site === 'none';
+}
+
 function _normaliseQuote(q) {
   if (!q || typeof q !== 'object') return null;
   const price = parseFloat(q.price || q.close);
@@ -70,6 +81,10 @@ function _normaliseQuote(q) {
 export default async function handler(req) {
   if (req.method !== 'GET') {
     return _json({ error: 'Method not allowed', code: 'METHOD' }, 405);
+  }
+  if (!_isSameOrigin(req)) {
+    return _json({ error: 'Cross-site not allowed', code: 'CROSS_SITE' }, 403,
+      { 'Cache-Control': 'no-store' });
   }
 
   const url = new URL(req.url);
@@ -108,15 +123,14 @@ export default async function handler(req) {
   }
 
   if (!upstreamRes.ok) {
-    // Twelve Data returns 4xx as JSON {status:"error", message:"..."} — try
-    // to relay a tidy version. NEVER leak the API key in any error path.
-    let detail = null;
-    try { detail = await upstreamRes.json(); } catch (_) {}
+    // Twelve Data returns 4xx as JSON {status:"error", message:"..."}.
+    // We DO NOT relay the message to the client — Twelve Data error bodies
+    // occasionally echo the offending query parameters back, which could
+    // include "apikey=<key>" if the request was malformed. Surface a
+    // generic message; full detail is in server logs only.
+    try { const _ = await upstreamRes.text(); } catch (_) {}
     return _json(
-      {
-        error: detail && detail.message ? String(detail.message).slice(0, 200) : 'Upstream error',
-        code: 'UPSTREAM_' + upstreamRes.status,
-      },
+      { error: 'Upstream rejected request', code: 'UPSTREAM_' + upstreamRes.status },
       upstreamRes.status === 429 ? 429 : 502,
       { 'Cache-Control': 'no-store' }
     );

@@ -30,6 +30,7 @@
   const STORAGE_KEY = 'portfolio';
   const QUOTE_TTL_MS = 5 * 60 * 1000;     // 5-minute in-memory cache for repeated reads in a session
   const _quoteCache = {};                  // key = "stock:AAPL" or "crypto:bitcoin:usd"
+  const _inflight = {};                    // same key — de-dupes parallel callers (e.g. Refresh-click during initial load)
   const _changeCb = [];
 
   function _now() { return Date.now(); }
@@ -118,46 +119,47 @@
     _quoteCache[key] = { at: _now(), value: value };
   }
 
+  // Shared fetch + de-dupe shell. Two parallel callers asking for the same
+  // symbol share one fetch — important when the Refresh button fires while
+  // the initial render is still resolving. Without de-dupe we'd burn the
+  // /api/quote quota twice for the same data.
+  function _fetchWithInflight(key, url) {
+    const hit = _cached(key);
+    if (hit) return Promise.resolve(hit);
+    if (_inflight[key]) return _inflight[key];
+    const promise = fetch(url, { credentials: 'omit' })
+      .then(async (res) => {
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          const err = new Error(body.error || ('HTTP ' + res.status));
+          err.code = body.code || 'HTTP_' + res.status;
+          throw err;
+        }
+        const q = await res.json();
+        _cache(key, q);
+        delete _inflight[key];
+        return q;
+      })
+      .catch((e) => { delete _inflight[key]; throw e; });
+    _inflight[key] = promise;
+    return promise;
+  }
+
   async function getStockQuote(symbol) {
     if (!symbol) throw new Error('Missing symbol');
     const sym = String(symbol).trim().toUpperCase();
-    const key = 'stock:' + sym;
-    const hit = _cached(key);
-    if (hit) return hit;
-    const res = await fetch('/api/quote?symbol=' + encodeURIComponent(sym), {
-      credentials: 'omit',
-    });
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      const err = new Error(body.error || ('HTTP ' + res.status));
-      err.code = body.code || 'HTTP_' + res.status;
-      throw err;
-    }
-    const q = await res.json();
-    _cache(key, q);
-    return q;
+    return _fetchWithInflight('stock:' + sym,
+      '/api/quote?symbol=' + encodeURIComponent(sym));
   }
 
   async function getCoinQuote(idOrTicker, vs) {
     if (!idOrTicker) throw new Error('Missing coin id');
     const id = String(idOrTicker).trim();
     const vsCurrency = (vs || 'usd').toLowerCase();
-    const key = 'crypto:' + id.toLowerCase() + ':' + vsCurrency;
-    const hit = _cached(key);
-    if (hit) return hit;
-    const res = await fetch('/api/coin?id=' + encodeURIComponent(id) +
-                            '&vs=' + encodeURIComponent(vsCurrency), {
-      credentials: 'omit',
-    });
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      const err = new Error(body.error || ('HTTP ' + res.status));
-      err.code = body.code || 'HTTP_' + res.status;
-      throw err;
-    }
-    const q = await res.json();
-    _cache(key, q);
-    return q;
+    return _fetchWithInflight(
+      'crypto:' + id.toLowerCase() + ':' + vsCurrency,
+      '/api/coin?id=' + encodeURIComponent(id) + '&vs=' + encodeURIComponent(vsCurrency)
+    );
   }
 
   // Fetch every holding's current valuation. Resolves to an array with

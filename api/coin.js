@@ -64,6 +64,15 @@ function _json(payload, status, extraHeaders) {
   });
 }
 
+// Same-origin guard. CoinGecko public has no key to leak, but a bot loop
+// can still burn through the 30-req/min IP cap and break the page for real
+// users. Sec-Fetch-Site is browser-attached and JS cannot spoof it.
+function _isSameOrigin(req) {
+  const site = req.headers.get('sec-fetch-site') || '';
+  if (!site) return true;
+  return site === 'same-origin' || site === 'same-site' || site === 'none';
+}
+
 function _resolveId(raw) {
   const u = raw.toUpperCase();
   if (TICKER_TO_ID[u]) return TICKER_TO_ID[u];
@@ -73,6 +82,10 @@ function _resolveId(raw) {
 export default async function handler(req) {
   if (req.method !== 'GET') {
     return _json({ error: 'Method not allowed', code: 'METHOD' }, 405);
+  }
+  if (!_isSameOrigin(req)) {
+    return _json({ error: 'Cross-site not allowed', code: 'CROSS_SITE' }, 403,
+      { 'Cache-Control': 'no-store' });
   }
 
   const url = new URL(req.url);

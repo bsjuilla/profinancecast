@@ -157,10 +157,15 @@ function _validateNewsContext(raw) {
   for (let i = 0; i < raw.length && out.length < 5; i++) {
     const a = raw[i];
     if (!a || typeof a !== 'object') continue;
-    // Strip newlines and back-tick fences to prevent prompt-injection-style
-    // attempts that try to "close" our system prompt and inject a new role.
+    // Strip line/paragraph separators + back-tick fences + role-marker
+    // substrings to prevent prompt-injection-style attempts that try to
+    // "close" our system prompt and inject a new role. CRLF + Unicode line
+    // separators (U+0085, U+2028, U+2029) + bidi overrides (U+202A-U+202E)
+    // are all stripped — Gemini treats several of these as newlines.
     const sanitise = (s, max) => String(s || '')
-      .replace(/[\r\n`]/g, ' ')
+      .replace(/[\r\n  ‪-‮`]/g, ' ')
+      .replace(/<\/?(system|user|assistant|model|s>|u>|a>)\b[^>]*>/gi, ' ')
+      .replace(/\b(system|assistant|user)\s*:/gi, ' ')
       .replace(/\s+/g, ' ')
       .trim()
       .slice(0, max);

@@ -110,13 +110,19 @@ export default function handler(req) {
     source: hCountry ? 'vercel-headers' : 'fallback-usd',
   };
 
+  // Cache the happy path for an hour. NEVER cache the fallback-usd path —
+  // if Vercel's geo headers are briefly absent for one edge POP, caching
+  // that response would pin every subsequent user from that POP to USD for
+  // an hour. (Security-audit finding.)
+  const cacheControl = hCountry
+    ? 'public, s-maxage=3600, max-age=0, must-revalidate'
+    : 'no-store';
+
   return new Response(JSON.stringify(payload), {
     status: 200,
     headers: {
       'Content-Type': 'application/json; charset=utf-8',
-      // CDN may cache for 1h — geo doesn't change minute-to-minute.
-      // No client cache so a user who moves countries sees fresh data next visit.
-      'Cache-Control': 'public, s-maxage=3600, max-age=0, must-revalidate',
+      'Cache-Control': cacheControl,
     },
   });
 }

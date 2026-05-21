@@ -7,14 +7,16 @@
 //   - DGS10          10-year Treasury constant-maturity yield (daily)
 //   - CPIAUCSL       CPI All Urban Consumers (monthly index — we compute YoY %)
 //
-// We use FRED's `fredgraph.csv` endpoint instead of the JSON `/fred/series/
-// observations` API because the CSV endpoint does NOT require an API key.
-// (FRED has stably exposed this URL for ~10 years; their own website uses it.)
-// If the URL ever changes, the page degrades gracefully — the macro widget
-// just doesn't render.
+// Uses FRED's official JSON API (api.stlouisfed.org/fred/series/observations).
+// We originally tried the keyless fredgraph.csv endpoint to avoid yet another
+// env var, but FRED blocks Vercel's edge POPs (cloud-provider IP filtering
+// plus User-Agent restrictions, and Fetch-spec rules forbid Edge runtimes
+// from setting custom User-Agent headers). The JSON API requires FRED_API_KEY
+// (free signup, 1000 req/day) and works reliably from Edge.
 //
-// Cache: 6 hours at the edge (`s-maxage=21600`). FED publishes most of these
-// only daily-or-slower; over-caching costs nothing and protects against bursts.
+// Cache: 6 hours at the edge ONLY when ≥3 of 4 series are populated.
+// Errored responses use no-store so transient upstream issues don't pin a
+// bad payload for 6h (regression caught during sprint-3 deploy).
 //
 // Response shape:
 //   {
@@ -42,6 +44,13 @@ function _json(payload, status, extraHeaders) {
       'Content-Type': 'application/json; charset=utf-8',
     }, extraHeaders || {}),
   });
+}
+
+// Same-origin guard — prevents bot loops from burning our 1000/day FRED key.
+function _isSameOrigin(req) {
+  const site = req.headers.get('sec-fetch-site') || '';
+  if (!site) return true;
+  return site === 'same-origin' || site === 'same-site' || site === 'none';
 }
 
 function _twoYearsAgoIso() {
@@ -129,7 +138,11 @@ function _latest(rows, seriesId) {
 
 export default async function handler(req) {
   if (req.method !== 'GET') {
-    return _json({ error: 'Method not allowed' }, 405);
+    return _json({ error: 'Method not allowed', code: 'METHOD' }, 405);
+  }
+  if (!_isSameOrigin(req)) {
+    return _json({ error: 'Cross-site not allowed', code: 'CROSS_SITE' }, 403,
+      { 'Cache-Control': 'no-store' });
   }
 
   const apiKey = process.env.FRED_API_KEY;

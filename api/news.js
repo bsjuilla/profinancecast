@@ -33,6 +33,13 @@ function _json(payload, status, extraHeaders) {
   });
 }
 
+// Same-origin guard — Marketaux free is 100/day, easy to burn from a loop.
+function _isSameOrigin(req) {
+  const site = req.headers.get('sec-fetch-site') || '';
+  if (!site) return true;
+  return site === 'same-origin' || site === 'same-site' || site === 'none';
+}
+
 // Marketaux topic keywords. We allow a small, fixed set so users can't
 // craft arbitrary upstream queries (defense against URL injection that
 // might exfiltrate the API key via crafted parameters).
@@ -44,6 +51,10 @@ const ALLOWED_TOPICS = new Set([
 export default async function handler(req) {
   if (req.method !== 'GET') {
     return _json({ error: 'Method not allowed', code: 'METHOD' }, 405);
+  }
+  if (!_isSameOrigin(req)) {
+    return _json({ error: 'Cross-site not allowed', code: 'CROSS_SITE' }, 403,
+      { 'Cache-Control': 'no-store' });
   }
 
   const key = process.env.MARKETAUX_API_KEY;
