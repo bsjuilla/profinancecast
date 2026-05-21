@@ -104,6 +104,48 @@ img.pfc-photo-square {
   object-position: center;
 }
 
+/* Eyebrow — JetBrains Mono small-caps gold tag. Canonical brand pattern
+ * (codified in docs/STYLE-GUIDE.md Rule 1). Use as the first element of
+ * any page or section that introduces a new editorial concept. Format:
+ *   <div class="pfc-eyebrow-mono">The archive · Net worth</div>
+ * Sits ABOVE the h1/h2/topbar-title; never below. */
+.pfc-eyebrow-mono {
+  font-family: var(--font-mono, 'JetBrains Mono', monospace);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--gold, #D4AF6A);
+  line-height: 1.3;
+  margin-bottom: 4px;
+}
+
+/* Universal :focus-visible ring — keyboard navigation a11y (WCAG 2.4.7).
+ * Many inline-styled buttons across dashboard / scenarios / goals had no
+ * focus indicator because their inline `border` rules overrode the global
+ * pseudo-class. By scoping to the High-severity selectors we get coverage
+ * without disturbing custom-styled focus states elsewhere. */
+button:focus-visible,
+a:focus-visible,
+[role="button"]:focus-visible,
+.tab:focus-visible,
+.topbar-btn:focus-visible,
+.strat-btn:focus-visible,
+.nav-item:focus-visible,
+.filter-tab:focus-visible {
+  outline: 2px solid var(--gold, #D4AF6A);
+  outline-offset: 2px;
+  border-radius: var(--r-sm, 6px);
+}
+
+/* Decorative SVGs paired with visible text should be hidden from
+ * assistive technology. Apply via `aria-hidden="true"` on each <svg>.
+ * (CSS rule below is a backstop for any decorative-icon-class.) */
+.icon-decorative,
+svg[aria-hidden="true"] {
+  pointer-events: none;
+}
+
 /* Editorial caption — Fraunces italic, 56ch, centred. Optional <figcaption>
    under any of the above. Matches the inline pattern in index.html. */
 .pfc-photo-figure { margin: 0; }
