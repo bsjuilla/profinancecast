@@ -63,20 +63,37 @@ function _parseFredCsv(text) {
   return rows;
 }
 
+// Limit each fetch to the last 24 months. Without `cosd`, fredgraph returns
+// the FULL historical series (CPIAUCSL goes back to 1947 → ~900 rows × 30KB).
+// On Vercel Edge's 1s CPU budget that single parse can blow past timeout;
+// 24 months is plenty for "latest value" + CPI YoY calculation (we need
+// 13 months for YoY) and keeps each payload tiny.
+function _twoYearsAgoIso() {
+  const d = new Date();
+  d.setFullYear(d.getFullYear() - 2);
+  return d.toISOString().slice(0, 10); // YYYY-MM-DD
+}
+
 async function _fetchSeries(seriesId) {
-  // FRED accepts ?id=SERIES (plain) — no key, no auth header.
-  const url = `${FRED_BASE}?id=${encodeURIComponent(seriesId)}`;
+  const url = `${FRED_BASE}?id=${encodeURIComponent(seriesId)}&cosd=${_twoYearsAgoIso()}`;
+  // AbortController per fetch — if one series hangs, the others still respond.
+  const ctrl = new AbortController();
+  const timeoutId = setTimeout(() => ctrl.abort(), 6000);
   try {
     const res = await fetch(url, {
       headers: { 'Accept': 'text/csv', 'User-Agent': 'profinancecast-macro/1.0' },
+      signal: ctrl.signal,
     });
+    clearTimeout(timeoutId);
     if (!res.ok) return { rows: [], error: 'http_' + res.status };
     const text = await res.text();
     const rows = _parseFredCsv(text);
     if (rows.length === 0) return { rows: [], error: 'empty_csv' };
     return { rows, error: null };
   } catch (e) {
-    return { rows: [], error: 'fetch_failed' };
+    clearTimeout(timeoutId);
+    const reason = (e && e.name === 'AbortError') ? 'timeout_6s' : 'fetch_failed';
+    return { rows: [], error: reason };
   }
 }
 
