@@ -87,9 +87,19 @@ jobs:
         env:
           AUDIT_BYPASS_TOKEN: ${{ secrets.AUDIT_BYPASS_TOKEN }}
         run: |
+          # Diagnostic: log the character count of the secret WITHOUT
+          # revealing the value. GitHub's auto-redaction only masks exact
+          # matches against the secret string, so a length integer is
+          # safe to print. This tells us at a glance whether the secret
+          # made it into the job env (0 = missing, N = present).
+          LEN=$(printf '%s' "${AUDIT_BYPASS_TOKEN}" | wc -c)
+          echo "AUDIT_BYPASS_TOKEN length: ${LEN} chars"
           if [ -z "$AUDIT_BYPASS_TOKEN" ]; then
-            echo "::error::AUDIT_BYPASS_TOKEN secret is not set in repo settings."
-            echo "Add at: Settings -> Secrets and variables -> Actions -> Repository secrets"
+            echo "::error::AUDIT_BYPASS_TOKEN secret is not visible to this workflow."
+            echo "  - Confirm the secret is at: Settings -> Secrets and variables -> Actions"
+            echo "  - Confirm the name is EXACTLY 'AUDIT_BYPASS_TOKEN' (no trailing space)"
+            echo "  - Confirm the secret is in Repository secrets, NOT Environment secrets"
+            echo "    (workflow doesn't specify an environment)"
             exit 1
           fi
           python scripts/screenshot-photos.py | tee /tmp/harness-output.log
