@@ -34,24 +34,34 @@
   margin: 0;
 }
 
-/* 16:7 — section divider band */
-.pfc-photo-band  { aspect-ratio: 16 / 7;  max-width: 1100px; margin-inline: auto; }
-/* 16:9 / 21:9 — page-hero positioning */
-.pfc-photo-hero  { aspect-ratio: 16 / 9; }
-.pfc-photo-hero.is-wide  { aspect-ratio: 21 / 9; }
-.pfc-photo-hero.is-cinema { aspect-ratio: 21 / 7; }
+/* Each class has its own max-width discipline — without these the
+ * figures fill the entire main column (1200px+) on Pro-gated dashboard
+ * pages and dominate the viewport. The .pfc-photo-band line below was
+ * already correct; every other class was missing max-width entirely
+ * (caught by visual QA — scenarios.html page-hero became a 1200×514
+ * viewport-eating banner). All values tuned to feel like editorial
+ * vignettes rather than billboards. */
+
+/* 16:7 — section divider band, only used on landing */
+.pfc-photo-band  { aspect-ratio: 16 / 7;  max-width: 1100px; margin: 0 auto; }
+/* 16:9 / 21:9 — page-hero. Sits above an h1/h2; never dominates. */
+.pfc-photo-hero  { aspect-ratio: 16 / 9; max-width: 880px; margin: 0 auto 20px; }
+.pfc-photo-hero.is-wide  { aspect-ratio: 21 / 9; max-width: 880px; }
+.pfc-photo-hero.is-cinema { aspect-ratio: 21 / 7; max-width: 1000px; }
 /* Thin band — drawer / archive / certificate-strip */
-.pfc-photo-eyebrow { aspect-ratio: 16 / 5; }
+.pfc-photo-eyebrow { aspect-ratio: 16 / 5; max-width: 980px; margin: 0 auto 18px; }
 .pfc-photo-eyebrow.is-tall { aspect-ratio: 16 / 6; }
-.pfc-photo-eyebrow.is-cinema { aspect-ratio: 21 / 6; }
-.pfc-photo-eyebrow.is-tide { aspect-ratio: 21 / 7; }
+.pfc-photo-eyebrow.is-cinema { aspect-ratio: 21 / 6; max-width: 1080px; }
+.pfc-photo-eyebrow.is-tide { aspect-ratio: 21 / 7; max-width: 1080px; }
 /* 4:3 — fits inside cards (Pro empty-states, blog hero) */
-.pfc-photo-card    { aspect-ratio: 4 / 3; }
+.pfc-photo-card    { aspect-ratio: 4 / 3; max-width: 440px; margin: 0 auto 18px; }
 /* Vertical — CTAs, auth side panel */
-.pfc-photo-portrait        { aspect-ratio: 4 / 5; }
-.pfc-photo-portrait.is-tall { aspect-ratio: 3 / 4; }
-/* Square — talisman, used at small sizes */
-.pfc-photo-square { aspect-ratio: 1 / 1; }
+.pfc-photo-portrait        { aspect-ratio: 4 / 5; max-width: 260px; margin: 0 auto 18px; }
+.pfc-photo-portrait.is-tall { aspect-ratio: 3 / 4; max-width: 280px; }
+/* Square — talisman. Default 280px, .sm for 96px upgrade-banner key */
+.pfc-photo-square { aspect-ratio: 1 / 1; max-width: 280px; margin: 0 auto; }
+.pfc-photo-square.sm { max-width: 96px; }
+.pfc-photo-square.md { max-width: 200px; }
 
 .pfc-photo-band img,
 .pfc-photo-hero img,
