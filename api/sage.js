@@ -163,7 +163,7 @@ function _validateNewsContext(raw) {
     // separators (U+0085, U+2028, U+2029) + bidi overrides (U+202A-U+202E)
     // are all stripped — Gemini treats several of these as newlines.
     const sanitise = (s, max) => String(s || '')
-      .replace(/[\r\n  ‪-‮`]/g, ' ')
+      .replace(/[\r\n\u0085\u2028\u2029\u202A-\u202E`]/g, ' ')
       .replace(/<\/?(system|user|assistant|model|s>|u>|a>)\b[^>]*>/gi, ' ')
       .replace(/\b(system|assistant|user)\s*:/gi, ' ')
       .replace(/\s+/g, ' ')
