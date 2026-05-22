@@ -482,8 +482,13 @@
     // available yet, not zero.
     let total = 0, change = 0, stockCount = 0, cryptoCount = 0, valuedCount = 0;
     for (const v of valuations) {
-      if (isFinite(v.value)) { total += v.value; valuedCount++; }
-      if (isFinite(v.change24h_value)) change += v.change24h_value;
+      // W18-fix2 — JS footgun: global isFinite(null) === true because of
+      // type coercion (null -> 0). In Phase 1 placeholder valuations have
+      // value=null which incorrectly counted as "valued", inverting the
+      // placeholder-phase detection and rendering $0 instead of "—".
+      // Use Number.isFinite (strict, no coercion) AND explicit null check.
+      if (v.value != null && Number.isFinite(v.value)) { total += v.value; valuedCount++; }
+      if (v.change24h_value != null && Number.isFinite(v.change24h_value)) change += v.change24h_value;
       if (v.holding.type === 'crypto') cryptoCount++; else stockCount++;
     }
     const inPlaceholderPhase = valuedCount === 0;
@@ -892,7 +897,10 @@
         }
         sym.value = ''; qty.value = ''; cost.value = '';
         _toast(s + ' added · ' + q.toLocaleString() + (t === 'crypto' ? ' units' : ' shares'), 'success');
-        _refresh();
+        // W18-fix2 — explicit catch on _refresh so async exceptions don't
+        // become silent unhandled rejections. Previously a throw inside
+        // _refresh would just vanish, leaving the page mid-render.
+        _refresh().catch((re) => console.error('[portfolio] _refresh threw after add()', re));
       } catch (e) {
         console.error('[portfolio] add failed', e);
         _toast('Could not save — ' + (e && e.message ? e.message : 'unknown error'), 'danger');
@@ -963,10 +971,14 @@
       error: null,  // not an error — just pending
     }));
     _valuations = placeholderValuations;
-    _renderKPIs(placeholderValuations);
-    _renderTable(placeholderValuations);
-    _renderChart(placeholderValuations);
-    _renderPerfChart(placeholderValuations);
+    // W18-fix2 — wrap each render in try/catch. Previously an exception
+    // in any of these would silently abort _refresh (it's async, so the
+    // rejection becomes unhandled and disappears) leaving pf-sub stuck
+    // at "Loading…". Now each render is independent.
+    try { _renderKPIs(placeholderValuations); } catch (e) { console.error('[portfolio] _renderKPIs threw', e); }
+    try { _renderTable(placeholderValuations); } catch (e) { console.error('[portfolio] _renderTable threw', e); }
+    try { _renderChart(placeholderValuations); } catch (e) { console.error('[portfolio] _renderChart threw', e); }
+    try { _renderPerfChart(placeholderValuations); } catch (e) { console.error('[portfolio] _renderPerfChart threw', e); }
 
     if (placeholderValuations.length === 0) {
       // W17-fix2 — belt-and-braces: explicitly hide the KPI bar AND
@@ -1051,7 +1063,7 @@
   // W18-fix — previous version appended to pf-sub which got wiped by
   // textContent= updates. Now we insert as a SIBLING of pf-sub, not a
   // child, so pf-sub's text updates don't clobber it.
-  const PFC_PORTFOLIO_BUILD = 'w18-2026-05-22-14:00';
+  const PFC_PORTFOLIO_BUILD = 'w18b-2026-05-22-14:25';
   function _stampVersion() {
     const sub = document.getElementById('pf-sub');
     if (!sub || !sub.parentNode) return;
