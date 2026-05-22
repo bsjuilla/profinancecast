@@ -9,9 +9,11 @@ let paypalLoaded      = false;
 
 // Human label lookup for SKU codes
 const PLAN_LABELS = {
-  pro_monthly: 'Pro (monthly)',
-  pro_annual:  'Pro (annual)',
-  founders:    'Founders Lifetime',
+  pro_monthly:     'Pro (monthly)',
+  pro_annual:      'Pro (annual)',
+  premium_monthly: 'Premium (monthly)',
+  premium_annual:  'Premium (annual)',
+  founders:        'Founders Lifetime',
 };
 
 // Attach the user's Supabase JWT to PayPal API calls. Without this header the
@@ -36,14 +38,24 @@ function setBillingInterval(interval) {
   const num    = document.getElementById('pro-price-num');
   const suffix = document.getElementById('pro-price-suffix');
   const sash   = document.getElementById('sash-annual');
+  // Premium card mirrors the Pro toggle (Wave-14 §C).
+  const pNum    = document.getElementById('premium-price-num');
+  const pSuffix = document.getElementById('premium-price-suffix');
+  const pSash   = document.getElementById('sash-annual-premium');
   if (billingInterval === 'monthly') {
     num.textContent    = '€9';
     suffix.textContent = '· /month';
     if (sash) sash.hidden = true;
+    if (pNum)    pNum.textContent    = '€19';
+    if (pSuffix) pSuffix.textContent = '· /month';
+    if (pSash)   pSash.hidden = true;
   } else {
     num.textContent    = '€79';
     suffix.textContent = '· /year';
     if (sash) sash.hidden = false;
+    if (pNum)    pNum.textContent    = '€169';
+    if (pSuffix) pSuffix.textContent = '· /year';
+    if (pSash)   pSash.hidden = false;
   }
 }
 
@@ -53,6 +65,15 @@ function openProCheckout() {
     openCheckout('pro_monthly', 9);
   } else {
     openCheckout('pro_annual', 79);
+  }
+}
+
+// Premium CTA — picks the right SKU based on the toggle (Wave-14 §C).
+function openPremiumCheckout() {
+  if (billingInterval === 'monthly') {
+    openCheckout('premium_monthly', 19);
+  } else {
+    openCheckout('premium_annual', 169);
   }
 }
 
@@ -68,9 +89,11 @@ function openCheckout(plan, amount) {
   checkoutAmt  = amount;
   const label  = PLAN_LABELS[plan] || 'Pro';
   const billingLabel =
-    plan === 'pro_monthly' ? 'Monthly' :
-    plan === 'pro_annual'  ? 'Annual' :
-    plan === 'founders'    ? 'One-time' : 'Annual';
+    plan === 'pro_monthly'     ? 'Monthly' :
+    plan === 'pro_annual'      ? 'Annual'  :
+    plan === 'premium_monthly' ? 'Monthly' :
+    plan === 'premium_annual'  ? 'Annual'  :
+    plan === 'founders'        ? 'One-time' : 'Annual';
 
   document.getElementById('modal-title').textContent    = 'Upgrade to ' + label;
   document.getElementById('summary-plan').textContent   = label;
@@ -196,14 +219,18 @@ function onPaymentSuccess() {
   window.location.href = 'dashboard.html';
 }
 
-// All paid SKUs (pro_monthly, pro_annual, founders) elevate the user to Pro.
+// All paid SKUs elevate the user. pro_* / founders -> Pro tier (200 Sage).
+// premium_* -> Premium tier (500 Sage). Wave-14 §C.
 function upgradePlan(plan) {
-  currentPlan = 'pro';
-  const desc  = '200 Sage messages a month · all Pro features active';
+  const isPremium = plan === 'premium_monthly' || plan === 'premium_annual';
+  currentPlan = isPremium ? 'premium' : 'pro';
+  const sageCap   = isPremium ? 500 : 200;
+  const tierLabel = isPremium ? 'Premium Plan' : 'Pro Plan';
+  const desc      = sageCap + ' Sage messages a month · all Pro features active';
 
-  document.getElementById('banner-plan-name').textContent = 'Pro Plan';
+  document.getElementById('banner-plan-name').textContent = tierLabel;
   document.getElementById('banner-plan-desc').textContent = desc;
-  document.getElementById('usage-text').textContent       = '0 / 200';
+  document.getElementById('usage-text').textContent       = '0 / ' + sageCap;
   document.getElementById('usage-fill').style.width       = '0%';
   // Sidebar plan badge is updated by PFCPlan.applyBadges() on the next
   // refresh tick — no need to write directly to the canonical [data-plan-badge].
@@ -217,7 +244,7 @@ function upgradePlan(plan) {
     <tr>
       <td style="color:var(--pfc-ink-strong);">${today}</td>
       <td style="color:var(--pfc-ink-strong);">${planLabel}</td>
-      <td><span class="num">$${checkoutAmt.toFixed(2)}</span></td>
+      <td><span class="num">€${checkoutAmt.toFixed(2)}</span></td>
       <td>PayPal</td>
       <td><span class="status-pill status-paid">Paid</span></td>
       <td><span style="color:var(--pfc-ink-faint);">—</span></td>

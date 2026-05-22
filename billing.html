@@ -345,9 +345,20 @@
   /* ── PRICING CARDS ────────────────────────────────────────── */
   .plans-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: var(--space-5);
     margin-bottom: var(--space-9);
+  }
+  /* Premium card — emerald-tinted accent, sits between Pro and Founders.
+     Wave-14 §C: higher Sage ceiling + advanced reports. */
+  .plan-card--premium {
+    box-shadow: var(--elev-2), 0 0 0 1px rgba(43,182,125,0.45) inset;
+  }
+  .plan-card--premium:hover {
+    box-shadow: var(--elev-3), 0 0 0 1px rgba(43,182,125,0.65) inset;
+  }
+  @media (max-width: 1100px) {
+    .plans-grid { grid-template-columns: repeat(2, 1fr); }
   }
   .plan-card {
     position: relative;
@@ -1232,6 +1243,31 @@
         <div class="plan-note">No card required.</div>
       </div>
 
+      <!-- PREMIUM — emerald accent, higher Sage ceiling -->
+      <div class="plan-card plan-card--premium" id="card-premium">
+        <div class="sash-annual" id="sash-annual-premium" hidden>
+          <span class="sash-annual-lead">Save €59 a year</span>
+          <span class="sash-annual-detail">— <span class="num">€14.08</span> a month, billed annually</span>
+        </div>
+        <div class="plan-eyebrow">Premium</div>
+        <div class="plan-price">
+          <span class="plan-price-num" id="premium-price-num">€169</span>
+          <span class="plan-price-suffix" id="premium-price-suffix">· /year</span>
+        </div>
+        <div class="plan-tagline">For deeper analysis and a higher Sage allowance.</div>
+        <div class="plan-microcopy" style="font-size:11px;color:var(--text3,#8A9BB0);margin:4px 0 12px;letter-spacing:.02em;">Access pass — extend manually for now. Auto-renewal coming Q2.</div>
+        <ul class="plan-features">
+          <li><svg class="check" viewBox="0 0 16 16" fill="none"><path d="M3 8.5l3 3 7-7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Everything in Pro, plus</li>
+          <li><svg class="check" viewBox="0 0 16 16" fill="none"><path d="M3 8.5l3 3 7-7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Sage AI — 500 messages/month (vs Pro's 200)</li>
+          <li><svg class="check" viewBox="0 0 16 16" fill="none"><path d="M3 8.5l3 3 7-7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Advanced printable reports</li>
+          <li><svg class="check" viewBox="0 0 16 16" fill="none"><path d="M3 8.5l3 3 7-7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Deeper longitudinal analysis on the dashboard</li>
+          <li><svg class="check" viewBox="0 0 16 16" fill="none"><path d="M3 8.5l3 3 7-7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Early access to new analytical modules</li>
+        </ul>
+        <button class="plan-btn plan-btn--primary" id="premium-cta"
+                 data-pfc-on-click="openPremiumCheckout">Upgrade to Premium</button>
+        <div class="plan-note">No card required.</div>
+      </div>
+
       <!-- FOUNDERS LIFETIME — ivory paper surface -->
       <div class="plan-card plan-card--founders" id="card-founders" data-surface="ivory">
         <div class="sash sash--ivory">Limited — 100 seats · closes day 30</div>
@@ -1259,7 +1295,7 @@
 
     <!-- ── COMPARISON TABLE ────────────────────────────────── -->
     <section class="compare-section">
-      <h2 class="compare-heading">Free vs Pro, in full.</h2>
+      <h2 class="compare-heading">Free vs Pro vs Premium, in full.</h2>
       <div class="compare-wrap">
         <table class="compare-table">
           <thead>
@@ -1267,25 +1303,27 @@
               <th>Feature</th>
               <th>Free</th>
               <th>Pro</th>
+              <th>Premium</th>
             </tr>
           </thead>
           <tbody>
-            <tr><td>Dashboard (overview / forecast / debts / goals / net worth)</td><td class="yes">✓</td><td class="yes">✓</td></tr>
-            <tr><td>Net-worth tracker</td><td class="yes">✓</td><td class="yes">✓</td></tr>
-            <tr><td>Net-worth history</td><td class="cell-num">24 mo</td><td class="cell-num">Unlimited</td></tr>
-            <tr><td>Debt optimizer (avalanche / snowball)</td><td class="yes">✓</td><td class="yes">✓</td></tr>
-            <tr><td>Recurring expense planner</td><td class="yes">✓</td><td class="yes">✓</td></tr>
-            <tr><td>Goals (unlimited)</td><td class="yes">✓</td><td class="yes">✓</td></tr>
-            <tr><td>Salary calculator (single offer)</td><td class="yes">✓</td><td class="yes">✓</td></tr>
-            <tr><td>Compare salary offers</td><td class="no">—</td><td class="yes">✓</td></tr>
-            <tr><td>Scenarios / what-if (multi-overlay)</td><td class="no">—</td><td class="yes">✓</td></tr>
-            <tr><td>Report Card (quarterly)</td><td class="cell-num">Sample only</td><td class="yes">✓</td></tr>
-            <tr><td>Sage AI</td><td class="cell-num">10 / mo</td><td class="cell-num">200 / mo</td></tr>
-            <tr><td>CSV import</td><td class="yes">✓</td><td class="yes">✓</td></tr>
-            <tr><td>CSV / JSON / PDF export</td><td class="no">—</td><td class="yes">✓</td></tr>
-            <tr><td>Priority email support</td><td class="no">—</td><td class="cell-num">✓ (24h)</td></tr>
-            <tr><td>Early access to new tools</td><td class="no">—</td><td class="yes">✓</td></tr>
-            <tr><td>Bank login required</td><td class="cell-num">Never</td><td class="cell-num">Never</td></tr>
+            <tr><td>Dashboard (overview / forecast / debts / goals / net worth)</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+            <tr><td>Net-worth tracker</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+            <tr><td>Net-worth history</td><td class="cell-num">24 mo</td><td class="cell-num">Unlimited</td><td class="cell-num">Unlimited</td></tr>
+            <tr><td>Debt optimizer (avalanche / snowball)</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+            <tr><td>Recurring expense planner</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+            <tr><td>Goals (unlimited)</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+            <tr><td>Salary calculator (single offer)</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+            <tr><td>Compare salary offers</td><td class="no">—</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+            <tr><td>Scenarios / what-if (multi-overlay)</td><td class="no">—</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+            <tr><td>Report Card (quarterly)</td><td class="cell-num">Sample only</td><td class="yes">✓</td><td class="yes">✓ + advanced reports</td></tr>
+            <tr><td>Sage AI</td><td class="cell-num">10 / mo</td><td class="cell-num">200 / mo</td><td class="cell-num">500 / mo</td></tr>
+            <tr><td>Deeper longitudinal analysis</td><td class="no">—</td><td class="no">—</td><td class="yes">✓</td></tr>
+            <tr><td>CSV import</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+            <tr><td>CSV / JSON / PDF export</td><td class="no">—</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+            <tr><td>Priority email support</td><td class="no">—</td><td class="cell-num">✓ (24h)</td><td class="cell-num">✓ (24h)</td></tr>
+            <tr><td>Early access to new tools</td><td class="no">—</td><td class="yes">✓</td><td class="yes">✓ + analytical modules</td></tr>
+            <tr><td>Bank login required</td><td class="cell-num">Never</td><td class="cell-num">Never</td><td class="cell-num">Never</td></tr>
           </tbody>
         </table>
       </div>
