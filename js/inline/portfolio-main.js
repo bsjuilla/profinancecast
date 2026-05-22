@@ -21,10 +21,44 @@
     try {
       if (typeof PFCUser !== 'undefined') {
         const u = PFCUser.get();
-        if (u && u.currency) return u.currency;
+        if (u && u.currency) {
+          // W15-A canonicalisation: route through PFCSym so a Mauritius user
+          // with currency="MUR" sees "₨" not the literal three-letter code.
+          return window.PFCSym ? PFCSym(u.currency) : u.currency;
+        }
       }
     } catch (_) {}
     return '$';
+  }
+
+  // W16 §1 — visible toast feedback. Replaces the silent _wireAddForm focus
+  // pattern that left users wondering why "Add holding" did nothing. Toasts
+  // auto-dismiss after 2.6s; danger variant gets red accent.
+  let _toastTimer = null;
+  function _toast(message, variant) {
+    let host = document.getElementById('pf-toast');
+    if (!host) {
+      host = document.createElement('div');
+      host.id = 'pf-toast';
+      host.style.cssText = 'position:fixed;left:50%;bottom:32px;transform:translateX(-50%);'
+        + 'background:var(--card,#16271F);border:1px solid var(--border2);'
+        + 'border-radius:8px;padding:12px 20px;font-size:13.5px;color:var(--text);'
+        + 'box-shadow:0 8px 24px rgba(0,0,0,0.4);z-index:200;opacity:0;'
+        + 'transition:opacity .18s ease,transform .18s ease;pointer-events:none;'
+        + 'font-family:var(--font-body);max-width:min(90vw,420px);text-align:center;';
+      document.body.appendChild(host);
+    }
+    host.textContent = message;
+    host.style.borderColor = variant === 'danger' ? '#E07B7B'
+                           : variant === 'success' ? 'var(--teal)' : 'var(--border2)';
+    host.style.color = variant === 'danger' ? '#E07B7B' : 'var(--text)';
+    host.style.opacity = '1';
+    host.style.transform = 'translateX(-50%) translateY(0)';
+    if (_toastTimer) clearTimeout(_toastTimer);
+    _toastTimer = setTimeout(() => {
+      host.style.opacity = '0';
+      host.style.transform = 'translateX(-50%) translateY(8px)';
+    }, 2600);
   }
   function _isoCode() {
     try {
@@ -95,6 +129,7 @@
       const tickerCell = `<div class="h-symbol">${badge}<div class="h-symbol-meta"><span class="h-symbol-ticker">${_esc(h.symbol)}</span>${nameSpan}</div></div>`;
 
       let priceCell = '—', valueCell = '—', deltaCell = '<span class="h-delta-zero">—</span>';
+      let allTimeCell = '<span class="h-delta-zero" title="No cost basis recorded">—</span>';
       if (v.error) {
         priceCell = `<span class="h-err">${_esc(v.error.code || 'err')}</span>`;
       } else if (v.quote && isFinite(v.quote.price)) {
@@ -105,6 +140,15 @@
           const cls = pct > 0 ? 'h-delta-up' : pct < 0 ? 'h-delta-down' : 'h-delta-zero';
           deltaCell = `<span class="${cls}">${_fmtPct(pct)}</span>`;
         }
+        // W16 §2 — per-position all-time return based on costBasis
+        const qtyNum = parseFloat(h.quantity) || 0;
+        if (isFinite(h.costBasis) && h.costBasis > 0 && isFinite(v.value)) {
+          const costVal = h.costBasis * qtyNum;
+          const gain = v.value - costVal;
+          const gainPct = costVal > 0 ? (gain / costVal) * 100 : 0;
+          const cls = gain > 0 ? 'h-delta-up' : gain < 0 ? 'h-delta-down' : 'h-delta-zero';
+          allTimeCell = `<span class="${cls}" title="Cost basis ${_fmt(h.costBasis)} per unit · total cost ${_fmt(costVal)}">${_fmtSigned(gain)} (${_fmtPct(gainPct)})</span>`;
+        }
       }
 
       row.innerHTML =
@@ -113,6 +157,7 @@
         `<td class="right">${priceCell}</td>` +
         `<td class="right">${valueCell}</td>` +
         `<td class="right">${deltaCell}</td>` +
+        `<td class="right">${allTimeCell}</td>` +
         `<td class="right"><div class="h-actions">` +
           `<button class="h-icon-btn danger" data-action="remove" data-id="${_esc(h.id)}" title="Remove">` +
             `<svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M3 3l6 6M9 3l-6 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>` +
@@ -152,11 +197,60 @@
     document.getElementById('pf-count-val').textContent = String(valuations.length);
     document.getElementById('pf-count-hint').textContent =
       stockCount + ' stock' + (stockCount===1?'':'s') + ' · ' + cryptoCount + ' crypto';
+
+    // W16 §2 — All-time P/L: sum (current value - cost basis * qty) across
+    // positions that HAVE a cost basis. Positions without a cost basis are
+    // excluded — the user opted not to record entry price.
+    let costTotal = 0, valTotalWithCost = 0, countedPositions = 0;
+    for (const v of valuations) {
+      const h = v.holding;
+      if (h && isFinite(h.costBasis) && h.costBasis > 0 && isFinite(v.value)) {
+        costTotal += h.costBasis * (parseFloat(h.quantity) || 0);
+        valTotalWithCost += v.value;
+        countedPositions++;
+      }
+    }
+    const altVal = document.getElementById('pf-alltime-val');
+    const altHint = document.getElementById('pf-alltime-hint');
+    if (altVal && altHint) {
+      if (countedPositions === 0) {
+        altVal.textContent = '—';
+        altHint.textContent = 'Record cost basis to see';
+        altHint.className = 'summary-hint';
+      } else {
+        const gain = valTotalWithCost - costTotal;
+        const gainPct = costTotal > 0 ? (gain / costTotal) * 100 : 0;
+        altVal.textContent = _fmtSigned(gain);
+        altHint.textContent = (isFinite(gainPct) ? _fmtPct(gainPct) : '—')
+          + ' · ' + countedPositions + ' of ' + valuations.length + ' tracked';
+        altHint.className = 'summary-hint ' + (gain > 0 ? 'delta-up' : gain < 0 ? 'delta-down' : '');
+      }
+    }
   }
+
+  // W16 §3 — allocation chart with By Position / By Asset Class toggle.
+  let _allocMode = 'position'; // 'position' | 'class'
+
+  // Resolve a holding to an asset class. Uses the ticker catalog if available
+  // (PFCTickerAutocomplete loads it), otherwise falls back to the holding's
+  // own type. Catalog distinguishes 'stock' from 'etf' which is the value-add
+  // over the type field alone.
+  function _resolveAssetClass(holding) {
+    const sym = String(holding.symbol || '').toUpperCase();
+    if (window.PFCTickerAutocomplete && Array.isArray(window.PFCTickerAutocomplete.catalog)) {
+      for (const e of window.PFCTickerAutocomplete.catalog) {
+        if (e[0] === sym) return e[2]; // 'stock' | 'etf' | 'crypto'
+      }
+    }
+    return holding.type === 'crypto' ? 'crypto' : 'stock';
+  }
+  const _CLASS_LABEL = { stock: 'Stocks', etf: 'ETFs', crypto: 'Crypto' };
+  const _CLASS_COLOR = { stock: '#2BB67D', etf: '#7BA8E0', crypto: '#D4AF6A' };
 
   function _renderChart(valuations) {
     const canvas = document.getElementById('pf-chart');
     const legend = document.getElementById('pf-legend');
+    const subEl = document.getElementById('pf-alloc-sub');
     if (!canvas || typeof Chart === 'undefined') return;
     const data = valuations
       .filter((v) => isFinite(v.value) && v.value > 0)
@@ -166,9 +260,26 @@
       legend.innerHTML = '';
       return;
     }
-    const labels = data.map((v) => v.holding.symbol);
-    const values = data.map((v) => v.value);
-    const colors = data.map((_, i) => PALETTE[i % PALETTE.length]);
+
+    let labels, values, colors;
+    if (_allocMode === 'class') {
+      // Group by asset class
+      const groups = {};
+      for (const v of data) {
+        const c = _resolveAssetClass(v.holding);
+        groups[c] = (groups[c] || 0) + v.value;
+      }
+      const order = ['stock','etf','crypto'].filter((k) => groups[k] > 0);
+      labels = order.map((k) => _CLASS_LABEL[k]);
+      values = order.map((k) => groups[k]);
+      colors = order.map((k) => _CLASS_COLOR[k]);
+      if (subEl) subEl.textContent = 'By asset class · ' + order.length + ' class' + (order.length===1?'':'es');
+    } else {
+      labels = data.map((v) => v.holding.symbol);
+      values = data.map((v) => v.value);
+      colors = data.map((_, i) => PALETTE[i % PALETTE.length]);
+      if (subEl) subEl.textContent = 'By position · ' + data.length + ' holding' + (data.length===1?'':'s');
+    }
 
     if (_chart) _chart.destroy();
     _chart = new Chart(canvas, {
@@ -186,10 +297,22 @@
       },
     });
     const total = values.reduce((a,b) => a+b, 0);
-    legend.innerHTML = data.map((v, i) => {
-      const pct = total > 0 ? (v.value / total) * 100 : 0;
-      return `<div class="chart-legend-item"><span class="chart-legend-swatch" style="background:${colors[i]}"></span><span style="flex:1">${_esc(v.holding.symbol)}</span><span style="color:var(--text3)">${pct.toFixed(1)}%</span></div>`;
+    legend.innerHTML = labels.map((lbl, i) => {
+      const pct = total > 0 ? (values[i] / total) * 100 : 0;
+      return `<div class="chart-legend-item"><span class="chart-legend-swatch" style="background:${colors[i]}"></span><span style="flex:1">${_esc(lbl)}</span><span style="color:var(--text3)">${pct.toFixed(1)}%</span></div>`;
     }).join('');
+  }
+
+  function _wireAllocTabs() {
+    document.querySelectorAll('.alloc-tab').forEach((tab) => {
+      tab.addEventListener('click', () => {
+        const mode = tab.getAttribute('data-alloc');
+        if (!mode || mode === _allocMode) return;
+        _allocMode = mode;
+        document.querySelectorAll('.alloc-tab').forEach((t) => t.classList.toggle('active', t === tab));
+        if (_valuations.length) _renderChart(_valuations);
+      });
+    });
   }
 
   // ── Add-form submission ─────────────────────────────────────────────────
@@ -199,6 +322,10 @@
     const qty = document.getElementById('pf-qty');
     const cost = document.getElementById('pf-cost');
     const type = document.getElementById('pf-type');
+    if (!btn || !sym || !qty || !cost || !type) {
+      console.warn('[portfolio] add-form elements missing — aborting wire');
+      return;
+    }
 
     // Wave-15 §D: name-or-symbol autocomplete so users can type "Apple"
     // and find AAPL. Library is loaded via <script> tag in portfolio.html.
@@ -207,23 +334,49 @@
     }
 
     function _attempt() {
+      // W16 §1 — replaces the silent focus-and-return pattern. Each branch
+      // now toasts a specific reason so the user knows WHY nothing happened.
       const t = type.value;
-      const s = (sym.value || '').trim();
+      const s = (sym.value || '').trim().toUpperCase();
       const q = parseFloat(qty.value);
       const c = parseFloat(cost.value);
-      if (!s) { sym.focus(); return; }
-      if (!(q > 0)) { qty.focus(); return; }
-      PFCPortfolio.add({
-        type: t, symbol: s, quantity: q,
-        costBasis: isFinite(c) ? c : null,
-      });
-      sym.value = ''; qty.value = ''; cost.value = '';
-      _refresh();
+      if (!s) { _toast('Please enter a symbol or company name', 'danger'); sym.focus(); return; }
+      if (s.length > 20) { _toast('Symbol looks too long — try the ticker (e.g. AAPL)', 'danger'); sym.focus(); return; }
+      if (!isFinite(q) || q <= 0) { _toast('Please enter a quantity (e.g. 10 shares)', 'danger'); qty.focus(); return; }
+      if (typeof PFCPortfolio === 'undefined' || typeof PFCPortfolio.add !== 'function') {
+        _toast('Portfolio module not ready — try refreshing the page', 'danger');
+        console.error('[portfolio] PFCPortfolio missing at add-time');
+        return;
+      }
+      // Disable button + show progress so users see SOMETHING happen
+      // immediately even before the (synchronous) add resolves.
+      btn.disabled = true;
+      const origText = btn.textContent;
+      btn.textContent = 'Adding…';
+      try {
+        const entry = PFCPortfolio.add({
+          type: t, symbol: s, quantity: q,
+          costBasis: isFinite(c) ? c : null,
+        });
+        if (!entry) {
+          _toast('Could not add — please check the symbol and quantity', 'danger');
+          return;
+        }
+        sym.value = ''; qty.value = ''; cost.value = '';
+        _toast(s + ' added · ' + q.toLocaleString() + (t === 'crypto' ? ' units' : ' shares'), 'success');
+        _refresh();
+      } catch (e) {
+        console.error('[portfolio] add failed', e);
+        _toast('Could not save — ' + (e && e.message ? e.message : 'unknown error'), 'danger');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = origText;
+      }
     }
     btn.addEventListener('click', _attempt);
     [sym, qty, cost].forEach((el) => {
       el.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') _attempt();
+        if (e.key === 'Enter') { e.preventDefault(); _attempt(); }
       });
     });
   }
@@ -291,9 +444,15 @@
 
   // ── Boot ────────────────────────────────────────────────────────────────
   function _boot() {
-    if (typeof PFCPortfolio === 'undefined') return;
+    if (typeof PFCPortfolio === 'undefined') {
+      // W16 §1 — was silent; now we log AND wire the form anyway so the
+      // toast feedback can still fire when the user attempts to add.
+      console.error('[portfolio] PFCPortfolio is undefined at boot — pfc-portfolio.js may have failed to load');
+    }
     _wireAddForm();
-    document.getElementById('pf-refresh-btn').addEventListener('click', _refresh);
+    _wireAllocTabs();
+    const refreshBtn = document.getElementById('pf-refresh-btn');
+    if (refreshBtn) refreshBtn.addEventListener('click', _refresh);
     _detectSetup();
 
     // Initial render: wait for PFCUser + plan to resolve so we know whether

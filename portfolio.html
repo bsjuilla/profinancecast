@@ -68,6 +68,7 @@
   .summary-card.s-teal::after{background:var(--teal)}
   .summary-card.s-blue::after{background:var(--blue)}
   .summary-card.s-amber::after{background:var(--amber)}
+  .summary-card.s-purple::after{background:#9F7BE0}
   .summary-label{font-size:11px;color:var(--text3);margin-bottom:5px;font-weight:500;letter-spacing:.03em}
   .summary-val{font-family:var(--font-display);font-size:22px;font-weight:700;margin-bottom:2px}
   .summary-hint{font-size:11.5px;color:var(--text3)}
@@ -109,6 +110,11 @@
   .chart-legend{display:flex;flex-direction:column;gap:6px;margin-top:16px;font-size:12px;color:var(--text2)}
   .chart-legend-item{display:flex;align-items:center;gap:8px}
   .chart-legend-swatch{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+  /* W16 §3 — allocation view toggle (By position / By asset class). */
+  .alloc-tabs{display:inline-flex;gap:4px;background:rgba(255,255,255,0.03);border:1px solid var(--border2);border-radius:8px;padding:3px}
+  .alloc-tab{background:transparent;border:none;color:var(--text3);font-size:11.5px;font-family:var(--font-body);padding:5px 10px;border-radius:5px;cursor:pointer;letter-spacing:0.01em;transition:background .15s,color .15s}
+  .alloc-tab:hover{color:var(--text2)}
+  .alloc-tab.active{background:rgba(43,182,125,0.12);color:var(--teal)}
 
   /* Pro-gate panel for free users */
   .pro-gate{background:linear-gradient(135deg,rgba(43,182,125,0.10),rgba(43,182,125,0.02));border:1px solid rgba(43,182,125,0.25);border-radius:var(--r);padding:28px 26px;margin-bottom:18px;display:none}
@@ -313,6 +319,11 @@
         <div class="summary-val" id="pf-24h-val">—</div>
         <div class="summary-hint" id="pf-24h-hint">—</div>
       </div>
+      <div class="summary-card s-purple">
+        <div class="summary-label">All-time return</div>
+        <div class="summary-val" id="pf-alltime-val">—</div>
+        <div class="summary-hint" id="pf-alltime-hint">vs cost basis</div>
+      </div>
       <div class="summary-card s-amber">
         <div class="summary-label">Holdings</div>
         <div class="summary-val" id="pf-count-val">0</div>
@@ -348,6 +359,7 @@
                   <th class="right">Price</th>
                   <th class="right">Value</th>
                   <th class="right">24h</th>
+                  <th class="right">All-time</th>
                   <th class="right"></th>
                 </tr>
               </thead>
@@ -384,7 +396,11 @@
           <div class="card-header">
             <div>
               <div class="card-title">Allocation</div>
-              <div class="card-sub">By current value</div>
+              <div class="card-sub" id="pf-alloc-sub">By position</div>
+            </div>
+            <div class="alloc-tabs" role="tablist" aria-label="Allocation view">
+              <button class="alloc-tab active" data-alloc="position" type="button" role="tab">By position</button>
+              <button class="alloc-tab" data-alloc="class" type="button" role="tab">By asset class</button>
             </div>
           </div>
           <div class="chart-host">
