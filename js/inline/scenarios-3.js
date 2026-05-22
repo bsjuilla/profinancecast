@@ -633,6 +633,12 @@ function saveScenario() {
       ...data
     });
     showToast('✓ Scenario added');
+    // CDO Wave-14: pfc.scenario_saved fires only on the FIRST scenario save
+    // (the Pro-tier value moment per CDO §1). Subsequent saves are not
+    // funnel-meaningful — they're regular product usage.
+    if (SCENARIOS.length === 1 && window.PFCFunnel) {
+      window.PFCFunnel.track('pfc.scenario_saved');
+    }
   }
 
   saveScenarios();

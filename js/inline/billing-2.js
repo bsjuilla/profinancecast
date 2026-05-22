@@ -58,6 +58,12 @@ function openProCheckout() {
 
 // ── OPEN CHECKOUT ──
 function openCheckout(plan, amount) {
+  // CDO Wave-14: pfc.pro_intent fires on any paid-tier CTA. The `source` prop
+  // captures which SKU drove it so we can split Pro vs Premium vs Founders
+  // intent without leaking the amount (CDO PII rule — no raw 3+ digit numbers).
+  if (window.PFCFunnel) {
+    window.PFCFunnel.track('pfc.pro_intent', { source: plan });
+  }
   checkoutPlan = plan;
   checkoutAmt  = amount;
   const label  = PLAN_LABELS[plan] || 'Pro';
@@ -70,7 +76,7 @@ function openCheckout(plan, amount) {
   document.getElementById('summary-plan').textContent   = label;
   const billingEl = document.getElementById('summary-billing');
   if (billingEl) billingEl.textContent = billingLabel;
-  document.getElementById('summary-total').textContent  = '$' + amount.toFixed(2);
+  document.getElementById('summary-total').textContent  = '€' + amount.toFixed(2);
 
   document.getElementById('overlay').classList.add('open');
   document.getElementById('success-screen').classList.remove('show');

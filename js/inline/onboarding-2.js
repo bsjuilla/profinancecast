@@ -201,6 +201,16 @@ function goToStep(step) {
   document.getElementById('step-' + currentStep)?.classList.remove('active');
   currentStep = step;
   const isComplete = step >= TOTAL_STEPS;
+  // CDO Wave-14 funnel events. pfc.onboarding_step fires on every transition;
+  // pfc.activation_done fires once when the wizard completes (the activation
+  // moment per CDO §1 — first 12-month forecast rendered with real inputs).
+  if (window.PFCFunnel) {
+    if (isComplete) {
+      window.PFCFunnel.track('pfc.activation_done');
+    } else {
+      window.PFCFunnel.track('pfc.onboarding_step', { step: String(step) });
+    }
+  }
   if (isComplete) {
     document.getElementById('step-complete').classList.add('active');
     document.getElementById('wizard-footer').style.display = 'none';

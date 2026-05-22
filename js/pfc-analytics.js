@@ -318,6 +318,14 @@
         if (tool && !props.tool) props.tool = tool;
         if (country && !props.country) props.country = country;
         track(name, props);
+        // CDO Wave-14: when the legacy cta_signup_click fires, also fire
+        // the funnel event pfc.signup_started so the conversion ratio can
+        // be read from the pfc.* namespace alone. The two events run in
+        // parallel during transition — eventually cta_signup_click can be
+        // retired in favour of pfc.signup_started.
+        if (name === 'cta_signup_click' && window.PFCFunnel) {
+          window.PFCFunnel.track('pfc.signup_started', { source: surface || 'unknown' });
+        }
       }, { passive: true });
     });
   }
