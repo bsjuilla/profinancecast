@@ -61,9 +61,11 @@
       "description": "A personal-finance forecasting tool that projects net worth, debt payoff, and goal completion over ten years from your own numbers — no bank login required.",
       "offers": [
         { "@type": "Offer", "name": "Free", "price": "0", "priceCurrency": "USD" },
-        { "@type": "Offer", "name": "Pro monthly", "price": "9", "priceCurrency": "USD", "billingDuration": "P1M" },
-        { "@type": "Offer", "name": "Pro annual", "price": "69", "priceCurrency": "USD", "billingDuration": "P1Y" },
-        { "@type": "Offer", "name": "Founders Lifetime", "price": "149", "priceCurrency": "USD" }
+        { "@type": "Offer", "name": "Pro monthly", "price": "9", "priceCurrency": "EUR", "billingDuration": "P1M" },
+        { "@type": "Offer", "name": "Pro annual", "price": "79", "priceCurrency": "EUR", "billingDuration": "P1Y" },
+        { "@type": "Offer", "name": "Premium monthly", "price": "19", "priceCurrency": "EUR", "billingDuration": "P1M" },
+        { "@type": "Offer", "name": "Premium annual", "price": "169", "priceCurrency": "EUR", "billingDuration": "P1Y" },
+        { "@type": "Offer", "name": "Founders Lifetime", "price": "149", "priceCurrency": "EUR" }
       ],
       "publisher": { "@id": "https://profinancecast.com/#org" }
     }
@@ -99,7 +101,7 @@
     { "@type": "Question", "name": "Is ProFinanceCast a registered investment adviser?",
       "acceptedAnswer": { "@type": "Answer", "text": "No. ProFinanceCast is not an RIA, broker-dealer, or fiduciary. The product is a deterministic forecasting tool, not personalized investment advice. Consult a licensed adviser before acting on any figure shown." } },
     { "@type": "Question", "name": "What happens when 500 Founders Lifetime seats are reached?",
-      "acceptedAnswer": { "@type": "Answer", "text": "Once all 500 Founders Lifetime seats are claimed, the tier closes permanently — there is no extension and no second cohort. Pro at $9 a month or $69 a year continues unchanged after that point. The seat counter on the pricing page is the live source of truth." } }
+      "acceptedAnswer": { "@type": "Answer", "text": "Once all 100 Founders Lifetime seats are claimed — or day 30 of the channel test passes, whichever comes first — the tier closes permanently. Pro at €9 a month or €79 a year continues unchanged after that point. The seat counter on the pricing page is the live source of truth." } }
   ]
 }
 </script>
@@ -1733,7 +1735,7 @@
     <div class="cell"><div class="num">0 banks</div><div class="lbl">No bank login required</div></div>
     <div class="cell"><div class="num">4 inputs</div><div class="lbl">Numbers you already know</div></div>
     <div class="cell"><div class="num">10 years</div><div class="lbl">Forecast horizon</div></div>
-    <div class="cell"><div class="num">$9/mo</div><div class="lbl">Or $69/year — cancel any time</div></div>
+    <div class="cell"><div class="num">€9/mo</div><div class="lbl">Or €79/year — cancel any time</div></div>
   </div>
 </section>
 
@@ -2135,7 +2137,7 @@
   <div class="pricing">
     <div class="price-card pfc-card--elev">
       <div class="price-name">Free</div>
-      <div class="price-amount num"><span class="currency">$</span>0<span class="period">· forever</span></div>
+      <div class="price-amount num"><span class="currency">€</span>0<span class="period">· forever</span></div>
       <div class="price-pitch">For anyone planning their next ten years.</div>
       <ul class="price-feats">
         <li><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="var(--money)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg> Forecast, debts, goals, net worth</li>
@@ -2150,8 +2152,8 @@
     <div class="price-card hot pfc-card--elev">
       <div class="price-tag">Most chosen</div>
       <div class="price-name">Pro</div>
-      <div class="price-amount num"><span class="currency">$</span>69<span class="period">· /year</span></div>
-      <div class="price-pitch">For households modelling a real financial life. <span style="display:block;font-size:12px;color:var(--ink-3);margin-top:4px;">$5.75/month annual · or $9/month billed monthly — less than one streaming subscription.</span></div>
+      <div class="price-amount num"><span class="currency">€</span>79<span class="period">· /year</span></div>
+      <div class="price-pitch">For households modelling a real financial life. <span style="display:block;font-size:12px;color:var(--ink-3);margin-top:4px;">€6.58/month annual · or €9/month billed monthly — less than one streaming subscription.</span></div>
       <ul class="price-feats">
         <li><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="var(--money)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg> Everything in Free, plus</li>
         <li><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="var(--money)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg> Unlimited scenarios — side-by-side</li>
@@ -2165,8 +2167,8 @@
 
     <div class="price-card pfc-card--elev">
       <div class="price-name">Founders Lifetime</div>
-      <div class="price-amount num"><span class="currency">$</span>149<span class="period">· one-time</span></div>
-      <div class="price-pitch">Pay once. Pro forever. Helps fund the project. <span id="home-founders-counter" style="display:block;font-size:12px;color:var(--gold);margin-top:4px;">Limited — 500 seats</span></div>
+      <div class="price-amount num"><span class="currency">€</span>149<span class="period">· one-time</span></div>
+      <div class="price-pitch">Pay once. Pro forever. Helps fund the project. <span id="home-founders-counter" style="display:block;font-size:12px;color:var(--gold);margin-top:4px;">Limited — 100 seats · closes day 30</span></div>
       <ul class="price-feats">
         <li><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="var(--money)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg> All Pro features, forever</li>
         <li><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="var(--money)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg> Permanent founders badge in Settings</li>
@@ -2305,7 +2307,7 @@
     </details>
     <details>
       <summary>What happens when 500 Founders Lifetime seats are reached?</summary>
-      <p>Once all 500 Founders Lifetime seats are claimed, the tier closes permanently — there is no extension, no waitlist, and no second cohort at a higher price. Pro at $9 monthly or $69 annual continues unchanged. The seat counter on the <a href="billing.html">pricing page</a> is the live source of truth — it polls the same Stripe webhook that gates the checkout, so it cannot drift from the actual claim count.</p>
+      <p>Once all 100 Founders Lifetime seats are claimed — or day 30 of the channel test passes, whichever comes first — the tier closes permanently. There is no extension, no waitlist, and no second cohort at a higher price. Pro at €9 monthly or €79 annual continues unchanged. The seat counter on the <a href="billing.html">pricing page</a> is the live source of truth — it polls the same PayPal webhook that gates the checkout, so it cannot drift from the actual claim count.</p>
     </details>
   </div>
 </section>
