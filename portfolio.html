@@ -119,6 +119,8 @@
   .h-tag-dot.tag-gold{background:#D4AF6A}
   .h-tag-dot.tag-purple{background:#9F7BE0}
   .h-tag-dot.tag-red{background:#E07B7B}
+  /* W19 — manual price override badge on per-row price cell */
+  .h-manual-pill{display:inline-block;font-size:9.5px;text-transform:uppercase;letter-spacing:.08em;padding:1px 5px;border-radius:3px;background:rgba(212,175,106,0.15);color:var(--gold,#D4AF6A);border:1px solid rgba(212,175,106,0.25);margin-left:6px;font-family:var(--font-body);vertical-align:middle}
   .h-note-icon{font-size:11px;color:var(--text3);margin-left:6px;cursor:help}
   .pf-modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,0.55);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px}
   .pf-modal-backdrop[hidden]{display:none !important}
@@ -210,7 +212,7 @@
   <script src="js/pfc-storage.js"></script>
   <script src="js/pfc-currency.js"></script>
   <script src="js/pfc-user.js"></script>
-  <script src="js/pfc-portfolio.js?v=w18b"></script>
+  <script src="js/pfc-portfolio.js?v=w19"></script>
   <script src="js/pfc-entitlements.js"></script>
 
   <!-- Chart.js sync (defer would race the boot path — same fix that landed in 5e135d2). -->
@@ -476,6 +478,11 @@
             <input id="pf-edit-cost" type="number" min="0" step="any" placeholder="—">
           </div>
           <div class="pf-edit-row">
+            <label for="pf-edit-override">Manual price override (per unit)</label>
+            <input id="pf-edit-override" type="number" min="0" step="any" placeholder="e.g. 450000 for a house">
+            <div class="pf-edit-help">For positions the market APIs can't price — real estate, employer stock, private equity, collectibles. When set, the live quote is ignored and this price is used. Leave blank for live-quoted positions.</div>
+          </div>
+          <div class="pf-edit-row">
             <label for="pf-edit-recurring">Recurring monthly contribution</label>
             <input id="pf-edit-recurring" type="number" min="0" step="any" placeholder="e.g. 500 — adds to projected value">
             <div class="pf-edit-help">Used for the "Projected in 10 years" KPI. Assumes 7% annual return (long-run global equity average). Leave blank if you don't DCA into this position.</div>
@@ -584,9 +591,9 @@
 
 </div>
 
-<script src="js/pfc-ticker-autocomplete.js?v=w18b" defer></script>
-<script src="js/pfc-dividend-yields.js?v=w18b" defer></script>
-<script src="js/inline/portfolio-main.js?v=w18b"></script>
+<script src="js/pfc-ticker-autocomplete.js?v=w19" defer></script>
+<script src="js/pfc-dividend-yields.js?v=w19" defer></script>
+<script src="js/inline/portfolio-main.js?v=w19"></script>
 <script src="js/inline/portfolio-auth.js"></script>
 </body>
 </html>

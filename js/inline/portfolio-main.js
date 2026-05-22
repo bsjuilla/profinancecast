@@ -143,7 +143,11 @@
       if (v.error) {
         priceCell = `<span class="h-err">${_esc(v.error.code || 'err')}</span>`;
       } else if (v.quote && isFinite(v.quote.price)) {
-        priceCell = _fmt(v.quote.price);
+        // W19 — append a "manual" pill when the quote came from an override
+        priceCell = _fmt(v.quote.price)
+          + (v.quote.source === 'manual'
+              ? ' <span class="h-manual-pill" title="Manual price override">manual</span>'
+              : '');
         if (isFinite(v.value)) valueCell = _fmt(v.value);
         const pct = v.change24h_pct;
         if (isFinite(pct)) {
@@ -220,6 +224,7 @@
     document.getElementById('pf-edit-symbol').value = holding.symbol;
     document.getElementById('pf-edit-qty').value = holding.quantity;
     document.getElementById('pf-edit-cost').value = isFinite(holding.costBasis) ? holding.costBasis : '';
+    document.getElementById('pf-edit-override').value = isFinite(holding.overridePrice) ? holding.overridePrice : '';
     document.getElementById('pf-edit-recurring').value = isFinite(holding.recurringMonthly) ? holding.recurringMonthly : '';
     document.getElementById('pf-edit-note').value = holding.note || '';
     // Mark the active tag swatch
@@ -254,6 +259,7 @@
       const q = parseFloat(document.getElementById('pf-edit-qty').value);
       const c = parseFloat(document.getElementById('pf-edit-cost').value);
       const recur = parseFloat(document.getElementById('pf-edit-recurring').value);
+      const override = parseFloat(document.getElementById('pf-edit-override').value);
       const note = document.getElementById('pf-edit-note').value.trim();
       const selSwatch = document.querySelector('#pf-edit-tags .pf-tag-swatch.selected');
       const tag = selSwatch ? selSwatch.getAttribute('data-tag') : '';
@@ -266,6 +272,7 @@
           quantity: q,
           costBasis: isFinite(c) && c > 0 ? c : null,
           recurringMonthly: isFinite(recur) && recur > 0 ? recur : null,
+          overridePrice: isFinite(override) && override > 0 ? override : null,
           note: note || null,
           tag: tag || null,
         });
@@ -1063,7 +1070,7 @@
   // W18-fix — previous version appended to pf-sub which got wiped by
   // textContent= updates. Now we insert as a SIBLING of pf-sub, not a
   // child, so pf-sub's text updates don't clobber it.
-  const PFC_PORTFOLIO_BUILD = 'w18b-2026-05-22-14:25';
+  const PFC_PORTFOLIO_BUILD = 'w19-2026-05-22-14:55';
   function _stampVersion() {
     const sub = document.getElementById('pf-sub');
     if (!sub || !sub.parentNode) return;

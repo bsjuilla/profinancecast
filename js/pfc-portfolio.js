@@ -167,6 +167,13 @@
       // projected-value KPI. Stored in the user's currency (assumed).
       recurringMonthly: isFinite(h.recurringMonthly) && h.recurringMonthly > 0
         ? parseFloat(h.recurringMonthly) : null,
+      // W19 — optional manual price override. When set, getPortfolioValuations
+      // SHORT-CIRCUITS the /api/quote fetch for this position and returns a
+      // synthetic quote at this price. Lets users track employer stock,
+      // real estate, private equity, collectibles — anything the public
+      // market APIs can't price. Cleared when set to null or 0.
+      overridePrice: isFinite(h.overridePrice) && h.overridePrice > 0
+        ? parseFloat(h.overridePrice) : null,
       addedAt: _now(),
     };
     _ensureLoaded();
@@ -190,6 +197,10 @@
     if (patch && 'recurringMonthly' in patch) {
       next.recurringMonthly = isFinite(patch.recurringMonthly) && patch.recurringMonthly > 0
         ? parseFloat(patch.recurringMonthly) : null;
+    }
+    if (patch && 'overridePrice' in patch) {
+      next.overridePrice = isFinite(patch.overridePrice) && patch.overridePrice > 0
+        ? parseFloat(patch.overridePrice) : null;
     }
     _memList[i] = next;
     _persist(_memList);
@@ -285,6 +296,23 @@
     const holdings = list();
     const vsCur = (vs || 'usd').toLowerCase();
     const tasks = holdings.map(async (h) => {
+      // W19 — manual override short-circuit. When overridePrice is set,
+      // skip the API entirely and synthesise a quote at that price. Lets
+      // users track positions the public market APIs can't price (real
+      // estate, employer stock, private equity, collectibles). 24h change
+      // is null for these since we have no time-series for them.
+      if (Number.isFinite(h.overridePrice) && h.overridePrice > 0) {
+        const price = h.overridePrice;
+        const value = price * (h.quantity || 0);
+        return {
+          holding: h,
+          quote: { symbol: h.symbol, name: h.name || h.symbol, price: price, source: 'manual' },
+          value,
+          change24h_pct: null,
+          change24h_value: null,
+          error: null,
+        };
+      }
       try {
         const quote = h.type === 'crypto'
           ? await getCoinQuote(h.symbol, vsCur)
