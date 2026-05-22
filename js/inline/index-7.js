@@ -5,7 +5,7 @@ window._pfcCountUp = function (el, finalText, durationMs, targetNode) {
   var match = String(finalText).match(/-?\d[\d,]*/);
   if (!match) return;
   var target = parseInt(match[0].replace(/,/g, ''), 10);
-  if (!isFinite(target)) return;
+  if (!Number.isFinite(target)) return;
   var prefix = finalText.slice(0, match.index);
   var suffix = finalText.slice(match.index + match[0].length);
   var start = performance.now();

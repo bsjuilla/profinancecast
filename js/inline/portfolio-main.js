@@ -72,8 +72,13 @@
     } catch (_) {}
     return 'usd';
   }
+  // W19-sweep — all three formatters now use the strict null-safe guard.
+  // Before: global isFinite(null) === true (type coercion), so _fmt(null)
+  // would fall through and either return "$0.000000" or throw on
+  // .toLocaleString(). Number.isFinite is strict (no coercion) and the
+  // explicit `n != null` check catches both null and undefined.
   function _fmt(n) {
-    if (!isFinite(n)) return '—';
+    if (n == null || !Number.isFinite(n)) return '—';
     // W17-fix — n=0 used to fall into the sub-cent branch and render as
     // "$0.000000". Special-case it to "$0" — the precision logic is for
     // formatting non-zero small values like sub-cent crypto, not zeros.
@@ -84,12 +89,12 @@
     return _sym() + n.toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
   }
   function _fmtSigned(n) {
-    if (!isFinite(n)) return '—';
+    if (n == null || !Number.isFinite(n)) return '—';
     const s = n < 0 ? '-' : '+';
     return s + _fmt(Math.abs(n)).replace(/^-/, '');
   }
   function _fmtPct(n) {
-    if (!isFinite(n)) return '—';
+    if (n == null || !Number.isFinite(n)) return '—';
     const s = n < 0 ? '' : '+';
     return s + n.toFixed(2) + '%';
   }
@@ -142,15 +147,15 @@
       let allTimeCell = '<span class="h-delta-zero" title="No cost basis recorded">—</span>';
       if (v.error) {
         priceCell = `<span class="h-err">${_esc(v.error.code || 'err')}</span>`;
-      } else if (v.quote && isFinite(v.quote.price)) {
+      } else if (v.quote && Number.isFinite(v.quote.price)) {
         // W19 — append a "manual" pill when the quote came from an override
         priceCell = _fmt(v.quote.price)
           + (v.quote.source === 'manual'
               ? ' <span class="h-manual-pill" title="Manual price override">manual</span>'
               : '');
-        if (isFinite(v.value)) valueCell = _fmt(v.value);
+        if (Number.isFinite(v.value)) valueCell = _fmt(v.value);
         const pct = v.change24h_pct;
-        if (isFinite(pct)) {
+        if (Number.isFinite(pct)) {
           const cls = pct > 0 ? 'h-delta-up' : pct < 0 ? 'h-delta-down' : 'h-delta-zero';
           deltaCell = `<span class="${cls}">${_fmtPct(pct)}</span>`;
         }
@@ -161,13 +166,13 @@
         const yieldNote = divYield != null
           ? ` · ${divYield.toFixed(2)}% TTM yield ≈ ${_fmt(v.value * divYield / 100)}/yr`
           : '';
-        if (isFinite(h.costBasis) && h.costBasis > 0 && isFinite(v.value)) {
+        if (Number.isFinite(h.costBasis) && h.costBasis > 0 && Number.isFinite(v.value)) {
           const costVal = h.costBasis * qtyNum;
           const gain = v.value - costVal;
           const gainPct = costVal > 0 ? (gain / costVal) * 100 : 0;
           const cls = gain > 0 ? 'h-delta-up' : gain < 0 ? 'h-delta-down' : 'h-delta-zero';
           allTimeCell = `<span class="${cls}" title="Cost basis ${_fmt(h.costBasis)} per unit · total cost ${_fmt(costVal)}${yieldNote}">${_fmtSigned(gain)} (${_fmtPct(gainPct)})</span>`;
-        } else if (divYield != null && isFinite(v.value)) {
+        } else if (divYield != null && Number.isFinite(v.value)) {
           // No cost basis recorded, but we know the yield — show that instead of "—"
           allTimeCell = `<span class="h-delta-zero" title="No cost basis recorded${yieldNote}">${divYield.toFixed(1)}% yield</span>`;
         }
@@ -223,9 +228,9 @@
     _editingId = id;
     document.getElementById('pf-edit-symbol').value = holding.symbol;
     document.getElementById('pf-edit-qty').value = holding.quantity;
-    document.getElementById('pf-edit-cost').value = isFinite(holding.costBasis) ? holding.costBasis : '';
-    document.getElementById('pf-edit-override').value = isFinite(holding.overridePrice) ? holding.overridePrice : '';
-    document.getElementById('pf-edit-recurring').value = isFinite(holding.recurringMonthly) ? holding.recurringMonthly : '';
+    document.getElementById('pf-edit-cost').value = Number.isFinite(holding.costBasis) ? holding.costBasis : '';
+    document.getElementById('pf-edit-override').value = Number.isFinite(holding.overridePrice) ? holding.overridePrice : '';
+    document.getElementById('pf-edit-recurring').value = Number.isFinite(holding.recurringMonthly) ? holding.recurringMonthly : '';
     document.getElementById('pf-edit-note').value = holding.note || '';
     // Mark the active tag swatch
     document.querySelectorAll('#pf-edit-tags .pf-tag-swatch').forEach((sw) => {
@@ -263,16 +268,16 @@
       const note = document.getElementById('pf-edit-note').value.trim();
       const selSwatch = document.querySelector('#pf-edit-tags .pf-tag-swatch.selected');
       const tag = selSwatch ? selSwatch.getAttribute('data-tag') : '';
-      if (!isFinite(q) || q <= 0) {
+      if (!Number.isFinite(q) || q <= 0) {
         _toast('Quantity must be a positive number', 'danger');
         return;
       }
       try {
         PFCPortfolio.update(_editingId, {
           quantity: q,
-          costBasis: isFinite(c) && c > 0 ? c : null,
-          recurringMonthly: isFinite(recur) && recur > 0 ? recur : null,
-          overridePrice: isFinite(override) && override > 0 ? override : null,
+          costBasis: Number.isFinite(c) && c > 0 ? c : null,
+          recurringMonthly: Number.isFinite(recur) && recur > 0 ? recur : null,
+          overridePrice: Number.isFinite(override) && override > 0 ? override : null,
           note: note || null,
           tag: tag || null,
         });
@@ -370,11 +375,11 @@
       if (t.indexOf('crypto') !== -1 || t.indexOf('coin') !== -1) t = 'crypto';
       else if (_CRYPTO_TICKERS.has(sym)) t = 'crypto';
       else t = 'stock';
-      if (!sym || !isFinite(q) || q <= 0) {
+      if (!sym || !Number.isFinite(q) || q <= 0) {
         parsed.push({ raw: r.join(','), ok: false, reason: !sym ? 'no symbol' : 'invalid quantity' });
         continue;
       }
-      parsed.push({ symbol: sym, quantity: q, costBasis: isFinite(c) && c > 0 ? c : null, type: t, ok: true });
+      parsed.push({ symbol: sym, quantity: q, costBasis: Number.isFinite(c) && c > 0 ? c : null, type: t, ok: true });
     }
     return { rows: parsed, error: null };
   }
@@ -489,7 +494,7 @@
     // available yet, not zero.
     let total = 0, change = 0, stockCount = 0, cryptoCount = 0, valuedCount = 0;
     for (const v of valuations) {
-      // W18-fix2 — JS footgun: global isFinite(null) === true because of
+      // W18-fix2 — JS footgun: global Number.isFinite(null) === true because of
       // type coercion (null -> 0). In Phase 1 placeholder valuations have
       // value=null which incorrectly counted as "valued", inverting the
       // placeholder-phase detection and rendering $0 instead of "—".
@@ -510,8 +515,8 @@
     // SPY quote fetch resolves. If we have it, append "vs SPY ±X% · trailing/
     // leading by Ypp" so the user sees an honest mirror of their day vs the
     // S&P 500. If SPY fetch fails (rare), we just show the portfolio %.
-    let hintText = isFinite(pct) ? _fmtPct(pct) : '—';
-    if (isFinite(_spyChangePct) && isFinite(pct)) {
+    let hintText = Number.isFinite(pct) ? _fmtPct(pct) : '—';
+    if (Number.isFinite(_spyChangePct) && Number.isFinite(pct)) {
       const diff = pct - _spyChangePct;
       const cmp = Math.abs(diff) < 0.05
         ? 'matching SPY'
@@ -527,7 +532,7 @@
     let divAnnual = 0, divTracked = 0;
     if (window.PFCDividendYields) {
       for (const v of valuations) {
-        if (!isFinite(v.value)) continue;
+        if (!Number.isFinite(v.value)) continue;
         const y = PFCDividendYields.yieldFor(v.holding.symbol);
         if (y == null) continue;
         divAnnual += v.value * (y / 100);
@@ -557,7 +562,7 @@
     let costTotal = 0, valTotalWithCost = 0, countedPositions = 0;
     for (const v of valuations) {
       const h = v.holding;
-      if (h && isFinite(h.costBasis) && h.costBasis > 0 && isFinite(v.value)) {
+      if (h && Number.isFinite(h.costBasis) && h.costBasis > 0 && Number.isFinite(v.value)) {
         costTotal += h.costBasis * (parseFloat(h.quantity) || 0);
         valTotalWithCost += v.value;
         countedPositions++;
@@ -574,7 +579,7 @@
         const gain = valTotalWithCost - costTotal;
         const gainPct = costTotal > 0 ? (gain / costTotal) * 100 : 0;
         altVal.textContent = _fmtSigned(gain);
-        altHint.textContent = (isFinite(gainPct) ? _fmtPct(gainPct) : '—')
+        altHint.textContent = (Number.isFinite(gainPct) ? _fmtPct(gainPct) : '—')
           + ' · ' + countedPositions + ' of ' + valuations.length + ' tracked';
         altHint.className = 'summary-hint ' + (gain > 0 ? 'delta-up' : gain < 0 ? 'delta-down' : '');
       }
@@ -594,9 +599,9 @@
     let projTotal = 0, recurringCount = 0;
     for (const v of valuations) {
       const h = v.holding;
-      if (!isFinite(v.value)) continue;
+      if (!Number.isFinite(v.value)) continue;
       const V0 = v.value;
-      const C = isFinite(h.recurringMonthly) && h.recurringMonthly > 0 ? h.recurringMonthly : 0;
+      const C = Number.isFinite(h.recurringMonthly) && h.recurringMonthly > 0 ? h.recurringMonthly : 0;
       const fv = V0 * growthFactor + (C > 0 ? C * (growthFactor - 1) / r : 0);
       projTotal += fv;
       if (C > 0) recurringCount++;
@@ -644,7 +649,7 @@
     const subEl = document.getElementById('pf-alloc-sub');
     if (!canvas || typeof Chart === 'undefined') return;
     const data = valuations
-      .filter((v) => isFinite(v.value) && v.value > 0)
+      .filter((v) => Number.isFinite(v.value) && v.value > 0)
       .sort((a, b) => b.value - a.value);
     if (!data.length) {
       if (_chart) { _chart.destroy(); _chart = null; }
@@ -729,7 +734,7 @@
       let earliest = now.getTime();
       for (const v of _valuations) {
         const at = v.holding && v.holding.addedAt;
-        if (isFinite(at) && at < earliest) earliest = at;
+        if (Number.isFinite(at) && at < earliest) earliest = at;
       }
       return new Date(earliest);
     }
@@ -755,11 +760,11 @@
       let sumAt = 0;
       for (const v of valuations) {
         const h = v.holding;
-        if (!h || !isFinite(v.value)) continue;
-        const addedAt = isFinite(h.addedAt) ? h.addedAt : (endDate.getTime() - 365*24*3600*1000);
+        if (!h || !Number.isFinite(v.value)) continue;
+        const addedAt = Number.isFinite(h.addedAt) ? h.addedAt : (endDate.getTime() - 365*24*3600*1000);
         if (t < addedAt) continue; // position didn't exist yet
         const qty = parseFloat(h.quantity) || 0;
-        const cost = isFinite(h.costBasis) && h.costBasis > 0 ? h.costBasis * qty : null;
+        const cost = Number.isFinite(h.costBasis) && h.costBasis > 0 ? h.costBasis * qty : null;
         if (cost == null) {
           // No cost basis — flat-line at current value from addedAt
           sumAt += v.value;
@@ -778,7 +783,7 @@
     // Append today as the last point so the line lands at the live total
     let liveTotal = 0;
     for (const v of valuations) {
-      if (isFinite(v.value)) liveTotal += v.value;
+      if (Number.isFinite(v.value)) liveTotal += v.value;
     }
     labels.push('Today');
     values.push(Math.round(liveTotal));
@@ -880,7 +885,7 @@
       const c = parseFloat(cost.value);
       if (!s) { _toast('Please enter a symbol or company name', 'danger'); sym.focus(); return; }
       if (s.length > 20) { _toast('Symbol looks too long — try the ticker (e.g. AAPL)', 'danger'); sym.focus(); return; }
-      if (!isFinite(q) || q <= 0) { _toast('Please enter a quantity (e.g. 10 shares)', 'danger'); qty.focus(); return; }
+      if (!Number.isFinite(q) || q <= 0) { _toast('Please enter a quantity (e.g. 10 shares)', 'danger'); qty.focus(); return; }
       if (typeof PFCPortfolio === 'undefined' || typeof PFCPortfolio.add !== 'function') {
         _toast('Portfolio module not ready — try refreshing the page', 'danger');
         console.error('[portfolio] PFCPortfolio missing at add-time');
@@ -895,7 +900,7 @@
         console.log('[portfolio] add() attempt:', { type: t, symbol: s, quantity: q, costBasis: c });
         const entry = PFCPortfolio.add({
           type: t, symbol: s, quantity: q,
-          costBasis: isFinite(c) ? c : null,
+          costBasis: Number.isFinite(c) ? c : null,
         });
         console.log('[portfolio] add() returned:', entry, '| list() now has', PFCPortfolio.list().length, 'items');
         if (!entry) {
@@ -1013,7 +1018,7 @@
         PFCPortfolio.getStockQuote('SPY').catch(() => null),
       ]);
       valuations = valResult;
-      _spyChangePct = (spyResult && isFinite(parseFloat(spyResult.change_pct)))
+      _spyChangePct = (spyResult && Number.isFinite(parseFloat(spyResult.change_pct)))
         ? parseFloat(spyResult.change_pct) : null;
     } catch (e) {
       console.error('[portfolio] valuations failed', e);
@@ -1070,7 +1075,7 @@
   // W18-fix — previous version appended to pf-sub which got wiped by
   // textContent= updates. Now we insert as a SIBLING of pf-sub, not a
   // child, so pf-sub's text updates don't clobber it.
-  const PFC_PORTFOLIO_BUILD = 'w19-2026-05-22-14:55';
+  const PFC_PORTFOLIO_BUILD = 'w20-2026-05-22-15:30';
   function _stampVersion() {
     const sub = document.getElementById('pf-sub');
     if (!sub || !sub.parentNode) return;

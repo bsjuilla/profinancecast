@@ -646,7 +646,7 @@ async function generateScript() {
   const target  = parseFloat(document.getElementById('i-target').value) || 0;
   const roleRaw = document.getElementById('i-role').value.trim();
   const expNum  = parseFloat(document.getElementById('i-exp').value);
-  const exp     = (isFinite(expNum) && expNum >= 0 && expNum <= 50) ? expNum : 3;
+  const exp     = (Number.isFinite(expNum) && expNum >= 0 && expNum <= 50) ? expNum : 3;
   const sym     = window.PFCSym ? PFCSym(USER.currency) : (USER.currency || '$');
 
   if (!salary) { showToast('Enter your current salary first'); return; }
@@ -690,7 +690,7 @@ async function generateScript() {
   // in getMarketRange). Linear-interpolate between the three anchor points;
   // clamp above 95th and below 5th so we never claim implausible extremes.
   function computePercentile(value, low, median, high) {
-    if (!isFinite(value) || value <= 0) return null;
+    if (!Number.isFinite(value) || value <= 0) return null;
     if (value <= low) {
       // Below 25th — extrapolate down to 5th, floor at 5
       const ratio = low > 0 ? value / low : 0;

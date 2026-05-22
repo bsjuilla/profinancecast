@@ -31,7 +31,7 @@
           PFCMacro.get().then((d) => {
             if (!d || !el) return;
             const cpi = d.cpiYoY;
-            const cpiPopulated = cpi && typeof cpi.value === 'number' && isFinite(cpi.value);
+            const cpiPopulated = cpi && typeof cpi.value === 'number' && Number.isFinite(cpi.value);
             if (!cpiPopulated) { el.style.display = 'none'; return; }
             const label = cpi.countryName
               ? 'Inflation in ' + _esc(cpi.countryName)
@@ -101,7 +101,7 @@
             const html = counters
               .map(c => {
                 const r = rates[c];
-                if (!isFinite(r) || r <= 0) return '';
+                if (!Number.isFinite(r) || r <= 0) return '';
                 // Format precision: 4dp for sub-1 (EUR 0.92), 2dp for 1-100
                 // range (CAD 1.36), 0dp for high-magnitude (JPY 150).
                 const v = r >= 100 ? r.toFixed(0)
@@ -164,7 +164,7 @@
             return;
           }
           PFCFx.getRate('USD', code).then((r) => {
-            if (!isFinite(r) || r <= 0) return;
+            if (!Number.isFinite(r) || r <= 0) return;
             // Format: more precision for small-rate currencies (EUR ~ 0.92),
             // less for large-rate ones (NGN ~ 1500).
             const formatted = r >= 100 ? r.toFixed(0)

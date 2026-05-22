@@ -174,7 +174,7 @@
       if (urlCountry && Lib.getCountry(urlCountry)) {
         els.country.value = urlCountry;
       }
-      if (isFinite(urlSalary) && urlSalary >= 1000 && urlSalary <= 5000000) {
+      if (Number.isFinite(urlSalary) && urlSalary >= 1000 && urlSalary <= 5000000) {
         els.gross.value = urlSalary;
       }
     } catch (_) { /* malformed URL — fall through to defaults */ }
