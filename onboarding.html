@@ -124,6 +124,21 @@
   .btn-go:hover{opacity:.88;}
   .btn-go:active{transform:scale(.98);}
   .confetti-wrap{position:fixed;inset:0;pointer-events:none;z-index:50;}
+  /* Example forecast preview on step 0 — sample numbers, NOT user data.
+     Per CPO Wave-14 §4: show output before asking input. The chart is a
+     CSS-only sparkline (12 monthly net-worth bars) so it ships without
+     touching the dashboard forecast renderer. */
+  .ex-forecast{background:var(--card);border:1px solid var(--border2);border-radius:var(--r);padding:18px 20px;margin-top:18px;}
+  .ex-forecast-eyebrow{font-size:11px;color:var(--text3);font-weight:600;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px;}
+  .ex-forecast-title{font-family:var(--font-display);font-size:17px;font-weight:700;color:var(--text);margin-bottom:14px;letter-spacing:-0.1px;}
+  .ex-forecast-chart{display:flex;align-items:flex-end;gap:5px;height:64px;margin-bottom:12px;}
+  .ex-bar{flex:1;background:linear-gradient(180deg,var(--teal) 0%,rgba(43,182,125,0.4) 100%);border-radius:2px 2px 0 0;min-height:6px;}
+  .ex-forecast-row{display:flex;justify-content:space-between;align-items:baseline;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px;}
+  .ex-forecast-row:last-of-type{border-bottom:none;}
+  .ex-forecast-key{color:var(--text2);}
+  .ex-forecast-val{color:var(--text);font-weight:500;font-variant-numeric:tabular-nums;}
+  .ex-forecast-val.good{color:var(--teal);}
+  .ex-forecast-note{font-size:11.5px;color:var(--text3);font-style:italic;margin-top:8px;line-height:1.5;}
   @media(max-width:600px){
     .topnav{padding:0 20px;}
     .wizard-footer{padding:0 20px;}
@@ -220,6 +235,29 @@
     <div style="background:rgba(43,182,125,0.06);border:1px solid rgba(43,182,125,0.15);border-radius:var(--r-sm);padding:12px 14px;display:flex;align-items:center;gap:10px;">
       <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2l3 2v4c0 2.5-3 5-3 5S5 10.5 5 8V4z" stroke="#2BB67D" stroke-width="1.3"/></svg>
       <span style="font-size:13px;color:var(--text2);">All your data is <strong style="color:var(--text);">AES-256 encrypted</strong> and <strong style="color:var(--text);">never sold or shared</strong> — ever.</span>
+    </div>
+    <div class="ex-forecast" aria-label="Example forecast — sample numbers">
+      <div class="ex-forecast-eyebrow">Example forecast — sample numbers</div>
+      <div class="ex-forecast-title">This is what your forecast will look like.</div>
+      <div class="ex-forecast-chart" aria-hidden="true">
+        <div class="ex-bar" style="height:24%"></div>
+        <div class="ex-bar" style="height:30%"></div>
+        <div class="ex-bar" style="height:37%"></div>
+        <div class="ex-bar" style="height:43%"></div>
+        <div class="ex-bar" style="height:50%"></div>
+        <div class="ex-bar" style="height:57%"></div>
+        <div class="ex-bar" style="height:64%"></div>
+        <div class="ex-bar" style="height:71%"></div>
+        <div class="ex-bar" style="height:78%"></div>
+        <div class="ex-bar" style="height:85%"></div>
+        <div class="ex-bar" style="height:92%"></div>
+        <div class="ex-bar" style="height:100%"></div>
+      </div>
+      <div class="ex-forecast-row"><span class="ex-forecast-key">Monthly income (example)</span><span class="ex-forecast-val">€5,000</span></div>
+      <div class="ex-forecast-row"><span class="ex-forecast-key">Monthly expenses (example)</span><span class="ex-forecast-val">€3,200</span></div>
+      <div class="ex-forecast-row"><span class="ex-forecast-key">Monthly surplus</span><span class="ex-forecast-val good">€1,800</span></div>
+      <div class="ex-forecast-row"><span class="ex-forecast-key">Projected net worth in 12 months</span><span class="ex-forecast-val good">€21,600</span></div>
+      <div class="ex-forecast-note">Replace these sample numbers with yours in the next steps. The chart updates live as you type.</div>
     </div>
   </div>
 
