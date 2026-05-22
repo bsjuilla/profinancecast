@@ -955,6 +955,13 @@
     _renderPerfChart(placeholderValuations);
 
     if (placeholderValuations.length === 0) {
+      // W17-fix2 — belt-and-braces: explicitly hide the KPI bar AND
+      // perf chart card here too, not relying on _renderKPIs/_renderPerfChart
+      // to have hit their empty branches. If anything ever sets pf-kpis
+      // display:'' BEFORE this point, this catches it.
+      document.getElementById('pf-kpis').style.display = 'none';
+      const perfCard = document.getElementById('pf-perf-card');
+      if (perfCard) perfCard.style.display = 'none';
       document.getElementById('pf-empty').style.display = 'block';
       document.getElementById('pf-sub').textContent = 'No holdings yet';
       return; // nothing to fetch
@@ -1004,8 +1011,26 @@
     document.getElementById('pf-sub').textContent = baseMsg;
   }
 
+  // W17-fix2 — visible version marker so we can verify deployed code.
+  // Adds a tiny build-version pill next to the page subtitle.
+  const PFC_PORTFOLIO_BUILD = 'w17d-2026-05-22-13:30';
+  function _stampVersion() {
+    const sub = document.getElementById('pf-sub');
+    if (!sub) return;
+    let pill = document.getElementById('pf-build');
+    if (!pill) {
+      pill = document.createElement('span');
+      pill.id = 'pf-build';
+      pill.style.cssText = 'display:inline-block;margin-left:10px;font-size:10px;color:var(--text3);opacity:0.6;font-family:var(--font-mono,monospace);letter-spacing:.04em;';
+      sub.appendChild(pill);
+    }
+    pill.textContent = ' · build ' + PFC_PORTFOLIO_BUILD;
+  }
+
   // ── Boot ────────────────────────────────────────────────────────────────
   function _boot() {
+    console.log('[portfolio] boot — build', PFC_PORTFOLIO_BUILD);
+    _stampVersion();
     if (typeof PFCPortfolio === 'undefined') {
       // W16 §1 — was silent; now we log AND wire the form anyway so the
       // toast feedback can still fire when the user attempts to add.
