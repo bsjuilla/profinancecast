@@ -1,0 +1,40 @@
+/**
+ * pfc-photo-rules.css — Surface-aware photography discipline.
+ *
+ * Wave-15 Design Director audit: research benchmark (Monarch Money, Copilot
+ * Money) confirms working finance dashboards do NOT use page-dominant
+ * decorative photography. The hero of a finance dashboard is the user's
+ * NUMBERS, not an editorial photo. This file is the single rule that
+ * enforces that discipline site-wide.
+ *
+ * Two surface classes via data-pfc-surface on <body>:
+ *
+ *   data-pfc-surface="working" — dashboard, scenarios, sage, settings,
+ *     net-worth, portfolio, goals, debt-optimizer, cash-forecast,
+ *     recurring, salary-calculator, report-card, history, journal,
+ *     billing, tools/*. Photography is SUPPRESSED. The numbers are
+ *     the hero.
+ *
+ *   data-pfc-surface="marketing" (or absence of attribute) — index,
+ *     about, blog, blog-*, privacy, terms, help, onboarding, auth.
+ *     Photography RENDERS at its declared size. These are the surfaces
+ *     where the editorial brand earns its keep.
+ *
+ * Onboarding bookends (welcome-vignette + complete-keepsake) are on the
+ * marketing-side of the boundary by design — they frame the experience.
+ *
+ * To override (rare): an inline style on the figure or an explicit
+ * data-pfc-photo-keep="true" attribute. Reserved for genuine necessities.
+ */
+
+[data-pfc-surface="working"] .pfc-photo-figure:not([data-pfc-photo-keep="true"]),
+[data-pfc-surface="working"] .pfc-photo-square:not([data-pfc-photo-keep="true"]),
+[data-pfc-surface="working"] .pfc-photo-eyebrow:not([data-pfc-photo-keep="true"]),
+[data-pfc-surface="working"] .pfc-photo-card:not([data-pfc-photo-keep="true"]) {
+  display: none !important;
+}
+
+/* When photography is suppressed, the <figcaption> goes with it. */
+[data-pfc-surface="working"] .pfc-photo-figure figcaption {
+  display: none !important;
+}

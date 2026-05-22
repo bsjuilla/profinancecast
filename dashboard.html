@@ -395,6 +395,7 @@
 </style>
   <link rel="stylesheet" href="css/pfc-tokens.css">
   <link rel="stylesheet" href="css/pfc-photos.css?v=3">
+  <link rel="stylesheet" href="css/pfc-photo-rules.css?v=1">
   <link rel="stylesheet" href="css/pfc-anim.css?v=1">
   <link rel="stylesheet" href="css/pfc-footer.css">
   <link rel="stylesheet" href="css/pfc-app.css">
@@ -431,7 +432,7 @@
   <script src="./js/inline/dashboard-1.js"></script>
   <link rel="stylesheet" href="css/pfc-fonts.css">
 </head>
-<body>
+<body data-pfc-surface="working">
 
 <!-- SIDEBAR -->
 <nav class="sidebar" aria-label="Primary navigation">
@@ -773,31 +774,10 @@
          the first successful fetch resolves; never blocks page render. -->
     <div id="macro-widget" style="display:none;background:var(--card,#16271F);border:1px solid var(--line-2,rgba(244,239,229,0.10));border-radius:var(--r-sm,8px);padding:12px 16px;margin-bottom:18px;display:none;font-size:12.5px;color:var(--ink-2,#B8C2BC);" aria-live="polite"></div>
 
-    <!-- FX panel — live exchange rates from Frankfurter API (ECB-tracked,
-         once-a-day refresh). Hidden until PFCFx resolves a base rate;
-         renders 6 currencies relative to the user's home base. -->
-    <section id="fx-panel" class="card pfc-card--elev" style="display:none;margin-bottom:22px;padding:0;overflow:hidden;" aria-labelledby="fx-panel-title">
-      <figure class="pfc-photo-figure" style="margin:0;">
-        <picture>
-          <source srcset="assets/img/photos/portfolio-currency-triptych.webp" type="image/webp">
-          <img class="pfc-photo-eyebrow" src="assets/img/photos/portfolio-currency-triptych.webp"
-               alt="Three small ceramic bowls on natural linen — bronze coins, silver coins, gold sovereigns — currency exposure rendered as three small troves."
-               loading="lazy" decoding="async"
-               width="2243" height="701"
-               style="border-radius:0;border:0;">
-        </picture>
-      </figure>
-      <div style="padding:18px 22px 20px;">
-        <div class="pfc-eyebrow-mono">Today's rates · Frankfurter / ECB</div>
-        <h3 id="fx-panel-title" style="font-family:var(--font-display);font-size:17px;font-weight:600;letter-spacing:-0.01em;margin:2px 0 14px;">Currencies, today.</h3>
-        <div id="fx-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;font-variant-numeric:tabular-nums;"></div>
-        <div style="font-size:11px;color:var(--text3,#6E7873);margin-top:12px;letter-spacing:0.02em;">
-          Per <span id="fx-base">USD</span>. Updated <span id="fx-updated">once daily by the European Central Bank</span>.
-        </div>
-      </div>
-    </section>
-
-    <!-- METRICS — initial '—' placeholders; recalcForecast() hydrates from real USER data after auth -->
+    <!-- METRICS — promoted above FX panel per Wave-15 design audit
+         (Monarch/Copilot benchmark: user's numbers are the hero).
+         Initial '—' placeholders; recalcForecast() hydrates from real
+         USER data after auth. -->
     <div class="metrics">
       <div class="metric pfc-card--elev">
         <div class="metric-label">Projected net worth (12mo)</div>
@@ -824,6 +804,20 @@
         <div class="metric-bar"><div class="metric-bar-fill" style="width:0%;background:var(--amber);"></div></div>
       </div>
     </div>
+
+    <!-- FX panel — live exchange rates from Frankfurter API (ECB-tracked,
+         once-a-day refresh). Hidden until PFCFx resolves a base rate;
+         renders 6 currencies relative to the user's home base.
+         Wave-15: decorative photo stripped (working surface — no
+         decoration). FX rates are secondary info on a finance dashboard. -->
+    <section id="fx-panel" class="card pfc-card--elev" style="display:none;margin:22px 0;padding:18px 22px 20px;" aria-labelledby="fx-panel-title">
+      <div class="pfc-eyebrow-mono">Today's rates · Frankfurter / ECB</div>
+      <h3 id="fx-panel-title" style="font-family:var(--font-display);font-size:17px;font-weight:600;letter-spacing:-0.01em;margin:2px 0 14px;">Currencies, today.</h3>
+      <div id="fx-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;font-variant-numeric:tabular-nums;"></div>
+      <div style="font-size:11px;color:var(--text3,#6E7873);margin-top:12px;letter-spacing:0.02em;">
+        Per <span id="fx-base">USD</span>. Updated <span id="fx-updated">once daily by the European Central Bank</span>.
+      </div>
+    </section>
 
     <!-- FORECAST CHART + HEALTH SCORE -->
     <div class="grid-2">
