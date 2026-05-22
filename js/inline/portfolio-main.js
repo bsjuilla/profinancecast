@@ -108,6 +108,7 @@
   // ── Holdings table render ───────────────────────────────────────────────
   let _chart = null;
   let _valuations = []; // last fetched, used for re-renders without re-fetching
+  let _spyChangePct = null; // W17-A — SPY 24h change %, fetched on _refresh()
 
   function _renderTable(valuations) {
     const tbody = document.getElementById('pf-tbody');
@@ -144,13 +145,21 @@
           deltaCell = `<span class="${cls}">${_fmtPct(pct)}</span>`;
         }
         // W16 §2 — per-position all-time return based on costBasis
+        // W17-B — per-position dividend yield shown in title-tooltip
         const qtyNum = parseFloat(h.quantity) || 0;
+        const divYield = window.PFCDividendYields ? PFCDividendYields.yieldFor(h.symbol) : null;
+        const yieldNote = divYield != null
+          ? ` · ${divYield.toFixed(2)}% TTM yield ≈ ${_fmt(v.value * divYield / 100)}/yr`
+          : '';
         if (isFinite(h.costBasis) && h.costBasis > 0 && isFinite(v.value)) {
           const costVal = h.costBasis * qtyNum;
           const gain = v.value - costVal;
           const gainPct = costVal > 0 ? (gain / costVal) * 100 : 0;
           const cls = gain > 0 ? 'h-delta-up' : gain < 0 ? 'h-delta-down' : 'h-delta-zero';
-          allTimeCell = `<span class="${cls}" title="Cost basis ${_fmt(h.costBasis)} per unit · total cost ${_fmt(costVal)}">${_fmtSigned(gain)} (${_fmtPct(gainPct)})</span>`;
+          allTimeCell = `<span class="${cls}" title="Cost basis ${_fmt(h.costBasis)} per unit · total cost ${_fmt(costVal)}${yieldNote}">${_fmtSigned(gain)} (${_fmtPct(gainPct)})</span>`;
+        } else if (divYield != null && isFinite(v.value)) {
+          // No cost basis recorded, but we know the yield — show that instead of "—"
+          allTimeCell = `<span class="h-delta-zero" title="No cost basis recorded${yieldNote}">${divYield.toFixed(1)}% yield</span>`;
         }
       }
 
@@ -280,11 +289,47 @@
     document.getElementById('pf-24h-val').textContent = _fmtSigned(change);
     const pct = total > 0 ? (change / (total - change)) * 100 : 0;
     const hint = document.getElementById('pf-24h-hint');
-    hint.textContent = isFinite(pct) ? _fmtPct(pct) : '—';
+    // W17-A — benchmark vs SPY. _spyChangePct is set by _refresh() after the
+    // SPY quote fetch resolves. If we have it, append "vs SPY ±X% · trailing/
+    // leading by Ypp" so the user sees an honest mirror of their day vs the
+    // S&P 500. If SPY fetch fails (rare), we just show the portfolio %.
+    let hintText = isFinite(pct) ? _fmtPct(pct) : '—';
+    if (isFinite(_spyChangePct) && isFinite(pct)) {
+      const diff = pct - _spyChangePct;
+      const cmp = Math.abs(diff) < 0.05
+        ? 'matching SPY'
+        : (diff > 0 ? 'leading SPY by ' : 'trailing SPY by ') + Math.abs(diff).toFixed(2) + 'pp';
+      hintText += ' · vs SPY ' + _fmtPct(_spyChangePct) + ' · ' + cmp;
+    }
+    hint.textContent = hintText;
     hint.className = 'summary-hint ' + (change > 0 ? 'delta-up' : change < 0 ? 'delta-down' : '');
-    document.getElementById('pf-count-val').textContent = String(valuations.length);
-    document.getElementById('pf-count-hint').textContent =
-      stockCount + ' stock' + (stockCount===1?'':'s') + ' · ' + cryptoCount + ' crypto';
+    // W17-B — Annual dividend income KPI. Uses the curated yield catalog
+    // (PFCDividendYields). Positions without a catalog entry contribute
+    // nothing. Hint shows "N of M tracked · YIELDpp blended" for honesty
+    // about coverage gaps. Yields are TTM snapshots, not live.
+    let divAnnual = 0, divTracked = 0;
+    if (window.PFCDividendYields) {
+      for (const v of valuations) {
+        if (!isFinite(v.value)) continue;
+        const y = PFCDividendYields.yieldFor(v.holding.symbol);
+        if (y == null) continue;
+        divAnnual += v.value * (y / 100);
+        divTracked++;
+      }
+    }
+    const divValEl = document.getElementById('pf-div-val');
+    const divHintEl = document.getElementById('pf-div-hint');
+    if (divValEl && divHintEl) {
+      if (divTracked === 0) {
+        divValEl.textContent = '—';
+        divHintEl.textContent = 'No dividend-paying positions found';
+      } else {
+        const portfolioYield = total > 0 ? (divAnnual / total) * 100 : 0;
+        divValEl.textContent = _fmt(divAnnual);
+        divHintEl.textContent = divTracked + ' of ' + valuations.length + ' tracked · '
+          + portfolioYield.toFixed(2) + '% blended yield';
+      }
+    }
 
     // W16 §2 — All-time P/L: sum (current value - cost basis * qty) across
     // positions that HAVE a cost basis. Positions without a cost basis are
@@ -559,9 +604,18 @@
     document.getElementById('pf-sub').textContent = `Tracking ${holdings.length} holding${holdings.length===1?'':'s'} · fetching live prices…`;
 
     // ─── PHASE 2: async quote fetch (best-effort) ──────────────────────
+    // W17-A — fetch SPY in PARALLEL with the holdings. SPY's 24h change %
+    // becomes the benchmark in the 24h-change card hint. Failure to fetch
+    // SPY is silent (we just don't show the comparison).
     let valuations = placeholderValuations;
     try {
-      valuations = await PFCPortfolio.getPortfolioValuations(vsCur);
+      const [valResult, spyResult] = await Promise.all([
+        PFCPortfolio.getPortfolioValuations(vsCur),
+        PFCPortfolio.getStockQuote('SPY').catch(() => null),
+      ]);
+      valuations = valResult;
+      _spyChangePct = (spyResult && isFinite(parseFloat(spyResult.change_pct)))
+        ? parseFloat(spyResult.change_pct) : null;
     } catch (e) {
       console.error('[portfolio] valuations failed', e);
       valuations = holdings.map((h) => ({

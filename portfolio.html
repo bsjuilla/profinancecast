@@ -209,7 +209,7 @@
   <script src="js/pfc-storage.js"></script>
   <script src="js/pfc-currency.js"></script>
   <script src="js/pfc-user.js"></script>
-  <script src="js/pfc-portfolio.js?v=w16c"></script>
+  <script src="js/pfc-portfolio.js?v=w17"></script>
   <script src="js/pfc-entitlements.js"></script>
 
   <!-- Chart.js sync (defer would race the boot path — same fix that landed in 5e135d2). -->
@@ -365,9 +365,9 @@
         <div class="summary-hint" id="pf-proj-hint">with recurring contributions</div>
       </div>
       <div class="summary-card s-amber">
-        <div class="summary-label">Holdings</div>
-        <div class="summary-val" id="pf-count-val">0</div>
-        <div class="summary-hint" id="pf-count-hint">0 stocks · 0 crypto</div>
+        <div class="summary-label">Annual dividend income</div>
+        <div class="summary-val" id="pf-div-val">—</div>
+        <div class="summary-hint" id="pf-div-hint">TTM yield · estimate</div>
       </div>
     </div>
 
@@ -522,8 +522,9 @@
 
 </div>
 
-<script src="js/pfc-ticker-autocomplete.js?v=w16c" defer></script>
-<script src="js/inline/portfolio-main.js?v=w16c"></script>
+<script src="js/pfc-ticker-autocomplete.js?v=w17" defer></script>
+<script src="js/pfc-dividend-yields.js?v=w17" defer></script>
+<script src="js/inline/portfolio-main.js?v=w17"></script>
 <script src="js/inline/portfolio-auth.js"></script>
 </body>
 </html>
