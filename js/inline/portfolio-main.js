@@ -934,7 +934,21 @@
   // The row exists in storage the moment add() returns, so Phase 1 is
   // guaranteed to draw it. The quote API can fail entirely and the row
   // still renders with "—" placeholders + an error badge.
+  // W18 root-cause fix — re-entrancy guard. Audit agent identified
+  // concurrent overlapping _refresh() invocations as the cause of the
+  // contradictory state (pf-kpis visible + pf-sub "No holdings yet" +
+  // pf-empty hidden). Refresh A captures `holdings` closure, awaits
+  // Phase 2; Refresh B fires in parallel, completes its empty-state
+  // render; Refresh A's catch path then rebuilds non-empty valuations
+  // from the stale closure and re-renders KPIs visible, while pf-sub
+  // stays "No holdings yet" from B.
+  //
+  // Token guard: each refresh gets a monotonic ID. Before each render
+  // in Phase 2 (and Phase 2's catch path), we check that no NEWER
+  // refresh has started. If one has, we bail — newer one will paint.
+  let _refreshToken = 0;
   async function _refresh() {
+    const myToken = ++_refreshToken;
     if (!_planAllowsPortfolio()) { _showProGate(true); return; }
     _showProGate(false);
 
@@ -990,6 +1004,28 @@
         error: { message: e.message, code: 'BATCH_FAIL' },
       }));
     }
+    // W18 — token check: bail if a newer _refresh() started while we awaited.
+    // Without this guard, the catch-path above rebuilds non-empty valuations
+    // from the STALE `holdings` closure captured at Phase 1, then re-renders
+    // KPIs visible AFTER a concurrent refresh-B has already painted the
+    // empty state. That race is the cause of the visible-contradiction bug.
+    if (myToken !== _refreshToken) {
+      console.log('[portfolio] refresh', myToken, 'superseded by', _refreshToken, '— bailing');
+      return;
+    }
+    // W18 belt-and-braces — re-read storage at completion time. If holdings
+    // were removed during our await, the empty state is the truth, not our
+    // stale closure. Run the same empty-state code path as Phase 1.
+    const freshHoldings = PFCPortfolio.list();
+    if (freshHoldings.length === 0) {
+      document.getElementById('pf-kpis').style.display = 'none';
+      const perfCard = document.getElementById('pf-perf-card');
+      if (perfCard) perfCard.style.display = 'none';
+      document.getElementById('pf-empty').style.display = 'block';
+      document.getElementById('pf-sub').textContent = 'No holdings yet';
+      _valuations = [];
+      return;
+    }
     _valuations = valuations;
     _renderKPIs(valuations);
     _renderTable(valuations);
@@ -1012,19 +1048,21 @@
   }
 
   // W17-fix2 — visible version marker so we can verify deployed code.
-  // Adds a tiny build-version pill next to the page subtitle.
-  const PFC_PORTFOLIO_BUILD = 'w17d-2026-05-22-13:30';
+  // W18-fix — previous version appended to pf-sub which got wiped by
+  // textContent= updates. Now we insert as a SIBLING of pf-sub, not a
+  // child, so pf-sub's text updates don't clobber it.
+  const PFC_PORTFOLIO_BUILD = 'w18-2026-05-22-14:00';
   function _stampVersion() {
     const sub = document.getElementById('pf-sub');
-    if (!sub) return;
+    if (!sub || !sub.parentNode) return;
     let pill = document.getElementById('pf-build');
     if (!pill) {
-      pill = document.createElement('span');
+      pill = document.createElement('div');
       pill.id = 'pf-build';
-      pill.style.cssText = 'display:inline-block;margin-left:10px;font-size:10px;color:var(--text3);opacity:0.6;font-family:var(--font-mono,monospace);letter-spacing:.04em;';
-      sub.appendChild(pill);
+      pill.style.cssText = 'font-size:10px;color:var(--text3);opacity:0.6;font-family:var(--font-mono,monospace);letter-spacing:.04em;margin-top:2px;';
+      sub.parentNode.insertBefore(pill, sub.nextSibling);
     }
-    pill.textContent = ' · build ' + PFC_PORTFOLIO_BUILD;
+    pill.textContent = 'build ' + PFC_PORTFOLIO_BUILD;
   }
 
   // ── Boot ────────────────────────────────────────────────────────────────
