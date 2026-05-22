@@ -290,7 +290,7 @@ function showResults() {
 }
 
 function updateMetrics() {
-  const sym = USER.currency || '$';
+  const sym = window.PFCSym ? PFCSym(USER.currency) : (USER.currency || '$');
   const active = RECURRINGS.filter((_,i) => !CANCELLED.has(i));
   const totalMonthly = active.reduce((s,r) => s + r.monthlyAmount, 0);
   const totalAnnual  = active.reduce((s,r) => s + r.annualAmount, 0);
@@ -310,7 +310,7 @@ function updateMetrics() {
 }
 
 function renderAlerts() {
-  const sym  = USER.currency || '$';
+  const sym  = window.PFCSym ? PFCSym(USER.currency) : (USER.currency || '$');
   const wrap = document.getElementById('alerts-wrap');
   wrap.innerHTML = '';
 
@@ -340,7 +340,7 @@ function renderAlerts() {
 }
 
 function renderCharts() {
-  const sym = USER.currency || '$';
+  const sym = window.PFCSym ? PFCSym(USER.currency) : (USER.currency || '$');
   const active = RECURRINGS.filter((_,i)=>!CANCELLED.has(i));
 
   // Category donut
@@ -423,7 +423,7 @@ function renderCharts() {
 }
 
 function renderCards() {
-  const sym  = USER.currency || '$';
+  const sym  = window.PFCSym ? PFCSym(USER.currency) : (USER.currency || '$');
   const grid = document.getElementById('rec-grid');
   const filtered = RECURRINGS.filter((r,i)=>{
     if (currentFilter==='cancelled') return CANCELLED.has(i);
@@ -515,7 +515,7 @@ function sortCards(val) {
 
 async function askSage(idx) {
   const r   = RECURRINGS[idx];
-  const sym = USER.currency || '$';
+  const sym = window.PFCSym ? PFCSym(USER.currency) : (USER.currency || '$');
   const prompt = `I'm paying ${sym}${r.monthlyAmount.toFixed(2)}/month (${sym}${Math.round(r.annualAmount)}/year) for ${r.name} (${CAT_META[r.cat]?.label} category).${r.priceIncreased?` The price has increased by ${sym}${r.priceDiff.toFixed(2)}/mo recently.`:''} Should I keep it, negotiate, or cancel? Give me a direct recommendation in 3-4 sentences.`;
   showToast(`Asking Sage about ${r.name}…`);
   try {

@@ -157,7 +157,7 @@ window.addEventListener('beforeunload', () => {
     try { persistUser(); } catch (_) {}
   }
 });
-function currencySym() { return USER.currency || '$'; }
+function currencySym() { return window.PFCSym ? PFCSym(USER.currency) : (USER.currency || '$'); }
 function fmt(n) { return currencySym() + Math.abs(Math.round(n||0)).toLocaleString('en-US'); }
 function fmtSigned(n) { return (n<0?'-':'') + currencySym() + Math.abs(Math.round(n||0)).toLocaleString('en-US'); }
 

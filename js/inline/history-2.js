@@ -28,7 +28,7 @@ function escapeHtml(s) {
 }
 
 function fmtMoney(v, sym) {
-  sym = sym || (USER.currency || '$');
+  sym = sym || (window.PFCSym ? PFCSym(USER.currency) : (USER.currency || '$'));
   return (v < 0 ? '-' : '') + sym + Math.abs(Math.round(v)).toLocaleString();
 }
 
@@ -98,7 +98,7 @@ function renderNetWorth() {
   const labels = sorted.map(h => formatDateShort(h.date));
   const nwData = sorted.map(h => h.netWorth || 0);
 
-  const sym = USER.currency || '$';
+  const sym = window.PFCSym ? PFCSym(USER.currency) : (USER.currency || '$');
 
   if (nwHistoryChart) { nwHistoryChart.destroy(); nwHistoryChart = null; }
 
@@ -192,7 +192,7 @@ function renderBilling() {
     String(b.date || b.created_at || '').localeCompare(String(a.date || a.created_at || ''))
   );
 
-  const sym = USER.currency || '$';
+  const sym = window.PFCSym ? PFCSym(USER.currency) : (USER.currency || '$');
   tbody.innerHTML = sorted.map(b => {
     const date   = b.date || b.created_at || '';
     const plan   = b.plan || b.product || '—';

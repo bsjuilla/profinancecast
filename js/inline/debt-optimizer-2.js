@@ -34,7 +34,7 @@ function init() {
     saveDebts();
   }
 
-  const sym = USER.currency || '$';
+  const sym = window.PFCSym ? PFCSym(USER.currency) : (USER.currency || '$');
   document.getElementById('m-sym').textContent = sym;
 
   // Sidebar user-pill hydrated by js/pfc-sidebar.js;
@@ -69,7 +69,7 @@ function setStrategy(s, recalc = true) {
 // ── EXTRA SLIDER ──
 function updateExtra(val) {
   EXTRA = parseInt(val) || 0;
-  const sym = USER.currency || '$';
+  const sym = window.PFCSym ? PFCSym(USER.currency) : (USER.currency || '$');
   document.getElementById('extra-val').textContent = '+' + sym + EXTRA.toLocaleString();
   renderAll();
 }
@@ -168,7 +168,7 @@ function calcPayoff(debts, strategy, extra) {
 
 // ── RENDER ALL ──
 function renderAll() {
-  const sym = USER.currency || '$';
+  const sym = window.PFCSym ? PFCSym(USER.currency) : (USER.currency || '$');
   const hasDebts = DEBTS.length > 0;
 
   document.getElementById('empty-debts').style.display = hasDebts ? 'none' : 'block';
@@ -364,7 +364,7 @@ function renderChart(opt, base) {
           bodyColor: '#B8C2BC',
           callbacks: {
             label: ctx => {
-              const sym = USER.currency || '$';
+              const sym = window.PFCSym ? PFCSym(USER.currency) : (USER.currency || '$');
               return ' ' + ctx.dataset.label + ': ' + sym + ctx.parsed.y.toLocaleString();
             }
           }
@@ -376,7 +376,7 @@ function renderChart(opt, base) {
           grid: { color: 'rgba(255,255,255,0.04)' },
           ticks: {
             color: '#4A5A6E', font: { size: 10 },
-            callback: v => (USER.currency || '$') + (v >= 1000 ? (v/1000).toFixed(0)+'k' : v)
+            callback: v => (window.PFCSym ? PFCSym(USER.currency) : (USER.currency || '$')) + (v >= 1000 ? (v/1000).toFixed(0)+'k' : v)
           }
         }
       }
@@ -472,7 +472,7 @@ function renderPayoffOrder(opt, sym) {
 // ── EXPORT CSV ──
 function exportScheduleCSV() {
   if (!SCHEDULE_DATA.length) return;
-  const sym = USER.currency || '$';
+  const sym = window.PFCSym ? PFCSym(USER.currency) : (USER.currency || '$');
   const rows = [['Month','Date','Payment','Balance','Event']];
   SCHEDULE_DATA.forEach(r => rows.push([r.month, r.date, sym+r.payment, sym+r.balance, r.event || '']));
   const csv = rows.map(r => r.join(',')).join('\n');
@@ -528,7 +528,7 @@ function modalCalc() {
   const pay  = parseFloat(document.getElementById('m-minpay').value) || 0;
   if (!bal || !rate || !pay) { document.getElementById('m-preview').style.display = 'none'; return; }
 
-  const sym = USER.currency || '$';
+  const sym = window.PFCSym ? PFCSym(USER.currency) : (USER.currency || '$');
   const monthlyInt = bal * (rate / 100 / 12);
   let months = 0, remaining = bal, totalInt = 0;
   while (remaining > 0.01 && months < 600) {

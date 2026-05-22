@@ -100,7 +100,7 @@ function applyEmptyOrPopulatedState() {
 function renderAll() {
   applyEmptyOrPopulatedState();
 
-  const sym = USER.currency || '$';
+  const sym = window.PFCSym ? PFCSym(USER.currency) : (USER.currency || '$');
   const fmt = v => (v < 0 ? '-' : '') + sym + Math.abs(Math.round(v)).toLocaleString();
 
   const filtered = getPeriodData();
@@ -316,7 +316,7 @@ function renderChart(data) {
   const assData = data.map(h => h.assets || (h.savings + h.investments));
   const debtData = data.map(h => h.debt || 0);
 
-  const sym = USER.currency || '$';
+  const sym = window.PFCSym ? PFCSym(USER.currency) : (USER.currency || '$');
   const fmt = v => sym + Math.round(Math.abs(v)).toLocaleString();
 
   nwChart = new Chart(canvas, {
@@ -427,7 +427,7 @@ function modalCalcNW() {
   const invest  = parseFloat(document.getElementById('m-invest').value)  || 0;
   const debt    = parseFloat(document.getElementById('m-debt').value)    || 0;
   const nw = savings + invest - debt;
-  const sym = USER.currency || '$';
+  const sym = window.PFCSym ? PFCSym(USER.currency) : (USER.currency || '$');
   const previewEl = document.getElementById('m-nw-preview');
   previewEl.textContent = (nw < 0 ? '-' : '') + sym + Math.abs(Math.round(nw)).toLocaleString();
   previewEl.style.color = nw >= 0 ? 'var(--teal)' : 'var(--red)';
@@ -465,7 +465,7 @@ function saveManualEntry() {
 // ── EXPORT CSV ──
 function exportCSV() {
   if (!HISTORY.length) { showToast('No data to export'); return; }
-  const sym = USER.currency || '$';
+  const sym = window.PFCSym ? PFCSym(USER.currency) : (USER.currency || '$');
   const rows = [['Date','Net Worth','Assets','Savings','Investments','Debt','Source']];
   HISTORY.forEach(h => rows.push([h.date, h.netWorth, h.assets, h.savings, h.investments, h.debt, h.source]));
   const csv = rows.map(r => r.join(',')).join('\n');

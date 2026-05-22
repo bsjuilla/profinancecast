@@ -97,4 +97,9 @@
     toISO: toISO,
     symbols: SYMBOLS,
   };
+  // Global shorthand — pages call PFCSym(USER.currency) instead of
+  // PFCCurrency.toSymbol(...). Wave-15 §A canonicalises currency display
+  // across every working surface, regardless of whether storage is in
+  // symbol or ISO form.
+  window.PFCSym = toSymbol;
 })();

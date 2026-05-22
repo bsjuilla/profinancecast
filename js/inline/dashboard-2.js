@@ -39,7 +39,8 @@ function saveUser(u) {
 let USER = loadUser();
 
 function fmt(v) {
-  return USER.currency + Math.abs(Math.round(v)).toLocaleString();
+  const c = window.PFCSym ? PFCSym(USER.currency) : (USER.currency || '$');
+  return c + Math.abs(Math.round(v)).toLocaleString();
 }
 
 // ── FORECAST CHART ──
@@ -80,7 +81,7 @@ function buildData() {
 
 function recalcForecast() {
   const d = buildData();
-  const sym = USER.currency;
+  const sym = window.PFCSym ? PFCSym(USER.currency) : (USER.currency || '$');
 
   if (chart) {
     chart.data.datasets[0].data = d.base;
@@ -621,7 +622,7 @@ function renderGoalsPanel() {
   const list = document.getElementById('goals-panel-list');
   if (!list) return;
   const surplus = Math.max(0, ((USER.income||0) + (USER.otherIncome||0)) - ((USER.housing||0) + (USER.food||0) + (USER.transport||0) + (USER.otherExp||0) + (USER.debtPay||0)));
-  const sym = USER.currency;
+  const sym = window.PFCSym ? PFCSym(USER.currency) : (USER.currency || '$');
 
   // Update summary cards
   const totalTarget = GOALS.reduce((s,g) => s + (g.target||0), 0);
@@ -1068,7 +1069,7 @@ No explanation, no markdown, just the JSON array.`;
 
 // ── REPORT RENDERER ──
 function renderReport(txns) {
-  const sym = USER.currency || '$';
+  const sym = window.PFCSym ? PFCSym(USER.currency) : (USER.currency || '$');
   const totalIncome  = txns.filter(t => !t.isDebit).reduce((s,t) => s + t.amount, 0);
   const totalSpent   = txns.filter(t => t.isDebit).reduce((s,t) => s + t.amount, 0);
   const net          = totalIncome - totalSpent;
@@ -1139,7 +1140,7 @@ function renderReport(txns) {
 }
 
 function renderTxnTable(txns) {
-  const sym = USER.currency || '$';
+  const sym = window.PFCSym ? PFCSym(USER.currency) : (USER.currency || '$');
   const tbody = document.getElementById('txn-body');
   const cats = Object.keys(CAT_META);
   document.getElementById('txn-count-label').textContent = txns.length + ' transactions';
@@ -1186,7 +1187,7 @@ function filterTxns() {
 
 // ── APPLY TO DASHBOARD ──
 function applyToDashboard() {
-  const sym = USER.currency || '$';
+  const sym = window.PFCSym ? PFCSym(USER.currency) : (USER.currency || '$');
   const txns = CSV_TRANSACTIONS;
   const dates = txns.map(t => t.date).filter(Boolean).sort();
   let months = 1;
@@ -1339,7 +1340,7 @@ function applyInflationData(data) {
   // Recalculate purchasing power boxes
   const base = USER.income > 0 ? USER.income : 3000;
   const r = rate / 100;
-  const sym = USER.currency || '$';
+  const sym = window.PFCSym ? PFCSym(USER.currency) : (USER.currency || '$');
   const fmt = v => sym + Math.round(v).toLocaleString();
 
   document.getElementById('infl-rate-text').textContent = rate.toFixed(1) + '%';
@@ -1372,7 +1373,7 @@ function refreshInflBoxes() {
   const base = USER.income > 0 ? USER.income : 3000;
   const rate = parseFloat(document.getElementById('sl-inflation').value) || 3.5;
   const r = rate / 100;
-  const sym = USER.currency || '$';
+  const sym = window.PFCSym ? PFCSym(USER.currency) : (USER.currency || '$');
   const fmt = v => sym + Math.round(v).toLocaleString();
   document.getElementById('infl-rate-text').textContent = rate.toFixed(1) + '%';
   document.getElementById('infl-base-text').textContent = fmt(base);
@@ -1492,7 +1493,7 @@ function _maybeFireActivation(source) {
 // ── NET WORTH TAB RENDERER ──
 let nwTabChart = null;
 function renderNWTab() {
-  const sym = USER.currency || '$';
+  const sym = window.PFCSym ? PFCSym(USER.currency) : (USER.currency || '$');
   const savings     = USER.savings || 0;
   const investments = USER.investments || 0;
   const debt        = USER.debt || 0;

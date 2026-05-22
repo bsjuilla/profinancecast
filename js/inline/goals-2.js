@@ -45,7 +45,7 @@ function load() {
     ((USER.income||0) + (USER.otherIncome||0)) -
     ((USER.housing||0) + (USER.food||0) + (USER.transport||0) + (USER.otherExp||0) + (USER.debtPay||0))
   );
-  USER.sym = USER.currency || '$';
+  USER.sym = window.PFCSym ? PFCSym(USER.currency) : (USER.currency || '$');
 
   // Sidebar user-pill hydrated by js/pfc-sidebar.js;
   // plan badge by PFCPlan.applyBadges().

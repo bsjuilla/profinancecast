@@ -202,7 +202,7 @@ function populateRoleDatalist() {
 
 function init() {
   try { USER = (typeof PFCUser !== 'undefined') ? PFCUser.get() : (PFCStorage.getJSON('user') || {}); } catch(e) { USER = {}; }
-  const sym = USER.currency || '$';
+  const sym = window.PFCSym ? PFCSym(USER.currency) : (USER.currency || '$');
   ['sym-label','sym-custom','sym-offer'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.textContent = sym;
@@ -261,7 +261,7 @@ function setCustomTarget() {
 // ── MAIN CALC ──
 function calc() {
   const salary  = parseFloat(document.getElementById('i-salary').value) || 0;
-  const sym     = USER.currency || '$';
+  const sym     = window.PFCSym ? PFCSym(USER.currency) : (USER.currency || '$');
   const exp     = parseFloat(document.getElementById('i-exp').value) || 0;
 
   // Rebuild raise grid with amounts
@@ -525,7 +525,7 @@ function renderLifetimeChart(curr, newB, sym, years) {
 
 // ── COUNTER OFFER ──
 function calcCounter() {
-  const sym    = USER.currency || '$';
+  const sym    = window.PFCSym ? PFCSym(USER.currency) : (USER.currency || '$');
   const offer  = parseFloat(document.getElementById('i-offer').value) || 0;
   const target = parseFloat(document.getElementById('i-target').value) || 0;
   const salary = parseFloat(document.getElementById('i-salary').value) || 0;
@@ -570,7 +570,7 @@ Your absolute minimum is ${sym}${walkaway.toLocaleString()} — don't accept bel
 
 // ── BENEFITS ──
 function calcBenefits() {
-  const sym    = USER.currency || '$';
+  const sym    = window.PFCSym ? PFCSym(USER.currency) : (USER.currency || '$');
   const salary = parseFloat(document.getElementById('i-target').value) || parseFloat(document.getElementById('i-salary').value) || 0;
   if (!salary) return;
 
@@ -647,7 +647,7 @@ async function generateScript() {
   const roleRaw = document.getElementById('i-role').value.trim();
   const expNum  = parseFloat(document.getElementById('i-exp').value);
   const exp     = (isFinite(expNum) && expNum >= 0 && expNum <= 50) ? expNum : 3;
-  const sym     = USER.currency || '$';
+  const sym     = window.PFCSym ? PFCSym(USER.currency) : (USER.currency || '$');
 
   if (!salary) { showToast('Enter your current salary first'); return; }
   if (!roleRaw || !looksLikeRealRole(roleRaw)) {
@@ -866,7 +866,7 @@ init();
 function _rehydrateFromStorage() {
   const prevSalaryPrefill = USER.income ? USER.income * 12 : null;
   try { USER = (typeof PFCUser !== 'undefined') ? PFCUser.get() : (PFCStorage.getJSON('user') || {}); } catch(e) { USER = {}; }
-  const sym = USER.currency || '$';
+  const sym = window.PFCSym ? PFCSym(USER.currency) : (USER.currency || '$');
   ['sym-label','sym-custom','sym-offer'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.textContent = sym;

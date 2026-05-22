@@ -39,7 +39,7 @@ function buildChartMonthLabels(count) {
 const CHART_MONTHS_LABELS = buildChartMonthLabels(25);
 
 function fmt(v) {
-  const c = USER.currency || '$';
+  const c = window.PFCSym ? PFCSym(USER.currency) : (USER.currency || '$');
   return c + Math.abs(Math.round(v)).toLocaleString();
 }
 
