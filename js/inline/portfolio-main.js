@@ -200,6 +200,12 @@
     const cost = document.getElementById('pf-cost');
     const type = document.getElementById('pf-type');
 
+    // Wave-15 §D: name-or-symbol autocomplete so users can type "Apple"
+    // and find AAPL. Library is loaded via <script> tag in portfolio.html.
+    if (window.PFCTickerAutocomplete && sym) {
+      try { window.PFCTickerAutocomplete.wire(sym, type); } catch (_) {}
+    }
+
     function _attempt() {
       const t = type.value;
       const s = (sym.value || '').trim();

@@ -122,19 +122,37 @@
   .setup-banner.show{display:block}
   .setup-banner code{font-family:var(--font-mono);font-size:11.5px;background:rgba(255,255,255,0.06);padding:1px 5px;border-radius:4px}
 
-  /* Add-holding form */
-  .add-form{display:grid;grid-template-columns:120px 1fr 120px 120px 100px;gap:10px;align-items:center;margin-top:14px;padding:14px;background:rgba(255,255,255,0.02);border:1px solid var(--border2);border-radius:var(--r-sm)}
+  /* Add-holding form — Wave-15 §D: visually separated from the holdings
+     table above with a heading + per-field labels, so the form's grid
+     columns are no longer confused with the table's columns. */
+  .add-form-wrap{margin-top:28px;padding:18px;background:rgba(255,255,255,0.02);border:1px solid var(--border2);border-radius:var(--r-sm)}
+  .add-form-heading{font-family:var(--font-display);font-size:15px;font-weight:600;color:var(--text);margin-bottom:14px;letter-spacing:-0.005em}
+  .add-form-labels,.add-form{display:grid;grid-template-columns:120px 1fr 120px 140px 100px;gap:10px;align-items:end}
+  .add-form-labels{margin-bottom:4px}
+  .add-form-labels span{font-size:11px;color:var(--text3);font-weight:500;letter-spacing:.04em;text-transform:uppercase}
   .add-form select,.add-form input{background:rgba(255,255,255,0.04);border:1px solid var(--border2);color:var(--text);padding:9px 10px;border-radius:6px;font-size:13px;font-family:var(--font-body);width:100%}
   .add-form select:focus,.add-form input:focus{outline:none;border-color:var(--teal)}
   .add-form .add-btn{background:var(--teal);color:var(--canvas);border:none;padding:9px 12px;border-radius:6px;font-weight:600;font-size:12.5px;cursor:pointer}
   .add-form .add-btn:hover{opacity:.88}
   .add-form .add-btn:disabled{opacity:.4;cursor:not-allowed}
+  .add-form .pfc-symbol-wrap{position:relative}
+
+  /* Autocomplete dropdown — appears below the symbol input as user types.
+     Wave-15 §D: lets users find AAPL by typing "Apple". */
+  .pfc-ticker-dd{position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:30;background:var(--card,#16271F);border:1px solid var(--border2);border-radius:6px;box-shadow:0 8px 24px rgba(0,0,0,0.35);max-height:280px;overflow-y:auto}
+  .pfc-ticker-row{display:flex;align-items:baseline;gap:10px;padding:8px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid rgba(255,255,255,0.04)}
+  .pfc-ticker-row:last-child{border-bottom:none}
+  .pfc-ticker-row:hover,.pfc-ticker-row:focus{background:rgba(43,182,125,0.08)}
+  .pfc-ticker-sym{font-family:var(--font-mono);font-weight:600;color:var(--text);min-width:60px;letter-spacing:.02em}
+  .pfc-ticker-name{flex:1;color:var(--text2);font-size:12.5px}
+  .pfc-ticker-type{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);background:rgba(255,255,255,0.04);padding:2px 6px;border-radius:3px}
 
   /* Mobile responsive */
   @media (max-width: 920px) {
     .grid { grid-template-columns: 1fr; }
     .summary-bar { grid-template-columns: 1fr 1fr; }
-    .add-form { grid-template-columns: 1fr 1fr; }
+    .add-form-labels,.add-form { grid-template-columns: 1fr 1fr; }
+    .add-form-labels span:nth-child(n+3) { display: none; } /* labels match input rows */
   }
 </style>
 
@@ -336,15 +354,27 @@
               <tbody id="pf-tbody"></tbody>
             </table>
           </div>
-          <div class="add-form">
-            <select id="pf-type" aria-label="Type">
-              <option value="stock">Stock / ETF</option>
-              <option value="crypto">Crypto</option>
-            </select>
-            <input id="pf-symbol" type="text" placeholder="AAPL, VTI, BTC, ETH…" autocomplete="off" maxlength="20" aria-label="Ticker symbol">
-            <input id="pf-qty" type="number" placeholder="Quantity" min="0" step="any" aria-label="Quantity">
-            <input id="pf-cost" type="number" placeholder="Cost basis (optional)" min="0" step="any" aria-label="Cost basis">
-            <button id="pf-add" class="add-btn">Add holding</button>
+          <div class="add-form-wrap">
+            <div class="add-form-heading">Add a new position</div>
+            <div class="add-form-labels" aria-hidden="true">
+              <span>Type</span>
+              <span>Symbol or company name</span>
+              <span>Quantity</span>
+              <span>Cost basis (optional)</span>
+              <span></span>
+            </div>
+            <div class="add-form">
+              <select id="pf-type" aria-label="Type">
+                <option value="stock">Stock / ETF</option>
+                <option value="crypto">Crypto</option>
+              </select>
+              <div class="pfc-symbol-wrap">
+                <input id="pf-symbol" type="text" placeholder="Apple, AAPL, Bitcoin…" autocomplete="off" maxlength="40" aria-label="Symbol or company name">
+              </div>
+              <input id="pf-qty" type="number" placeholder="e.g. 10" min="0" step="any" aria-label="Quantity">
+              <input id="pf-cost" type="number" placeholder="Price per unit" min="0" step="any" aria-label="Cost basis">
+              <button id="pf-add" class="add-btn">Add holding</button>
+            </div>
           </div>
         </div>
       </div>
@@ -387,6 +417,7 @@
 
 </div>
 
+<script src="js/pfc-ticker-autocomplete.js" defer></script>
 <script src="js/inline/portfolio-main.js"></script>
 <script src="js/inline/portfolio-auth.js"></script>
 </body>
