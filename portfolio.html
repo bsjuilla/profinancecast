@@ -212,7 +212,7 @@
   <script src="js/pfc-storage.js"></script>
   <script src="js/pfc-currency.js"></script>
   <script src="js/pfc-user.js"></script>
-  <script src="js/pfc-portfolio.js?v=w20"></script>
+  <script src="js/pfc-portfolio.js?v=w21"></script>
   <script src="js/pfc-entitlements.js"></script>
 
   <!-- Chart.js sync (defer would race the boot path — same fix that landed in 5e135d2). -->
@@ -565,7 +565,7 @@
         <canvas id="pf-perf-chart"></canvas>
       </div>
       <div style="font-size:11px;color:var(--text3);margin-top:10px;letter-spacing:.01em;">
-        Honest disclaimer: this is a back-projection, not real historical price data. Each position is linearly interpolated from its cost basis at <em>addedAt</em> to the current market price today. Positions without a cost basis are flat-lined at current price from their addedAt date. Real price volatility isn't shown.
+        W21: tradeable stocks and ETFs use real monthly close prices from Twelve Data (24h-cached). Crypto, manual-override positions, and any symbol the API can't price fall back to a linear back-projection from cost basis at <em>addedAt</em> to current market price. The card subtitle above indicates which source is in play.
       </div>
     </div>
 
@@ -591,9 +591,9 @@
 
 </div>
 
-<script src="js/pfc-ticker-autocomplete.js?v=w20" defer></script>
-<script src="js/pfc-dividend-yields.js?v=w20" defer></script>
-<script src="js/inline/portfolio-main.js?v=w20"></script>
+<script src="js/pfc-ticker-autocomplete.js?v=w21" defer></script>
+<script src="js/pfc-dividend-yields.js?v=w21" defer></script>
+<script src="js/inline/portfolio-main.js?v=w21"></script>
 <script src="js/inline/portfolio-auth.js"></script>
 </body>
 </html>

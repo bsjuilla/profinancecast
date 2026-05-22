@@ -279,6 +279,23 @@
       '/api/quote?symbol=' + encodeURIComponent(sym));
   }
 
+  // W21 — historical bars for a symbol. Returns { symbol, currency,
+  // interval, bars: [{date, close}] } with bars oldest-first.
+  // Throws on API errors; callers should fall back to back-projection.
+  async function getHistory(symbol, interval, outputsize) {
+    if (!symbol) throw new Error('Missing symbol');
+    const sym = String(symbol).trim().toUpperCase();
+    const iv = interval || '1month';
+    const sz = outputsize || 60;
+    const key = 'history:' + sym + ':' + iv + ':' + sz;
+    return _fetchWithInflight(
+      key,
+      '/api/history?symbol=' + encodeURIComponent(sym)
+        + '&interval=' + encodeURIComponent(iv)
+        + '&outputsize=' + sz
+    );
+  }
+
   async function getCoinQuote(idOrTicker, vs) {
     if (!idOrTicker) throw new Error('Missing coin id');
     const id = String(idOrTicker).trim();
@@ -351,6 +368,7 @@
     onChange: onChange,
     getStockQuote: getStockQuote,
     getCoinQuote: getCoinQuote,
+    getHistory: getHistory,
     getPortfolioValuations: getPortfolioValuations,
   };
 })();

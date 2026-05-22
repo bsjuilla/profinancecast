@@ -741,13 +741,65 @@
     return d;
   }
 
+  // W21 — historical bars cache. Keyed by symbol; cleared on _refresh.
+  // Each entry: { bars: [{date, close}], fetchedAt }.
+  let _historyCache = {};
+  let _historyFetchInflight = null; // Promise that resolves when all
+                                    // histories have been fetched (or failed)
+
+  // Trigger history fetches for every tradeable stock/ETF in the current
+  // _valuations. Crypto and manual-override positions are skipped (the
+  // /api/history endpoint is stock-only; crypto would need a separate
+  // CoinGecko historical proxy which we haven't built). Failed fetches
+  // are recorded as null so the renderer falls back to back-projection
+  // for those positions specifically.
+  function _refreshHistory() {
+    const symbols = [];
+    for (const v of _valuations) {
+      const h = v.holding;
+      if (!h || !h.symbol) continue;
+      if (h.type === 'crypto') continue;
+      if (Number.isFinite(h.overridePrice) && h.overridePrice > 0) continue;
+      if (_historyCache[h.symbol] !== undefined) continue; // already fetched
+      symbols.push(h.symbol);
+    }
+    if (symbols.length === 0) {
+      _historyFetchInflight = Promise.resolve();
+      return _historyFetchInflight;
+    }
+    _historyFetchInflight = Promise.all(symbols.map((sym) =>
+      PFCPortfolio.getHistory(sym, '1month', 60)
+        .then((res) => {
+          _historyCache[sym] = (res && Array.isArray(res.bars)) ? res.bars : null;
+        })
+        .catch((e) => {
+          console.warn('[portfolio] getHistory failed for', sym, e.message || e);
+          _historyCache[sym] = null;
+        })
+    ));
+    return _historyFetchInflight;
+  }
+
+  // Find the close price at a specific timestamp by walking bars.
+  // Returns null if no bar is on-or-before the requested time.
+  function _historicalCloseAt(bars, t) {
+    if (!Array.isArray(bars) || bars.length === 0) return null;
+    let last = null;
+    for (const b of bars) {
+      const barTime = new Date(b.date).getTime();
+      if (barTime > t) break;
+      last = b.close;
+    }
+    return last;
+  }
+
   function _buildPerfSeries(valuations, range) {
     const startDate = _rangeStartDate(range);
     const endDate = new Date();
-    // Bucket by month if range >= 3m, weekly if range == 1m
     const isWeekly = range === '1m';
     const labels = [];
     const values = [];
+    let usedRealCount = 0, fellBackCount = 0;
     const cursor = new Date(startDate);
     if (isWeekly) {
       cursor.setHours(0,0,0,0);
@@ -762,14 +814,27 @@
         const h = v.holding;
         if (!h || !Number.isFinite(v.value)) continue;
         const addedAt = Number.isFinite(h.addedAt) ? h.addedAt : (endDate.getTime() - 365*24*3600*1000);
-        if (t < addedAt) continue; // position didn't exist yet
+        if (t < addedAt) continue;
         const qty = parseFloat(h.quantity) || 0;
         const cost = Number.isFinite(h.costBasis) && h.costBasis > 0 ? h.costBasis * qty : null;
+
+        // W21 — try real historical close first
+        const bars = _historyCache[h.symbol];
+        if (Array.isArray(bars) && bars.length > 0) {
+          const close = _historicalCloseAt(bars, t);
+          if (Number.isFinite(close)) {
+            sumAt += close * qty;
+            usedRealCount++;
+            continue;
+          }
+        }
+
+        // Fallback: back-projection (manual-override, crypto, API-failed,
+        // or pre-first-bar dates for positions with sparse history)
+        fellBackCount++;
         if (cost == null) {
-          // No cost basis — flat-line at current value from addedAt
           sumAt += v.value;
         } else {
-          // Linear interpolation from cost (at addedAt) to currentValue (at endDate)
           const span = Math.max(1, endDate.getTime() - addedAt);
           const progress = Math.min(1, Math.max(0, (t - addedAt) / span));
           sumAt += cost + (v.value - cost) * progress;
@@ -787,7 +852,7 @@
     }
     labels.push('Today');
     values.push(Math.round(liveTotal));
-    return { labels, values };
+    return { labels, values, usedRealCount, fellBackCount };
   }
 
   function _renderPerfChart(valuations) {
@@ -804,7 +869,14 @@
     const subEl = document.getElementById('pf-perf-sub');
     if (subEl) {
       const rangeLabel = _perfRange === '1m' ? 'Past month' : _perfRange === '3m' ? 'Past 3 months' : _perfRange === '1y' ? 'Past year' : 'All time';
-      subEl.textContent = rangeLabel + ' · back-projection from cost basis';
+      // W21 — sub now reflects actual data source. If ALL positions used
+      // real history, "real market history". If some fell back, hybrid.
+      // If none had real data, pure back-projection (same as before W21).
+      let sourceLabel;
+      if (series.usedRealCount > 0 && series.fellBackCount === 0) sourceLabel = 'real market history';
+      else if (series.usedRealCount > 0) sourceLabel = 'real history + back-projection for non-tradeables';
+      else sourceLabel = 'back-projection from cost basis';
+      subEl.textContent = rangeLabel + ' · ' + sourceLabel;
     }
     _perfChart = new Chart(canvas, {
       type: 'line',
@@ -1056,6 +1128,17 @@
     _renderChart(valuations);
     _renderPerfChart(valuations);
 
+    // W21 — fire historical-price fetch in the background (not awaited).
+    // When it resolves we re-render the perf chart so it switches from
+    // back-projection to real bars without blocking the rest of the UI.
+    _refreshHistory().then(() => {
+      // Token check — don't re-render if a newer _refresh started
+      if (myToken === _refreshToken && _valuations.length) {
+        try { _renderPerfChart(_valuations); }
+        catch (e) { console.error('[portfolio] perf re-render after history threw', e); }
+      }
+    });
+
     const errs = valuations.filter((v) => v.error).length;
     const cryptoFallback = valuations.find((v) =>
       v.quote && v.quote.requested_vs_currency &&
@@ -1075,7 +1158,7 @@
   // W18-fix — previous version appended to pf-sub which got wiped by
   // textContent= updates. Now we insert as a SIBLING of pf-sub, not a
   // child, so pf-sub's text updates don't clobber it.
-  const PFC_PORTFOLIO_BUILD = 'w20-2026-05-22-15:30';
+  const PFC_PORTFOLIO_BUILD = 'w21-2026-05-22-16:00';
   function _stampVersion() {
     const sub = document.getElementById('pf-sub');
     if (!sub || !sub.parentNode) return;
