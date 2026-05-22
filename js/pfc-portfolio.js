@@ -43,6 +43,52 @@
     _changeCb.forEach((fn) => { try { fn(snapshot); } catch (_) {} });
   }
 
+  // ─── W16-bug3 — in-memory source of truth ──────────────────────────────
+  //
+  // Root cause of the "TSLA added but row never appears" bug:
+  // PFCStorage's _warmCache() runs async after auth resolves. It reads
+  // localStorage envelopes, decrypts them, and populates the internal
+  // _cache map. If PFCPortfolio.add() runs BEFORE _warmCache completes,
+  // our entry goes into _cache — then _warmCache later REPLACES the
+  // cache with the decrypted-from-localStorage value, wiping our entry.
+  // By the time _refresh() calls list(), the cache has been overwritten.
+  //
+  // Fix: PFCPortfolio maintains its OWN in-memory list as the source of
+  // truth WITHIN the session. PFCStorage becomes a persistence backup,
+  // not the primary read path. Same pattern that already works in
+  // scenarios-3.js. Any add/update/remove is reflected in _memList
+  // synchronously — no race possible.
+  let _memList = null;       // null = not yet loaded
+  let _storageWarmedAt = 0;  // timestamp of last successful storage read
+
+  function _loadFromStorage() {
+    if (typeof window.PFCStorage === 'undefined') return [];
+    try {
+      const raw = window.PFCStorage.getJSON(STORAGE_KEY);
+      return Array.isArray(raw) ? raw : [];
+    } catch (_) { return []; }
+  }
+
+  function _ensureLoaded() {
+    if (_memList !== null) return;
+    _memList = _loadFromStorage();
+    if (_memList.length > 0) _storageWarmedAt = _now();
+  }
+
+  // Re-poll storage on first read after a storage-warm event. If our
+  // _memList is empty but storage now has data (warm cache resolved
+  // after our first read), adopt the storage data.
+  function _maybeRehydrate() {
+    if (_memList === null) return;
+    if (_memList.length > 0) return; // already have data; trust _memList
+    if (_storageWarmedAt > 0) return; // already attempted
+    const fromStorage = _loadFromStorage();
+    if (fromStorage.length > 0) {
+      _memList = fromStorage;
+      _storageWarmedAt = _now();
+    }
+  }
+
   function _persist(arr) {
     if (typeof window.PFCStorage === 'undefined') return false;
     try { window.PFCStorage.setJSON(STORAGE_KEY, arr); return true; }
@@ -50,11 +96,9 @@
   }
 
   function list() {
-    if (typeof window.PFCStorage === 'undefined') return [];
-    try {
-      const raw = window.PFCStorage.getJSON(STORAGE_KEY);
-      return Array.isArray(raw) ? raw : [];
-    } catch (_) { return []; }
+    _ensureLoaded();
+    _maybeRehydrate();
+    return _memList.slice(); // return a copy so callers can't mutate
   }
 
   function add(h) {
@@ -75,18 +119,18 @@
         ? parseFloat(h.recurringMonthly) : null,
       addedAt: _now(),
     };
-    const all = list();
-    all.push(entry);
-    _persist(all);
+    _ensureLoaded();
+    _memList.push(entry);
+    _persist(_memList);
     _fireChange();
     return entry;
   }
 
   function update(id, patch) {
-    const all = list();
-    const i = all.findIndex((h) => h.id === id);
+    _ensureLoaded();
+    const i = _memList.findIndex((h) => h.id === id);
     if (i === -1) return null;
-    const next = Object.assign({}, all[i], patch || {});
+    const next = Object.assign({}, _memList[i], patch || {});
     // Re-normalise numeric fields
     if (patch && patch.quantity != null) next.quantity = parseFloat(patch.quantity) || 0;
     if (patch && patch.costBasis != null) next.costBasis = parseFloat(patch.costBasis) || null;
@@ -97,19 +141,28 @@
       next.recurringMonthly = isFinite(patch.recurringMonthly) && patch.recurringMonthly > 0
         ? parseFloat(patch.recurringMonthly) : null;
     }
-    all[i] = next;
-    _persist(all);
+    _memList[i] = next;
+    _persist(_memList);
     _fireChange();
     return next;
   }
 
   function remove(id) {
-    const all = list();
-    const next = all.filter((h) => h.id !== id);
-    if (next.length === all.length) return false;
-    _persist(next);
+    _ensureLoaded();
+    const before = _memList.length;
+    _memList = _memList.filter((h) => h.id !== id);
+    if (_memList.length === before) return false;
+    _persist(_memList);
     _fireChange();
     return true;
+  }
+
+  // Public hook so a future page can adopt storage when auth resolves
+  // late. Currently unused but available for future warm-cache events.
+  function reloadFromStorage() {
+    _memList = _loadFromStorage();
+    _storageWarmedAt = _now();
+    _fireChange();
   }
 
   function onChange(fn) {
@@ -216,6 +269,7 @@
     add: add,
     update: update,
     remove: remove,
+    reloadFromStorage: reloadFromStorage,
     onChange: onChange,
     getStockQuote: getStockQuote,
     getCoinQuote: getCoinQuote,

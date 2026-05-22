@@ -477,10 +477,12 @@
       const origText = btn.textContent;
       btn.textContent = 'Adding…';
       try {
+        console.log('[portfolio] add() attempt:', { type: t, symbol: s, quantity: q, costBasis: c });
         const entry = PFCPortfolio.add({
           type: t, symbol: s, quantity: q,
           costBasis: isFinite(c) ? c : null,
         });
+        console.log('[portfolio] add() returned:', entry, '| list() now has', PFCPortfolio.list().length, 'items');
         if (!entry) {
           _toast('Could not add — please check the symbol and quantity', 'danger');
           return;
@@ -537,6 +539,7 @@
 
     // ─── PHASE 1: synchronous render from storage ──────────────────────
     const holdings = PFCPortfolio.list();
+    console.log('[portfolio] _refresh phase 1 — list() returned', holdings.length, 'holdings:', holdings);
     const placeholderValuations = holdings.map((h) => ({
       holding: h, quote: null, value: null,
       change24h_pct: null, change24h_value: null,
