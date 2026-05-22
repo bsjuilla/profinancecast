@@ -146,10 +146,11 @@
   .pf-btn-primary:hover{opacity:0.9}
 
   /* W16 §3 — allocation view toggle (By position / By asset class). */
-  .alloc-tabs{display:inline-flex;gap:4px;background:rgba(255,255,255,0.03);border:1px solid var(--border2);border-radius:8px;padding:3px}
-  .alloc-tab{background:transparent;border:none;color:var(--text3);font-size:11.5px;font-family:var(--font-body);padding:5px 10px;border-radius:5px;cursor:pointer;letter-spacing:0.01em;transition:background .15s,color .15s}
-  .alloc-tab:hover{color:var(--text2)}
-  .alloc-tab.active{background:rgba(43,182,125,0.12);color:var(--teal)}
+  /* W17-C — performance range tabs reuse the same visual treatment. */
+  .alloc-tabs,.perf-range-tabs{display:inline-flex;gap:4px;background:rgba(255,255,255,0.03);border:1px solid var(--border2);border-radius:8px;padding:3px}
+  .alloc-tab,.perf-tab{background:transparent;border:none;color:var(--text3);font-size:11.5px;font-family:var(--font-body);padding:5px 10px;border-radius:5px;cursor:pointer;letter-spacing:0.01em;transition:background .15s,color .15s}
+  .alloc-tab:hover,.perf-tab:hover{color:var(--text2)}
+  .alloc-tab.active,.perf-tab.active{background:rgba(43,182,125,0.12);color:var(--teal)}
 
   /* Pro-gate panel for free users */
   .pro-gate{background:linear-gradient(135deg,rgba(43,182,125,0.10),rgba(43,182,125,0.02));border:1px solid rgba(43,182,125,0.25);border-radius:var(--r);padding:28px 26px;margin-bottom:18px;display:none}
@@ -209,7 +210,7 @@
   <script src="js/pfc-storage.js"></script>
   <script src="js/pfc-currency.js"></script>
   <script src="js/pfc-user.js"></script>
-  <script src="js/pfc-portfolio.js?v=w17"></script>
+  <script src="js/pfc-portfolio.js?v=w17b"></script>
   <script src="js/pfc-entitlements.js"></script>
 
   <!-- Chart.js sync (defer would race the boot path — same fix that landed in 5e135d2). -->
@@ -407,7 +408,10 @@
             </table>
           </div>
           <div class="add-form-wrap">
-            <div class="add-form-heading">Add a new position</div>
+            <div class="add-form-heading" style="display:flex;align-items:center;justify-content:space-between;">
+              <span>Add a new position</span>
+              <button type="button" class="pf-btn-ghost" id="pf-csv-open" style="font-size:12px;padding:6px 12px;">Import CSV…</button>
+            </div>
             <div class="add-form-labels" aria-hidden="true">
               <span>Type</span>
               <span>Symbol or company name</span>
@@ -500,6 +504,64 @@
       </div>
     </div>
 
+    <!-- W17-D — CSV import modal. Hidden by default; opened from "Import CSV…" -->
+    <div class="pf-modal-backdrop" id="pf-csv-backdrop" hidden>
+      <div class="pf-modal" style="width:min(640px,100%);" role="dialog" aria-modal="true" aria-labelledby="pf-csv-title">
+        <div class="pf-modal-head">
+          <h3 id="pf-csv-title">Import positions from CSV</h3>
+          <button class="pf-modal-close" id="pf-csv-cancel" type="button" aria-label="Close">×</button>
+        </div>
+        <div class="pf-modal-body">
+          <div class="pf-edit-row">
+            <label>Paste your CSV</label>
+            <textarea id="pf-csv-text" rows="8" placeholder="symbol,quantity,cost_basis&#10;AAPL,10,175.50&#10;VOO,25,420.00&#10;BTC,0.5,42000.00" style="font-family:var(--font-mono,monospace);font-size:12px;"></textarea>
+            <div class="pf-edit-help">
+              First row should be headers. Accepted column names (case-insensitive): <code>symbol</code> / <code>ticker</code>, <code>quantity</code> / <code>shares</code> / <code>units</code>, <code>cost_basis</code> / <code>cost</code> / <code>price</code> / <code>avg_cost</code>, <code>type</code> (stock/crypto, defaults to stock). Crypto auto-detected for BTC/ETH/SOL/etc.
+              Supported formats: Fidelity, Schwab, Trading 212, Interactive Brokers, Robinhood, generic Excel export.
+            </div>
+          </div>
+          <div class="pf-edit-row">
+            <label for="pf-csv-file">…or upload a .csv file</label>
+            <input id="pf-csv-file" type="file" accept=".csv,text/csv" style="padding:6px;">
+          </div>
+          <div id="pf-csv-preview" style="display:none;">
+            <div class="pf-edit-row">
+              <label>Preview (<span id="pf-csv-count">0</span> valid rows)</label>
+              <div id="pf-csv-preview-table" style="max-height:160px;overflow-y:auto;background:rgba(255,255,255,0.02);border:1px solid var(--border2);border-radius:6px;padding:8px;font-family:var(--font-mono,monospace);font-size:11.5px;"></div>
+            </div>
+          </div>
+        </div>
+        <div class="pf-modal-foot">
+          <button type="button" class="pf-btn-ghost" id="pf-csv-cancel-2">Cancel</button>
+          <button type="button" class="pf-btn-primary" id="pf-csv-import" disabled>Import 0 positions</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- W17-C — Performance chart over time. Hidden until at least one
+         position with a costBasis OR addedAt is present. Honest back-
+         projection (not real historical prices) — see code comments. -->
+    <div class="card" id="pf-perf-card" style="display:none;margin-top:24px;">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Performance</div>
+          <div class="card-sub" id="pf-perf-sub">Back-projection · cost basis → current price</div>
+        </div>
+        <div class="perf-range-tabs" role="tablist" aria-label="Performance range">
+          <button class="perf-tab" data-perf="1m" type="button" role="tab">1m</button>
+          <button class="perf-tab" data-perf="3m" type="button" role="tab">3m</button>
+          <button class="perf-tab active" data-perf="1y" type="button" role="tab">1y</button>
+          <button class="perf-tab" data-perf="all" type="button" role="tab">All</button>
+        </div>
+      </div>
+      <div class="chart-host" style="height:280px;">
+        <canvas id="pf-perf-chart"></canvas>
+      </div>
+      <div style="font-size:11px;color:var(--text3);margin-top:10px;letter-spacing:.01em;">
+        Honest disclaimer: this is a back-projection, not real historical price data. Each position is linearly interpolated from its cost basis at <em>addedAt</em> to the current market price today. Positions without a cost basis are flat-lined at current price from their addedAt date. Real price volatility isn't shown.
+      </div>
+    </div>
+
     <!-- Empty state when Pro user has zero holdings -->
     <div class="card" id="pf-empty" style="display:none;">
       <div class="empty-state">
@@ -522,9 +584,9 @@
 
 </div>
 
-<script src="js/pfc-ticker-autocomplete.js?v=w17" defer></script>
-<script src="js/pfc-dividend-yields.js?v=w17" defer></script>
-<script src="js/inline/portfolio-main.js?v=w17"></script>
+<script src="js/pfc-ticker-autocomplete.js?v=w17b" defer></script>
+<script src="js/pfc-dividend-yields.js?v=w17b" defer></script>
+<script src="js/inline/portfolio-main.js?v=w17b"></script>
 <script src="js/inline/portfolio-auth.js"></script>
 </body>
 </html>

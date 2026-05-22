@@ -107,6 +107,8 @@
 
   // ── Holdings table render ───────────────────────────────────────────────
   let _chart = null;
+  let _perfChart = null;          // W17-C — performance line chart instance
+  let _perfRange = '1y';          // W17-C — '1m' | '3m' | '1y' | 'all'
   let _valuations = []; // last fetched, used for re-renders without re-fetching
   let _spyChangePct = null; // W17-A — SPY 24h change %, fetched on _refresh()
 
@@ -270,6 +272,198 @@
         console.error('[portfolio] update failed', e);
         _toast('Could not save changes', 'danger');
       }
+    });
+  }
+
+  // ── W17-D — CSV import ────────────────────────────────────────────────
+  //
+  // Permissive CSV parser. Supports common brokerage exports:
+  //   Fidelity:     Symbol,Description,Quantity,Last Price,Current Value...
+  //   Schwab:       Symbol,Description,Qty,Price,Cost Basis...
+  //   Trading 212:  Ticker,Shares,Avg. Cost...
+  //   Robinhood:    Instrument,Quantity,Average Cost,...
+  //   Generic:      symbol,quantity,cost_basis
+  //
+  // Detects header row, infers columns by fuzzy-matching well-known names.
+  // Type defaults to 'stock' but auto-detects 'crypto' for known tickers
+  // (BTC, ETH, SOL, USDT, USDC, BNB, XRP, ADA, DOGE, AVAX, DOT, MATIC,
+  // LINK, SHIB, LTC, BCH, ATOM, XLM, UNI, ETC).
+  const _CRYPTO_TICKERS = new Set([
+    'BTC','ETH','SOL','USDT','USDC','BNB','XRP','ADA','DOGE','AVAX',
+    'DOT','MATIC','LINK','SHIB','LTC','BCH','ATOM','XLM','UNI','ETC',
+    'NEAR','ALGO','ICP','FIL','VET','HBAR','APT','ARB','OP','SUI',
+    'INJ','TIA','RNDR','MKR','AAVE','CRO','FTM','SAND','TRX','TON',
+  ]);
+
+  function _parseCSV(text) {
+    // Minimal RFC-4180-style splitter: handles quoted fields with embedded
+    // commas but doesn't try to be a full RFC implementation. Good enough
+    // for brokerage exports which are mostly well-formed.
+    const rows = [];
+    const lines = String(text || '').split(/\r?\n/);
+    for (const line of lines) {
+      if (!line.trim()) continue;
+      const row = [];
+      let cur = '', inQ = false;
+      for (let i = 0; i < line.length; i++) {
+        const c = line[i];
+        if (c === '"') { inQ = !inQ; continue; }
+        if (c === ',' && !inQ) { row.push(cur.trim()); cur = ''; continue; }
+        cur += c;
+      }
+      row.push(cur.trim());
+      rows.push(row);
+    }
+    return rows;
+  }
+
+  function _matchCol(header, candidates) {
+    const h = header.toLowerCase().replace(/[_\s-]+/g, '');
+    for (const c of candidates) {
+      const norm = c.toLowerCase().replace(/[_\s-]+/g, '');
+      if (h === norm) return true;
+      if (h.indexOf(norm) !== -1) return true;
+    }
+    return false;
+  }
+
+  function _detectColumns(headerRow) {
+    const cols = { symbol: -1, quantity: -1, cost: -1, type: -1 };
+    for (let i = 0; i < headerRow.length; i++) {
+      const h = headerRow[i] || '';
+      if (cols.symbol === -1 && _matchCol(h, ['symbol', 'ticker', 'instrument', 'security'])) cols.symbol = i;
+      else if (cols.quantity === -1 && _matchCol(h, ['quantity', 'shares', 'qty', 'units'])) cols.quantity = i;
+      else if (cols.cost === -1 && _matchCol(h, ['costbasis', 'cost', 'avgcost', 'averagecost', 'avgprice', 'purchaseprice', 'pricepaid'])) cols.cost = i;
+      else if (cols.type === -1 && _matchCol(h, ['type', 'assettype', 'class'])) cols.type = i;
+    }
+    return cols;
+  }
+
+  function _parseCSVToRows(text) {
+    const raw = _parseCSV(text);
+    if (raw.length === 0) return { rows: [], error: 'No data found' };
+    // Detect header: if first row has any non-numeric cells, treat as header
+    const hasHeader = raw[0].some((c) => c && isNaN(parseFloat(c)));
+    const headerRow = hasHeader ? raw[0] : ['symbol', 'quantity', 'cost'];
+    const dataRows = hasHeader ? raw.slice(1) : raw;
+    const cols = _detectColumns(headerRow);
+    if (cols.symbol === -1) return { rows: [], error: 'No symbol/ticker column detected. Header expected like: symbol,quantity,cost' };
+    if (cols.quantity === -1) return { rows: [], error: 'No quantity/shares column detected.' };
+    const parsed = [];
+    for (let i = 0; i < dataRows.length; i++) {
+      const r = dataRows[i];
+      const sym = (r[cols.symbol] || '').trim().toUpperCase().replace(/[^A-Z0-9.\-]/g, '');
+      const q = parseFloat((r[cols.quantity] || '').replace(/[^\d.\-]/g, ''));
+      const c = cols.cost !== -1 ? parseFloat((r[cols.cost] || '').replace(/[^\d.\-]/g, '')) : NaN;
+      let t = cols.type !== -1 ? String(r[cols.type] || '').toLowerCase() : 'stock';
+      if (t.indexOf('crypto') !== -1 || t.indexOf('coin') !== -1) t = 'crypto';
+      else if (_CRYPTO_TICKERS.has(sym)) t = 'crypto';
+      else t = 'stock';
+      if (!sym || !isFinite(q) || q <= 0) {
+        parsed.push({ raw: r.join(','), ok: false, reason: !sym ? 'no symbol' : 'invalid quantity' });
+        continue;
+      }
+      parsed.push({ symbol: sym, quantity: q, costBasis: isFinite(c) && c > 0 ? c : null, type: t, ok: true });
+    }
+    return { rows: parsed, error: null };
+  }
+
+  let _csvParsed = [];
+  function _renderCSVPreview() {
+    const previewWrap = document.getElementById('pf-csv-preview');
+    const previewTable = document.getElementById('pf-csv-preview-table');
+    const countEl = document.getElementById('pf-csv-count');
+    const importBtn = document.getElementById('pf-csv-import');
+    const validRows = _csvParsed.filter((r) => r.ok);
+    if (_csvParsed.length === 0) {
+      previewWrap.style.display = 'none';
+      importBtn.disabled = true;
+      importBtn.textContent = 'Import 0 positions';
+      return;
+    }
+    previewWrap.style.display = '';
+    countEl.textContent = String(validRows.length);
+    importBtn.disabled = validRows.length === 0;
+    importBtn.textContent = 'Import ' + validRows.length + ' position' + (validRows.length === 1 ? '' : 's');
+    previewTable.innerHTML = _csvParsed.slice(0, 50).map((r) => {
+      if (!r.ok) {
+        return '<div style="color:#E07B7B;">⚠ ' + _esc(r.raw) + ' — ' + _esc(r.reason) + '</div>';
+      }
+      const cost = r.costBasis ? ' · cost ' + _sym() + r.costBasis : '';
+      return '<div style="color:var(--text2);">✓ <strong style="color:var(--text);">' + _esc(r.symbol) + '</strong> · ' + r.quantity + ' · ' + r.type + cost + '</div>';
+    }).join('');
+    if (_csvParsed.length > 50) {
+      previewTable.innerHTML += '<div style="color:var(--text3);margin-top:6px;">…and ' + (_csvParsed.length - 50) + ' more rows</div>';
+    }
+  }
+
+  function _wireCSVImport() {
+    const openBtn = document.getElementById('pf-csv-open');
+    const backdrop = document.getElementById('pf-csv-backdrop');
+    if (!openBtn || !backdrop) return;
+    const textArea = document.getElementById('pf-csv-text');
+    const fileInput = document.getElementById('pf-csv-file');
+    const importBtn = document.getElementById('pf-csv-import');
+
+    function open() {
+      textArea.value = '';
+      _csvParsed = [];
+      _renderCSVPreview();
+      backdrop.hidden = false;
+      setTimeout(() => textArea.focus(), 50);
+    }
+    function close() { backdrop.hidden = true; }
+
+    openBtn.addEventListener('click', open);
+    document.getElementById('pf-csv-cancel').addEventListener('click', close);
+    document.getElementById('pf-csv-cancel-2').addEventListener('click', close);
+    backdrop.addEventListener('click', (e) => { if (e.target === backdrop) close(); });
+    document.addEventListener('keydown', (e) => {
+      if (!backdrop.hidden && e.key === 'Escape') close();
+    });
+
+    function onText() {
+      const result = _parseCSVToRows(textArea.value);
+      if (result.error) {
+        _csvParsed = [];
+        _renderCSVPreview();
+        return;
+      }
+      _csvParsed = result.rows;
+      _renderCSVPreview();
+    }
+    textArea.addEventListener('input', onText);
+
+    fileInput.addEventListener('change', (e) => {
+      const f = e.target.files && e.target.files[0];
+      if (!f) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        textArea.value = reader.result;
+        onText();
+      };
+      reader.onerror = () => _toast('Could not read file', 'danger');
+      reader.readAsText(f);
+    });
+
+    importBtn.addEventListener('click', () => {
+      const valid = _csvParsed.filter((r) => r.ok);
+      if (valid.length === 0) return;
+      let added = 0, skipped = 0;
+      for (const r of valid) {
+        try {
+          const entry = PFCPortfolio.add({
+            type: r.type, symbol: r.symbol, quantity: r.quantity,
+            costBasis: r.costBasis,
+          });
+          if (entry) added++; else skipped++;
+        } catch (_) { skipped++; }
+      }
+      close();
+      const msg = added + ' position' + (added === 1 ? '' : 's') + ' imported'
+        + (skipped > 0 ? ' · ' + skipped + ' skipped' : '');
+      _toast(msg, added > 0 ? 'success' : 'danger');
+      _refresh();
     });
   }
 
@@ -483,6 +677,153 @@
     });
   }
 
+  // ── W17-C — Performance chart over time ───────────────────────────────
+  //
+  // We don't have historical price data — so we DON'T pretend to. Each
+  // position is linearly interpolated from (addedAt, costBasis) to
+  // (today, currentValue). Positions without cost basis are flat-lined
+  // at current value from their addedAt date. The chart aggregates the
+  // sum across positions per monthly bucket.
+  //
+  // This is honest: the user sees their portfolio's growth as positions
+  // were added + as cost-basis-recorded positions appreciated. It does
+  // NOT show real market volatility, which would require an /api/history
+  // endpoint we haven't built yet.
+  function _rangeStartDate(range) {
+    const now = new Date();
+    const d = new Date(now);
+    if (range === '1m') d.setMonth(d.getMonth() - 1);
+    else if (range === '3m') d.setMonth(d.getMonth() - 3);
+    else if (range === '1y') d.setFullYear(d.getFullYear() - 1);
+    else { // 'all'
+      // Earliest addedAt across holdings, or 1 year ago as fallback
+      let earliest = now.getTime();
+      for (const v of _valuations) {
+        const at = v.holding && v.holding.addedAt;
+        if (isFinite(at) && at < earliest) earliest = at;
+      }
+      return new Date(earliest);
+    }
+    return d;
+  }
+
+  function _buildPerfSeries(valuations, range) {
+    const startDate = _rangeStartDate(range);
+    const endDate = new Date();
+    // Bucket by month if range >= 3m, weekly if range == 1m
+    const isWeekly = range === '1m';
+    const labels = [];
+    const values = [];
+    const cursor = new Date(startDate);
+    if (isWeekly) {
+      cursor.setHours(0,0,0,0);
+    } else {
+      cursor.setDate(1);
+      cursor.setHours(0,0,0,0);
+    }
+    while (cursor <= endDate) {
+      const t = cursor.getTime();
+      let sumAt = 0;
+      for (const v of valuations) {
+        const h = v.holding;
+        if (!h || !isFinite(v.value)) continue;
+        const addedAt = isFinite(h.addedAt) ? h.addedAt : (endDate.getTime() - 365*24*3600*1000);
+        if (t < addedAt) continue; // position didn't exist yet
+        const qty = parseFloat(h.quantity) || 0;
+        const cost = isFinite(h.costBasis) && h.costBasis > 0 ? h.costBasis * qty : null;
+        if (cost == null) {
+          // No cost basis — flat-line at current value from addedAt
+          sumAt += v.value;
+        } else {
+          // Linear interpolation from cost (at addedAt) to currentValue (at endDate)
+          const span = Math.max(1, endDate.getTime() - addedAt);
+          const progress = Math.min(1, Math.max(0, (t - addedAt) / span));
+          sumAt += cost + (v.value - cost) * progress;
+        }
+      }
+      labels.push(new Intl.DateTimeFormat(undefined, { month: 'short', year: isWeekly ? undefined : '2-digit', day: isWeekly ? 'numeric' : undefined }).format(cursor));
+      values.push(Math.round(sumAt));
+      if (isWeekly) cursor.setDate(cursor.getDate() + 7);
+      else cursor.setMonth(cursor.getMonth() + 1);
+    }
+    // Append today as the last point so the line lands at the live total
+    let liveTotal = 0;
+    for (const v of valuations) {
+      if (isFinite(v.value)) liveTotal += v.value;
+    }
+    labels.push('Today');
+    values.push(Math.round(liveTotal));
+    return { labels, values };
+  }
+
+  function _renderPerfChart(valuations) {
+    const card = document.getElementById('pf-perf-card');
+    if (!card) return;
+    const canvas = document.getElementById('pf-perf-chart');
+    if (!canvas || typeof Chart === 'undefined') { card.style.display = 'none'; return; }
+    // Hide the card entirely when no positions
+    if (!valuations.length) { card.style.display = 'none'; return; }
+    card.style.display = '';
+
+    const series = _buildPerfSeries(valuations, _perfRange);
+    if (_perfChart) _perfChart.destroy();
+    const subEl = document.getElementById('pf-perf-sub');
+    if (subEl) {
+      const rangeLabel = _perfRange === '1m' ? 'Past month' : _perfRange === '3m' ? 'Past 3 months' : _perfRange === '1y' ? 'Past year' : 'All time';
+      subEl.textContent = rangeLabel + ' · back-projection from cost basis';
+    }
+    _perfChart = new Chart(canvas, {
+      type: 'line',
+      data: {
+        labels: series.labels,
+        datasets: [{
+          label: 'Portfolio value',
+          data: series.values,
+          borderColor: '#2BB67D',
+          backgroundColor: 'rgba(43,182,125,0.10)',
+          borderWidth: 2,
+          pointRadius: 0,
+          pointHoverRadius: 4,
+          pointHoverBackgroundColor: '#2BB67D',
+          tension: 0.35,
+          fill: true,
+        }],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#16271F',
+            borderColor: 'rgba(255,255,255,0.1)',
+            borderWidth: 1,
+            titleColor: '#F0EDE2',
+            bodyColor: '#B8C2BC',
+            padding: 10,
+            callbacks: { label: (c) => ' ' + _fmt(c.parsed.y) },
+          },
+        },
+        scales: {
+          x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#4A5A6E', font: { size: 11 }, maxRotation: 0, autoSkipPadding: 16 } },
+          y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#4A5A6E', font: { size: 11 }, callback: (v) => _sym() + (v >= 1000 ? (v/1000).toFixed(0)+'k' : v) } },
+        },
+      },
+    });
+  }
+
+  function _wirePerfTabs() {
+    document.querySelectorAll('.perf-tab').forEach((tab) => {
+      tab.addEventListener('click', () => {
+        const r = tab.getAttribute('data-perf');
+        if (!r || r === _perfRange) return;
+        _perfRange = r;
+        document.querySelectorAll('.perf-tab').forEach((t) => t.classList.toggle('active', t === tab));
+        if (_valuations.length) _renderPerfChart(_valuations);
+      });
+    });
+  }
+
   // ── Add-form submission ─────────────────────────────────────────────────
   function _wireAddForm() {
     const btn = document.getElementById('pf-add');
@@ -594,6 +935,7 @@
     _renderKPIs(placeholderValuations);
     _renderTable(placeholderValuations);
     _renderChart(placeholderValuations);
+    _renderPerfChart(placeholderValuations);
 
     if (placeholderValuations.length === 0) {
       document.getElementById('pf-empty').style.display = 'block';
@@ -628,6 +970,7 @@
     _renderKPIs(valuations);
     _renderTable(valuations);
     _renderChart(valuations);
+    _renderPerfChart(valuations);
 
     const errs = valuations.filter((v) => v.error).length;
     const cryptoFallback = valuations.find((v) =>
@@ -653,7 +996,9 @@
     }
     _wireAddForm();
     _wireAllocTabs();
+    _wirePerfTabs();
     _wireEditModal();
+    _wireCSVImport();
     const refreshBtn = document.getElementById('pf-refresh-btn');
     if (refreshBtn) refreshBtn.addEventListener('click', _refresh);
     _detectSetup();
