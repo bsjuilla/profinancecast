@@ -519,18 +519,49 @@
   }
 
   // ── Main refresh path ───────────────────────────────────────────────────
+  //
+  // W16-bug — split-phase render. Founder reported "TSLA added · 56 shares"
+  // toast fired but the table stayed empty. Root cause: the OLD path awaited
+  // the quote-API fetch before rendering ANY row. If the API was slow, the
+  // user saw no row appear. Now we:
+  //   Phase 1 (sync, immediate) — render placeholder rows from list()
+  //   Phase 2 (async) — replace with live prices when the fetch resolves
+  // The row exists in storage the moment add() returns, so Phase 1 is
+  // guaranteed to draw it. The quote API can fail entirely and the row
+  // still renders with "—" placeholders + an error badge.
   async function _refresh() {
     if (!_planAllowsPortfolio()) { _showProGate(true); return; }
     _showProGate(false);
 
     const vsCur = _isoCode();
-    document.getElementById('pf-sub').textContent = 'Fetching live prices…';
-    let valuations = [];
+
+    // ─── PHASE 1: synchronous render from storage ──────────────────────
+    const holdings = PFCPortfolio.list();
+    const placeholderValuations = holdings.map((h) => ({
+      holding: h, quote: null, value: null,
+      change24h_pct: null, change24h_value: null,
+      error: null,  // not an error — just pending
+    }));
+    _valuations = placeholderValuations;
+    _renderKPIs(placeholderValuations);
+    _renderTable(placeholderValuations);
+    _renderChart(placeholderValuations);
+
+    if (placeholderValuations.length === 0) {
+      document.getElementById('pf-empty').style.display = 'block';
+      document.getElementById('pf-sub').textContent = 'No holdings yet';
+      return; // nothing to fetch
+    }
+    document.getElementById('pf-empty').style.display = 'none';
+    document.getElementById('pf-sub').textContent = `Tracking ${holdings.length} holding${holdings.length===1?'':'s'} · fetching live prices…`;
+
+    // ─── PHASE 2: async quote fetch (best-effort) ──────────────────────
+    let valuations = placeholderValuations;
     try {
       valuations = await PFCPortfolio.getPortfolioValuations(vsCur);
     } catch (e) {
       console.error('[portfolio] valuations failed', e);
-      valuations = PFCPortfolio.list().map((h) => ({
+      valuations = holdings.map((h) => ({
         holding: h, quote: null, value: null,
         change24h_pct: null, change24h_value: null,
         error: { message: e.message, code: 'BATCH_FAIL' },
@@ -541,28 +572,19 @@
     _renderTable(valuations);
     _renderChart(valuations);
 
-    if (valuations.length === 0) {
-      document.getElementById('pf-empty').style.display = 'block';
-      document.getElementById('pf-sub').textContent = 'No holdings yet';
-    } else {
-      const errs = valuations.filter((v) => v.error).length;
-      // Crypto fallback notice: if any crypto holding got a different vs_currency
-      // than requested, surface "Displayed in USD — your local currency isn't
-      // in CoinGecko's fiat list" so users understand why MUR/PKR/etc isn't
-      // showing on their portfolio.
-      const cryptoFallback = valuations.find((v) =>
-        v.quote && v.quote.requested_vs_currency &&
-        v.quote.requested_vs_currency !== v.quote.vs_currency
-      );
-      let baseMsg = errs > 0
-        ? `Tracking ${valuations.length} holding${valuations.length===1?'':'s'} · ${errs} pricing error${errs===1?'':'s'}`
-        : `Tracking ${valuations.length} holding${valuations.length===1?'':'s'} · live`;
-      if (cryptoFallback) {
-        const req = String(cryptoFallback.quote.requested_vs_currency).toUpperCase();
-        baseMsg += ` · crypto shown in USD (CoinGecko doesn't price in ${req})`;
-      }
-      document.getElementById('pf-sub').textContent = baseMsg;
+    const errs = valuations.filter((v) => v.error).length;
+    const cryptoFallback = valuations.find((v) =>
+      v.quote && v.quote.requested_vs_currency &&
+      v.quote.requested_vs_currency !== v.quote.vs_currency
+    );
+    let baseMsg = errs > 0
+      ? `Tracking ${valuations.length} holding${valuations.length===1?'':'s'} · ${errs} pricing error${errs===1?'':'s'}`
+      : `Tracking ${valuations.length} holding${valuations.length===1?'':'s'} · live`;
+    if (cryptoFallback) {
+      const req = String(cryptoFallback.quote.requested_vs_currency).toUpperCase();
+      baseMsg += ` · crypto shown in USD (CoinGecko doesn't price in ${req})`;
     }
+    document.getElementById('pf-sub').textContent = baseMsg;
   }
 
   // ── Boot ────────────────────────────────────────────────────────────────
