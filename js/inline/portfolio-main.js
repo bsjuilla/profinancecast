@@ -232,6 +232,8 @@
     document.getElementById('pf-edit-override').value = Number.isFinite(holding.overridePrice) ? holding.overridePrice : '';
     document.getElementById('pf-edit-recurring').value = Number.isFinite(holding.recurringMonthly) ? holding.recurringMonthly : '';
     document.getElementById('pf-edit-note').value = holding.note || '';
+    // W22 — render the lots list
+    _renderLots(holding);
     // Mark the active tag swatch
     document.querySelectorAll('#pf-edit-tags .pf-tag-swatch').forEach((sw) => {
       sw.classList.toggle('selected', sw.getAttribute('data-tag') === (holding.tag || ''));
@@ -243,11 +245,86 @@
     _editingId = null;
     document.getElementById('pf-edit-backdrop').hidden = true;
   }
+  // W22 — render the lots list inside the edit modal. Each lot shows
+  // its qty, cost basis, and addedAt date. A small × button removes the
+  // lot (with confirmation if it's the last one — would leave the
+  // holding with quantity 0).
+  function _renderLots(holding) {
+    const container = document.getElementById('pf-edit-lots');
+    if (!container) return;
+    const lots = Array.isArray(holding.lots) ? holding.lots : [];
+    container.innerHTML = lots.map((lot, i) => {
+      const date = lot.addedAt ? new Date(lot.addedAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '—';
+      const costStr = (lot.costBasis != null && Number.isFinite(lot.costBasis))
+        ? _fmt(lot.costBasis) + '/unit'
+        : '(no cost basis)';
+      return '<div class="pf-lot-row">'
+        + '<span class="pf-lot-num">#' + (i + 1) + '</span>'
+        + '<span class="pf-lot-qty">' + (parseFloat(lot.qty) || 0).toLocaleString(undefined, { maximumFractionDigits: 8 }) + '</span>'
+        + '<span class="pf-lot-cost">@ ' + _esc(costStr) + '</span>'
+        + '<span class="pf-lot-date">' + _esc(date) + '</span>'
+        + (lots.length > 1 ? '<button type="button" class="pf-lot-del" data-lot-id="' + _esc(lot.id) + '" title="Remove this lot">×</button>' : '')
+        + '</div>';
+    }).join('');
+    // Wire per-lot delete buttons
+    container.querySelectorAll('.pf-lot-del').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const lotId = btn.getAttribute('data-lot-id');
+        if (!lotId || !_editingId) return;
+        if (!PFCPortfolio.removeLot(_editingId, lotId)) {
+          _toast('Could not remove lot', 'danger');
+          return;
+        }
+        // Re-render the modal with the now-shorter lot list
+        const updated = PFCPortfolio.list().find((h) => h.id === _editingId);
+        if (updated) {
+          document.getElementById('pf-edit-qty').value = updated.quantity;
+          document.getElementById('pf-edit-cost').value = Number.isFinite(updated.costBasis) ? updated.costBasis : '';
+          _renderLots(updated);
+        }
+        _toast('Lot removed', 'neutral');
+      });
+    });
+  }
+
   function _wireEditModal() {
     const backdrop = document.getElementById('pf-edit-backdrop');
     if (!backdrop) return;
     document.getElementById('pf-edit-cancel').addEventListener('click', _closeEditModal);
     document.getElementById('pf-edit-cancel-2').addEventListener('click', _closeEditModal);
+    // W22 — "Add buy" button — appends a new lot to the holding
+    const addBtn = document.getElementById('pf-lot-add-btn');
+    if (addBtn) {
+      addBtn.addEventListener('click', () => {
+        if (!_editingId) return;
+        const qtyEl = document.getElementById('pf-lot-add-qty');
+        const costEl = document.getElementById('pf-lot-add-cost');
+        const qty = parseFloat(qtyEl.value);
+        const cost = parseFloat(costEl.value);
+        if (!Number.isFinite(qty) || qty <= 0) {
+          _toast('Please enter a quantity for the new buy', 'danger');
+          qtyEl.focus();
+          return;
+        }
+        const lot = PFCPortfolio.addLot(_editingId, {
+          qty: qty,
+          costBasis: Number.isFinite(cost) && cost > 0 ? cost : null,
+        });
+        if (!lot) {
+          _toast('Could not add lot', 'danger');
+          return;
+        }
+        qtyEl.value = ''; costEl.value = '';
+        // Re-render with new lot included + updated aggregates
+        const updated = PFCPortfolio.list().find((h) => h.id === _editingId);
+        if (updated) {
+          document.getElementById('pf-edit-qty').value = updated.quantity;
+          document.getElementById('pf-edit-cost').value = Number.isFinite(updated.costBasis) ? updated.costBasis : '';
+          _renderLots(updated);
+        }
+        _toast('Buy added · weighted-avg cost updated', 'success');
+      });
+    }
     backdrop.addEventListener('click', (e) => { if (e.target === backdrop) _closeEditModal(); });
     document.addEventListener('keydown', (e) => {
       if (!backdrop.hidden && e.key === 'Escape') _closeEditModal();
@@ -1158,7 +1235,7 @@
   // W18-fix — previous version appended to pf-sub which got wiped by
   // textContent= updates. Now we insert as a SIBLING of pf-sub, not a
   // child, so pf-sub's text updates don't clobber it.
-  const PFC_PORTFOLIO_BUILD = 'w21-2026-05-22-16:00';
+  const PFC_PORTFOLIO_BUILD = 'w22-2026-05-22-16:45';
   function _stampVersion() {
     const sub = document.getElementById('pf-sub');
     if (!sub || !sub.parentNode) return;

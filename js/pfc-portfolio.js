@@ -109,6 +109,44 @@
     if (_memList !== null) return;
     _memList = _loadFromStorage();
     if (_memList.length > 0) _storageWarmedAt = _now();
+    // W22 — migrate any pre-lot holdings to single-lot shape on first read.
+    // Backwards compatible: holdings stored before W22 only have
+    // {quantity, costBasis, addedAt}. Synthesize a single lot derived
+    // from those fields. New writes always include lots[].
+    let migrated = false;
+    for (let i = 0; i < _memList.length; i++) {
+      const h = _memList[i];
+      if (!Array.isArray(h.lots)) {
+        h.lots = [{
+          id: 'lot_' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4),
+          qty: parseFloat(h.quantity) || 0,
+          costBasis: (h.costBasis != null && Number.isFinite(parseFloat(h.costBasis))) ? parseFloat(h.costBasis) : null,
+          addedAt: Number.isFinite(h.addedAt) ? h.addedAt : _now(),
+        }];
+        migrated = true;
+      }
+    }
+    if (migrated) _persist(_memList);
+  }
+
+  // W22 — derive aggregate quantity + weighted-avg cost basis from lots[].
+  // Called whenever a lot is added/removed/edited. Mutates the holding
+  // in place. Lots without a cost basis are EXCLUDED from the weighted
+  // average (user didn't record cost) but still contribute to quantity.
+  function _recomputeAggregates(h) {
+    if (!Array.isArray(h.lots) || h.lots.length === 0) return;
+    let totalQty = 0;
+    let weightedCostSum = 0, weightedQty = 0;
+    for (const lot of h.lots) {
+      const lq = parseFloat(lot.qty) || 0;
+      totalQty += lq;
+      if (lot.costBasis != null && Number.isFinite(parseFloat(lot.costBasis)) && parseFloat(lot.costBasis) > 0) {
+        weightedCostSum += parseFloat(lot.costBasis) * lq;
+        weightedQty += lq;
+      }
+    }
+    h.quantity = totalQty;
+    h.costBasis = weightedQty > 0 ? weightedCostSum / weightedQty : null;
   }
 
   // Re-poll storage on first read after a storage-warm event. If our
@@ -176,6 +214,14 @@
         ? parseFloat(h.overridePrice) : null,
       addedAt: _now(),
     };
+    // W22 — initialise lots[] with a single lot derived from the input.
+    // Subsequent buys append to lots[] via PFCPortfolio.addLot().
+    entry.lots = [{
+      id: 'lot_' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4),
+      qty: entry.quantity,
+      costBasis: entry.costBasis,
+      addedAt: entry.addedAt,
+    }];
     _ensureLoaded();
     _memList.push(entry);
     _persist(_memList);
@@ -213,6 +259,48 @@
     const before = _memList.length;
     _memList = _memList.filter((h) => h.id !== id);
     if (_memList.length === before) return false;
+    _persist(_memList);
+    _fireChange();
+    return true;
+  }
+
+  // W22 — append a new lot (additional buy) to a holding. The aggregate
+  // quantity + weighted-avg cost basis is recomputed. Returns the new
+  // lot object on success, null on failure.
+  function addLot(holdingId, lotPatch) {
+    _ensureLoaded();
+    const i = _memList.findIndex((h) => h.id === holdingId);
+    if (i === -1) return null;
+    const qty = parseFloat(lotPatch && lotPatch.qty);
+    if (!Number.isFinite(qty) || qty <= 0) return null;
+    const lot = {
+      id: 'lot_' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4),
+      qty: qty,
+      costBasis: (lotPatch && lotPatch.costBasis != null && Number.isFinite(parseFloat(lotPatch.costBasis)) && parseFloat(lotPatch.costBasis) > 0)
+        ? parseFloat(lotPatch.costBasis) : null,
+      addedAt: (lotPatch && Number.isFinite(lotPatch.addedAt)) ? lotPatch.addedAt : _now(),
+    };
+    _memList[i].lots = Array.isArray(_memList[i].lots) ? _memList[i].lots : [];
+    _memList[i].lots.push(lot);
+    _recomputeAggregates(_memList[i]);
+    _persist(_memList);
+    _fireChange();
+    return lot;
+  }
+
+  // W22 — remove a lot by id. Recomputes aggregates. Returns true on
+  // success. If the last lot is removed, the holding's quantity becomes
+  // 0 and the aggregate cost basis becomes null.
+  function removeLot(holdingId, lotId) {
+    _ensureLoaded();
+    const i = _memList.findIndex((h) => h.id === holdingId);
+    if (i === -1) return false;
+    const lots = _memList[i].lots;
+    if (!Array.isArray(lots)) return false;
+    const before = lots.length;
+    _memList[i].lots = lots.filter((l) => l.id !== lotId);
+    if (_memList[i].lots.length === before) return false;
+    _recomputeAggregates(_memList[i]);
     _persist(_memList);
     _fireChange();
     return true;
@@ -364,6 +452,8 @@
     add: add,
     update: update,
     remove: remove,
+    addLot: addLot,
+    removeLot: removeLot,
     reloadFromStorage: reloadFromStorage,
     onChange: onChange,
     getStockQuote: getStockQuote,

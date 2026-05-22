@@ -121,6 +121,14 @@
   .h-tag-dot.tag-red{background:#E07B7B}
   /* W19 — manual price override badge on per-row price cell */
   .h-manual-pill{display:inline-block;font-size:9.5px;text-transform:uppercase;letter-spacing:.08em;padding:1px 5px;border-radius:3px;background:rgba(212,175,106,0.15);color:var(--gold,#D4AF6A);border:1px solid rgba(212,175,106,0.25);margin-left:6px;font-family:var(--font-body);vertical-align:middle}
+  /* W22 — tax-lot list in edit modal */
+  .pf-lot-row{display:flex;gap:8px;align-items:center;padding:6px 10px;background:rgba(255,255,255,0.02);border:1px solid var(--border2);border-radius:6px;font-size:12px;font-family:var(--font-mono,monospace);}
+  .pf-lot-row .pf-lot-num{color:var(--text3);min-width:24px;}
+  .pf-lot-row .pf-lot-qty{color:var(--text);font-weight:500;min-width:60px;text-align:right;}
+  .pf-lot-row .pf-lot-cost{color:var(--text2);flex:1;}
+  .pf-lot-row .pf-lot-date{color:var(--text3);font-size:10.5px;}
+  .pf-lot-row .pf-lot-del{background:transparent;border:none;color:var(--text3);cursor:pointer;padding:2px 6px;border-radius:3px;font-size:14px;line-height:1;}
+  .pf-lot-row .pf-lot-del:hover{color:#E07B7B;background:rgba(224,123,123,0.08);}
   .h-note-icon{font-size:11px;color:var(--text3);margin-left:6px;cursor:help}
   .pf-modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,0.55);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px}
   .pf-modal-backdrop[hidden]{display:none !important}
@@ -212,7 +220,7 @@
   <script src="js/pfc-storage.js"></script>
   <script src="js/pfc-currency.js"></script>
   <script src="js/pfc-user.js"></script>
-  <script src="js/pfc-portfolio.js?v=w21"></script>
+  <script src="js/pfc-portfolio.js?v=w22"></script>
   <script src="js/pfc-entitlements.js"></script>
 
   <!-- Chart.js sync (defer would race the boot path — same fix that landed in 5e135d2). -->
@@ -474,8 +482,19 @@
             <input id="pf-edit-qty" type="number" min="0" step="any">
           </div>
           <div class="pf-edit-row">
-            <label for="pf-edit-cost">Cost basis (per unit)</label>
+            <label for="pf-edit-cost">Cost basis (per unit, weighted average)</label>
             <input id="pf-edit-cost" type="number" min="0" step="any" placeholder="—">
+            <div class="pf-edit-help" id="pf-edit-cost-help">Aggregate across all lots below. Editing this value rewrites lot #1's cost basis only.</div>
+          </div>
+          <div class="pf-edit-row">
+            <label>Tax lots (W22)</label>
+            <div id="pf-edit-lots" style="display:flex;flex-direction:column;gap:6px;"></div>
+            <div style="display:flex;gap:8px;align-items:center;margin-top:8px;">
+              <input id="pf-lot-add-qty" type="number" min="0" step="any" placeholder="Qty" style="flex:0 0 80px;">
+              <input id="pf-lot-add-cost" type="number" min="0" step="any" placeholder="Price/unit" style="flex:1;">
+              <button type="button" class="pf-btn-ghost" id="pf-lot-add-btn" style="font-size:12px;padding:6px 12px;white-space:nowrap;">+ Add buy</button>
+            </div>
+            <div class="pf-edit-help">Each row is a separate buy with its own cost basis and date. Used for accurate weighted-average cost. Sell tracking + FIFO/LIFO capital-gains in v2.</div>
           </div>
           <div class="pf-edit-row">
             <label for="pf-edit-override">Manual price override (per unit)</label>
@@ -591,9 +610,9 @@
 
 </div>
 
-<script src="js/pfc-ticker-autocomplete.js?v=w21" defer></script>
-<script src="js/pfc-dividend-yields.js?v=w21" defer></script>
-<script src="js/inline/portfolio-main.js?v=w21"></script>
+<script src="js/pfc-ticker-autocomplete.js?v=w22" defer></script>
+<script src="js/pfc-dividend-yields.js?v=w22" defer></script>
+<script src="js/inline/portfolio-main.js?v=w22"></script>
 <script src="js/inline/portfolio-auth.js"></script>
 </body>
 </html>
