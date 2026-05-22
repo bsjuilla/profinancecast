@@ -126,7 +126,10 @@
       const isCrypto = h.type === 'crypto';
       const badge = `<span class="h-symbol-badge ${isCrypto?'crypto':''}">${_esc(h.symbol.slice(0,4))}</span>`;
       const nameSpan = (v.quote && v.quote.name) ? `<span class="h-symbol-name">${_esc(v.quote.name)}</span>` : '';
-      const tickerCell = `<div class="h-symbol">${badge}<div class="h-symbol-meta"><span class="h-symbol-ticker">${_esc(h.symbol)}</span>${nameSpan}</div></div>`;
+      // W16 §4 — small color-dot if a tag is set + tooltip-icon if a note exists.
+      const tagDot = h.tag ? `<span class="h-tag-dot tag-${_esc(h.tag)}" title="Tag: ${_esc(h.tag)}"></span>` : '';
+      const noteIcon = h.note ? `<span class="h-note-icon" title="${_esc(h.note)}">●</span>` : '';
+      const tickerCell = `<div class="h-symbol">${tagDot}${badge}<div class="h-symbol-meta"><span class="h-symbol-ticker">${_esc(h.symbol)}${noteIcon}</span>${nameSpan}</div></div>`;
 
       let priceCell = '—', valueCell = '—', deltaCell = '<span class="h-delta-zero">—</span>';
       let allTimeCell = '<span class="h-delta-zero" title="No cost basis recorded">—</span>';
@@ -159,6 +162,9 @@
         `<td class="right">${deltaCell}</td>` +
         `<td class="right">${allTimeCell}</td>` +
         `<td class="right"><div class="h-actions">` +
+          `<button class="h-icon-btn" data-action="edit" data-id="${_esc(h.id)}" title="Edit position">` +
+            `<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M8.5 1.5l2 2-6 6H2.5v-2l6-6z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>` +
+          `</button>` +
           `<button class="h-icon-btn danger" data-action="remove" data-id="${_esc(h.id)}" title="Remove">` +
             `<svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M3 3l6 6M9 3l-6 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>` +
           `</button>` +
@@ -171,8 +177,90 @@
       btn.addEventListener('click', () => {
         const id = btn.getAttribute('data-id');
         if (!id) return;
-        if (PFCPortfolio.remove(id)) _refresh();
+        if (PFCPortfolio.remove(id)) {
+          _toast('Position removed', 'neutral');
+          _refresh();
+        }
       });
+    });
+    // W16 §4 — edit handlers
+    tbody.querySelectorAll('button[data-action="edit"]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-id');
+        if (!id) return;
+        _openEditModal(id);
+      });
+    });
+  }
+
+  // W16 §4 — Edit-position modal. Loads the existing holding into the form,
+  // saves a patch via PFCPortfolio.update(). Cost basis, quantity, note, tag
+  // are all editable; symbol is shown read-only (changing the ticker would
+  // invalidate the cost basis and price history).
+  let _editingId = null;
+  function _openEditModal(id) {
+    const holding = PFCPortfolio.list().find((h) => h.id === id);
+    if (!holding) { _toast('Position not found', 'danger'); return; }
+    _editingId = id;
+    document.getElementById('pf-edit-symbol').value = holding.symbol;
+    document.getElementById('pf-edit-qty').value = holding.quantity;
+    document.getElementById('pf-edit-cost').value = isFinite(holding.costBasis) ? holding.costBasis : '';
+    document.getElementById('pf-edit-recurring').value = isFinite(holding.recurringMonthly) ? holding.recurringMonthly : '';
+    document.getElementById('pf-edit-note').value = holding.note || '';
+    // Mark the active tag swatch
+    document.querySelectorAll('#pf-edit-tags .pf-tag-swatch').forEach((sw) => {
+      sw.classList.toggle('selected', sw.getAttribute('data-tag') === (holding.tag || ''));
+    });
+    document.getElementById('pf-edit-backdrop').hidden = false;
+    document.getElementById('pf-edit-qty').focus();
+  }
+  function _closeEditModal() {
+    _editingId = null;
+    document.getElementById('pf-edit-backdrop').hidden = true;
+  }
+  function _wireEditModal() {
+    const backdrop = document.getElementById('pf-edit-backdrop');
+    if (!backdrop) return;
+    document.getElementById('pf-edit-cancel').addEventListener('click', _closeEditModal);
+    document.getElementById('pf-edit-cancel-2').addEventListener('click', _closeEditModal);
+    backdrop.addEventListener('click', (e) => { if (e.target === backdrop) _closeEditModal(); });
+    document.addEventListener('keydown', (e) => {
+      if (!backdrop.hidden && e.key === 'Escape') _closeEditModal();
+    });
+    // Tag swatch picker — single-select toggle
+    document.querySelectorAll('#pf-edit-tags .pf-tag-swatch').forEach((sw) => {
+      sw.addEventListener('click', () => {
+        document.querySelectorAll('#pf-edit-tags .pf-tag-swatch').forEach((s) => s.classList.remove('selected'));
+        sw.classList.add('selected');
+      });
+    });
+    document.getElementById('pf-edit-save').addEventListener('click', () => {
+      if (!_editingId) return;
+      const q = parseFloat(document.getElementById('pf-edit-qty').value);
+      const c = parseFloat(document.getElementById('pf-edit-cost').value);
+      const recur = parseFloat(document.getElementById('pf-edit-recurring').value);
+      const note = document.getElementById('pf-edit-note').value.trim();
+      const selSwatch = document.querySelector('#pf-edit-tags .pf-tag-swatch.selected');
+      const tag = selSwatch ? selSwatch.getAttribute('data-tag') : '';
+      if (!isFinite(q) || q <= 0) {
+        _toast('Quantity must be a positive number', 'danger');
+        return;
+      }
+      try {
+        PFCPortfolio.update(_editingId, {
+          quantity: q,
+          costBasis: isFinite(c) && c > 0 ? c : null,
+          recurringMonthly: isFinite(recur) && recur > 0 ? recur : null,
+          note: note || null,
+          tag: tag || null,
+        });
+        _closeEditModal();
+        _toast('Position updated', 'success');
+        _refresh();
+      } catch (e) {
+        console.error('[portfolio] update failed', e);
+        _toast('Could not save changes', 'danger');
+      }
     });
   }
 
@@ -224,6 +312,41 @@
         altHint.textContent = (isFinite(gainPct) ? _fmtPct(gainPct) : '—')
           + ' · ' + countedPositions + ' of ' + valuations.length + ' tracked';
         altHint.className = 'summary-hint ' + (gain > 0 ? 'delta-up' : gain < 0 ? 'delta-down' : '');
+      }
+    }
+
+    // W16 §5 — Projected-in-10y KPI. For each position:
+    //   FV = V0 * (1+r)^n + C * ((1+r)^n - 1) / r
+    // where V0 = current value, C = monthly contribution, r = monthly rate,
+    // n = 120 (10 years × 12 months). Assumed nominal annual return 7%
+    // (long-run global equity average per Dimson/Marsh/Staunton).
+    // Positions without recurring contributions just compound at 7%.
+    // The user can override the assumption later; for now it's a constant.
+    const ANNUAL_RATE = 0.07;
+    const r = ANNUAL_RATE / 12;
+    const n = 120;
+    const growthFactor = Math.pow(1 + r, n);
+    let projTotal = 0, recurringCount = 0;
+    for (const v of valuations) {
+      const h = v.holding;
+      if (!isFinite(v.value)) continue;
+      const V0 = v.value;
+      const C = isFinite(h.recurringMonthly) && h.recurringMonthly > 0 ? h.recurringMonthly : 0;
+      const fv = V0 * growthFactor + (C > 0 ? C * (growthFactor - 1) / r : 0);
+      projTotal += fv;
+      if (C > 0) recurringCount++;
+    }
+    const projVal = document.getElementById('pf-proj-val');
+    const projHint = document.getElementById('pf-proj-hint');
+    if (projVal && projHint) {
+      if (valuations.length === 0) {
+        projVal.textContent = '—';
+        projHint.textContent = 'Add positions to project';
+      } else {
+        projVal.textContent = _fmt(projTotal);
+        projHint.textContent = recurringCount > 0
+          ? recurringCount + ' position' + (recurringCount===1?'':'s') + ' with DCA · 7%/yr assumed'
+          : 'No DCA yet · 7%/yr compounding';
       }
     }
   }
@@ -451,6 +574,7 @@
     }
     _wireAddForm();
     _wireAllocTabs();
+    _wireEditModal();
     const refreshBtn = document.getElementById('pf-refresh-btn');
     if (refreshBtn) refreshBtn.addEventListener('click', _refresh);
     _detectSetup();

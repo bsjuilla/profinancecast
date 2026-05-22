@@ -62,13 +62,15 @@
   .topbar-btn.primary{background:var(--teal);color:var(--canvas);border-color:var(--teal);font-weight:600}
   .topbar-btn.primary:hover{opacity:.88}
   .content{padding:28px;flex:1}
-  .summary-bar{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px}
+  .summary-bar{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:24px}
+  @media (max-width: 1200px) { .summary-bar { grid-template-columns: repeat(3,1fr) } }
   .summary-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px 20px;position:relative;overflow:hidden}
   .summary-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px}
   .summary-card.s-teal::after{background:var(--teal)}
   .summary-card.s-blue::after{background:var(--blue)}
   .summary-card.s-amber::after{background:var(--amber)}
   .summary-card.s-purple::after{background:#9F7BE0}
+  .summary-card.s-green::after{background:#7BE08E}
   .summary-label{font-size:11px;color:var(--text3);margin-bottom:5px;font-weight:500;letter-spacing:.03em}
   .summary-val{font-family:var(--font-display);font-size:22px;font-weight:700;margin-bottom:2px}
   .summary-hint{font-size:11.5px;color:var(--text3)}
@@ -110,6 +112,39 @@
   .chart-legend{display:flex;flex-direction:column;gap:6px;margin-top:16px;font-size:12px;color:var(--text2)}
   .chart-legend-item{display:flex;align-items:center;gap:8px}
   .chart-legend-swatch{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+  /* W16 §4 — per-row tag dot, edit modal, tag-swatch picker. */
+  .h-tag-dot{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:8px;vertical-align:middle;flex-shrink:0}
+  .h-tag-dot.tag-teal{background:#2BB67D}
+  .h-tag-dot.tag-blue{background:#7BA8E0}
+  .h-tag-dot.tag-gold{background:#D4AF6A}
+  .h-tag-dot.tag-purple{background:#9F7BE0}
+  .h-tag-dot.tag-red{background:#E07B7B}
+  .h-note-icon{font-size:11px;color:var(--text3);margin-left:6px;cursor:help}
+  .pf-modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,0.55);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px}
+  .pf-modal-backdrop[hidden]{display:none !important}
+  .pf-modal{background:var(--card,#16271F);border:1px solid var(--border2);border-radius:12px;width:min(480px,100%);max-height:calc(100vh - 60px);overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,0.5)}
+  .pf-modal-head{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--border2)}
+  .pf-modal-head h3{font-family:var(--font-display);font-size:17px;font-weight:600;letter-spacing:-0.005em;margin:0;color:var(--text)}
+  .pf-modal-close{background:transparent;border:none;color:var(--text3);font-size:22px;cursor:pointer;line-height:1;padding:4px 8px;border-radius:4px}
+  .pf-modal-close:hover{color:var(--text);background:rgba(255,255,255,0.04)}
+  .pf-modal-body{padding:18px 22px;display:flex;flex-direction:column;gap:14px}
+  .pf-edit-row{display:flex;flex-direction:column;gap:6px}
+  .pf-edit-row label{font-size:11px;color:var(--text3);font-weight:500;letter-spacing:.04em;text-transform:uppercase}
+  .pf-edit-row input,.pf-edit-row textarea{background:rgba(255,255,255,0.04);border:1px solid var(--border2);color:var(--text);padding:9px 12px;border-radius:6px;font-size:13px;font-family:var(--font-body);width:100%;resize:vertical}
+  .pf-edit-row input:focus,.pf-edit-row textarea:focus{outline:none;border-color:var(--teal)}
+  .pf-edit-row input:disabled{opacity:0.6;cursor:not-allowed}
+  .pf-edit-help{font-size:11px;color:var(--text3);margin-top:2px}
+  .pf-tag-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .pf-tag-swatch{width:24px;height:24px;border-radius:50%;border:2px solid transparent;cursor:pointer;padding:0;transition:transform .12s,border-color .12s}
+  .pf-tag-swatch:hover{transform:scale(1.1)}
+  .pf-tag-swatch.selected{border-color:var(--text);transform:scale(1.15)}
+  .pf-modal-foot{display:flex;justify-content:flex-end;gap:8px;padding:16px 22px;border-top:1px solid var(--border2);background:rgba(0,0,0,0.15)}
+  .pf-btn-ghost,.pf-btn-primary{padding:9px 16px;border-radius:6px;font-size:13px;font-weight:600;font-family:var(--font-body);cursor:pointer;border:1px solid transparent}
+  .pf-btn-ghost{background:transparent;color:var(--text2);border-color:var(--border2)}
+  .pf-btn-ghost:hover{color:var(--text);background:rgba(255,255,255,0.04)}
+  .pf-btn-primary{background:var(--teal);color:var(--canvas);border-color:var(--teal)}
+  .pf-btn-primary:hover{opacity:0.9}
+
   /* W16 §3 — allocation view toggle (By position / By asset class). */
   .alloc-tabs{display:inline-flex;gap:4px;background:rgba(255,255,255,0.03);border:1px solid var(--border2);border-radius:8px;padding:3px}
   .alloc-tab{background:transparent;border:none;color:var(--text3);font-size:11.5px;font-family:var(--font-body);padding:5px 10px;border-radius:5px;cursor:pointer;letter-spacing:0.01em;transition:background .15s,color .15s}
@@ -324,6 +359,11 @@
         <div class="summary-val" id="pf-alltime-val">—</div>
         <div class="summary-hint" id="pf-alltime-hint">vs cost basis</div>
       </div>
+      <div class="summary-card s-green">
+        <div class="summary-label">Projected in 10 years</div>
+        <div class="summary-val" id="pf-proj-val">—</div>
+        <div class="summary-hint" id="pf-proj-hint">with recurring contributions</div>
+      </div>
       <div class="summary-card s-amber">
         <div class="summary-label">Holdings</div>
         <div class="summary-val" id="pf-count-val">0</div>
@@ -407,6 +447,55 @@
             <canvas id="pf-chart"></canvas>
           </div>
           <div class="chart-legend" id="pf-legend"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- W16 §4 — Edit position modal. Hidden by default; opened from row pencil. -->
+    <div class="pf-modal-backdrop" id="pf-edit-backdrop" hidden>
+      <div class="pf-modal" role="dialog" aria-modal="true" aria-labelledby="pf-edit-title">
+        <div class="pf-modal-head">
+          <h3 id="pf-edit-title">Edit position</h3>
+          <button class="pf-modal-close" id="pf-edit-cancel" type="button" aria-label="Close">×</button>
+        </div>
+        <div class="pf-modal-body">
+          <div class="pf-edit-row">
+            <label>Symbol</label>
+            <input id="pf-edit-symbol" type="text" disabled>
+          </div>
+          <div class="pf-edit-row">
+            <label for="pf-edit-qty">Quantity</label>
+            <input id="pf-edit-qty" type="number" min="0" step="any">
+          </div>
+          <div class="pf-edit-row">
+            <label for="pf-edit-cost">Cost basis (per unit)</label>
+            <input id="pf-edit-cost" type="number" min="0" step="any" placeholder="—">
+          </div>
+          <div class="pf-edit-row">
+            <label for="pf-edit-recurring">Recurring monthly contribution</label>
+            <input id="pf-edit-recurring" type="number" min="0" step="any" placeholder="e.g. 500 — adds to projected value">
+            <div class="pf-edit-help">Used for the "Projected in 10 years" KPI. Assumes 7% annual return (long-run global equity average). Leave blank if you don't DCA into this position.</div>
+          </div>
+          <div class="pf-edit-row">
+            <label for="pf-edit-note">Note</label>
+            <textarea id="pf-edit-note" rows="2" maxlength="280" placeholder="e.g. long-term core · DCA position · speculative play"></textarea>
+            <div class="pf-edit-help">Up to 280 characters. Stored encrypted locally.</div>
+          </div>
+          <div class="pf-edit-row">
+            <label>Tag</label>
+            <div class="pf-tag-row" id="pf-edit-tags">
+              <button type="button" class="pf-tag-swatch" data-tag="" title="No tag" style="background:transparent;border:1px dashed var(--border2)"></button>
+              <button type="button" class="pf-tag-swatch" data-tag="teal" title="Long-term core" style="background:#2BB67D"></button>
+              <button type="button" class="pf-tag-swatch" data-tag="blue" title="Index / ETF" style="background:#7BA8E0"></button>
+              <button type="button" class="pf-tag-swatch" data-tag="gold" title="High-conviction" style="background:#D4AF6A"></button>
+              <button type="button" class="pf-tag-swatch" data-tag="purple" title="Watch / research" style="background:#9F7BE0"></button>
+              <button type="button" class="pf-tag-swatch" data-tag="red" title="Speculative" style="background:#E07B7B"></button>
+            </div>
+          </div>
+        </div>
+        <div class="pf-modal-foot">
+          <button type="button" class="pf-btn-ghost" id="pf-edit-cancel-2">Cancel</button>
+          <button type="button" class="pf-btn-primary" id="pf-edit-save">Save changes</button>
         </div>
       </div>
     </div>

@@ -66,6 +66,13 @@
       name: h.name ? String(h.name).trim() : null,
       quantity: parseFloat(h.quantity) || 0,
       costBasis: h.costBasis != null ? parseFloat(h.costBasis) : null,
+      // W16 §4 — optional user-set note + tag color for organising positions
+      note: h.note ? String(h.note).slice(0, 280) : null,
+      tag: h.tag ? String(h.tag).slice(0, 24) : null,
+      // W16 §5 — optional recurring monthly contribution (DCA). Feeds the
+      // projected-value KPI. Stored in the user's currency (assumed).
+      recurringMonthly: isFinite(h.recurringMonthly) && h.recurringMonthly > 0
+        ? parseFloat(h.recurringMonthly) : null,
       addedAt: _now(),
     };
     const all = list();
@@ -84,6 +91,12 @@
     if (patch && patch.quantity != null) next.quantity = parseFloat(patch.quantity) || 0;
     if (patch && patch.costBasis != null) next.costBasis = parseFloat(patch.costBasis) || null;
     if (patch && patch.symbol)  next.symbol = String(patch.symbol).trim().toUpperCase();
+    if (patch && 'note' in patch) next.note = patch.note ? String(patch.note).slice(0, 280) : null;
+    if (patch && 'tag'  in patch) next.tag  = patch.tag  ? String(patch.tag).slice(0, 24)   : null;
+    if (patch && 'recurringMonthly' in patch) {
+      next.recurringMonthly = isFinite(patch.recurringMonthly) && patch.recurringMonthly > 0
+        ? parseFloat(patch.recurringMonthly) : null;
+    }
     all[i] = next;
     _persist(all);
     _fireChange();
