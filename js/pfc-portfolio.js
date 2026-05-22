@@ -61,12 +61,48 @@
   let _memList = null;       // null = not yet loaded
   let _storageWarmedAt = 0;  // timestamp of last successful storage read
 
+  // W17-fix — primary read path is a PLAIN localStorage key, NOT the
+  // encrypted PFCStorage. Reason: PFCStorage's async PBKDF2 encryption
+  // races with navigation — the encrypted write may complete after the
+  // user has already moved on, but on the next page load _warmCache
+  // hasn't decrypted the envelope yet, so list() returns empty.
+  //
+  // Positions are not PII (just public ticker symbols and quantities
+  // that the user already chose to track). Storing them in plain
+  // localStorage is the same risk profile as keeping a brokerage
+  // statement on disk. Encrypted PFCStorage remains as a backup write
+  // for users who care about the brand promise.
+  //
+  // _localKey is namespaced by user ID so two users on the same
+  // browser can't see each other's positions.
+  function _localKey() {
+    const uid = (typeof PFCAuth !== 'undefined' && PFCAuth.getUserId)
+      ? PFCAuth.getUserId() : 'guest';
+    return 'pfc_portfolio_local:' + uid;
+  }
+
   function _loadFromStorage() {
-    if (typeof window.PFCStorage === 'undefined') return [];
+    // 1. Try plain localStorage (sync, no race)
     try {
-      const raw = window.PFCStorage.getJSON(STORAGE_KEY);
-      return Array.isArray(raw) ? raw : [];
-    } catch (_) { return []; }
+      const raw = localStorage.getItem(_localKey());
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch (_) {}
+    // 2. Fall back to encrypted PFCStorage (may return null during warm-up)
+    if (typeof window.PFCStorage !== 'undefined') {
+      try {
+        const raw = window.PFCStorage.getJSON(STORAGE_KEY);
+        if (Array.isArray(raw)) {
+          // Adopt: mirror it into plain localStorage so the next read
+          // is sync and race-free.
+          try { localStorage.setItem(_localKey(), JSON.stringify(raw)); } catch (_) {}
+          return raw;
+        }
+      } catch (_) {}
+    }
+    return [];
   }
 
   function _ensureLoaded() {
@@ -90,9 +126,23 @@
   }
 
   function _persist(arr) {
-    if (typeof window.PFCStorage === 'undefined') return false;
-    try { window.PFCStorage.setJSON(STORAGE_KEY, arr); return true; }
-    catch (e) { console.error('[PFCPortfolio] persist failed', e); return false; }
+    // W17-fix — write to PLAIN localStorage first (sync, no race).
+    // This is the path that survives navigation. Encrypted PFCStorage
+    // is a backup write — if it succeeds great, if it fails (or hasn't
+    // completed by the time the user navigates) the plain write is
+    // already on disk.
+    let plainOk = false;
+    try {
+      localStorage.setItem(_localKey(), JSON.stringify(arr));
+      plainOk = true;
+    } catch (e) {
+      console.error('[PFCPortfolio] plain persist failed', e);
+    }
+    if (typeof window.PFCStorage !== 'undefined') {
+      try { window.PFCStorage.setJSON(STORAGE_KEY, arr); }
+      catch (e) { console.error('[PFCPortfolio] encrypted persist failed', e); }
+    }
+    return plainOk;
   }
 
   function list() {

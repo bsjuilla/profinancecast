@@ -74,6 +74,10 @@
   }
   function _fmt(n) {
     if (!isFinite(n)) return '—';
+    // W17-fix — n=0 used to fall into the sub-cent branch and render as
+    // "$0.000000". Special-case it to "$0" — the precision logic is for
+    // formatting non-zero small values like sub-cent crypto, not zeros.
+    if (n === 0) return _sym() + '0';
     const abs = Math.abs(n);
     // Smart precision: dollars for >$10, cents for $0.01-$10, scientific for sub-cent
     const decimals = abs >= 100 ? 0 : abs >= 1 ? 2 : abs >= 0.01 ? 4 : 6;
@@ -472,15 +476,22 @@
     if (!valuations.length) { kpis.style.display = 'none'; return; }
     kpis.style.display = '';
 
-    let total = 0, change = 0, stockCount = 0, cryptoCount = 0;
+    // W17-fix — track how many valuations HAVE a real price. If zero,
+    // we're in the Phase 1 placeholder phase (rows exist, quotes haven't
+    // landed). Show "—" everywhere instead of "$0" — the data isn't
+    // available yet, not zero.
+    let total = 0, change = 0, stockCount = 0, cryptoCount = 0, valuedCount = 0;
     for (const v of valuations) {
-      if (isFinite(v.value)) total += v.value;
+      if (isFinite(v.value)) { total += v.value; valuedCount++; }
       if (isFinite(v.change24h_value)) change += v.change24h_value;
       if (v.holding.type === 'crypto') cryptoCount++; else stockCount++;
     }
-    document.getElementById('pf-total-val').textContent = _fmt(total);
-    document.getElementById('pf-total-hint').textContent = total > 0 ? 'Live · refreshed just now' : 'Add holdings to see value';
-    document.getElementById('pf-24h-val').textContent = _fmtSigned(change);
+    const inPlaceholderPhase = valuedCount === 0;
+    document.getElementById('pf-total-val').textContent = inPlaceholderPhase ? '—' : _fmt(total);
+    document.getElementById('pf-total-hint').textContent = inPlaceholderPhase
+      ? 'Fetching live prices…'
+      : (total > 0 ? 'Live · refreshed just now' : 'Add holdings to see value');
+    document.getElementById('pf-24h-val').textContent = inPlaceholderPhase ? '—' : _fmtSigned(change);
     const pct = total > 0 ? (change / (total - change)) * 100 : 0;
     const hint = document.getElementById('pf-24h-hint');
     // W17-A — benchmark vs SPY. _spyChangePct is set by _refresh() after the
@@ -495,8 +506,8 @@
         : (diff > 0 ? 'leading SPY by ' : 'trailing SPY by ') + Math.abs(diff).toFixed(2) + 'pp';
       hintText += ' · vs SPY ' + _fmtPct(_spyChangePct) + ' · ' + cmp;
     }
-    hint.textContent = hintText;
-    hint.className = 'summary-hint ' + (change > 0 ? 'delta-up' : change < 0 ? 'delta-down' : '');
+    hint.textContent = inPlaceholderPhase ? 'Fetching live prices…' : hintText;
+    hint.className = 'summary-hint ' + (inPlaceholderPhase ? '' : (change > 0 ? 'delta-up' : change < 0 ? 'delta-down' : ''));
     // W17-B — Annual dividend income KPI. Uses the curated yield catalog
     // (PFCDividendYields). Positions without a catalog entry contribute
     // nothing. Hint shows "N of M tracked · YIELDpp blended" for honesty
@@ -514,7 +525,10 @@
     const divValEl = document.getElementById('pf-div-val');
     const divHintEl = document.getElementById('pf-div-hint');
     if (divValEl && divHintEl) {
-      if (divTracked === 0) {
+      if (inPlaceholderPhase) {
+        divValEl.textContent = '—';
+        divHintEl.textContent = 'Fetching live prices…';
+      } else if (divTracked === 0) {
         divValEl.textContent = '—';
         divHintEl.textContent = 'No dividend-paying positions found';
       } else {
@@ -578,7 +592,10 @@
     const projVal = document.getElementById('pf-proj-val');
     const projHint = document.getElementById('pf-proj-hint');
     if (projVal && projHint) {
-      if (valuations.length === 0) {
+      if (inPlaceholderPhase) {
+        projVal.textContent = '—';
+        projHint.textContent = 'Fetching live prices…';
+      } else if (valuations.length === 0) {
         projVal.textContent = '—';
         projHint.textContent = 'Add positions to project';
       } else {
