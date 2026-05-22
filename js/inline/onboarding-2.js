@@ -126,6 +126,25 @@ function syncName() {
 function n(id) { return parseFloat(document.getElementById(id)?.value) || 0; }
 function fmt(v) { return currencySymbol + Math.round(Math.abs(v)).toLocaleString(); }
 
+// Mobile auto-scroll for the live-preview panel — per CPO Wave-14 §4 mobile
+// friction note. Fires only on narrow viewports (<=600px to match the existing
+// @media breakpoint in onboarding.html), and only when the panel is below
+// the fold. Throttled to one scroll per 1500ms so we don't yank during typing.
+let _lastPreviewScroll = 0;
+function scrollPreviewIntoView(panelId) {
+  if (window.innerWidth > 600) return;
+  const now = Date.now();
+  if (now - _lastPreviewScroll < 1500) return;
+  const panel = document.getElementById(panelId);
+  if (!panel) return;
+  const rect = panel.getBoundingClientRect();
+  // Only scroll if the panel is BELOW the visible viewport (don't yank up).
+  if (rect.top > window.innerHeight - 80) {
+    _lastPreviewScroll = now;
+    panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+}
+
 function calcLive() {
   const income   = n('f-income') + n('f-other-income');
   const expenses = n('f-housing') + n('f-food') + n('f-transport') + n('f-other-exp');
@@ -140,6 +159,7 @@ function calcLive() {
   const rateEl = document.getElementById('lp-rate');
   rateEl.textContent = rate + '%';
   rateEl.className   = 'lp-val ' + (rate >= 20 ? 'good' : rate >= 10 ? 'warn' : 'bad');
+  scrollPreviewIntoView('income-preview');
 }
 
 function calcDebt() {
@@ -159,6 +179,7 @@ function calcDebt() {
   nwEl.textContent = (nw >= 0 ? '' : '-') + fmt(nw);
   nwEl.className   = 'lp-val ' + (nw >= 0 ? 'good' : 'bad');
   document.getElementById('lp-debtfree').textContent = months > 0 ? months + ' months' : debt === 0 ? 'Debt free!' : '—';
+  scrollPreviewIntoView('debt-preview');
 }
 
 function toggleGoal(el, key) {
