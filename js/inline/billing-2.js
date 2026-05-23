@@ -383,19 +383,142 @@ function upgradePlan(plan) {
   // refresh tick — no need to write directly to the canonical [data-plan-badge].
   document.getElementById('cancel-btn').style.display     = 'inline-block';
 
-  // Add billing history row
+  // W28-d #37 — billing history is now sourced from /api/subscription/history
+  // (subscription_events table) on every page load, so we don't need to write
+  // a synthetic optimistic row here. The real row will appear within a few
+  // seconds when refreshBillingHistory() is called after the webhook fires;
+  // worst case the user sees it on their next page load.
+  // We still kick off a refresh here so the row appears as soon as
+  // subscription_events catches up.
+  if (typeof refreshBillingHistory === 'function') {
+    setTimeout(() => refreshBillingHistory(), 1500);
+  }
+}
+
+// W28-d #37 — fetch real billing history from the server and render it
+// into #billing-body. Replaces the previous synthetic one-row write that
+// disappeared on refresh. Safe to call at any time; renders nothing when
+// the user is unauthenticated.
+async function refreshBillingHistory() {
   const tbody = document.getElementById('billing-body');
-  const today = new Date().toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' });
-  const planLabel = PLAN_LABELS[plan] || 'Pro';
-  tbody.innerHTML = `
-    <tr>
-      <td style="color:var(--pfc-ink-strong);">${today}</td>
-      <td style="color:var(--pfc-ink-strong);">${planLabel}</td>
-      <td><span class="num">€${checkoutAmt.toFixed(2)}</span></td>
-      <td>PayPal</td>
-      <td><span class="status-pill status-paid">Paid</span></td>
-      <td><span style="color:var(--pfc-ink-faint);">—</span></td>
-    </tr>`;
+  if (!tbody) return;
+  // Don't blow away the existing placeholder until we have data.
+  let headers;
+  try { headers = _authHeaders(); }
+  catch (_) { return; /* not signed in — leave the empty-state row */ }
+
+  let data;
+  try {
+    const res = await fetch('/api/subscription/history?limit=20', { headers });
+    if (!res.ok) {
+      // 5xx/4xx: keep whatever's currently rendered. Don't degrade to empty.
+      return;
+    }
+    data = await res.json();
+  } catch (_) {
+    return;
+  }
+  const events = (data && Array.isArray(data.events)) ? data.events : [];
+
+  // Clear and render. Use DOM APIs (no innerHTML on server data) so a
+  // future PayPal field that slipped past redaction can't carry script.
+  tbody.innerHTML = '';
+
+  if (!events.length) {
+    const row = document.createElement('tr');
+    const td = document.createElement('td');
+    td.colSpan = 6;
+    td.style.cssText = 'text-align:center;color:var(--pfc-ink-faint);padding:var(--space-6);';
+    td.textContent = 'No payments yet — you\'re on the free plan';
+    row.appendChild(td);
+    tbody.appendChild(row);
+    return;
+  }
+
+  const STATUS_PILL_CLASS = {
+    paid:           'status-pill status-paid',
+    refunded:       'status-pill',
+    reversed:       'status-pill',
+    cancelled:      'status-pill',
+    expired:        'status-pill',
+    scheduled:      'status-pill',
+    disputed:       'status-pill',
+    'auto-refunded':'status-pill',
+    support_review: 'status-pill',
+  };
+
+  for (const ev of events) {
+    const row = document.createElement('tr');
+
+    // Date
+    const dateCell = document.createElement('td');
+    dateCell.style.color = 'var(--pfc-ink-strong)';
+    try {
+      const d = new Date(ev.occurred_at);
+      dateCell.textContent = isNaN(d.getTime())
+        ? '—'
+        : d.toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' });
+    } catch (_) { dateCell.textContent = '—'; }
+    row.appendChild(dateCell);
+
+    // Label (event type pretty name)
+    const labelCell = document.createElement('td');
+    labelCell.style.color = 'var(--pfc-ink-strong)';
+    labelCell.textContent = ev.label || ev.event_type || '—';
+    row.appendChild(labelCell);
+
+    // Amount
+    const amtCell = document.createElement('td');
+    if (typeof ev.amount === 'number' && Number.isFinite(ev.amount)) {
+      const sym = (ev.currency === 'EUR') ? '€' : (ev.currency === 'USD' ? '$' : '');
+      const span = document.createElement('span');
+      span.className = 'num';
+      span.textContent = sym + ev.amount.toFixed(2);
+      amtCell.appendChild(span);
+    } else {
+      amtCell.textContent = '—';
+    }
+    row.appendChild(amtCell);
+
+    // Method
+    const methodCell = document.createElement('td');
+    methodCell.textContent = (ev.provider === 'paypal') ? 'PayPal' : (ev.provider || '—');
+    row.appendChild(methodCell);
+
+    // Status pill
+    const statusCell = document.createElement('td');
+    const pill = document.createElement('span');
+    pill.className = STATUS_PILL_CLASS[ev.status] || 'status-pill';
+    pill.textContent = ev.status || 'unknown';
+    statusCell.appendChild(pill);
+    row.appendChild(statusCell);
+
+    // Receipt placeholder (no per-event receipts yet; column kept for layout parity)
+    const receiptCell = document.createElement('td');
+    const dash = document.createElement('span');
+    dash.style.color = 'var(--pfc-ink-faint)';
+    dash.textContent = '—';
+    receiptCell.appendChild(dash);
+    row.appendChild(receiptCell);
+
+    tbody.appendChild(row);
+  }
+}
+
+// Refresh history on load (once auth resolves) and when the tab regains
+// focus (a webhook may have landed while it was backgrounded).
+if (typeof window !== 'undefined') {
+  const _boot = () => { try { refreshBillingHistory(); } catch (_) {} };
+  if (typeof PFCAuth !== 'undefined' && typeof PFCAuth.onReady === 'function') {
+    PFCAuth.onReady(_boot);
+  } else if (document.readyState !== 'loading') {
+    _boot();
+  } else {
+    document.addEventListener('DOMContentLoaded', _boot, { once: true });
+  }
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') _boot();
+  });
 }
 
 // W28-c #33 / #38 — styled cancel modal replaces native confirm/alert.
