@@ -647,10 +647,18 @@ export default async function handler(req, res) {
           break;
         }
 
+        // W29-final P0 FIX: set current_period_end = next_billing_time on
+        // ACTIVATED. next_billing_time is when PayPal will charge next; for
+        // the user's CURRENT period, that's the same boundary — they have
+        // access until then. Previously this field was left null, which
+        // worked only because status.js treats null period_end as "not
+        // expired"; that was fragile and broke the contract that other
+        // code (history, downgrade detection) relies on.
         const updErr = (await supabase.from('subscriptions').update({
           status: 'active',
           subscription_state: 'ACTIVE',
           next_billing_time: nextBilling,
+          current_period_end: nextBilling,  // W29-final — explicit period boundary
           failed_payment_count: 0,
           plan: planTier || undefined,  // skip if we couldn't derive
           updated_at: new Date().toISOString(),
@@ -850,12 +858,34 @@ export default async function handler(req, res) {
           break;
         }
 
-        // Append the period row. We don't know the SKU directly from the sale
-        // event, so we infer from the matched subscription's plan field. The
-        // SKU stored is informational; tier comes from sub.plan.
-        const inferredSku = (sub.plan === 'premium')
-          ? (Number(amount) >= 100 ? 'premium_annual' : 'premium_monthly')
-          : (Number(amount) >= 100 ? 'pro_annual'     : 'pro_monthly');
+        // W29-final P0 FIX: exact-price lookup instead of >= 100 threshold.
+        // The previous threshold misclassified Pro Annual (€79 < 100) as
+        // 'pro_monthly', which set current_period_end to +1 month instead of
+        // +1 year. After 30 days, status.js's expired check would kick in
+        // and silently downgrade Pro Annual users to Free — even though they
+        // had paid for the full year and PayPal wouldn't charge again for
+        // 11 more months.
+        //
+        // Exact-price lookup is unambiguous: every SKU has a distinct price.
+        const PRICE_TO_SKU = {
+          9:   'pro_monthly',
+          79:  'pro_annual',
+          19:  'premium_monthly',
+          169: 'premium_annual',
+        };
+        const amountNum = Number(amount);
+        let inferredSku = PRICE_TO_SKU[amountNum] || null;
+        if (!inferredSku) {
+          // Couldn't infer SKU from price — log + alert + fall back to a
+          // safe monthly default for that tier so we don't write a wildly
+          // wrong period_end.
+          console.warn(`[webhook] sale.completed: unexpected amount ${amountNum} EUR, can't infer SKU exactly`);
+          _alertOps(
+            'Recurring sale amount does not match any SKU',
+            `saleId: ${saleId}\nbilling_agreement: ${billingAgreementId}\nuser_id: ${sub.user_id}\namount: ${amountNum} ${currency}\n\nNo SKU matches. Falling back to ${sub.plan}_monthly period_end. Investigate via PayPal dashboard.`
+          );
+          inferredSku = (sub.plan === 'premium') ? 'premium_monthly' : 'pro_monthly';
+        }
         const periodEnd = _periodEndForSku(inferredSku);
         const nowIso = new Date().toISOString();
 

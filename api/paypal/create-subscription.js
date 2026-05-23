@@ -255,17 +255,34 @@ export default async function handler(req) {
     return _json({ error: 'Subscription created but PayPal returned unexpected shape' }, 502);
   }
 
-  // ── Pre-write a pending row so a flaky webhook doesn't lose track ───────
-  // status='active' is deferred until BILLING.SUBSCRIPTION.ACTIVATED arrives.
-  // We pre-write provider_subscription_id with subscription_state=APPROVAL_PENDING
-  // so support can find the user if anything goes sideways during PayPal approval.
+  // ── Pre-write a PENDING row so a flaky webhook doesn't lose track ──────
+  //
+  // W29-final P0 FIX: status='pending', NOT 'active'.
+  //
+  // Previous version used status='active' here as an "optimistic" placeholder,
+  // expecting BILLING.SUBSCRIPTION.ACTIVATED to flip terminal states later.
+  // That created a free-Pro exploit: a user (or attacker) could call this
+  // endpoint to get a subscriptionID + approveUrl, then NEVER approve at
+  // PayPal. The pre-written row had status='active' + current_period_end=null,
+  // and status.js (line 113-115) treated null period_end as "not expired",
+  // so the user got the plan tier for free indefinitely.
+  //
+  // Fix: status='pending'. status.js (line 115) treats anything != 'active'
+  // as 'free', so the user has NO entitlement until BILLING.SUBSCRIPTION.
+  // ACTIVATED webhook fires (which only happens after they actually approve
+  // and pay at PayPal). Support visibility on the row is preserved via
+  // provider_subscription_id + subscription_state='APPROVAL_PENDING'.
+  //
+  // Requires migration 20260523_status_pending.sql to add 'pending' to the
+  // subscriptions.status CHECK constraint.
   const { error: upsertErr } = await supabase.from('subscriptions').upsert({
     user_id: user.id,
     plan: SKU_TO_TIER[plan],
-    status: 'active',          // optimistic; webhook flips to terminal states later
+    status: 'pending',         // NOT 'active' — see W29-final fix above
     provider: 'paypal',
     provider_subscription_id: subscriptionId,
     subscription_state: 'APPROVAL_PENDING',
+    current_period_end: null,  // explicit — populated by ACTIVATED webhook
     updated_at: new Date().toISOString(),
   }, { onConflict: 'user_id' });
   if (upsertErr) {
