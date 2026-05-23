@@ -11,3 +11,7 @@
 # Tool-builder swarm worker scratch state (do not commit)
 .claude-flow/
 ruvector.db
+
+# Local npm install — Vercel reinstalls from package-lock.json on every
+# deploy; no need to commit the resolved tree.
+node_modules/

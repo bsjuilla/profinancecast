@@ -4,6 +4,7 @@
 //               SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, APP_ORIGIN
 
 import { createClient } from '@supabase/supabase-js';
+import { rateLimitOrReject } from '../_lib/rate-limit.js';
 
 const PAYPAL_BASE = (process.env.PAYPAL_ENV === 'sandbox')
   ? 'https://api-m.sandbox.paypal.com'
@@ -140,6 +141,16 @@ async function _getAccessToken() {
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
+  // CISO IR-runbook kill switch — set PAYMENTS_DISABLED=true in Vercel env
+  // to disable order creation during incident response (card-testing attack,
+  // PayPal anomaly, etc.). Acts in seconds via env-var redeploy.
+  if (process.env.PAYMENTS_DISABLED === 'true') {
+    return res.status(503).json({
+      error: 'Payments are temporarily disabled for maintenance. Please try again in a few minutes.',
+      maintenance: true,
+    });
+  }
+
   // W26-a #12: reject cross-origin/no-origin requests on mutating payment ops.
   if (!_originAllowed(req)) {
     return res.status(403).json({ error: 'Forbidden: invalid origin' });
@@ -154,6 +165,10 @@ export default async function handler(req, res) {
   const auth = await _verifyUser(req);
   if (auth.error) return res.status(auth.status).json({ error: auth.error });
   const { user } = auth;
+
+  // NEW-S4 fix — per-user rate limit. Soft-fails open if Upstash env is
+  // unconfigured (see api/_lib/rate-limit.js for setup).
+  if (await rateLimitOrReject(req, res, `create-order:${user.id}`)) return;
 
   // Server-side amount (never trust the client)
   const amount = PLAN_PRICES[plan];
@@ -194,12 +209,18 @@ export default async function handler(req, res) {
     // W27-c #16: retry on transient 5xx. PayPal-Request-Id keeps the
     // retry idempotent on PayPal's side — duplicate POST returns the
     // same orderID rather than creating a second order.
+    // NEW-S3 fix — drop Date.now() from the Request-Id so cross-call retries
+    // are actually idempotent on PayPal's side. Bucket by UTC day for a
+    // 24-hour natural dedupe window — long enough to absorb double-clicks
+    // and browser-level retries, short enough that legitimate new orders
+    // tomorrow get a fresh ID.
+    const todayUtc = new Date().toISOString().slice(0, 10).replace(/-/g, '');
     const order = await _fetchPayPalWithRetry(`${PAYPAL_BASE}/v2/checkout/orders`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
-        'PayPal-Request-Id': `pfc-${user.id.slice(0,8)}-${plan}-${Date.now()}`,
+        'PayPal-Request-Id': `pfc-${user.id.slice(0,8)}-${plan}-${todayUtc}`,
       },
       body: JSON.stringify({
         intent: 'CAPTURE',

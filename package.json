@@ -5,6 +5,7 @@
   "description": "Static HTML deploy on Vercel with serverless functions in /api. This package.json exists only so Vercel installs the dependencies the api/ functions need; there is no build step.",
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",
+    "@upstash/ratelimit": "^2.0.5",
     "@upstash/redis": "^1.34.3",
     "@vercel/og": "^0.6.4"
   }

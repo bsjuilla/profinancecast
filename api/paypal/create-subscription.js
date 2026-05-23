@@ -42,6 +42,7 @@
 export const config = { runtime: 'edge' };
 
 import { createClient } from '@supabase/supabase-js';
+import { rateLimitOrReject } from '../_lib/rate-limit.js';
 
 const PAYPAL_BASE = (process.env.PAYPAL_ENV === 'sandbox')
   ? 'https://api-m.sandbox.paypal.com'
@@ -146,6 +147,15 @@ async function _getAccessToken() {
 export default async function handler(req) {
   if (req.method !== 'POST') return _json({ error: 'Method not allowed' }, 405);
 
+  // CISO IR-runbook kill switch — set PAYMENTS_DISABLED=true in Vercel env
+  // to disable subscription creation during incident response.
+  if (process.env.PAYMENTS_DISABLED === 'true') {
+    return _json({
+      error: 'Payments are temporarily disabled for maintenance. Please try again in a few minutes.',
+      maintenance: true,
+    }, 503);
+  }
+
   // W26-a #12: origin check on mutating payment ops.
   if (!_originAllowed(req)) return _json({ error: 'Forbidden: invalid origin' }, 403);
 
@@ -201,6 +211,73 @@ export default async function handler(req) {
     return _json({ error: 'Please confirm your email address before purchasing.' }, 403);
   }
 
+  // NEW-S4 fix — per-user rate limit. Edge variant returns a Response.
+  const rl = await rateLimitOrReject(null, null, `create-sub:${user.id}`);
+  if (rl) return rl;
+
+  // ── NEW-S2 fix — reuse existing pending subscription if present ────────
+  //
+  // Pre-fix, every render of the Subscribe button created a real PayPal
+  // subscription via this endpoint. A user clicking around the checkout
+  // (Pro Monthly → back → Pro Annual → back → Pro Monthly) minted three
+  // separate PayPal subscriptions; only the latest mapped to our DB row.
+  // The orphans stayed in PayPal in APPROVAL_PENDING and could be approved
+  // out-of-band by the user, leaving our DB inconsistent.
+  //
+  // Fix: if the user already has a row with status='pending' for the SAME
+  // plan tier, reuse its subscriptionID + approveUrl instead of creating
+  // a new PayPal sub. Different plan = create new (their first attempt is
+  // abandoned). Pending rows older than 24h are treated as stale and a
+  // fresh subscription is created (PayPal expires unapproved subs after
+  // 3 hours anyway, so a 24h+ pending is definitely abandoned).
+  {
+    const requestedTier = SKU_TO_TIER[plan];
+    const { data: existingPending } = await supabase
+      .from('subscriptions')
+      .select('provider_subscription_id, plan, status, updated_at')
+      .eq('user_id', user.id)
+      .eq('status', 'pending')
+      .eq('plan', requestedTier)
+      .maybeSingle();
+
+    if (existingPending?.provider_subscription_id) {
+      const ageMs = Date.now() - new Date(existingPending.updated_at).getTime();
+      const FRESH_PENDING_MS = 60 * 60 * 1000;  // 1 hour
+      if (ageMs < FRESH_PENDING_MS) {
+        // Try to fetch the approve URL for the existing pending sub.
+        // If PayPal says the sub is already approved/cancelled/expired,
+        // fall through and create a fresh one.
+        try {
+          const reuseToken = await _getAccessToken();
+          const subFetch = await fetch(
+            `${PAYPAL_BASE}/v1/billing/subscriptions/${encodeURIComponent(existingPending.provider_subscription_id)}`,
+            { headers: { 'Authorization': `Bearer ${reuseToken}` } }
+          );
+          if (subFetch.ok) {
+            const subInfo = await subFetch.json();
+            const reusableStates = new Set(['APPROVAL_PENDING', 'APPROVED']);
+            if (reusableStates.has(subInfo.status)) {
+              const approve = (subInfo.links || []).find(l => l.rel === 'approve');
+              if (approve?.href) {
+                console.log(`[create-subscription] reusing pending sub ${existingPending.provider_subscription_id} for user ${user.id}`);
+                return _json({
+                  subscriptionID: existingPending.provider_subscription_id,
+                  approveUrl:     approve.href,
+                  plan,
+                  reused: true,
+                });
+              }
+            }
+          }
+        } catch (e) {
+          // Fall through to create-fresh if anything in the reuse path
+          // breaks — better to mint a duplicate than block the user.
+          console.warn('[create-subscription] reuse-pending path failed, creating fresh:', e?.message || e);
+        }
+      }
+    }
+  }
+
   // ── Create the PayPal subscription ──────────────────────────────────────
   let accessToken;
   try {
@@ -226,6 +303,12 @@ export default async function handler(req) {
 
   let subRes;
   try {
+    // NEW-S3 fix — drop Date.now() from the Request-Id so cross-call retries
+    // are actually idempotent on PayPal's side. Bucket by UTC day for a
+    // 24-hour natural dedupe window. Combined with NEW-S2's pending-row
+    // reuse below, this prevents a user from accidentally minting multiple
+    // PayPal subscriptions by clicking Subscribe twice in quick succession.
+    const todayUtc = new Date().toISOString().slice(0, 10).replace(/-/g, '');
     subRes = await _fetchPayPalWithRetry(`${PAYPAL_BASE}/v1/billing/subscriptions`, {
       method: 'POST',
       headers: {
@@ -233,7 +316,7 @@ export default async function handler(req) {
         'Content-Type': 'application/json',
         // Idempotency-key style header — PayPal doesn't strictly require this
         // on subscription create but it lets retries return the same id.
-        'PayPal-Request-Id': `pfc-sub-${user.id.slice(0,8)}-${plan}-${Date.now()}`,
+        'PayPal-Request-Id': `pfc-sub-${user.id.slice(0,8)}-${plan}-${todayUtc}`,
       },
       body: JSON.stringify(reqBody),
     }, 'subscription-create');

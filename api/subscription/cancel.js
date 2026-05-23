@@ -14,6 +14,7 @@
 // despite having paid for the rest of the month.
 
 import { createClient } from '@supabase/supabase-js';
+import { rateLimitOrReject } from '../_lib/rate-limit.js';
 
 const APP_ORIGIN = process.env.APP_ORIGIN || 'https://profinancecast.com';
 
@@ -24,17 +25,65 @@ function _paypalBase() {
     ? 'https://api-m.sandbox.paypal.com'
     : 'https://api-m.paypal.com';
 }
+
+// NEW-P1b fix — retry wrapper mirroring create-order.js / capture-order.js.
+// Cancel is critical: if it fails silently and we just flip our local flag,
+// PayPal keeps charging the user at next billing cycle.
+async function _fetchPayPalWithRetry(url, opts, label) {
+  const RETRYABLE = new Set([429, 502, 503, 504]);
+  let lastErr = null;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const res = await fetch(url, opts);
+      if (res.ok) return res;
+      if (!RETRYABLE.has(res.status) || attempt === 2) return res;
+      lastErr = new Error(`PayPal ${label} returned ${res.status}`);
+    } catch (e) {
+      lastErr = e;
+      if (attempt === 2) throw e;
+    }
+    const baseMs = attempt === 0 ? 200 : 600;
+    const jitter = Math.floor(Math.random() * 200);
+    await new Promise(r => setTimeout(r, baseMs + jitter));
+  }
+  if (lastErr) throw lastErr;
+  return null;
+}
+
 async function _getPayPalAccessToken() {
   const creds = Buffer.from(
     `${process.env.PAYPAL_CLIENT_ID}:${process.env.PAYPAL_CLIENT_SECRET}`
   ).toString('base64');
-  const res = await fetch(`${_paypalBase()}/v1/oauth2/token`, {
+  const res = await _fetchPayPalWithRetry(`${_paypalBase()}/v1/oauth2/token`, {
     method: 'POST',
     headers: { 'Authorization': `Basic ${creds}`, 'Content-Type': 'application/x-www-form-urlencoded' },
     body: 'grant_type=client_credentials',
-  });
+  }, 'oauth2/token');
   if (!res.ok) throw new Error('PayPal auth failed (cancel)');
   return (await res.json()).access_token;
+}
+
+// NEW-P1b fix — best-effort alert sink for cancel failures that need support
+// intervention. Identical signature to webhook-paypal.js _alertOps; copy
+// kept here until NEW-R1 shared lib refactor lands.
+async function _alertOps(subject, body) {
+  const apiKey = process.env.RESEND_API_KEY;
+  const to     = process.env.ALERT_EMAIL;
+  const from   = process.env.ALERT_FROM_EMAIL || 'alerts@profinancecast.com';
+  if (!apiKey || !to) return;
+  try {
+    await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        from, to: [to],
+        subject: `[PFC alerts] ${subject}`,
+        text: body,
+      }),
+    });
+  } catch (e) {
+    console.error('[cancel] _alertOps failed:', e?.message || e);
+  }
 }
 
 // W26-a #12 + W29-c regression fix: origin/referer check now accepts both
@@ -81,6 +130,9 @@ export default async function handler(req, res) {
   if (userErr || !userData?.user) return res.status(401).json({ error: 'Invalid auth token' });
   const userId = userData.user.id;
 
+  // NEW-S4 fix — per-user rate limit on cancel to prevent flapping.
+  if (await rateLimitOrReject(req, res, `cancel:${userId}`)) return;
+
   // Read current row first so we can echo period_end back to the client,
   // be idempotent on duplicate cancel clicks, AND detect whether this is
   // a recurring Billing Plans subscription (W29-b: provider_subscription_id
@@ -118,10 +170,16 @@ export default async function handler(req, res) {
   // the user at next billing time even after we marked cancel_at_period_end.
   // For one-shot rows (founders, legacy Pro/Premium) this block is skipped
   // and behaviour is unchanged from W26-b.
+  //
+  // NEW-P1b fix — wrap PayPal cancel call in retry, alert ops on persistent
+  // failure, and surface a paypal_cancel_failed flag on the response so the
+  // client can show a support-escalation message.
+  let paypalCancelFailed = false;
+  let paypalCancelStatus = null;
   if (existing.provider_subscription_id) {
     try {
       const accessToken = await _getPayPalAccessToken();
-      const cancelRes = await fetch(
+      const cancelRes = await _fetchPayPalWithRetry(
         `${_paypalBase()}/v1/billing/subscriptions/${encodeURIComponent(existing.provider_subscription_id)}/cancel`,
         {
           method: 'POST',
@@ -130,27 +188,47 @@ export default async function handler(req, res) {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({ reason: 'User requested cancellation' }),
-        }
+        },
+        'subscription-cancel'
       );
+      paypalCancelStatus = cancelRes.status;
       // PayPal returns 204 on success. 422 means "already cancelled" which
-      // we treat as idempotent success. Any other error: log + still flip
-      // our local flag (PayPal won't have stopped billing, but the user
-      // should not be locked into an "active" state in our UI — they need
-      // a path to escalate via support).
+      // we treat as idempotent success. Any other error after retries: alert
+      // ops, surface the failure to the client. Still flip the local flag
+      // so the user sees "scheduled to cancel" in the UI rather than being
+      // locked into an inconsistent "active" state.
       if (!cancelRes.ok && cancelRes.status !== 422) {
         const errText = await cancelRes.text();
-        console.error('[cancel] PayPal cancel failed:', cancelRes.status, errText, {
+        paypalCancelFailed = true;
+        console.error('[cancel] PayPal cancel failed after retries:', cancelRes.status, errText, {
           userId, subscriptionId: existing.provider_subscription_id,
         });
-        // Don't fail the whole request — surface the local cancel-at-period-end
-        // anyway and let support reconcile. Returning 502 here would leave the
-        // user with an active PayPal sub AND no local cancel state.
+        _alertOps(
+          'Cancel failed at PayPal — user may keep getting charged',
+          `user_id: ${userId}\n` +
+          `subscriptionId: ${existing.provider_subscription_id}\n` +
+          `paypal_status: ${cancelRes.status}\n` +
+          `paypal_body: ${errText.slice(0, 500)}\n\n` +
+          `Local cancel_at_period_end flipped to true but PayPal still has ` +
+          `this subscription active. They will charge the user at next billing ` +
+          `time unless someone cancels it manually via the PayPal dashboard ` +
+          `(Activity → Recurring → find subscription → Cancel) AND emails the ` +
+          `user to confirm.`
+        );
       }
     } catch (e) {
+      paypalCancelFailed = true;
       console.error('[cancel] PayPal cancel threw:', e?.message || e, {
         userId, subscriptionId: existing.provider_subscription_id,
       });
-      // Same fallback policy as above.
+      _alertOps(
+        'Cancel threw at PayPal — user may keep getting charged',
+        `user_id: ${userId}\n` +
+        `subscriptionId: ${existing.provider_subscription_id}\n` +
+        `error: ${String(e?.stack || e?.message || e).slice(0, 500)}\n\n` +
+        `Local cancel_at_period_end flipped to true but PayPal call never ` +
+        `completed. Cancel manually via PayPal dashboard, then email user.`
+      );
     }
   }
 
@@ -198,6 +276,13 @@ export default async function handler(req, res) {
     cancel_at_period_end: updated.cancel_at_period_end,
     cancelled_at: updated.cancelled_at,
     current_period_end: updated.current_period_end,
-    message: 'Cancellation scheduled. Pro access remains until the end of your current period.',
+    // NEW-P1b — surface PayPal-side cancel state to the client so it can
+    // show a support-escalation message if the local flip succeeded but
+    // PayPal didn't acknowledge the cancellation.
+    paypal_cancel_failed: paypalCancelFailed,
+    paypal_cancel_status: paypalCancelStatus,
+    message: paypalCancelFailed
+      ? 'Cancellation scheduled locally, but we could not confirm with PayPal. Your next charge may still happen — our team has been alerted and will reconcile within 24 hours. Email support@profinancecast.com if you see another charge.'
+      : 'Cancellation scheduled. Pro access remains until the end of your current period.',
   });
 }

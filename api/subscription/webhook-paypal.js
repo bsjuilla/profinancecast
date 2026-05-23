@@ -86,6 +86,17 @@ const PAYPAL_PLAN_ID_TO_TIER = {
   [process.env.PAYPAL_PLAN_ID_PREMIUM_MONTHLY || '__premium_monthly__']: 'premium',
   [process.env.PAYPAL_PLAN_ID_PREMIUM_ANNUAL  || '__premium_annual__']:  'premium',
 };
+// NEW-P0a fix — map plan_id back to SKU so we can derive a calendar-correct
+// period_end when PayPal's ACTIVATED payload omits billing_info.next_billing_time.
+// Without this fallback, current_period_end was being written as null, and
+// status.js treated null period_end as "not expired" → user kept Pro tier
+// indefinitely without paying again. Same bug class as W29-final P0 #2.
+const PAYPAL_PLAN_ID_TO_SKU = {
+  [process.env.PAYPAL_PLAN_ID_PRO_MONTHLY     || '__pro_monthly__']:     'pro_monthly',
+  [process.env.PAYPAL_PLAN_ID_PRO_ANNUAL      || '__pro_annual__']:      'pro_annual',
+  [process.env.PAYPAL_PLAN_ID_PREMIUM_MONTHLY || '__premium_monthly__']: 'premium_monthly',
+  [process.env.PAYPAL_PLAN_ID_PREMIUM_ANNUAL  || '__premium_annual__']:  'premium_annual',
+};
 function _planTierFromSubscription(resource) {
   const planId = resource?.plan_id;
   if (!planId) return null;
@@ -419,6 +430,21 @@ export default async function handler(req, res) {
             provider_id: captureId, amount, currency,
             raw_payload: { reason: 'unparseable_reference_id', refId },
           });
+          // NEW-P1a fix — alert ops. Money landed in our PayPal account, we
+          // know which user it's for (userId is set), but we cannot derive
+          // the SKU from reference_id. Without this alert the user pays and
+          // gets nothing; no human gets paged. Mirrors the !userId branch
+          // above (line 358-364) which already _alertOps.
+          _alertOps(
+            'Capture completed but plan unresolvable from reference_id',
+            `captureId: ${captureId}\n` +
+            `user_id: ${userId}\n` +
+            `reference_id: ${refId || '(missing)'}\n` +
+            `amount: ${amount} ${currency}\n\n` +
+            `User has paid but we cannot infer which plan they bought. ` +
+            `Reconcile via PayPal dashboard (look up captureId), then manually ` +
+            `upsert the subscriptions row + profiles row for this user.`
+          );
           break;
         }
 
@@ -647,20 +673,55 @@ export default async function handler(req, res) {
           break;
         }
 
-        // W29-final P0 FIX: set current_period_end = next_billing_time on
-        // ACTIVATED. next_billing_time is when PayPal will charge next; for
-        // the user's CURRENT period, that's the same boundary — they have
-        // access until then. Previously this field was left null, which
-        // worked only because status.js treats null period_end as "not
-        // expired"; that was fragile and broke the contract that other
-        // code (history, downgrade detection) relies on.
+        // NEW-P0a fix — period_end fail-safe.
+        // Prefer PayPal's next_billing_time when present, but fall back to
+        // calendar-correct derivation from the plan SKU if PayPal omits it.
+        // If we have NEITHER (unknown plan_id AND missing next_billing_time),
+        // refuse to mark active — leave the row in 'pending' so status.js
+        // continues to return 'free' until support manually reconciles.
+        // This is the same bug class as W29-final P0 #2 (null period_end =
+        // user gets plan forever); the W29-final fix populated the field
+        // when PayPal gave it but had no fallback for the null-input case.
+        const inferredSku = PAYPAL_PLAN_ID_TO_SKU[resource?.plan_id] || null;
+        const periodEnd = nextBilling || (inferredSku ? _periodEndForSku(inferredSku) : null);
+
+        if (!periodEnd) {
+          // Worst case: we cannot resolve any period boundary. Keep DB in
+          // pending state and alert ops to reconcile manually rather than
+          // silently grant indefinite Pro.
+          _alertOps(
+            'ACTIVATED without resolvable period_end',
+            `subscriptionId: ${subscriptionId}\n` +
+            `user_id: ${customUserId}\n` +
+            `plan_id: ${resource?.plan_id || '(missing)'}\n` +
+            `next_billing_time: ${nextBilling || '(missing)'}\n\n` +
+            `Cannot resolve a period boundary from EITHER PayPal payload OR ` +
+            `the configured PAYPAL_PLAN_ID_* env vars. Subscription row left ` +
+            `in 'pending' state so user receives no entitlement. Reconcile ` +
+            `via PayPal dashboard and either set the env var or manually ` +
+            `upsert the subscriptions row.`
+          );
+          await _logEvent({
+            user_id: customUserId,
+            event_type: 'webhook_activated_no_period_end',
+            provider_id: subscriptionId,
+            raw_payload: {
+              reason: 'no_period_end_resolvable',
+              plan_id: resource?.plan_id || null,
+              next_billing_time: nextBilling,
+              event,
+            },
+          });
+          break;
+        }
+
         const updErr = (await supabase.from('subscriptions').update({
           status: 'active',
           subscription_state: 'ACTIVE',
-          next_billing_time: nextBilling,
-          current_period_end: nextBilling,  // W29-final — explicit period boundary
+          next_billing_time: nextBilling || undefined,  // don't null out if missing
+          current_period_end: periodEnd,
           failed_payment_count: 0,
-          plan: planTier || undefined,  // skip if we couldn't derive
+          plan: planTier || undefined,  // skip if we couldn't derive tier
           updated_at: new Date().toISOString(),
         }).eq('user_id', customUserId)).error;
         if (updErr) console.error('[webhook] subscription.activated upd err:', updErr);
@@ -684,9 +745,18 @@ export default async function handler(req, res) {
         const state          = resource.status;
 
         if (customUserId) {
+          // NEW-S5 fix — never overwrite next_billing_time with null. UPDATED
+          // events for plan/payment-method changes often omit
+          // billing_info.next_billing_time even though the underlying
+          // subscription still has a valid next charge date. Pre-fix, this
+          // handler unconditionally wrote null, clobbering the row's
+          // next_billing_time. current_period_end was never touched here
+          // (only ACTIVATED and SALE.COMPLETED set it) so entitlement was
+          // safe, but downstream UI / cron jobs that read next_billing_time
+          // would see null and assume the sub had ended.
           await supabase.from('subscriptions').update({
             subscription_state: state || undefined,
-            next_billing_time: nextBilling,
+            next_billing_time: nextBilling || undefined,  // don't null out
             updated_at: new Date().toISOString(),
           }).eq('user_id', customUserId);
         }
