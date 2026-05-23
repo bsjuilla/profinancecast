@@ -1443,6 +1443,14 @@
           <div class="order-row"><span>Billing</span><span id="summary-billing">Annual</span></div>
           <div class="order-row"><span>Total today</span><span class="num" id="summary-total">€79.00</span></div>
         </div>
+        <!-- W28-b #30 — refund policy at the point of payment. Industry best
+             practice; previously the 14-day money-back copy was 8 sections
+             up the page where users completing PayPal don't see it. -->
+        <div class="refund-callout" style="margin:8px 0 14px;padding:10px 12px;background:rgba(244,239,229,0.04);border-radius:6px;font-size:12px;color:var(--pfc-ink);line-height:1.5;">
+          <strong style="color:var(--pfc-ink-strong);">14-day money-back guarantee.</strong>
+          Email <a href="mailto:support@profinancecast.com" style="color:var(--pfc-emerald);">support@profinancecast.com</a>
+          within 14 days for a full refund — no forms.
+        </div>
 
         <!-- Method toggle -->
         <div class="pay-methods">
@@ -1468,9 +1476,26 @@
               Loading PayPal…
             </div>
           </div>
-          <div class="secure-note" style="margin-top:var(--space-3);">
-            <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1l4 1.5v4c0 2.5-4 5.5-4 5.5S2.5 9 2.5 6.5v-4z" stroke="currentColor" stroke-width="1.2"/></svg>
-            Secured by PayPal — your card details go directly to PayPal
+          <!-- W28-b #36 — trust strip. Previous "Secured by PayPal" line was
+               too tiny to register as risk-reversal. Now: padlock + PayPal
+               Buyer Protection + 256-bit SSL + PCI scope statement, all at
+               12px so it sits below the button without dominating. -->
+          <div class="trust-strip" style="margin-top:14px;padding:10px 12px;background:rgba(244,239,229,0.03);border-radius:6px;font-size:12px;color:var(--pfc-ink-muted);line-height:1.5;display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:center;">
+            <span style="display:inline-flex;align-items:center;gap:5px;color:var(--pfc-ink);">
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M3 5V3.5a3 3 0 016 0V5M2 5h8v6H2V5z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>
+              256-bit SSL
+            </span>
+            <span style="display:inline-flex;align-items:center;gap:5px;color:var(--pfc-ink);">
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M6 1l4 1.5v3.5c0 2.5-4 5-4 5s-4-2.5-4-5V2.5L6 1z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>
+              PayPal Buyer Protection
+            </span>
+            <span style="display:inline-flex;align-items:center;gap:5px;color:var(--pfc-ink);">
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><rect x="1.5" y="3" width="9" height="6" rx="1" stroke="currentColor" stroke-width="1.2"/><path d="M1.5 5h9" stroke="currentColor" stroke-width="1.2"/></svg>
+              PCI SAQ A
+            </span>
+            <span style="display:block;width:100%;text-align:center;color:var(--pfc-ink-muted);">
+              Card details never touch ProFinanceCast servers — only PayPal.
+            </span>
           </div>
         </div>
 

@@ -149,8 +149,13 @@ function loadPayPal() {
       '<strong>Payment unavailable:</strong> Configuration error. Please contact support.</div>';
     return;
   }
+  // W28-b #39 — pin funding sources so PayPal can't surface "Pay Later" /
+  // Venmo / region-specific buttons whose checkout flows we haven't tested.
+  // enable-funding=card,paypal restricts the SDK to the two methods we
+  // actually support; disable-funding=paylater,venmo is belt-and-braces in
+  // case PayPal changes the enable-funding default to include them later.
   const script  = document.createElement('script');
-  script.src    = `https://www.paypal.com/sdk/js?client-id=${PAYPAL_CLIENT_ID}&currency=EUR&intent=capture&components=buttons`;
+  script.src    = `https://www.paypal.com/sdk/js?client-id=${PAYPAL_CLIENT_ID}&currency=EUR&intent=capture&components=buttons&enable-funding=card,paypal&disable-funding=paylater,venmo`;
   script.onload = () => { paypalLoaded = true; renderPayPalButtons(); };
   script.onerror = () => {
     document.getElementById('paypal-button-container').innerHTML =
@@ -198,21 +203,147 @@ function renderPayPalButtons() {
         // Force the entitlements module to fetch the new plan from the server
         if (typeof PFCPlan !== 'undefined') await PFCPlan.refresh();
         showSuccess(checkoutPlan);
-      } else {
-        alert(result.error || 'Payment could not be completed. Please try again.');
+        return;
       }
+      // W28-b #34 — error matrix.
+      // Server returns structured errors; map HTTP status + flags to a
+      // user-message + recovery action. captureID is shown as a copy-able
+      // reference so support can find the transaction immediately.
+      _showCaptureError(res.status, result);
     },
 
     onError: (err) => {
       console.error('PayPal error:', err);
-      document.getElementById('paypal-button-container').innerHTML =
-        '<div style="color:var(--pfc-terracotta);font-size:13px;padding:var(--space-3);">Payment failed. Please try again or use card payment.</div>';
+      _showCaptureError(0, { error: 'paypal_sdk_error', _sdkErr: String(err?.message || err) });
     },
 
     onCancel: () => {
       // User closed PayPal popup — do nothing
     }
   }).render('#paypal-button-container');
+}
+
+// W28-b #34 — capture-error matrix.
+// Maps HTTP status + server payload to a user-message and a recovery
+// action. Replaces the previous alert() that dumped raw server error
+// strings at the user. Surfaces captureID when present so support can
+// find the transaction in PayPal in one query.
+function _showCaptureError(httpStatus, result) {
+  const captureId = result?.captureID || result?.captureId || null;
+  const refundIssued = result?.refundIssued === true;
+
+  // Decide the user-visible message + recovery hint.
+  let title = 'Payment could not be completed';
+  let body  = 'Please try again. If the problem keeps happening, email support@profinancecast.com.';
+  let action = 'retry';
+
+  if (httpStatus === 409) {
+    if (refundIssued) {
+      title = 'Refund issued automatically';
+      body  = 'The captured amount didn\'t match the expected price, so we\'ve refunded it. The refund should appear in 3-5 business days.';
+      action = 'support';
+    } else if (result?.status === 'ALREADY_CAPTURED') {
+      title = 'This order has already been processed';
+      body  = 'Refresh the page — your account should already be upgraded. If not, contact support.';
+      action = 'refresh';
+    } else {
+      title = 'Payment amount didn\'t match';
+      body  = result?.error || 'Our team has been notified and will issue a manual refund within 24 hours.';
+      action = 'support';
+    }
+  } else if (httpStatus === 403) {
+    title = 'Account verification needed';
+    body  = result?.error || 'Please confirm your email address, then try again.';
+    action = 'verify-email';
+  } else if (httpStatus === 401) {
+    title = 'Please sign in again';
+    body  = 'Your session expired during checkout. Sign in and try once more.';
+    action = 'reauth';
+  } else if (httpStatus === 500 && result?.retryable) {
+    title = 'Payment captured but upgrade pending';
+    body  = 'Your payment went through but your account hasn\'t flipped yet. Refresh in a moment, or contact support if Pro doesn\'t appear within 60 seconds.';
+    action = 'refresh';
+  } else if (httpStatus === 502) {
+    title = 'Could not reach PayPal';
+    body  = 'A transient error stopped the capture. Please try again in a moment.';
+    action = 'retry';
+  } else if (httpStatus === 0) {
+    title = 'Network error during payment';
+    body  = 'Check your connection and try again.';
+    action = 'retry';
+  }
+
+  const container = document.getElementById('paypal-button-container');
+  if (!container) return;
+
+  // Build the error block using DOM APIs only — never innerHTML on
+  // user-controlled data. CSP forbids inline event handlers
+  // (script-src-attr 'none') and the bootstrap dispatcher doesn't
+  // re-wire dynamically-inserted [data-pfc-on-click] nodes, so we use
+  // real addEventListener calls below.
+  container.innerHTML = '';
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'background:rgba(199,84,80,0.06);border:1px solid rgba(199,84,80,0.25);border-radius:8px;padding:14px 16px;font-size:13px;color:var(--pfc-ink);line-height:1.55;';
+
+  const titleEl = document.createElement('div');
+  titleEl.style.cssText = 'font-weight:600;color:var(--pfc-terracotta);margin-bottom:6px;';
+  titleEl.textContent = title;
+  wrap.appendChild(titleEl);
+
+  const bodyEl = document.createElement('div');
+  bodyEl.style.cssText = 'margin-bottom:10px;';
+  bodyEl.textContent = body;
+  wrap.appendChild(bodyEl);
+
+  if (captureId) {
+    const refRow = document.createElement('div');
+    refRow.style.cssText = 'font-size:11px;color:var(--pfc-ink-muted);margin-bottom:8px;';
+    refRow.appendChild(document.createTextNode('Reference: '));
+    const code = document.createElement('code');
+    code.style.cssText = 'user-select:all;background:rgba(0,0,0,0.05);padding:1px 5px;border-radius:3px;';
+    code.textContent = captureId;
+    refRow.appendChild(code);
+    wrap.appendChild(refRow);
+  }
+
+  // Recovery action — varies by error class. Use real elements + real
+  // listeners so CSP (script-src-attr 'none') doesn't strip them.
+  let action_el;
+  if (action === 'retry') {
+    action_el = document.createElement('button');
+    action_el.className = 'pay-now-btn';
+    action_el.textContent = 'Try again';
+    action_el.addEventListener('click', () => {
+      if (typeof renderPayPalButtons === 'function') renderPayPalButtons();
+    });
+  } else if (action === 'refresh') {
+    action_el = document.createElement('button');
+    action_el.className = 'pay-now-btn';
+    action_el.textContent = 'Refresh page';
+    action_el.addEventListener('click', () => location.reload());
+  } else if (action === 'reauth') {
+    action_el = document.createElement('a');
+    action_el.className = 'pay-now-btn';
+    action_el.style.cssText = 'display:inline-block;text-decoration:none;text-align:center;';
+    action_el.href = 'auth.html?next=' + encodeURIComponent(location.pathname);
+    action_el.textContent = 'Sign in';
+  } else if (action === 'verify-email') {
+    action_el = document.createElement('a');
+    action_el.className = 'pay-now-btn';
+    action_el.style.cssText = 'display:inline-block;text-decoration:none;text-align:center;';
+    action_el.href = 'settings.html#email';
+    action_el.textContent = 'Verify email';
+  } else {
+    action_el = document.createElement('a');
+    action_el.className = 'pay-now-btn';
+    action_el.style.cssText = 'display:inline-block;text-decoration:none;text-align:center;';
+    action_el.href = 'mailto:support@profinancecast.com?subject=' +
+      encodeURIComponent('Payment issue' + (captureId ? ' ' + captureId : ''));
+    action_el.textContent = 'Contact support';
+  }
+  action_el.style.marginTop = '4px';
+  wrap.appendChild(action_el);
+  container.appendChild(wrap);
 }
 
 // Card-payment processing flows entirely through the PayPal SDK above
