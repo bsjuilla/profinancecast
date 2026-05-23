@@ -1286,7 +1286,27 @@
           <li><svg class="check" viewBox="0 0 16 16" fill="none"><path d="M3 8.5l3 3 7-7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Direct line to the team for feedback</li>
         </ul>
         <div class="founders-counter" data-founders-counter>100 founders seats — closes day 30 of the channel test</div>
-        <button class="plan-btn plan-btn--gold" id="founders-cta"
+
+        <!-- EU Consumer Rights Directive — express waiver of 14-day right of withdrawal.
+             Founders Lifetime is "immediate digital delivery" so the user must explicitly
+             waive their statutory cooling-off period before checkout can proceed.
+             The checkbox MUST be unchecked by default and MUST be a separate action
+             from clicking Pay (Art. 16(m) CRD; UK CCR reg. 28). -->
+        <label for="founders-waiver" style="display:flex;gap:8px;align-items:flex-start;margin:12px 0;padding:10px 12px;background:rgba(212,175,106,0.06);border:1px solid rgba(212,175,106,0.25);border-radius:6px;font-family:var(--font-body);font-size:12px;color:var(--ink-2);line-height:1.45;cursor:pointer;">
+          <input type="checkbox" id="founders-waiver" style="margin-top:2px;flex-shrink:0;">
+          <span>
+            I understand that Founders Lifetime gives me immediate, permanent access to Pro features.
+            I expressly request that performance begin immediately and I acknowledge that, by ticking this box and clicking Pay,
+            <strong>I waive my 14-day right of withdrawal</strong> on this one-time purchase
+            beyond the explicit 14-day refund window described in
+            <a href="terms.html#7b" style="color:var(--money);">Terms § 7b</a>.
+          </span>
+        </label>
+
+        <button class="plan-btn plan-btn--gold" id="founders-cta" disabled
+                 aria-disabled="true"
+                 title="Tick the waiver above to enable"
+                 style="opacity:0.5;cursor:not-allowed;"
                  data-pfc-on-click="openCheckout" data-pfc-arg='["founders",149]'>Claim a Founders seat — €149 once</button>
         <p class="paypal-clarifier" style="font-family:var(--font-body);font-size:12px;color:var(--ink-3);margin-top:8px;line-height:1.5;">
           Card payments are processed by PayPal — we never see or store your card details.

@@ -105,10 +105,22 @@ function _planTierFromSubscription(resource) {
 
 // W27-a #17 — best-effort alert sink for events that need human follow-up
 // (unresolvable user on a real captured payment, mismatched currency, etc.).
-// Sends to ALERT_EMAIL via Resend if both env vars are present; otherwise
-// becomes a no-op and the event lives only in subscription_events + Vercel logs.
-// Non-blocking on the happy path; never throws.
+// Fans out to TWO sinks independently so a single-channel outage doesn't
+// blackhole the alert (CISO #3 finding 2026-05-23):
+//   1. Resend email → ALERT_EMAIL  (if RESEND_API_KEY + ALERT_EMAIL set)
+//   2. Slack incoming webhook       (if SLACK_WEBHOOK_URL set)
+// Both are best-effort and never throw out of this function.
 async function _alertOps(subject, body) {
+  // Fire both sinks in parallel; await neither (they run as side effects
+  // but we still await the Promise.allSettled so cold-start lambdas don't
+  // tear down before the requests flush).
+  await Promise.allSettled([
+    _alertViaEmail(subject, body),
+    _alertViaSlack(subject, body),
+  ]);
+}
+
+async function _alertViaEmail(subject, body) {
   const apiKey = process.env.RESEND_API_KEY;
   const to     = process.env.ALERT_EMAIL;
   const from   = process.env.ALERT_FROM_EMAIL || 'alerts@profinancecast.com';
@@ -124,7 +136,32 @@ async function _alertOps(subject, body) {
       }),
     });
   } catch (e) {
-    console.error('[webhook-paypal] _alertOps failed:', e?.message || e);
+    console.error('[webhook-paypal] _alertViaEmail failed:', e?.message || e);
+  }
+}
+
+async function _alertViaSlack(subject, body) {
+  const url = process.env.SLACK_WEBHOOK_URL;
+  if (!url) return;
+  try {
+    // Use Slack's "blocks" format for readable mobile rendering. Truncate
+    // body to 2500 chars so long stack traces don't blow the 40000-char
+    // Slack payload limit.
+    const truncated = String(body).slice(0, 2500);
+    await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        text: `🚨 *${subject}*\n\`\`\`${truncated}\`\`\``,  // fallback for notifications
+        blocks: [
+          { type: 'header', text: { type: 'plain_text', text: `🚨 ${subject}`.slice(0, 150) } },
+          { type: 'section', text: { type: 'mrkdwn', text: '```' + truncated + '```' } },
+          { type: 'context', elements: [{ type: 'mrkdwn', text: `_ProFinanceCast payments alert · ${new Date().toISOString()}_` }] },
+        ],
+      }),
+    });
+  } catch (e) {
+    console.error('[webhook-paypal] _alertViaSlack failed:', e?.message || e);
   }
 }
 

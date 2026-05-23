@@ -5,6 +5,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { rateLimitOrReject } from '../_lib/rate-limit.js';
+import { geoBlockOrReject } from '../_lib/geo-gate.js';
 
 const PAYPAL_BASE = (process.env.PAYPAL_ENV === 'sandbox')
   ? 'https://api-m.sandbox.paypal.com'
@@ -151,14 +152,32 @@ export default async function handler(req, res) {
     });
   }
 
+  // CISO #1 — VAT geo-gate. Set PAYMENTS_ALLOWED_COUNTRIES env to enable.
+  // See docs/runbooks/vat-strategy.md for the rationale + allow-list picks.
+  if (geoBlockOrReject(req, res)) return;
+
   // W26-a #12: reject cross-origin/no-origin requests on mutating payment ops.
   if (!_originAllowed(req)) {
     return res.status(403).json({ error: 'Forbidden: invalid origin' });
   }
 
-  const { plan } = req.body || {};
+  const { plan, waiver_acknowledged } = req.body || {};
   if (!plan || !PLAN_PRICES[plan]) {
     return res.status(400).json({ error: 'Invalid plan' });
+  }
+
+  // EU Consumer Rights Directive — for the Founders one-time purchase,
+  // require explicit acknowledgement of the 14-day withdrawal-right waiver.
+  // The client renders an unchecked checkbox at billing.html that must be
+  // ticked before the openCheckout call fires. This server-side check
+  // prevents an attacker calling this endpoint directly from bypassing the
+  // gate. The waiver is what justifies "immediate digital delivery" under
+  // Art. 16(m) CRD; without it the user retains the full 14-day right.
+  if (plan === 'founders' && waiver_acknowledged !== true) {
+    return res.status(400).json({
+      error: 'Founders Lifetime requires explicit acknowledgement of the 14-day withdrawal-right waiver. Please tick the consent box and try again.',
+      reason: 'crd_waiver_missing',
+    });
   }
 
   // Buyer must be authenticated — prevents anonymous order creation

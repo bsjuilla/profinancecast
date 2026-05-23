@@ -372,6 +372,74 @@ within 60s, alert delivery is broken — fix BEFORE next incident.
   morning, watch what happens, recover. The first time should not be during
   a real fire.
 
+---
+
+## Appendix C — Alert routing setup (CISO #3, recommended pre-launch)
+
+Pre-launch the project routes ALL alerts to `business060407@gmail.com` —
+your personal Gmail. Three failure modes you want to remove before launch:
+
+1. Gmail compromise → attacker silently reads every payment alert
+2. Spam filter → eats a real `_alertOps` mail, you miss the incident you need to see
+3. Single inbox → no backup if you're asleep / offline / on a flight
+
+### Step 1 — Slack webhook (highest ROI, 5 min)
+
+1. Create a Slack workspace if you don't have one (free).
+2. Create a channel `#pfc-alerts` (private OK).
+3. In Slack: **Apps** → search **Incoming Webhooks** → install → pick `#pfc-alerts` → copy the webhook URL (looks like `https://hooks.slack.com/services/T0.../B0.../...`).
+4. Vercel → project → Settings → Environment Variables → **Add**:
+   `SLACK_WEBHOOK_URL = <the URL>` (Production + Preview).
+5. Redeploy. Test by running Appendix B's smoke-test Resend snippet but
+   POST to the Slack webhook URL with `{"text":"smoke test"}` instead.
+
+Once set, **every `_alertOps` call fans out to BOTH email AND Slack** —
+neither sink blocks the other.
+
+### Step 2 — Domain mailbox `alerts@profinancecast.com` (30 min, free)
+
+Moves alerts off your personal Gmail address while still ultimately
+landing in a mailbox you read.
+
+**Option A — Cloudflare Email Routing (recommended, free):**
+
+1. Make sure your domain (`profinancecast.com`) is on Cloudflare DNS.
+2. Cloudflare dashboard → your domain → **Email** → **Email Routing** → **Get started**.
+3. Follow the setup wizard — it adds 3 MX records + 1 SPF TXT record. Wait ~5 min for DNS.
+4. **Routing rules** → **Create address**: `alerts@profinancecast.com` → forward to `business060407@gmail.com` (AND optionally to a secondary inbox for redundancy — e.g., a co-founder, a partner, or a personal-backup address you check daily).
+5. Vercel env → set `ALERT_EMAIL = alerts@profinancecast.com` (was `business060407@gmail.com`) → redeploy.
+6. Confirm the existing `ALERT_FROM_EMAIL = alerts@profinancecast.com` works — Resend needs the sending domain verified. Add the Resend DKIM/Return-Path records (Resend dashboard tells you what) if not already present.
+
+After this, the chain is: webhook fires → Resend sends to `alerts@profinancecast.com` → Cloudflare forwards to your real inbox(es). You can change downstream destinations any time without touching Vercel env.
+
+**Option B — Google Workspace ($6/mo):**
+
+If you also want to *send* from `alerts@profinancecast.com` interactively (replying to support@), Google Workspace adds a real mailbox. Worth it once revenue justifies the spend.
+
+### Step 3 — Test the full pipeline (5 min)
+
+After both are wired, deliberately trigger an alert end-to-end:
+
+```bash
+# From any shell with auth + payments-disabled NOT set
+curl -X POST https://profinancecast.com/api/subscription/cancel \
+  -H "Authorization: Bearer <a-test-user-jwt>" \
+  -H "Origin: https://profinancecast.com" \
+  -H "Content-Type: application/json"
+```
+
+If the user has no active subscription, this returns 400 cleanly — no
+alert. To actually exercise the alert path, you can either:
+- Issue a small refund in PayPal sandbox and watch the webhook handler
+  trip `_alertOps` if the refund hits an edge case, OR
+- Temporarily edit `webhook-paypal.js` to fire `_alertOps('smoke test', 'ignore me')` on `default:` case, deploy to Preview, fire a sandbox webhook, verify both email + Slack arrive, then revert.
+
+Once verified, you have two-channel alert delivery and a domain mailbox.
+Don't ship without doing this — the IR runbook above is useless if you
+don't actually get the page.
+
+---
+
 ## See also
 
 - [docs/handoff/2026-05-23-payments-launch-state.md](../handoff/2026-05-23-payments-launch-state.md) — full state of payments system

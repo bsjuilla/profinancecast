@@ -43,6 +43,7 @@ export const config = { runtime: 'edge' };
 
 import { createClient } from '@supabase/supabase-js';
 import { rateLimitOrReject } from '../_lib/rate-limit.js';
+import { geoBlockOrReject } from '../_lib/geo-gate.js';
 
 const PAYPAL_BASE = (process.env.PAYPAL_ENV === 'sandbox')
   ? 'https://api-m.sandbox.paypal.com'
@@ -155,6 +156,10 @@ export default async function handler(req) {
       maintenance: true,
     }, 503);
   }
+
+  // CISO #1 — VAT geo-gate. Edge variant returns a Response object.
+  const geo = geoBlockOrReject(req, null);
+  if (geo) return geo;
 
   // W26-a #12: origin check on mutating payment ops.
   if (!_originAllowed(req)) return _json({ error: 'Forbidden: invalid origin' }, 403);

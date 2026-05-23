@@ -64,9 +64,17 @@ async function _getPayPalAccessToken() {
 }
 
 // NEW-P1b fix — best-effort alert sink for cancel failures that need support
-// intervention. Identical signature to webhook-paypal.js _alertOps; copy
-// kept here until NEW-R1 shared lib refactor lands.
+// intervention. CISO #3 fan-out: email AND Slack independently. Identical
+// signature to webhook-paypal.js _alertOps; copy kept here until NEW-R1
+// shared lib refactor lands.
 async function _alertOps(subject, body) {
+  await Promise.allSettled([
+    _alertViaEmail(subject, body),
+    _alertViaSlack(subject, body),
+  ]);
+}
+
+async function _alertViaEmail(subject, body) {
   const apiKey = process.env.RESEND_API_KEY;
   const to     = process.env.ALERT_EMAIL;
   const from   = process.env.ALERT_FROM_EMAIL || 'alerts@profinancecast.com';
@@ -82,7 +90,29 @@ async function _alertOps(subject, body) {
       }),
     });
   } catch (e) {
-    console.error('[cancel] _alertOps failed:', e?.message || e);
+    console.error('[cancel] _alertViaEmail failed:', e?.message || e);
+  }
+}
+
+async function _alertViaSlack(subject, body) {
+  const url = process.env.SLACK_WEBHOOK_URL;
+  if (!url) return;
+  try {
+    const truncated = String(body).slice(0, 2500);
+    await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        text: `🚨 *${subject}*\n\`\`\`${truncated}\`\`\``,
+        blocks: [
+          { type: 'header', text: { type: 'plain_text', text: `🚨 ${subject}`.slice(0, 150) } },
+          { type: 'section', text: { type: 'mrkdwn', text: '```' + truncated + '```' } },
+          { type: 'context', elements: [{ type: 'mrkdwn', text: `_ProFinanceCast cancel alert · ${new Date().toISOString()}_` }] },
+        ],
+      }),
+    });
+  } catch (e) {
+    console.error('[cancel] _alertViaSlack failed:', e?.message || e);
   }
 }
 

@@ -100,7 +100,7 @@
 <div class="content">
   <span class="page-tag">Legal</span>
   <h1>Privacy Policy</h1>
-  <p class="meta">Last updated: May 10, 2026 · Effective immediately</p>
+  <p class="meta">Last updated: May 23, 2026 · Effective immediately</p>
 
   <div class="summary-box">
     <p><strong>Plain-English summary:</strong> We collect only what we need to run ProFinanceCast. We never sell your data, never share it with advertisers, and never use it to train AI models. You can export or delete everything at any time.</p>
@@ -143,15 +143,28 @@
     <li>We <strong>never send</strong> unsolicited marketing without your explicit opt-in</li>
   </ul>
 
-  <h2>6. Third-party services</h2>
-  <p>We use the following trusted third parties to operate the service:</p>
+  <h2>6. Third-party services (sub-processors)</h2>
+  <p>We use the following trusted third parties to operate the service. Each is bound by a Data Processing Agreement (DPA) where applicable under GDPR Article 28:</p>
   <ul>
-    <li><strong>Supabase</strong> — secure database and authentication (GDPR compliant, SOC 2 certified)</li>
-    <li><strong>PayPal</strong> — payment processing (we never see or store your card details)</li>
-    <li><strong>Vercel</strong> — hosting and serverless functions (SOC 2 certified)</li>
-    <li><strong>Google / Anthropic</strong> — AI model providers, used only to answer your Sage queries; your data is not retained by these providers after your session</li>
-    <li><strong>Cloudflare Web Analytics</strong> — privacy-respecting analytics; no cookies, no IP fingerprinting, no PII; we use the JS-beacon variant</li>
-    <li><strong>Sentry</strong> — error monitoring; PII-scrubbed via beforeSend filter so financial figures, user IDs, and emails never leave the browser</li>
+    <li><strong>Supabase</strong> — database, authentication, and file storage. GDPR-compliant, SOC 2 Type II. DPA: <a href="https://supabase.com/legal/dpa" target="_blank" rel="noopener">supabase.com/legal/dpa</a>. Data hosted in EU region.</li>
+    <li><strong>PayPal</strong> — payment processing and, for Pro/Premium subscriptions, storage of the recurring billing agreement linked to your account. We never see or store your card details. PayPal acts as an independent controller for payment data under their <a href="https://www.paypal.com/legalhub/privacy-full" target="_blank" rel="noopener">privacy statement</a>. For recurring subscriptions, PayPal retains your billing agreement until you cancel it (either via our Settings or directly in your PayPal account).</li>
+    <li><strong>Vercel</strong> — hosting and serverless functions (SOC 2). DPA: <a href="https://vercel.com/legal/dpa" target="_blank" rel="noopener">vercel.com/legal/dpa</a>.</li>
+    <li><strong>Upstash</strong> — Redis-backed rate-limiting cache for payment endpoints. Stores only short-lived counters keyed by your user ID; no financial or personal data. DPA: <a href="https://upstash.com/trust/dpa.pdf" target="_blank" rel="noopener">upstash.com/trust/dpa.pdf</a>.</li>
+    <li><strong>Resend</strong> — transactional email delivery (account verification, billing notifications, operational alerts). Receives your email address and message content. DPA: <a href="https://resend.com/legal/dpa" target="_blank" rel="noopener">resend.com/legal/dpa</a>.</li>
+    <li><strong>Google (Gemini) / Anthropic</strong> — AI model providers, used only to answer your Sage queries. Your data is not retained by these providers after the response and is not used to train their models (per their enterprise terms).</li>
+    <li><strong>Cloudflare Web Analytics</strong> — privacy-respecting analytics; no cookies, no IP fingerprinting, no PII; we use the JS-beacon variant. <a href="https://www.cloudflare.com/web-analytics/" target="_blank" rel="noopener">More info</a>.</li>
+    <li><strong>Plausible</strong> — privacy-respecting analytics (EU-hosted, no cookies, no cross-site tracking, no PII).</li>
+    <li><strong>Sentry</strong> — error monitoring; PII-scrubbed via beforeSend filter so financial figures, user IDs, and emails never leave the browser.</li>
+  </ul>
+
+  <h2>6a. Payment data flow</h2>
+  <p>When you subscribe to a paid plan or buy Founders Lifetime, the following data flow occurs:</p>
+  <ul>
+    <li>You are redirected to PayPal's hosted approval page (we never see your card or PayPal credentials).</li>
+    <li>PayPal returns to us a transaction or subscription identifier, the amount paid, the currency, and your PayPal payer ID. We store these in our <code>subscriptions</code> and <code>subscription_events</code> tables to grant entitlement and produce billing history.</li>
+    <li>For recurring subscriptions, PayPal stores a billing agreement linked to your payment instrument and re-uses it for renewals. You can review and revoke this agreement at any time in your PayPal account (Activity → Recurring payments).</li>
+    <li>We receive a webhook from PayPal on each capture, refund, dispute, or renewal event. PII fields (payer name, email, addresses, free-text dispute reasons) are stripped before being persisted to our audit log.</li>
+    <li>We do not share your financial usage data (income, expenses, etc.) with PayPal — only the transaction itself.</li>
   </ul>
 
   <h2>7. Your rights</h2>

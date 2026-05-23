@@ -79,6 +79,26 @@ function openPremiumCheckout() {
 
 // ── OPEN CHECKOUT ──
 function openCheckout(plan, amount) {
+  // EU CRD waiver gate (added 2026-05-23) — for the Founders one-time
+  // purchase, refuse to proceed if the user has not explicitly ticked the
+  // withdrawal-waiver checkbox. The checkbox is in billing.html next to the
+  // founders-cta button. Pro/Premium recurring SKUs are unaffected (they
+  // retain the standard 14-day withdrawal right under terms § 7a).
+  if (plan === 'founders') {
+    const waiverEl = document.getElementById('founders-waiver');
+    if (!waiverEl || !waiverEl.checked) {
+      // Don't open the modal. Visually nudge the user to the checkbox.
+      const label = waiverEl ? waiverEl.closest('label') : null;
+      if (label) {
+        label.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        label.style.transition = 'box-shadow 200ms ease-out';
+        label.style.boxShadow = '0 0 0 3px rgba(212,175,106,0.5)';
+        setTimeout(() => { label.style.boxShadow = ''; }, 1200);
+      }
+      return;
+    }
+  }
+
   // CDO Wave-14: pfc.pro_intent fires on any paid-tier CTA. The `source` prop
   // captures which SKU drove it so we can split Pro vs Premium vs Founders
   // intent without leaking the amount (CDO PII rule — no raw 3+ digit numbers).
@@ -279,10 +299,18 @@ function _renderOneShotButton() {
 
     // Step 1: create the order on your server (auth required)
     createOrder: async () => {
+      // For Founders, forward the EU CRD waiver acknowledgement to the
+      // server so an attacker calling /api/paypal/create-order directly
+      // can't bypass the client-side checkbox gate (defense-in-depth).
+      const body = { plan: checkoutPlan };
+      if (checkoutPlan === 'founders') {
+        const cb = document.getElementById('founders-waiver');
+        body.waiver_acknowledged = !!(cb && cb.checked);
+      }
       const res = await fetch('/api/paypal/create-order', {
         method: 'POST',
         headers: _authHeaders(),
-        body: JSON.stringify({ plan: checkoutPlan }),
+        body: JSON.stringify(body),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Order creation failed');
@@ -833,10 +861,33 @@ document.addEventListener('visibilitychange', () => {
   if (!document.hidden) refreshFoundersCount();
 });
 
+// Wire the Founders waiver checkbox to enable/disable the CTA button.
+// CSP forbids inline event handlers, so this DOMContentLoaded listener does
+// the binding. The button is rendered with disabled=true so this is the only
+// path to enable it; if JS fails to load, the user can never check out
+// Founders, which is the right fail-closed posture for a CRD waiver gate.
+function _wireFoundersWaiver() {
+  const cb  = document.getElementById('founders-waiver');
+  const btn = document.getElementById('founders-cta');
+  if (!cb || !btn) return;
+  const sync = () => {
+    btn.disabled = !cb.checked;
+    btn.setAttribute('aria-disabled', String(!cb.checked));
+    btn.style.opacity = cb.checked ? '' : '0.5';
+    btn.style.cursor  = cb.checked ? '' : 'not-allowed';
+    btn.title = cb.checked ? '' : 'Tick the waiver above to enable';
+  };
+  cb.addEventListener('change', sync);
+  sync();
+}
+
 // Boot: keep UI in sync with whatever the server says is the current plan
 window.addEventListener('DOMContentLoaded', () => {
   // Default the Pro card to annual pricing
   setBillingInterval('annual');
+
+  // EU CRD waiver wiring for Founders Lifetime
+  _wireFoundersWaiver();
 
   // Live Founders seat count
   refreshFoundersCount();
