@@ -76,16 +76,38 @@ function _json(body, status) {
   });
 }
 
-// W26-a #12 — Origin check.
+// W26-a #12 + W29-c regression fix: origin/referer check accepts both
+// www and apex variants. Edge-runtime header access (req.headers.get).
+function _normalizeOrigin(o) {
+  if (!o || typeof o !== 'string') return '';
+  try {
+    const u = new URL(o);
+    return u.protocol + '//' + u.hostname.replace(/^www\./, '') + (u.port ? ':' + u.port : '');
+  } catch { return ''; }
+}
 function _originAllowed(req) {
   if (!APP_ORIGIN || !APP_ORIGIN.startsWith('https://')) return true;
+  const expected = _normalizeOrigin(APP_ORIGIN);
+  if (!expected) return false;
   const origin = req.headers.get('origin') || '';
   const referer = req.headers.get('referer') || '';
-  if (origin) return origin === APP_ORIGIN;
+  if (origin) return _normalizeOrigin(origin) === expected;
   if (referer) {
-    try { return new URL(referer).origin === APP_ORIGIN; } catch { return false; }
+    try { return _normalizeOrigin(new URL(referer).origin) === expected; }
+    catch { return false; }
   }
   return false;
+}
+// Returns the actual request origin so PayPal's return_url sends the user
+// back to the same domain they started on (www or apex).
+function _requestOrigin(req) {
+  const origin = req.headers.get('origin') || '';
+  if (origin) return origin;
+  const referer = req.headers.get('referer') || '';
+  if (referer) {
+    try { return new URL(referer).origin; } catch { /* ignore */ }
+  }
+  return APP_ORIGIN;
 }
 
 // W27-c #16 — Retry-with-jittered-backoff wrapper for PayPal fetches.
@@ -195,8 +217,10 @@ export default async function handler(req) {
       brand_name: 'ProFinanceCast',
       user_action: 'SUBSCRIBE_NOW',
       shipping_preference: 'NO_SHIPPING',
-      return_url: `${APP_ORIGIN}/billing.html?subscription=ok`,
-      cancel_url: `${APP_ORIGIN}/billing.html?subscription=cancel`,
+      // W29-c regression fix: route back to the user's actual origin
+      // (www or apex) so their localStorage auth survives PayPal round-trip.
+      return_url: `${_requestOrigin(req)}/billing.html?subscription=ok`,
+      cancel_url: `${_requestOrigin(req)}/billing.html?subscription=cancel`,
     },
   };
 

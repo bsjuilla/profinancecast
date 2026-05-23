@@ -36,20 +36,48 @@ const APP_ORIGIN  = process.env.APP_ORIGIN || 'https://profinancecast.com';
 //     into a malicious browser extension or a phishing site)
 //   - a stolen token replayed from elsewhere
 // We accept the request only if Origin (or Referer) matches APP_ORIGIN.
-// In sandbox/dev we allow missing Origin (server-to-server scripts).
+// W29-c regression fix: accept BOTH www.profinancecast.com AND
+// profinancecast.com — the strict equality check rejected requests from
+// users browsing via the www subdomain when APP_ORIGIN was set to apex
+// (or vice versa). Normalizing by stripping "www." from both sides before
+// compare keeps the defense-in-depth tight (an attacker-controlled domain
+// like profinancecast.com.attacker.com still fails) while accepting the
+// canonical-domain variants we actually serve.
+function _normalizeOrigin(o) {
+  if (!o || typeof o !== 'string') return '';
+  try {
+    const u = new URL(o);
+    return u.protocol + '//' + u.hostname.replace(/^www\./, '') + (u.port ? ':' + u.port : '');
+  } catch { return ''; }
+}
 function _originAllowed(req) {
-  // If APP_ORIGIN is the placeholder default in a dev/preview env, skip the
-  // check — only enforce on production-shaped origins.
   if (!APP_ORIGIN || !APP_ORIGIN.startsWith('https://')) return true;
+  const expected = _normalizeOrigin(APP_ORIGIN);
+  if (!expected) return false;
   const origin = req.headers.origin || '';
   const referer = req.headers.referer || '';
-  if (origin) return origin === APP_ORIGIN;
+  if (origin) return _normalizeOrigin(origin) === expected;
   if (referer) {
-    try { return new URL(referer).origin === APP_ORIGIN; } catch { return false; }
+    try { return _normalizeOrigin(new URL(referer).origin) === expected; }
+    catch { return false; }
   }
   // No Origin and no Referer — likely a non-browser client. Reject mutating
   // payment ops from such clients; legitimate browsers always send one.
   return false;
+}
+// Returns the actual request origin (preferring Origin header, then Referer)
+// so the PayPal return_url sends the user back to the SAME domain they
+// started on. Without this, a user who came in via www.profinancecast.com
+// would be redirected to profinancecast.com after approval — different
+// origin means localStorage auth session is gone, user appears logged out.
+function _requestOrigin(req) {
+  const origin = req.headers.origin || '';
+  if (origin) return origin;
+  const referer = req.headers.referer || '';
+  if (referer) {
+    try { return new URL(referer).origin; } catch { /* ignore */ }
+  }
+  return APP_ORIGIN;
 }
 
 async function _verifyUser(req) {
@@ -186,8 +214,10 @@ export default async function handler(req, res) {
           brand_name: 'ProFinanceCast',
           user_action: 'PAY_NOW',
           shipping_preference: 'NO_SHIPPING',
-          return_url: `${APP_ORIGIN}/billing.html`,
-          cancel_url: `${APP_ORIGIN}/billing.html`,
+          // W29-c regression fix: route back to the user's actual origin
+          // (www or apex) so their localStorage auth survives the round-trip.
+          return_url: `${_requestOrigin(req)}/billing.html`,
+          cancel_url: `${_requestOrigin(req)}/billing.html`,
         },
       }),
     }, 'create-order');

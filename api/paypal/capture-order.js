@@ -20,17 +20,28 @@ const PAYPAL_BASE = (process.env.PAYPAL_ENV === 'sandbox')
 
 const APP_ORIGIN = process.env.APP_ORIGIN || 'https://profinancecast.com';
 
-// W26-a #12: origin/referer same-site check on mutating payment ops.
-// Defense-in-depth against a leaked or replayed JWT. Browsers always send
-// Origin or Referer for cross-origin POSTs; rejecting requests without one
-// blocks the easiest CSRF-style replay paths.
+// W26-a #12 + W29-c regression fix: origin/referer check now accepts both
+// www and apex variants of the same domain (strict === rejected www users
+// when APP_ORIGIN was apex). Defense-in-depth against a leaked/replayed JWT
+// is preserved — attacker-controlled hosts like profinancecast.com.evil.com
+// still fail.
+function _normalizeOrigin(o) {
+  if (!o || typeof o !== 'string') return '';
+  try {
+    const u = new URL(o);
+    return u.protocol + '//' + u.hostname.replace(/^www\./, '') + (u.port ? ':' + u.port : '');
+  } catch { return ''; }
+}
 function _originAllowed(req) {
   if (!APP_ORIGIN || !APP_ORIGIN.startsWith('https://')) return true;
+  const expected = _normalizeOrigin(APP_ORIGIN);
+  if (!expected) return false;
   const origin = req.headers.origin || '';
   const referer = req.headers.referer || '';
-  if (origin) return origin === APP_ORIGIN;
+  if (origin) return _normalizeOrigin(origin) === expected;
   if (referer) {
-    try { return new URL(referer).origin === APP_ORIGIN; } catch { return false; }
+    try { return _normalizeOrigin(new URL(referer).origin) === expected; }
+    catch { return false; }
   }
   return false;
 }

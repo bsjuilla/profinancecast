@@ -37,16 +37,25 @@ async function _getPayPalAccessToken() {
   return (await res.json()).access_token;
 }
 
-// W26-a #12: origin/referer same-site check on mutating subscription ops.
-// Cancellation is destructive (revokes Pro entitlement at period end); same
-// defense-in-depth as create/capture order endpoints.
+// W26-a #12 + W29-c regression fix: origin/referer check now accepts both
+// www and apex variants of the same domain. Same defense-in-depth posture.
+function _normalizeOrigin(o) {
+  if (!o || typeof o !== 'string') return '';
+  try {
+    const u = new URL(o);
+    return u.protocol + '//' + u.hostname.replace(/^www\./, '') + (u.port ? ':' + u.port : '');
+  } catch { return ''; }
+}
 function _originAllowed(req) {
   if (!APP_ORIGIN || !APP_ORIGIN.startsWith('https://')) return true;
+  const expected = _normalizeOrigin(APP_ORIGIN);
+  if (!expected) return false;
   const origin = req.headers.origin || '';
   const referer = req.headers.referer || '';
-  if (origin) return origin === APP_ORIGIN;
+  if (origin) return _normalizeOrigin(origin) === expected;
   if (referer) {
-    try { return new URL(referer).origin === APP_ORIGIN; } catch { return false; }
+    try { return _normalizeOrigin(new URL(referer).origin) === expected; }
+    catch { return false; }
   }
   return false;
 }
