@@ -82,9 +82,14 @@
     if (!sIn) return;
 
     const fmt = n => {
-      // BRAND-VOICE: every dollar gets thousands separator. Never $17k.
+      // BRAND-VOICE: every euro gets thousands separator. Never €17k.
+      // LP-P0-7: switched from $/en-US to €/en-GB so the live demo
+      // matches the EUR pricing shown immediately below the widget.
+      // Locale-aware currency detection (PFCCurrency.detect) is a
+      // P1 follow-up — this hardcoded fix removes the visible
+      // contradiction without depending on PFCCurrency being loaded.
       const sign = n < 0 ? '−' : '';
-      return sign + '$' + Math.abs(Math.round(n)).toLocaleString('en-US');
+      return sign + '€' + Math.abs(Math.round(n)).toLocaleString('en-GB');
     };
     function updatePct(input) {
       const min = +input.min, max = +input.max, val = +input.value;

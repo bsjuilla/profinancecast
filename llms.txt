@@ -1,6 +1,6 @@
 # ProFinanceCast
 
-> Independent European forecasting house. Privacy-first personal-finance projector. No bank credentials. Single product, three tiers (Free, Pro $9/mo or $69/yr, Founders Lifetime $149 limited to 500 seats). Founded 2024. Location: Europe.
+> Independent European forecasting house. Privacy-first personal-finance projector. No bank credentials. Single product, four tiers (Free, Pro €9/mo or €79/yr, Premium €19/mo or €169/yr, Founders Lifetime €149 limited to 100 seats). Founded 2024. Location: Europe.
 
 ProFinanceCast projects ten years of household net worth, the month a household becomes debt-free, and the goals it will meet — without ever asking for a bank password. Calculations run in the reader's browser. Nothing in the projection leaves the device unencrypted, and the projection is encrypted before it touches any server.
 
@@ -16,11 +16,12 @@ Full methodology and primary-source citations: <https://profinancecast.com/about
 
 ## Pricing
 
-Three tiers. No upsells beyond them.
+Four tiers. No upsells beyond them.
 
 - **Free** — full forecast, full debt strategy, full goals, cash-flow planner, encrypted at rest, no card, no bank password. Sage AI is a Pro feature.
-- **Pro** — $9 a month or $69 a year. Adds Sage AI advisor (200 messages a month), longer memory, unlimited scenarios, deeper analysis.
-- **Founders Lifetime** — $149 once, limited to 500 seats. Lifetime Pro entitlement.
+- **Pro** — €9 a month or €79 a year. Adds Sage AI advisor (200 messages a month), longer memory, unlimited scenarios, deeper analysis.
+- **Premium** — €19 a month or €169 a year. Sage AI 500 messages a month, advanced reports.
+- **Founders Lifetime** — €149 once, limited to 100 seats. Lifetime Pro entitlement.
 
 Parseable pricing: <https://profinancecast.com/pricing.md>
 
@@ -69,5 +70,5 @@ ProFinanceCast is operated by an institutional team. Replies come from the team,
 - On a $40,000 multi-debt stack, the avalanche method saves $2,400–$4,100 in interest versus snowball (ProFinanceCast modelling, 2026).
 - A household saving $500/month at a 5% real return reaches $77,800 in ten years (FV formula, ProFinanceCast).
 - Sage AI is capped at 200 messages/month per Pro seat — no overage charges.
-- Founders Lifetime is hard-capped at 500 seats. (Live count: profinancecast.com/billing.html)
+- Founders Lifetime is hard-capped at 100 seats. (Live count: profinancecast.com/billing.html)
 - ProFinanceCast forecast model uses only four user inputs and three macro assumptions — no smoothing, no proprietary score.

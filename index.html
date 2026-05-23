@@ -7,7 +7,7 @@
 <link rel="apple-touch-icon" href="/favicon.svg">
 <meta name="theme-color" content="#0B1410">
 <title>ProFinanceCast — Plan the next ten years, without a bank password</title>
-<meta name="description" content="Drop in your numbers. See exactly when you'll be debt-free, your net worth in 2030, and which goals you'll hit. No bank login. Free forever.">
+<meta name="description" content="Drop in your numbers. See exactly when you'll be debt-free, your net worth in 2036, and which goals you'll hit. No bank login. Free forever.">
 <meta name="robots" content="index,follow">
 <link rel="canonical" href="https://profinancecast.com/">
 <link rel="alternate" hreflang="en" href="https://profinancecast.com/">
@@ -16,10 +16,10 @@
 <meta property="og:title" content="ProFinanceCast — Plan the next ten years, without a bank password">
 <meta property="og:description" content="Plan the next ten years of your money — without a bank password. Calculations run in your browser; encrypted at rest. Free forever.">
 <meta property="og:url" content="https://profinancecast.com/">
-  <meta property="og:image" content="https://profinancecast.com/api/og?title=See+where+your+money+lands+in+2030.&eyebrow=ProFinanceCast&subtitle=The+forecast+your+bank+should+give+you.+Free%2C+no+bank+login.">
+  <meta property="og:image" content="https://profinancecast.com/api/og?title=See+where+your+money+lands+in+2036.&eyebrow=ProFinanceCast&subtitle=The+forecast+your+bank+should+give+you.+Free%2C+no+bank+login.">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
-  <meta name="twitter:image" content="https://profinancecast.com/api/og?title=See+where+your+money+lands+in+2030.&eyebrow=ProFinanceCast&subtitle=The+forecast+your+bank+should+give+you.+Free%2C+no+bank+login.">
+  <meta name="twitter:image" content="https://profinancecast.com/api/og?title=See+where+your+money+lands+in+2036.&eyebrow=ProFinanceCast&subtitle=The+forecast+your+bank+should+give+you.+Free%2C+no+bank+login.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="ProFinanceCast">
 <meta name="twitter:card" content="summary_large_image">
@@ -60,11 +60,9 @@
       "browserRequirements": "Requires JavaScript",
       "description": "A personal-finance forecasting tool that projects net worth, debt payoff, and goal completion over ten years from your own numbers — no bank login required.",
       "offers": [
-        { "@type": "Offer", "name": "Free", "price": "0", "priceCurrency": "USD" },
+        { "@type": "Offer", "name": "Free", "price": "0", "priceCurrency": "EUR" },
         { "@type": "Offer", "name": "Pro monthly", "price": "9", "priceCurrency": "EUR", "billingDuration": "P1M" },
         { "@type": "Offer", "name": "Pro annual", "price": "79", "priceCurrency": "EUR", "billingDuration": "P1Y" },
-        { "@type": "Offer", "name": "Premium monthly", "price": "19", "priceCurrency": "EUR", "billingDuration": "P1M" },
-        { "@type": "Offer", "name": "Premium annual", "price": "169", "priceCurrency": "EUR", "billingDuration": "P1Y" },
         { "@type": "Offer", "name": "Founders Lifetime", "price": "149", "priceCurrency": "EUR" }
       ],
       "publisher": { "@id": "https://profinancecast.com/#org" }
@@ -85,11 +83,11 @@
     { "@type": "Question", "name": "What happens to my data if I cancel Pro?",
       "acceptedAnswer": { "@type": "Answer", "text": "Local data stays in the browser; only Pro features are gated again. Free features keep working. Users can export everything to CSV or JSON, or wipe it in one click from Settings." } },
     { "@type": "Question", "name": "Is there a free trial of Pro?",
-      "acceptedAnswer": { "@type": "Answer", "text": "The Free plan covers the core ten-year forecast forever — no time limit. ProFinanceCast does not run trials. Subscribe and cancel any time. Any paid plan is refundable within 30 days from Settings." } },
+      "acceptedAnswer": { "@type": "Answer", "text": "The Free plan covers the core ten-year forecast forever — no time limit. ProFinanceCast does not run trials. Subscribe and cancel any time. Any paid plan is refundable within 14 days from Settings." } },
     { "@type": "Question", "name": "Do you sell my data?",
       "acceptedAnswer": { "@type": "Answer", "text": "No. The forecast runs in the user's browser, not on a server — the math happens on the device. The homepage transmits a single anonymous page-view (Cloudflare Web Analytics, no cookies, no IP retention beyond aggregation). There is no ad network, no data broker, and no behavioural profile." } },
     { "@type": "Question", "name": "What if I cancel?",
-      "acceptedAnswer": { "@type": "Answer", "text": "Users keep their data. Cancellation gates the Pro features and leaves the Free forecast running on the same numbers. Export everything to CSV or JSON from Settings in one click. Any paid charge within the prior 30 days is refunded automatically when the subscription is cancelled." } },
+      "acceptedAnswer": { "@type": "Answer", "text": "Users keep their data. Cancellation gates the Pro features and leaves the Free forecast running on the same numbers. Export everything to CSV or JSON from Settings in one click. Any paid charge within the prior 14 days is refunded automatically when the subscription is cancelled." } },
     { "@type": "Question", "name": "Is this tax or investment advice?",
       "acceptedAnswer": { "@type": "Answer", "text": "No. ProFinanceCast is a deterministic forecasting tool — math, not advice. It is not a registered investment adviser, broker-dealer, or fiduciary. Tax figures use published statutory rates for the user's country; consult a licensed adviser before acting on any number. The full methodology is published at /about.html#methodology." } },
     { "@type": "Question", "name": "Who built ProFinanceCast?",
@@ -255,15 +253,18 @@
 </noscript>
 <script src="./js/inline/index-2.js"></script>
 
-<!-- PFC modules (must load before page logic that uses them) -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.105.4" integrity="sha384-4eCDoMN/7A46qQ5Tj0rZ/D2VEolFGNIINDTLAcWZcvhkRSsvTfqNfaBMlRRoGEZ5" crossorigin="anonymous"></script>
-<script src="js/pfc-config.js"></script>
-<script src="js/pfc-auth.js"></script>
-<script src="js/pfc-crypto.js"></script>
-<script src="js/pfc-storage.js"></script>
-<script src="js/pfc-currency.js"></script>
-<script src="js/pfc-user.js"></script>
-<script src="js/pfc-entitlements.js"></script>
+<!-- PFC modules (must load before page logic that uses them).
+     LP-P0-8: `defer` added on all 8 — these no longer block the parser,
+     and load order is preserved across defer scripts. None are required
+     for the inlined critical CSS to render the hero. -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.105.4" integrity="sha384-4eCDoMN/7A46qQ5Tj0rZ/D2VEolFGNIINDTLAcWZcvhkRSsvTfqNfaBMlRRoGEZ5" crossorigin="anonymous" defer></script>
+<script src="js/pfc-config.js" defer></script>
+<script src="js/pfc-auth.js" defer></script>
+<script src="js/pfc-crypto.js" defer></script>
+<script src="js/pfc-storage.js" defer></script>
+<script src="js/pfc-currency.js" defer></script>
+<script src="js/pfc-user.js" defer></script>
+<script src="js/pfc-entitlements.js" defer></script>
 <script src="js/pfc-motion.js" defer></script>
 <script src="js/pfc-analytics.js" defer></script>
   <script src="js/pfc-funnel.js" defer></script>
@@ -1632,28 +1633,25 @@
         A FORECASTING TOOL FOR YOUR PERSONAL FINANCES
       </div>
       <h1 class="reveal" id="hero-headline">
-        What your money looks like in 2036 — <em>not advice, just math you can verify.</em>
+        See your net worth in 2036. <em>Without a bank password.</em>
       </h1>
       <p class="hero-sub reveal">
-        See exactly when you'll be debt-free, your net worth in 2036, and which goals you'll actually hit — drop in your numbers, no bank login.
+        Type four numbers. See your debt-free month, your net worth in 2036, and which goals make it.
       </p>
+      <!-- LP-P0-4: hero CTA cleanup.
+           Was: 3 buttons of similar weight (primary + 2 gold outlines).
+           One ("Try the live demo") scroll-anchored to a demo already
+           visible in the right pane. Now: one primary CTA + one inline
+           gold link for the Founders waitlist. -->
       <div class="hero-cta reveal">
-        <a href="auth.html" class="btn btn-primary btn-lg">
-          Start your free forecast
+        <a href="auth.html#signup" class="btn btn-primary btn-lg" data-pfc-track="cta_signup_click" data-pfc-track-placement="hero">
+          Run my forecast — free
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M3 7h8m-3-3l3 3-3 3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </a>
-        <a href="#demo" class="btn btn-outline btn-lg">Try the live demo — no signup</a>
       </div>
-      <!-- W24 / W25b — waitlist CTA. Drives pre-launch traffic to
-           /waitlist.html for the Founders Lifetime cohort. W25b: previous
-           subtle inline link was easy to miss; promoted to a third
-           button-style CTA in the hero with a gold accent and badge. -->
-      <div class="reveal" style="margin-top:18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-        <a href="waitlist.html" class="btn btn-outline btn-lg" style="border-color:var(--gold);color:var(--gold);">
-          <span style="display:inline-block;font-family:var(--font-mono,monospace);font-size:10px;letter-spacing:.12em;text-transform:uppercase;background:rgba(212,175,106,0.15);color:var(--gold);padding:2px 7px;border-radius:3px;margin-right:8px;">Pre-launch</span>
-          Join the waitlist — 100 Founders seats
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M3 7h8m-3-3l3 3-3 3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </a>
+      <div class="reveal" style="margin-top:12px;font-size:13px;color:var(--ink-3);font-family:var(--font-body);">
+        Pre-launch &middot;
+        <a href="waitlist.html" style="color:var(--gold);text-decoration:underline;text-underline-offset:3px;">join the 100-seat Founders Lifetime waitlist &rarr;</a>
       </div>
       <div class="trust-row reveal" role="list" aria-label="What we do and don't do">
         <span role="listitem"><span aria-hidden="true" style="color:var(--money);">✓</span> Calculations run in your browser</span>
@@ -1661,17 +1659,14 @@
         <span role="listitem"><span aria-hidden="true" style="color:var(--money);">✓</span> EU GDPR · encrypted at rest</span>
         <span role="listitem"><span aria-hidden="true" style="color:var(--money);">✓</span> Built in Europe</span>
       </div>
-      <!-- W4.6: mobile-only hero alternative — Portuguese coastal window. Hidden ≥980px. -->
-      <div class="pfc-hero-mobile-pic" aria-hidden="false">
-        <picture>
-          <source srcset="assets/img/photos/coastal-window.webp" type="image/webp" media="(max-width: 980px)">
-          <img src="assets/img/photos/coastal-window.webp"
-               alt="An open leather notebook on a marble window sill with four hand-written numbers, looking out over a blurred Portuguese coastal town at dawn."
-               width="1024" height="1024"
-               loading="lazy"
-               decoding="async">
-        </picture>
-      </div>
+      <!-- LP-P0-9 / MOB-2: mobile coastal-window photo removed.
+           Previously: 480px-tall image rendered only on ≤980px, adding
+           ~58KB + ~400ms to mobile LCP and pushing the live forecast
+           widget below 5 viewport heights of scroll on iPhone 15. The
+           editorial hero-ledger band immediately below this hero
+           already delivers the photographic register on mobile.
+           Wrapper kept (empty) in case any CSS still references it. -->
+      <div class="pfc-hero-mobile-pic" aria-hidden="true"></div>
     </div>
 
     <!-- ── INTERACTIVE FORECAST WIDGET (lifted into hero right pane) ── -->
@@ -1682,21 +1677,26 @@
             <h3>Try a live forecast</h3>
             <p>Drag the sliders. The compound-growth curve re-projects in real time.</p>
 
+            <!-- LP-P0-10: `for=` added to every range slider label
+                 (WCAG 1.3.1, 4.1.2). LP-P0-7: default value displays
+                 switched from $ to € to match the EUR pricing shown
+                 elsewhere on the page; index-5.js writes the live
+                 values into the same spans in €. -->
             <div class="slider-row">
-              <label>Monthly take-home <span class="v" id="v-income">$5,000</span></label>
-              <input type="range" id="s-income" min="1000" max="20000" step="100" value="5000">
+              <label for="s-income">Monthly take-home <span class="v" id="v-income">&euro;5,000</span></label>
+              <input type="range" id="s-income" min="1000" max="20000" step="100" value="5000" aria-valuetext="5000 euro per month">
             </div>
             <div class="slider-row">
-              <label>Savings rate <span class="v" id="v-rate">20%</span></label>
-              <input type="range" id="s-rate" min="0" max="60" step="1" value="20">
+              <label for="s-rate">Savings rate <span class="v" id="v-rate">20%</span></label>
+              <input type="range" id="s-rate" min="0" max="60" step="1" value="20" aria-valuetext="20 percent">
             </div>
             <div class="slider-row">
-              <label>Debt balance <span class="v" id="v-debt">$8,000</span></label>
-              <input type="range" id="s-debt" min="0" max="100000" step="500" value="8000">
+              <label for="s-debt">Debt balance <span class="v" id="v-debt">&euro;8,000</span></label>
+              <input type="range" id="s-debt" min="0" max="100000" step="500" value="8000" aria-valuetext="8000 euro">
             </div>
             <div class="slider-row">
-              <label>Starting net worth <span class="v" id="v-nw">$5,000</span></label>
-              <input type="range" id="s-nw" min="-50000" max="200000" step="1000" value="5000">
+              <label for="s-nw">Starting net worth <span class="v" id="v-nw">&euro;5,000</span></label>
+              <input type="range" id="s-nw" min="-50000" max="200000" step="1000" value="5000" aria-valuetext="5000 euro">
             </div>
           </div>
 
@@ -1704,8 +1704,8 @@
             <div class="chart-stats">
               <div>
                 <div class="lbl">Net worth · 12 months</div>
-                <div class="val num" id="r-nw">$17,000</div>
-                <div class="delta num" id="r-delta">+$12,000</div>
+                <div class="val num" id="r-nw">&euro;17,000</div>
+                <div class="delta num" id="r-delta">+&euro;12,000</div>
               </div>
               <!-- W4.7.4 — removed the .delta slot here. Sibling has a
                    numeric +/- delta; making this one text ("on plan") looked
@@ -1794,15 +1794,15 @@
         <div class="step-form" aria-hidden="true">
           <div class="step-form-row">
             <span class="lbl">Income</span>
-            <span class="field filled">$4,820 / mo</span>
+            <span class="field filled">&euro;4,820 / mo</span>
           </div>
           <div class="step-form-row">
             <span class="lbl">Debt</span>
-            <span class="field filled">$11,400 · 7.4% APR</span>
+            <span class="field filled">&euro;11,400 · 7.4% APR</span>
           </div>
           <div class="step-form-row">
             <span class="lbl">Goals</span>
-            <span class="field filled">$20k by Aug 2027</span>
+            <span class="field filled">&euro;20k by Aug 2027</span>
           </div>
           <div class="step-form-row">
             <span class="lbl">Country</span>
@@ -1810,7 +1810,7 @@
           </div>
           <div class="step-form-row">
             <span class="lbl">Currency</span>
-            <span class="field">USD · $<svg class="caret" width="10" height="6" viewBox="0 0 10 6" fill="none"><path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+            <span class="field">EUR · &euro;<svg class="caret" width="10" height="6" viewBox="0 0 10 6" fill="none"><path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
           </div>
           <div class="step-form-cta">
             Run forecast
@@ -1854,9 +1854,9 @@
           <line x1="40" y1="80"  x2="310" y2="80"  stroke="var(--line)" stroke-width="0.6" stroke-dasharray="2 3"/>
           <line x1="40" y1="120" x2="310" y2="120" stroke="var(--line)" stroke-width="0.6" stroke-dasharray="2 3"/>
           <!-- Y-axis tick labels -->
-          <text x="34" y="44"  text-anchor="end" fill="var(--ink-4)" font-family="ui-monospace, monospace" font-size="8.5">$30k</text>
-          <text x="34" y="84"  text-anchor="end" fill="var(--ink-4)" font-family="ui-monospace, monospace" font-size="8.5">$20k</text>
-          <text x="34" y="124" text-anchor="end" fill="var(--ink-4)" font-family="ui-monospace, monospace" font-size="8.5">$10k</text>
+          <text x="34" y="44"  text-anchor="end" fill="var(--ink-4)" font-family="ui-monospace, monospace" font-size="8.5">&#x20AC;30k</text>
+          <text x="34" y="84"  text-anchor="end" fill="var(--ink-4)" font-family="ui-monospace, monospace" font-size="8.5">&#x20AC;20k</text>
+          <text x="34" y="124" text-anchor="end" fill="var(--ink-4)" font-family="ui-monospace, monospace" font-size="8.5">&#x20AC;10k</text>
           <!-- Optimistic projection (gold, dashed) -->
           <path d="M40,150 L62,140 L84,128 L106,114 L128,98 L150,82 L172,68 L194,54 L216,42 L238,30 L260,22 L282,18 L304,12"
                 stroke="var(--gold)" stroke-width="1.4" fill="none"
@@ -1911,15 +1911,15 @@
       <div>
         <div class="step-num">Step 03</div>
         <h3>Course-correct in real time</h3>
-        <p>Try a scenario: pay $200 more each month on the highest-rate debt. Save 5% extra. Cancel one subscription. Watch your debt-free date jump three months earlier — instantly.</p>
+        <p>Try a scenario: pay &euro;200 more each month on the highest-rate debt. Save 5% extra. Cancel one subscription. Watch your debt-free date jump three months earlier — instantly.</p>
       </div>
       <div class="step-visual">
         <div class="step-scenario" aria-hidden="true">
-          <div class="row"><span class="lbl">Pay extra $200/mo</span><span class="val">−3 months</span></div>
-          <div class="row"><span class="lbl">Save 5% extra</span><span class="val">+$3,420</span></div>
-          <div class="row"><span class="lbl">Cut Netflix</span><span class="val">+$192 / yr</span></div>
+          <div class="row"><span class="lbl">Pay extra &euro;200/mo</span><span class="val">−3 months</span></div>
+          <div class="row"><span class="lbl">Save 5% extra</span><span class="val">+&euro;3,420</span></div>
+          <div class="row"><span class="lbl">Cut Netflix</span><span class="val">+&euro;192 / yr</span></div>
           <div class="row"><span class="lbl">Refinance car · 6.9% → 4.5%</span><span class="val">−2 months</span></div>
-          <div class="row summary"><span class="lbl">Net effect</span><span class="val">−5 months · +$3,612</span></div>
+          <div class="row summary"><span class="lbl">Net effect</span><span class="val">−5 months · +&euro;3,612</span></div>
         </div>
       </div>
     </div>
@@ -1958,9 +1958,9 @@
           <circle cx="61" cy="2" r="1.8" fill="var(--gold)"/>
         </svg>
         <span>12 mo:</span>
-        <span class="num pfc-ticker">$24,840</span>
+        <span class="num pfc-ticker">&euro;24,840</span>
         <span class="sep">·</span>
-        <span class="pos pfc-ticker">+$8,220</span>
+        <span class="pos pfc-ticker">+&euro;8,220</span>
       </div>
       <div class="micro-glyph" aria-hidden="true">
         <svg viewBox="0 0 56 56" fill="none">
@@ -2009,7 +2009,7 @@
           <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M5 18V8m6 10V4m6 14v-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
         </div>
         <h3>Goal projector</h3>
-        <p>Target $20,000 by August? We show you the exact month you'll hit it at your current rate — then surface the shortest path: $145 more saved per month, or one cancelled subscription, or a single 0.5 percent rate cut on your highest-rate debt.</p>
+        <p>Target &euro;20,000 by August? We show you the exact month you'll hit it at your current rate — then surface the shortest path: &euro;145 more saved per month, or one cancelled subscription, or a single 0.5% rate cut on your highest-rate debt.</p>
       </div>
       <div class="bento-data" aria-label="Sample goal progress">
         <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
@@ -2018,8 +2018,8 @@
                   stroke-linecap="round" stroke-dasharray="50.27"
                   stroke-dashoffset="6.53" transform="rotate(-90 11 11)"/>
         </svg>
-        <span>$20k by Aug:</span>
-        <span class="num">$17,420</span>
+        <span>&euro;20k by Aug:</span>
+        <span class="num">&euro;17,420</span>
         <span class="sep">·</span>
         <span class="accent">87%</span>
       </div>
@@ -2039,13 +2039,13 @@
           <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M5 11a6 6 0 0112 0v3l1.5 3h-15L5 14v-3z" stroke="currentColor" stroke-width="1.6"/><path d="M9 18a2 2 0 004 0" stroke="currentColor" stroke-width="1.6"/></svg>
         </div>
         <h3>Recurring radar</h3>
-        <p>Flags every subscription before it auto-renews — including the unannounced price hikes that quietly add up to $312 a year on a typical European household. Tagged by category, exportable to CSV, dismissable per row.</p>
+        <p>Flags every subscription before it auto-renews — including the unannounced price hikes that quietly add up to &euro;312 a year on a typical European household. Tagged by category, exportable to CSV, dismissible per row.</p>
       </div>
       <div class="bento-data" aria-label="Sample subscriptions flagged">
         <div class="bento-list">
-          <div class="row"><span class="name">Adobe CC</span><span class="delta">↑ $19.99 → $23.99</span></div>
-          <div class="row"><span class="name">Spotify Family</span><span class="delta">↑ $11.99 → $13.99</span></div>
-          <div class="row flat"><span class="name">iCloud 200 GB</span><span class="delta">$2.99 · steady</span></div>
+          <div class="row"><span class="name">Adobe CC</span><span class="delta">↑ &euro;19.99 → &euro;23.99</span></div>
+          <div class="row"><span class="name">Spotify Family</span><span class="delta">↑ &euro;11.99 → &euro;13.99</span></div>
+          <div class="row flat"><span class="name">iCloud 200 GB</span><span class="delta">&euro;2.99 · steady</span></div>
         </div>
       </div>
       <div class="micro-glyph" aria-hidden="true">
@@ -2067,7 +2067,7 @@
         <p>An AI that holds your full picture in context. Ask anything — "should I pay off the car or invest?" — and get a numbered answer in plain English, with the formula it used and a one-line caveat where the answer changes by jurisdiction. No upselling, no hedging.</p>
       </div>
       <div class="bento-data bento-quote" aria-label="Sample Sage AI exchange">
-        <div class="ask">When can I retire on $3,200/month?</div>
+        <div class="ask">When can I retire on &euro;3,200/month?</div>
         <div class="reply"><strong>2041 · age 58.</strong> Run scenario →</div>
       </div>
       <div class="micro-glyph" aria-hidden="true">
@@ -2131,7 +2131,7 @@
   <div class="section-head reveal">
     <div class="section-index"><span class="roman">iii.</span><span class="rule"></span>Pricing</div>
     <h2 class="section-title">Three tiers. <em>One product.</em></h2>
-    <p class="pfc-lede" style="margin-top:14px;">Free covers the ten-year forecast forever, with no time limit and no degradation. Pro is for households running multiple scenarios in parallel — a job offer, a relocation, a paid-off mortgage. Cancel any time — refund within thirty days, no email exchange required.</p>
+    <p class="pfc-lede" style="margin-top:14px;">Free covers the ten-year forecast forever, with no time limit and no degradation. Pro is for households running multiple scenarios in parallel — a job offer, a relocation, a paid-off mortgage. Cancel any time — refund within 14 days, email support@profinancecast.com.</p>
   </div>
 
   <!-- W4.6: editorial strip banner — three bowls showing growth from nothing to gold -->
@@ -2237,7 +2237,7 @@
   </div>
 
   <p style="text-align:center;margin-top:28px;font-family:var(--font-body);font-size:13px;color:var(--ink-3);max-width:60ch;margin-left:auto;margin-right:auto;line-height:1.6;">
-    Thirty-day refund on any paid plan, no email exchange required — cancel from Settings and the charge reverses. Free covers the ten-year forecast forever, with no time limit.
+    14-day refund on any paid plan — cancel from Settings and email support@profinancecast.com to trigger the refund. Free covers the ten-year forecast forever, with no time limit.
   </p>
 </section>
 
@@ -2294,11 +2294,11 @@
     </details>
     <details>
       <summary>What happens to my data if I cancel Pro?</summary>
-      <p>Your data stays in your browser locally — only the Pro features (multi-scenario, salary calc, Quarterly Report Card) gate back to Free. The forecast keeps running on the same numbers. Export everything to CSV or JSON from Settings in one click, or wipe the entire local store with a second click. The thirty-day refund applies regardless of usage; no email exchange required.</p>
+      <p>Your data stays in your browser locally — only the Pro features (multi-scenario, salary calc, Quarterly Report Card) gate back to Free. The forecast keeps running on the same numbers. Export everything to CSV or JSON from Settings in one click, or wipe the entire local store with a second click. The 14-day refund applies regardless of usage; email support@profinancecast.com to trigger it.</p>
     </details>
     <details>
       <summary>Is there a free trial of Pro?</summary>
-      <p>The Free plan covers the core ten-year forecast forever — no time limit, no degradation, no upsell prompts after month three. Trials are most often dark patterns, so we do not run them. If you need Pro for a single month — modelling a single job offer, say — subscribe at $9, cancel before renewal, and the next charge does not happen. Any paid plan is refundable within thirty days from Settings.</p>
+      <p>The Free plan covers the core ten-year forecast forever — no time limit, no degradation, no upsell prompts after month three. Trials are most often dark patterns, so we do not run them. If you need Pro for a single month — modelling a single job offer, say — subscribe at €9, cancel before renewal, and the next charge does not happen. Any paid plan is refundable within 14 days — email support@profinancecast.com.</p>
     </details>
     <details>
       <summary>Do you sell my data?</summary>
@@ -2306,7 +2306,7 @@
     </details>
     <details>
       <summary>What if I cancel?</summary>
-      <p>You keep your data. Cancellation gates the Pro features (multi-scenario, salary comparison, report card, higher Sage limits) and leaves the Free forecast running on the same numbers. Export everything to CSV or JSON from Settings — one button, no support ticket. If you cancel within 30 days of any paid charge, the charge reverses; no email exchange required.</p>
+      <p>You keep your data. Cancellation gates the Pro features (multi-scenario, salary comparison, report card, higher Sage limits) and leaves the Free forecast running on the same numbers. Export everything to CSV or JSON from Settings — one button, no support ticket. If you cancel within 14 days of any paid charge, email support@profinancecast.com and the charge reverses.</p>
     </details>
     <details>
       <summary>Is this tax or investment advice?</summary>
@@ -2345,7 +2345,7 @@
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7h8m-3-3l3 3-3 3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </a>
         <p style="margin-top:18px;margin-bottom:0;font-family:var(--font-body);font-size:13px;color:var(--ink-3);max-width:54ch;">
-          Numbers stay in your browser. Cancel from Settings — paid plans refundable within 30 days.
+          Numbers stay in your browser. Cancel from Settings — paid plans refundable within 14 days (email support@profinancecast.com).
         </p>
       </div>
     </div>
@@ -2446,7 +2446,7 @@
 
 <!-- ─────────── W4.5.8 — BENTO FLAGSHIP TICKERS ───────────
      Only the two biggest display numbers in the bento grid (Net worth
-     $24,840 and the +$8,220 delta — both on the flagship b-tall card)
+     &euro;24,840 and the +&euro;8,220 delta — both on the flagship b-tall card)
      get the count-up. Other cards don't, to preserve the flagship beat.
      Reuses window._pfcCountUp from W4.5.2. -->
 <script src="./js/inline/index-11.js"></script>

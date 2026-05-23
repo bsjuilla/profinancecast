@@ -1,6 +1,6 @@
 # ProFinanceCast pricing
 
-Single product, three tiers. No upsells beyond them.
+Single product, four tiers. No upsells beyond them.
 
 | Tier | Price | Sage AI | Scenarios | Notes |
 |---|---|---|---|---|
@@ -31,15 +31,15 @@ Single product, three tiers. No upsells beyond them.
 
 ## Founders Lifetime — what it is
 
-- Pay $149 once. Pro features unlock for the lifetime of the account.
-- Cap is 500 seats, no extensions.
-- Same product as Pro at $9/month or $69/year — same features, same support, no exclusive content.
-- Available while seats remain. After 500, the tier closes permanently. Pro at $9/month or $69/year continues unchanged.
+- Pay €149 once. Pro features unlock for the lifetime of the account.
+- Cap is 100 seats, no extensions.
+- Same product as Pro at €9/month or €79/year — same features, same support, no exclusive content.
+- Available while seats remain. After 100, the tier closes permanently. Pro at €9/month or €79/year continues unchanged.
 
 ## Payments
 
 - Card payments are processed by PayPal — ProFinanceCast never sees or stores card details.
-- All currencies presented in USD. Local-currency conversion is performed by PayPal at checkout.
+- All currencies presented in EUR. Local-currency conversion is performed by PayPal at checkout.
 
 ## Refunds
 
@@ -49,4 +49,4 @@ Single product, three tiers. No upsells beyond them.
 
 ## Last updated
 
-2026-05-10
+2026-05-23
