@@ -1,57 +1,60 @@
 // api/waitlist/subscribe.js — W24 GDPR-compliant waitlist subscribe endpoint.
 //
+// EDGE RUNTIME (not Node). Switched from Node to Edge in W24-fix because
+// Vercel Hobby plan caps Node serverless functions at 12; adding this one
+// pushed the project to 13 and broke the deploy. Edge functions don't
+// count against the Hobby cap.
+//
+// Edge runtime constraints applied here:
+//   - Node `crypto` module unavailable → use Web Crypto (crypto.subtle)
+//   - `req.body` doesn't auto-parse → `await req.json()`
+//   - `req.headers['x-forwarded-for']` unavailable → `req.headers.get(...)`
+//   - `res.status(...).json(...)` unavailable → `new Response(...)`
+//   - Module state doesn't persist across invocations → rate limit dropped
+//     (replace with Upstash Redis if abuse becomes an issue; spam already
+//     mitigated by the email UNIQUE constraint + GDPR consent gate)
+//
 // POST /api/waitlist/subscribe
 //   body: { email: string, use_case?: string, consent: true, source?: string }
 //   returns: { ok: true } | { error: '...', code: '...' }
-//
-// Stores entries in public.waitlist (see docs/supabase/migrations/
-// 2026-05-22-waitlist.sql) AND fires a Resend transactional welcome
-// email. Single opt-in (no confirmation link) per W24 design choice.
-//
-// GDPR posture:
-//   - consent MUST be `true` (explicit checkbox on /waitlist.html)
-//   - consent_at timestamp recorded server-side (not client-controlled)
-//   - email is the only PII stored
-//   - duplicate signups treated as soft-success (no info leakage about
-//     who's already on the list)
-//   - unsubscribe link in every email (W24 follow-up)
-//   - Day-14 deletion drill SOP at docs/runbooks/waitlist-deletion-sop.md
 //
 // Required env vars:
 //   SUPABASE_URL
 //   SUPABASE_SERVICE_ROLE_KEY
 //   RESEND_API_KEY  (https://resend.com/api-keys)
-//   RESEND_FROM     (e.g. "ProFinanceCast <hello@profinancecast.com>")
-//
-// If RESEND_API_KEY is missing, the endpoint still WRITES to Supabase
-// (so the signup isn't lost) but logs a warning and skips the email.
-// User sees the same success message either way.
+//   RESEND_FROM     (e.g. "ProFinanceCast <hello@profinancecast.com>"
+//                   or temporarily "ProFinanceCast <onboarding@resend.dev>"
+//                   before domain verification completes)
+
+export const config = { runtime: 'edge' };
 
 import { createClient } from '@supabase/supabase-js';
-import { createHash } from 'crypto';
-
-const _rateBuckets = new Map();
-function _rateLimit(key, max = 3, windowMs = 60_000) {
-  if (!key) return true;
-  const now = Date.now();
-  const bucket = (_rateBuckets.get(key) || []).filter(t => now - t < windowMs);
-  if (bucket.length >= max) return false;
-  bucket.push(now);
-  _rateBuckets.set(key, bucket);
-  if (_rateBuckets.size > 5000) {
-    for (const [k, v] of _rateBuckets) {
-      if (!v.length || (now - v[v.length - 1]) > 5 * 60_000) _rateBuckets.delete(k);
-    }
-  }
-  return true;
-}
 
 const EMAIL_RE = /^[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}$/;
 const ALLOWED_USE_CASES = new Set(['cross-border', 'fire', 'household', 'other', '']);
 
+function _json(body, status, extraHeaders) {
+  return new Response(JSON.stringify(body), {
+    status: status || 200,
+    headers: Object.assign(
+      { 'Content-Type': 'application/json; charset=utf-8' },
+      extraHeaders || {}
+    ),
+  });
+}
+
+// Web Crypto SHA-256 → hex. Replaces Node's createHash('sha256').
+async function _sha256Hex(input) {
+  const buf = new TextEncoder().encode(input);
+  const hashBuf = await crypto.subtle.digest('SHA-256', buf);
+  return Array.from(new Uint8Array(hashBuf))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+}
+
 async function _sendWelcomeEmail(email) {
   const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.RESEND_FROM || 'ProFinanceCast <hello@profinancecast.com>';
+  const from = process.env.RESEND_FROM || 'ProFinanceCast <onboarding@resend.dev>';
   if (!apiKey) {
     console.warn('waitlist: RESEND_API_KEY not set — skipping welcome email');
     return { sent: false, reason: 'no_api_key' };
@@ -77,7 +80,7 @@ async function _sendWelcomeEmail(email) {
           "— The ProFinanceCast team\n\n" +
           "---\n" +
           "Unsubscribe: reply to this email with 'unsubscribe' in the subject.\n" +
-          "(We'll wire a one-click unsubscribe link in the next release.)",
+          "(One-click unsubscribe link coming in the next release.)",
       }),
     });
     if (!res.ok) {
@@ -92,44 +95,44 @@ async function _sendWelcomeEmail(email) {
   }
 }
 
-export default async function handler(req, res) {
+export default async function handler(req) {
   try {
     if (req.method !== 'POST') {
-      return res.status(405).json({ error: 'Method not allowed', code: 'METHOD' });
+      return _json({ error: 'Method not allowed', code: 'METHOD' }, 405);
     }
 
-    const body = req.body || {};
-    const email = (body.email || '').trim().toLowerCase();
-    const useCase = (body.use_case || '').trim().toLowerCase();
-    const source = (body.source || 'waitlist_page').slice(0, 40);
+    let body;
+    try { body = await req.json(); } catch (_) { body = {}; }
+
+    const email = String(body.email || '').trim().toLowerCase();
+    const useCase = String(body.use_case || '').trim().toLowerCase();
+    const source = String(body.source || 'waitlist_page').slice(0, 40);
     const consent = body.consent === true;
 
-    if (!email || typeof email !== 'string' || !EMAIL_RE.test(email)) {
-      return res.status(400).json({ error: 'Invalid email', code: 'BAD_EMAIL' });
+    if (!email || !EMAIL_RE.test(email)) {
+      return _json({ error: 'Invalid email', code: 'BAD_EMAIL' }, 400);
     }
     if (email.length > 254) {
-      return res.status(400).json({ error: 'Email too long', code: 'BAD_EMAIL' });
+      return _json({ error: 'Email too long', code: 'BAD_EMAIL' }, 400);
     }
     if (!consent) {
-      return res.status(400).json({
+      return _json({
         error: 'Consent required — tick the box to confirm GDPR opt-in',
         code: 'MISSING_CONSENT',
-      });
+      }, 400);
     }
     if (useCase && !ALLOWED_USE_CASES.has(useCase)) {
-      return res.status(400).json({ error: 'Invalid use_case', code: 'BAD_USE_CASE' });
+      return _json({ error: 'Invalid use_case', code: 'BAD_USE_CASE' }, 400);
     }
 
-    const ip = req.headers['x-forwarded-for']?.split(',')[0].trim()
-            || req.socket?.remoteAddress || 'unknown';
-    if (!_rateLimit(ip, 3, 60_000)) {
-      return res.status(429).json({ error: 'Too many signups, slow down', code: 'RATE_LIMIT' });
-    }
+    const ip = (req.headers.get('x-forwarded-for') || '').split(',')[0].trim()
+            || req.headers.get('x-real-ip')
+            || 'unknown';
 
     if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
       console.error('waitlist/subscribe: missing Supabase env vars');
       // Soft success so the UI doesn't expose infra gaps
-      return res.status(200).json({ ok: true, status: 'config_missing' });
+      return _json({ ok: true, status: 'config_missing' }, 200);
     }
 
     const supabase = createClient(
@@ -138,10 +141,7 @@ export default async function handler(req, res) {
       { auth: { persistSession: false, autoRefreshToken: false } }
     );
 
-    const ipHash = createHash('sha256')
-      .update(ip + ':' + (process.env.SUPABASE_URL || ''))
-      .digest('hex')
-      .slice(0, 32);
+    const ipHash = (await _sha256Hex(ip + ':' + (process.env.SUPABASE_URL || ''))).slice(0, 32);
 
     const { error } = await supabase.from('waitlist').insert({
       email: email,
@@ -149,29 +149,28 @@ export default async function handler(req, res) {
       source: source,
       consent_at: new Date().toISOString(),
       ip_hash: ipHash,
-      user_agent: (req.headers['user-agent'] || '').slice(0, 240),
+      user_agent: (req.headers.get('user-agent') || '').slice(0, 240),
     });
 
-    // Duplicate signup → treat as success without telling the caller
-    // ("already on the list" reveals nothing they shouldn't already know).
+    // Duplicate signup → soft success (no PII leakage about who's on the list)
     const isDuplicate = error && /duplicate|unique/i.test(error.message || '');
     if (error && !isDuplicate) {
       console.error('waitlist/subscribe insert failed:', error);
-      return res.status(200).json({ ok: true, status: 'soft_failure' });
+      return _json({ ok: true, status: 'soft_failure' }, 200);
     }
 
-    // Fire the welcome email. Best-effort — never block the success
-    // response on email delivery. Skip on duplicate (user already got
-    // the welcome on first signup).
+    // Welcome email — best-effort. Awaited in Edge runtime because the
+    // function instance terminates when the response is returned;
+    // non-awaited promises get cancelled. Small latency cost (~200ms)
+    // is acceptable for a once-per-signup transactional email.
     if (!isDuplicate) {
-      _sendWelcomeEmail(email).catch((e) => {
-        console.warn('waitlist: welcome email kicked off but failed:', e.message);
-      });
+      try { await _sendWelcomeEmail(email); }
+      catch (e) { console.warn('waitlist: welcome email failed:', e.message); }
     }
 
-    return res.status(200).json({ ok: true });
+    return _json({ ok: true }, 200);
   } catch (err) {
     console.error('waitlist/subscribe unhandled:', err);
-    return res.status(200).json({ ok: true, status: 'error_fallback' });
+    return _json({ ok: true, status: 'error_fallback' }, 200);
   }
 }
