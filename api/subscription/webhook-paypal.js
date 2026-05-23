@@ -252,7 +252,13 @@ export default async function handler(req, res) {
 
       case 'PAYMENT.CAPTURE.REFUNDED':
       case 'PAYMENT.CAPTURE.REVERSED': {
-        // Pull the original order to find the user_id we stored as custom_id
+        // W26-b #3/#20 — Refund scoping.
+        // Previous behaviour matched on user_id ALONE, so refunding an OLD
+        // capture would silently downgrade the user's CURRENT (different)
+        // active subscription. Now we match on user_id AND provider_capture_id
+        // so the refund only affects the exact subscription it pertains to.
+        // Refund of a stale capture is logged for audit but does not touch
+        // an unrelated active row.
         const captureId = resource.id;
         const links = resource.links || [];
         const upLink = links.find(l => l.rel === 'up');
@@ -277,12 +283,47 @@ export default async function handler(req, res) {
           break;
         }
 
-        await supabase.from('subscriptions').update({
+        // Look up the subscription that THIS capture funded. Only downgrade
+        // if the refund matches the user's CURRENT capture.
+        const { data: currentSub } = await supabase
+          .from('subscriptions')
+          .select('user_id, status, provider_capture_id, plan')
+          .eq('user_id', userId)
+          .maybeSingle();
+
+        const captureMatches = currentSub?.provider_capture_id === captureId;
+
+        if (!captureMatches) {
+          // Stale refund: log + acknowledge but do NOT touch the active row.
+          // This is the bug-class of #3/#20: a year-old refund shouldn't kill
+          // a current subscription.
+          await _logEvent({
+            user_id: userId,
+            event_type: 'webhook_refund_stale_capture',
+            provider_id: captureId,
+            raw_payload: {
+              reason: 'refund_capture_does_not_match_current_subscription',
+              refund_capture_id: captureId,
+              current_capture_id: currentSub?.provider_capture_id || null,
+              event,
+            },
+          });
+          break;
+        }
+
+        // Refund matches the user's current active capture — downgrade them.
+        const { error: updErr } = await supabase.from('subscriptions').update({
           status: 'cancelled',
           cancelled_at: new Date().toISOString(),
           cancel_reason: eventType,
           updated_at: new Date().toISOString(),
-        }).eq('user_id', userId);
+        })
+        .eq('user_id', userId)
+        .eq('provider_capture_id', captureId);  // belt-and-braces double bind
+
+        if (updErr) {
+          console.error('[webhook-paypal] refund update err:', updErr);
+        }
         await supabase.from('profiles').update({ plan: 'free' }).eq('id', userId);
         await _logEvent({
           user_id: userId,

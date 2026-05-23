@@ -122,6 +122,14 @@ export default async function handler(req, res) {
   const { orderID, plan } = req.body || {};
   if (!orderID || !plan) return res.status(400).json({ error: 'Missing orderID or plan' });
   if (!PLAN_PRICES[plan]) return res.status(400).json({ error: 'Invalid plan' });
+  // W26-b #8 hardening: validate orderID before interpolating into PayPal
+  // URL. Real PayPal order IDs are [A-Z0-9]{17}; we allow [A-Za-z0-9_-]{8,40}
+  // to be forgiving across PayPal's variants while blocking path-traversal
+  // characters (/, .., %2F, etc.) that could land us on a different PayPal
+  // endpoint.
+  if (!/^[A-Za-z0-9_-]{8,40}$/.test(orderID)) {
+    return res.status(400).json({ error: 'Invalid orderID format' });
+  }
 
   // 1. Authenticate the buyer
   const auth = await _verifyUser(req);
@@ -131,10 +139,51 @@ export default async function handler(req, res) {
   try {
     const token = await _getAccessToken();
 
-    // 2. Capture the funds at PayPal
+    // W26-b #8: preflight — GET the order before capture to verify:
+    //   (a) it actually exists,
+    //   (b) the custom_id on the order matches the JWT user (binding check —
+    //       prevents user A capturing user B's order if A obtains the orderID),
+    //   (c) it isn't already COMPLETED (replay protection — capturing a
+    //       COMPLETED order is a no-op at PayPal but we'd still upsert and
+    //       could reset cancel_at_period_end / period_end unexpectedly).
+    const preflightRes = await fetch(`${PAYPAL_BASE}/v2/checkout/orders/${orderID}`, {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    if (!preflightRes.ok) {
+      console.error('[capture-order] preflight GET failed', { orderID, status: preflightRes.status });
+      return res.status(404).json({ error: 'Order not found' });
+    }
+    const preflightData = await preflightRes.json();
+    const orderCustomId = preflightData.purchase_units?.[0]?.custom_id;
+    if (orderCustomId && orderCustomId !== user.id) {
+      // Don't leak who the order belongs to — generic 403.
+      console.warn('[capture-order] cross-user capture attempt', {
+        attempting_user_id: user.id, order_user_id: orderCustomId, orderID,
+      });
+      return res.status(403).json({ error: 'Order does not belong to this user' });
+    }
+    if (preflightData.status === 'COMPLETED') {
+      // Already captured — refuse to re-process. The original capture
+      // already wrote the subscription row; replaying it would clobber
+      // any cancel_at_period_end state that has since been set.
+      return res.status(409).json({
+        error: 'Order has already been captured',
+        status: 'ALREADY_CAPTURED',
+      });
+    }
+
+    // 2. Capture the funds at PayPal.
+    // PayPal-Request-Id makes the call idempotent on PayPal's side — a
+    // replay with the same Request-Id returns the same result instead of
+    // double-charging. We key it on the orderID so the same order
+    // re-captured by us yields the same response from PayPal.
     const capRes = await fetch(`${PAYPAL_BASE}/v2/checkout/orders/${orderID}/capture`, {
       method: 'POST',
-      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'PayPal-Request-Id': `pfc-capture-${orderID}`,
+      },
     });
     if (!capRes.ok) {
       const err = await capRes.text();
