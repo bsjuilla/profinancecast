@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <!-- iOS Safari ignores SVG apple-touch-icons (MOB-6). Point at logo PNG instead.
-     A 180×180 cropped variant is still TODO (would shrink from 1.4 MB to ~10 KB) — IMG-12. -->
+     A cropped 180x180 variant is deferred to IMG-12 (would shrink ~1.4MB to ~10KB). -->
 <link rel="apple-touch-icon" href="/assets/img/logo-512.png">
 <link rel="manifest" href="/manifest.webmanifest">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -211,6 +211,8 @@
     display: flex; align-items: center; justify-content: space-between;
     padding: 11px 18px;
     background: rgba(11,20,16,0.65);
+    /* COMPAT-1: -webkit- prefix for Safari < 17 (iOS 16.x still ships WebKit 16) */
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
     backdrop-filter: blur(20px) saturate(140%);
     border: 1px solid var(--line-2);
     border-radius: 999px;
