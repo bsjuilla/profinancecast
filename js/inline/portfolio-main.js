@@ -1235,7 +1235,7 @@
   // W18-fix — previous version appended to pf-sub which got wiped by
   // textContent= updates. Now we insert as a SIBLING of pf-sub, not a
   // child, so pf-sub's text updates don't clobber it.
-  const PFC_PORTFOLIO_BUILD = 'w22-2026-05-22-16:45';
+  const PFC_PORTFOLIO_BUILD = 'w23-2026-05-22-17:30';
   function _stampVersion() {
     const sub = document.getElementById('pf-sub');
     if (!sub || !sub.parentNode) return;

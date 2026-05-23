@@ -180,7 +180,57 @@
       try { window.PFCStorage.setJSON(STORAGE_KEY, arr); }
       catch (e) { console.error('[PFCPortfolio] encrypted persist failed', e); }
     }
+    // W23 — also write to IndexedDB asynchronously for durability +
+    // larger quota. Best-effort; if IDB save fails, the sync localStorage
+    // write above is still on disk. Promise is intentionally not awaited
+    // so callers stay sync.
+    if (typeof window.PFCPortfolioIDB !== 'undefined' && window.PFCPortfolioIDB.available) {
+      window.PFCPortfolioIDB.save(arr).catch((e) => {
+        console.warn('[PFCPortfolio] IDB persist failed (non-fatal):', e.message || e);
+      });
+    }
     return plainOk;
+  }
+
+  // W23 — on-boot IDB merge. After _memList is loaded from localStorage,
+  // we ALSO async-load from IDB. If IDB has data localStorage doesn't
+  // (e.g. user cleared localStorage but not IDB, or another tab wrote to
+  // IDB), we merge the IDB data in and refresh consumers.
+  let _idbMergeAttempted = false;
+  async function _mergeFromIDB() {
+    if (_idbMergeAttempted) return;
+    _idbMergeAttempted = true;
+    if (typeof window.PFCPortfolioIDB === 'undefined' || !window.PFCPortfolioIDB.available) return;
+    try {
+      const idbList = await window.PFCPortfolioIDB.list();
+      if (!Array.isArray(idbList) || idbList.length === 0) {
+        // IDB is empty — if we have data, push localStorage → IDB so
+        // future loads benefit from the durable path
+        if (Array.isArray(_memList) && _memList.length > 0) {
+          await window.PFCPortfolioIDB.save(_memList);
+        }
+        return;
+      }
+      // IDB has data. If we don't OR if IDB has more entries, prefer IDB.
+      // (More entries = newer write from another tab; conservative merge)
+      if (!_memList || _memList.length < idbList.length) {
+        _memList = idbList;
+        _storageWarmedAt = _now();
+        // Also write to localStorage so the sync read path agrees
+        try { localStorage.setItem(_localKey(), JSON.stringify(idbList)); } catch (_) {}
+        _fireChange();
+      }
+    } catch (e) {
+      console.warn('[PFCPortfolio] IDB merge failed (non-fatal):', e.message || e);
+    }
+  }
+  // Kick off the merge once PFCPortfolio is loaded — non-blocking
+  if (typeof window !== 'undefined') {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => { _mergeFromIDB(); }, { once: true });
+    } else {
+      setTimeout(_mergeFromIDB, 0);
+    }
   }
 
   function list() {
