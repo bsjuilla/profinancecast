@@ -47,11 +47,30 @@
     return 'dashboard.html';
   }
 
+  // FNL-8 (P2): preserve `?next=` intent across error redirects so a user
+  // who clicked, say, "Claim Founders price" → magic-link → expired link
+  // doesn't lose the destination on retry. Reuses the same protocol-relative
+  // + origin-equality regex/check decideDestination uses.
+  function _safeNext() {
+    try {
+      const u = new URL(window.location.href);
+      const n = u.searchParams.get('next');
+      if (n && /^\/(?!\/)[A-Za-z0-9_\-./?=&%#]*$/.test(n)) {
+        const resolved = new URL(n, window.location.origin);
+        if (resolved.origin === window.location.origin) return n;
+      }
+    } catch (_) {}
+    return null;
+  }
+
   if (hash.includes('error_description=')) {
     const params = new URLSearchParams(hash.replace(/^#/, ''));
     const msg = decodeURIComponent(params.get('error_description') || 'Sign-in failed');
     console.error('[oauth] error:', msg);
-    window.location.replace('auth.html?error=' + encodeURIComponent(msg));
+    const next = _safeNext();
+    const url = 'auth.html?error=' + encodeURIComponent(msg) +
+                (next ? '&next=' + encodeURIComponent(next) : '');
+    window.location.replace(url);
     return;
   }
 
@@ -59,7 +78,8 @@
   const timeout = setTimeout(() => {
     if (done) return; done = true;
     console.warn('[oauth] timed out');
-    window.location.replace('auth.html?error=timeout');
+    const next = _safeNext();
+    window.location.replace('auth.html?error=timeout' + (next ? '&next=' + encodeURIComponent(next) : ''));
   }, 5000);
 
   function tryComplete() {
@@ -75,7 +95,8 @@
         window.location.replace(decideDestination());
       } else {
         console.error('[oauth] hash present but no session');
-        window.location.replace('auth.html?error=no_session');
+        const next = _safeNext();
+        window.location.replace('auth.html?error=no_session' + (next ? '&next=' + encodeURIComponent(next) : ''));
       }
     });
   }

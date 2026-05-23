@@ -39,7 +39,7 @@ const h = (type, props, ...children) => ({
 
 export default function handler(req) {
   const url = new URL(req.url);
-  const title    = (url.searchParams.get('title')    || 'See where your money lands in 2030.').slice(0, 140);
+  const title    = (url.searchParams.get('title')    || 'See where your money lands in 2036.').slice(0, 140);
   const eyebrow  = (url.searchParams.get('eyebrow')  || 'ProFinanceCast').slice(0, 40);
   const subtitle = (url.searchParams.get('subtitle') || 'The forecast your bank should give you. Free, no bank login.').slice(0, 220);
 

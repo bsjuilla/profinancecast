@@ -223,9 +223,15 @@
     _foundersLastFetch = now;
     try {
       const r = await fetch('/api/founders-claimed', { cache: 'no-store' });
-      if (!r.ok) return;
+      if (!r.ok) {
+        // FNL-6 (P2): reset the throttle on failure so a real visitor reload
+        // refreshes immediately instead of seeing the static placeholder
+        // for 5 more minutes after a CDN hiccup.
+        _foundersLastFetch = 0;
+        return;
+      }
       const data = await r.json();
-      if (data.claimed == null) return;
+      if (data.claimed == null) { _foundersLastFetch = 0; return; }
       const remaining = data.remaining, cap = data.cap;
       let copy;
       if (remaining === 0)            copy = 'All ' + cap + ' founder seats claimed. Thank you.';
@@ -233,7 +239,9 @@
       else if (remaining <= 100)      copy = remaining + ' of ' + cap + ' seats remaining';
       else                            copy = data.claimed + ' of ' + cap + ' claimed';
       el.textContent = copy;
-    } catch (_) { /* keep placeholder */ }
+    } catch (_) {
+      _foundersLastFetch = 0;  // FNL-6: don't throttle retries after a hiccup.
+    }
   }
   // Refresh when the tab regains focus (someone may have claimed a seat
   // while the visitor had this tab in the background).

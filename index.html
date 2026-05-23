@@ -11,8 +11,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#0B1410">
-<title>ProFinanceCast — Plan the next ten years, without a bank password</title>
-<meta name="description" content="Drop in your numbers. See exactly when you'll be debt-free, your net worth in 2036, and which goals you'll hit. No bank login. Free forever.">
+<title>ProFinanceCast — Ten-year net-worth forecast, no bank login</title>
+<meta name="description" content="See your net worth in 2036. Drop in four numbers and get your debt-free month, your goals, your forecast. No bank login. Free forever.">
 <meta name="robots" content="index,follow">
 <link rel="canonical" href="https://profinancecast.com/">
 <link rel="alternate" hreflang="en" href="https://profinancecast.com/">
@@ -40,8 +40,7 @@
       "@id": "https://profinancecast.com/#org",
       "name": "ProFinanceCast",
       "url": "https://profinancecast.com/",
-      "logo": { "@type": "ImageObject", "url": "https://profinancecast.com/assets/img/logo-512.png", "width": 1024, "height": 1024 },
-      "sameAs": []
+      "logo": { "@type": "ImageObject", "url": "https://profinancecast.com/assets/img/logo-512.png", "width": 1024, "height": 1024 }
     },
     {
       "@type": "WebSite",
@@ -399,6 +398,8 @@
 
   /* ── HERO ────────────────────────────────────────────────────────── */
   .hero {
+    /* COMPAT-4: 100vh fallback for iOS Safari 15 / older Firefox. */
+    min-height: 100vh;
     min-height: 100svh;
     display: grid; place-items: center;
     padding: 128px 24px 56px;
@@ -1059,6 +1060,44 @@
     .pfc-brand-mark svg, .price-tag, .eyebrow .dot { forced-color-adjust: none; }
   }
 
+  /* COMPAT-8 (P2): users who prefer higher contrast get the strongest ink
+     for body text — folds the ink scale into a 2-tier system. */
+  @media (prefers-contrast: more) {
+    :root {
+      --ink-2: var(--ink);
+      --ink-3: var(--ink-2);
+    }
+  }
+
+  /* COMPAT-8 (P2): metered / slow connections — strip the mesh-blob
+     animation entirely and disable the bento ambient pulse. Mirrors
+     prefers-reduced-motion behaviourally without touching the
+     intent-different prefers-reduced-motion query. */
+  @media (prefers-reduced-data: reduce) {
+    .hero-mesh .mesh-blob { animation: none !important; opacity: 0.06; }
+    body.features-in-view .bento-card { animation: none !important; }
+  }
+
+  /* MOB-8: bento cursor-tracking is hover-only — on touch devices the
+     mousemove never fires, the radial-gradient stays at default, and
+     the :hover-triggered opacity bumps to 1 on first tap then never
+     follows. Gate the visual to actual hover devices so touch users
+     don't get a static glow that misrepresents the interaction model. */
+  @media (hover: hover) {
+    .bento-card:hover { /* preserved gradient + cursor-tracking */ }
+  }
+
+  /* MOB-12: desktop nav is ~68px tall; mobile pill nav is ~56px tall.
+     Match scroll-padding so anchor jumps land below the nav, not under it. */
+  @media (max-width: 980px) {
+    html { scroll-padding-top: 72px; }
+  }
+
+  /* MOB-11: lock the iOS rubber-band so the body's background colour
+     can't reveal a stripe of canvas above the nav (or pure white if a
+     future redesign uses an ivory canvas). */
+  html, body { overscroll-behavior-y: none; }
+
   /* ─────────────────────────────────────────────────────────────────
      SPRINT 6 AESTHETIC PASS — institutional density / boutique-Europe
      Goal: kill the empty-hero feeling, add editorial information
@@ -1620,9 +1659,14 @@
   <script src="js/pfc-sentry-scrub.js" defer></script>
   <script src="https://js.sentry-cdn.com/9b8b34d46908bd9f79a16cf18322ac70.min.js" crossorigin="anonymous" defer></script>
   <script src="js/pfc-sentry.js" defer></script>
-  <!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "37cb784ad53047a9921bfd79e9835310"}'></script><!-- End Cloudflare Web Analytics -->
+  <!-- Cloudflare Web Analytics -->
+  <!-- SEC-3: crossorigin=anonymous so JS errors thrown inside the beacon
+       surface in Sentry as real exceptions, not opaque "Script error." -->
+  <script defer src='https://static.cloudflareinsights.com/beacon.min.js' crossorigin="anonymous" data-cf-beacon='{"token": "37cb784ad53047a9921bfd79e9835310"}'></script>
+  <!-- End Cloudflare Web Analytics -->
   <!-- Privacy-friendly analytics by Plausible -->
-  <script async src="https://plausible.io/js/pa-EvYdfUp4d9vvohwl_Yy2j.js"></script>
+  <!-- SEC-3: crossorigin=anonymous on Plausible too. -->
+  <script async crossorigin="anonymous" src="https://plausible.io/js/pa-EvYdfUp4d9vvohwl_Yy2j.js"></script>
   <script src="./js/inline/index-4.js"></script>
   <link rel="stylesheet" href="css/pfc-fonts.css">
 </head>
@@ -1647,7 +1691,7 @@
     <a href="#how">How it works</a>
     <a href="#features">Features</a>
     <a href="#pricing">Pricing</a>
-    <a href="blog">Blog</a>
+    <a href="blog.html">Blog</a>
   </div>
   <div class="nav-cta">
     <a href="auth.html" class="btn btn-ghost">Sign in</a>
@@ -1698,6 +1742,7 @@
       <div class="reveal" style="margin-top:12px;font-size:13px;color:var(--ink-3);font-family:var(--font-body);">
         Pre-launch &middot;
         <a href="waitlist.html" style="color:var(--gold);text-decoration:underline;text-underline-offset:3px;">join the 100-seat Founders Lifetime waitlist &rarr;</a>
+        <span style="display:block;margin-top:4px;font-size:11px;color:var(--ink-3);">Founders Lifetime is a one-time purchase &mdash; at checkout you waive the 14-day right of withdrawal in exchange for immediate access.</span>
       </div>
       <div class="trust-row reveal" role="list" aria-label="What we do and don't do">
         <span role="listitem"><span aria-hidden="true" style="color:var(--money);">✓</span> Calculations run in your browser</span>
@@ -2349,7 +2394,7 @@
       <p>Income tells you how fast you're earning. Net worth tells you whether any of it is adding up.</p>
     </a>
   </div>
-  <p class="read-all"><a href="blog">Read all articles →</a></p>
+  <p class="read-all"><a href="blog.html">Read all articles &rarr;</a></p>
 </section>
 
 <!-- ─────────── FAQ ─────────── -->
@@ -2377,7 +2422,7 @@
     </details>
     <details>
       <summary>Do you sell my data?</summary>
-      <p>No. The forecast runs in your browser, not on our servers — the math literally happens on the device you're holding. The only thing we transmit on this homepage is a single anonymous page-view (Cloudflare Web Analytics, no cookies, no IP retention beyond aggregation). There is no ad network, no data broker, no behavioural profile. Read the full data-handling note in <a href="privacy.html">privacy</a>.</p>
+      <p>No. The forecast runs in your browser, not on our servers &mdash; the math happens on the device you're holding. The only thing we transmit on this homepage is a single anonymous page-view (Cloudflare Web Analytics, no cookies, no IP retention beyond aggregation). There is no ad network, no data broker, no behavioural profile. Read the full data-handling note in <a href="privacy.html">privacy</a>.</p>
     </details>
     <details>
       <summary>What if I cancel?</summary>
