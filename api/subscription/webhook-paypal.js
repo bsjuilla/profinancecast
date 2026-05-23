@@ -121,6 +121,44 @@ export default async function handler(req, res) {
     { auth: { persistSession: false, autoRefreshToken: false } }
   );
 
+  // W26-c #7 — Idempotency check (MUST come before any state-changing work).
+  // PayPal retries on any non-2xx (and sometimes even on 2xx). Without this,
+  // a retried PAYMENT.CAPTURE.COMPLETED would re-upsert the subscription
+  // row, potentially clobbering cancel_at_period_end / period_end state
+  // set since the first delivery.
+  //
+  // We key on PayPal-Transmission-Id, which is unique per delivery attempt.
+  // Falls back to event.id if the header is missing (defense-in-depth).
+  // The PRIMARY KEY on the table makes the ON CONFLICT atomic — two
+  // concurrent deliveries can't both win.
+  const transmissionId = req.headers['paypal-transmission-id'] || event.id || null;
+  if (transmissionId) {
+    const { data: dedupRow, error: dedupErr } = await supabase
+      .from('webhook_events_processed')
+      .insert({
+        event_id: transmissionId,
+        event_type: eventType || 'unknown',
+        provider: 'paypal',
+      })
+      .select('event_id')
+      .maybeSingle();
+    if (dedupErr) {
+      // Postgres error code 23505 = unique_violation = we've seen this event before.
+      if (dedupErr.code === '23505') {
+        return res.status(200).json({ received: true, deduplicated: true });
+      }
+      // Any other DB error: log + fall through. We'd rather process the event
+      // twice than reject a real webhook and have PayPal retry forever.
+      console.error('[webhook-paypal] dedup insert error (continuing):', dedupErr);
+    } else if (!dedupRow) {
+      // No row returned + no error = also a conflict swallowed by the row
+      // visibility rules. Treat as duplicate.
+      return res.status(200).json({ received: true, deduplicated: true });
+    }
+  } else {
+    console.warn('[webhook-paypal] no transmission_id and no event.id; cannot deduplicate');
+  }
+
   // Helper: append-only event log for audit M3.
   const _logEvent = async (extra) => {
     try {
