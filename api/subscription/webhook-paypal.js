@@ -21,9 +21,25 @@
 
 import { createClient } from '@supabase/supabase-js';
 
+// W25 P0 #10 — disable Vercel's body parser. PayPal's webhook signature
+// is computed over the exact raw bytes PayPal sent; the default parser
+// re-orders keys and changes whitespace, breaking verification silently
+// (HTTP 401 on every real event despite "valid" signatures).
+export const config = { api: { bodyParser: false } };
+
 const PAYPAL_BASE = (process.env.PAYPAL_ENV === 'sandbox')
   ? 'https://api-m.sandbox.paypal.com'
   : 'https://api-m.paypal.com';
+
+// Reads the raw incoming bytes as a Buffer. Used for PayPal webhook
+// signature verification (which must see byte-identical input).
+async function _readRawBody(req) {
+  const chunks = [];
+  for await (const chunk of req) {
+    chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
+  }
+  return Buffer.concat(chunks);
+}
 
 async function _getAccessToken() {
   const creds = Buffer.from(
@@ -40,26 +56,33 @@ async function _getAccessToken() {
 
 /**
  * Verifies the webhook signature with PayPal so we don't trust spoofed events.
+ * W25 P0 #10: accepts headers + raw body STRING (not the parsed req.body).
+ * The raw string is then parsed into webhook_event for the API contract,
+ * but signature verification keys on the headers + raw byte signature
+ * that PayPal computed BEFORE Vercel's parser re-emitted whitespace.
  * Returns true only when PayPal confirms the signature is valid.
  */
-async function _verifySignature(req) {
+async function _verifySignature(headers, rawBodyString) {
   const webhookId = process.env.PAYPAL_WEBHOOK_ID;
   if (!webhookId) {
     console.error('PAYPAL_WEBHOOK_ID not configured — refusing to process webhook');
     return false;
   }
+  let parsedEvent;
+  try { parsedEvent = JSON.parse(rawBodyString); }
+  catch (_) { return false; }
   const token = await _getAccessToken();
   const verifyRes = await fetch(`${PAYPAL_BASE}/v1/notifications/verify-webhook-signature`, {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      auth_algo:         req.headers['paypal-auth-algo'],
-      cert_url:          req.headers['paypal-cert-url'],
-      transmission_id:   req.headers['paypal-transmission-id'],
-      transmission_sig:  req.headers['paypal-transmission-sig'],
-      transmission_time: req.headers['paypal-transmission-time'],
+      auth_algo:         headers['paypal-auth-algo'],
+      cert_url:          headers['paypal-cert-url'],
+      transmission_id:   headers['paypal-transmission-id'],
+      transmission_sig:  headers['paypal-transmission-sig'],
+      transmission_time: headers['paypal-transmission-time'],
       webhook_id:        webhookId,
-      webhook_event:     req.body,
+      webhook_event:     parsedEvent,
     }),
   });
   if (!verifyRes.ok) return false;
@@ -70,14 +93,26 @@ async function _verifySignature(req) {
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  // 1. Verify the webhook actually came from PayPal
-  const valid = await _verifySignature(req).catch(() => false);
+  // W25 P0 #10 — read raw body bytes. bodyParser is disabled at top of file
+  // so req is a raw stream here, NOT a parsed object.
+  let rawBody;
+  try { rawBody = (await _readRawBody(req)).toString('utf8'); }
+  catch (e) {
+    console.error('Failed to read webhook raw body:', e);
+    return res.status(400).json({ error: 'Bad request' });
+  }
+
+  // 1. Verify the webhook actually came from PayPal (raw-body version)
+  const valid = await _verifySignature(req.headers, rawBody).catch(() => false);
   if (!valid) {
     console.warn('Rejected unverified PayPal webhook');
     return res.status(401).json({ error: 'Signature verification failed' });
   }
 
-  const event = req.body || {};
+  // 2. Parse the body NOW for routing (verification already passed on raw bytes)
+  let event;
+  try { event = JSON.parse(rawBody); }
+  catch (_) { return res.status(400).json({ error: 'Invalid JSON' }); }
   const eventType = event.event_type;
   const resource  = event.resource || {};
 
@@ -110,7 +145,7 @@ export default async function handler(req, res) {
         // never reached), upgrade the user from this verified webhook event.
         const captureId = resource.id;
         const amount = resource.amount?.value;
-        const currency = resource.amount?.currency_code || 'USD';
+        const currency = resource.amount?.currency_code || 'EUR';
         const userId =
           resource.custom_id ||
           resource.invoice_id ||
@@ -151,19 +186,41 @@ export default async function handler(req, res) {
           .maybeSingle();
         if (existing?.provider_capture_id === captureId && existing.status === 'active') break;
 
-        // Determine plan from amount (server is source of truth).
-        const v = Number(amount).toFixed(2);
-        let plan = null;
-        if (v === '9.99' || v === '9.00') plan = 'pro';
-        else if (v === '69.00') plan = 'pro';      // annual
-        else if (v === '149.00') plan = 'pro';     // founders lifetime
-        else if (v === '19.99') plan = 'premium';
-        if (!plan) {
-          console.warn(`[webhook-paypal] capture.completed amount ${v} ${currency} matched no plan`);
+        // W25 P0 #6 fix: derive plan from reference_id (we set this in
+        // create-order.js:83 as `${user.id}:${plan}`). Amount-based inference
+        // was brittle — it broke silently every time prices changed and was
+        // already wrong on every value at audit time. Parsing the reference
+        // is unambiguous.
+        const pu = resource.supplementary_data?.related_ids
+                ? (event.resource?.purchase_units?.[0] || {})
+                : (resource.purchase_units?.[0] || {});
+        const refId = pu.reference_id || resource.reference_id || '';
+        const [, refSku] = String(refId).split(':');
+        const VALID_SKUS = ['pro_monthly','pro_annual','premium_monthly','premium_annual','founders'];
+        const sku = VALID_SKUS.includes(refSku) ? refSku : null;
+        const SKU_TO_TIER = {
+          pro_monthly: 'pro', pro_annual: 'pro',
+          premium_monthly: 'premium', premium_annual: 'premium',
+          founders: 'pro',
+        };
+        const plan = sku ? SKU_TO_TIER[sku] : null;
+        if (!plan || !sku) {
+          console.warn(`[webhook-paypal] capture.completed: no plan from reference_id="${refId}"`);
+          await _logEvent({
+            user_id: userId, event_type: 'webhook_no_plan_match',
+            provider_id: captureId, amount, currency,
+            raw_payload: { reason: 'unparseable_reference_id', refId },
+          });
           break;
         }
 
-        const days = (v === '69.00') ? 366 : (v === '149.00') ? 36500 : 30;
+        // Period length depends on SKU. Founders = 100 years (one-time).
+        const SKU_TO_DAYS = {
+          pro_monthly: 30, pro_annual: 365,
+          premium_monthly: 30, premium_annual: 365,
+          founders: 365 * 100,
+        };
+        const days = SKU_TO_DAYS[sku];
         const periodEnd = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
         const nowIso = new Date().toISOString();
 

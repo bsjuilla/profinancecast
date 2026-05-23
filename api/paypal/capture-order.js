@@ -18,25 +18,43 @@ const PAYPAL_BASE = (process.env.PAYPAL_ENV === 'sandbox')
   ? 'https://api-m.sandbox.paypal.com'
   : 'https://api-m.paypal.com';
 
-// SKU prices — must match create-order.js. The post-rewrite billing.html
-// posts one of these three SKU strings.
-const PLAN_PRICES  = { pro_monthly: 9, pro_annual: 69, founders: 149 };
+// SKU prices — must match create-order.js. W25 P0 #1: added premium SKUs and
+// corrected pro_annual to 79 to match the W14-B CFO pricing in pricing.md and
+// the client (js/inline/billing-2.js openCheckout calls).
+const PLAN_PRICES  = {
+  pro_monthly:     9,
+  pro_annual:      79,
+  premium_monthly: 19,
+  premium_annual:  169,
+  founders:        149,
+};
 
-// All SKUs grant the same Pro entitlement; the difference is billing interval.
-// 'pro' is the canonical plan string written to the subscriptions table — this
-// keeps PFCPlan.requirePlan(['pro','premium']) consumer code unchanged.
-const SKU_TO_PLAN  = { pro_monthly: 'pro', pro_annual: 'pro', founders: 'pro' };
+// SKU → entitlement tier. Pro SKUs grant 'pro'; Premium SKUs grant 'premium'.
+// Founders is a lifetime Pro entitlement.
+// The 'plan' column on subscriptions stores the entitlement tier, not the SKU,
+// so PFCPlan.requirePlan(['pro','premium']) consumer code stays unchanged.
+const SKU_TO_PLAN  = {
+  pro_monthly:     'pro',
+  pro_annual:      'pro',
+  premium_monthly: 'premium',
+  premium_annual:  'premium',
+  founders:        'pro',
+};
 
-// Sage AI message quota per Pro user/month (pricing report 07).
-const PLAN_QUERIES = { pro: 200, premium: 150 };
+// Sage AI message quota per entitlement tier per month.
+// W25 P0 #1: premium corrected from 150 → 500 to match billing.html copy
+// (W14-C: "Sage AI — 500 messages/month (vs Pro's 200)").
+const PLAN_QUERIES = { pro: 200, premium: 500 };
 
 // How long the subscription period runs from capture time, per SKU.
 // Founders is one-time; we set a 100-year period_end so status.js never
 // expires it via the !expired check. Cancellation still works the same way.
 const PLAN_PERIOD_DAYS = {
-  pro_monthly: 30,
-  pro_annual:  365,
-  founders:    365 * 100,
+  pro_monthly:     30,
+  pro_annual:      365,
+  premium_monthly: 30,
+  premium_annual:  365,
+  founders:        365 * 100,
 };
 
 function _supabaseAdmin() {
@@ -105,8 +123,8 @@ export default async function handler(req, res) {
     const capture = captureData.purchase_units?.[0]?.payments?.captures?.[0];
     const amountPaid = parseFloat(capture?.amount?.value);
     const currencyPaid = capture?.amount?.currency_code;
-    if (currencyPaid !== 'USD' || Math.abs(amountPaid - PLAN_PRICES[plan]) > 0.005) {
-      console.error(`Amount mismatch: paid ${amountPaid} ${currencyPaid}, expected ${PLAN_PRICES[plan]} USD for plan ${plan}`);
+    if (currencyPaid !== 'EUR' || Math.abs(amountPaid - PLAN_PRICES[plan]) > 0.005) {
+      console.error(`Amount mismatch: paid ${amountPaid} ${currencyPaid}, expected ${PLAN_PRICES[plan]} EUR for plan ${plan}`);
       // Money was captured but at the wrong amount — we refuse to upgrade.
       // Operations team must reconcile manually via PayPal dashboard.
       return res.status(409).json({ error: 'Payment amount mismatch — please contact support.' });

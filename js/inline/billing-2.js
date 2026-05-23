@@ -134,7 +134,7 @@ function loadPayPal() {
     return;
   }
   const script  = document.createElement('script');
-  script.src    = `https://www.paypal.com/sdk/js?client-id=${PAYPAL_CLIENT_ID}&currency=USD&intent=capture&components=buttons`;
+  script.src    = `https://www.paypal.com/sdk/js?client-id=${PAYPAL_CLIENT_ID}&currency=EUR&intent=capture&components=buttons`;
   script.onload = () => { paypalLoaded = true; renderPayPalButtons(); };
   script.onerror = () => {
     document.getElementById('paypal-button-container').innerHTML =

@@ -9,19 +9,24 @@ const PAYPAL_BASE = (process.env.PAYPAL_ENV === 'sandbox')
   ? 'https://api-m.sandbox.paypal.com'
   : 'https://api-m.paypal.com';
 
-// SKU prices — billing.html (post pricing-report-07 rewrite) uses these codes.
-// `pro_monthly` and `pro_annual` are the same Pro entitlement at different
-// billing intervals; `founders` is a one-time lifetime SKU (capped at 500
-// seats — counter logic lives in a follow-up commit).
+// SKU prices — must match client (js/inline/billing-2.js openCheckout calls)
+// AND capture-order.js PLAN_PRICES AND webhook-paypal.js fallback table.
+// W25 P0 #1: aligned with billing-2.js openProCheckout (79), openPremiumCheckout
+// (19/169), and the Founders €149 one-time. Pro Annual was 69; now 79 to match
+// the W14-B locked CFO pricing in pricing.md.
 const PLAN_PRICES = {
-  pro_monthly: 9,
-  pro_annual:  69,
-  founders:    149,
+  pro_monthly:     9,
+  pro_annual:      79,
+  premium_monthly: 19,
+  premium_annual:  169,
+  founders:        149,
 };
 const PLAN_DESCRIPTIONS = {
-  pro_monthly: 'ProFinanceCast Pro — Monthly',
-  pro_annual:  'ProFinanceCast Pro — Annual',
-  founders:    'ProFinanceCast Founders Lifetime',
+  pro_monthly:     'ProFinanceCast Pro — Monthly',
+  pro_annual:      'ProFinanceCast Pro — Annual',
+  premium_monthly: 'ProFinanceCast Premium — Monthly',
+  premium_annual:  'ProFinanceCast Premium — Annual',
+  founders:        'ProFinanceCast Founders Lifetime',
 };
 const APP_ORIGIN  = process.env.APP_ORIGIN || 'https://profinancecast.com';
 
@@ -81,7 +86,7 @@ export default async function handler(req, res) {
         purchase_units: [{
           custom_id: user.id,                          // ties the order back to a real user
           reference_id: `${user.id}:${plan}`,
-          amount: { currency_code: 'USD', value: amount.toFixed(2) },
+          amount: { currency_code: 'EUR', value: amount.toFixed(2) },
           description: PLAN_DESCRIPTIONS[plan] || 'ProFinanceCast Pro',
           soft_descriptor: 'PROFINANCECAST',
         }],
