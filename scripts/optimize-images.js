@@ -95,6 +95,9 @@ const LANDING_PHOTOS = [
   'salary-empty-envelope.webp',
   'scenarios-page-hero.webp',
   'scenarios-empty-compass.webp',
+  // Tools subdir
+  'debt-strategy-vs-band.webp',
+  'takehome-result-coronation.webp',
 ];
 
 // Photos the audit flagged as significantly over-served vs displayed size.

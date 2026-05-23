@@ -28,12 +28,13 @@ const PHOTOS_DIR = path.join(REPO_ROOT, 'assets', 'img', 'photos');
 const DRY_RUN = process.argv.includes('--dry-run');
 
 // Matches lines like:
-//   <source srcset="assets/img/photos/foo.webp" type="image/webp">
-// with optional whitespace. Capture: leading indent, basename.
-const WEBP_SOURCE_RE = /^(\s*)<source\s+srcset="assets\/img\/photos\/([A-Za-z0-9_-]+)\.webp"\s+type="image\/webp">\s*$/;
+//   <source srcset="assets/img/photos/foo.webp" type="image/webp">         (root pages)
+//   <source srcset="../assets/img/photos/foo.webp" type="image/webp">      (tools/* pages)
+// with optional whitespace. Capture: indent, path-prefix, basename.
+const WEBP_SOURCE_RE = /^(\s*)<source\s+srcset="((?:\.\.\/)?)assets\/img\/photos\/([A-Za-z0-9_-]+)\.webp"\s+type="image\/webp">\s*$/;
 
-const AVIF_LINE = (indent, basename) =>
-  `${indent}<source srcset="assets/img/photos/${basename}.avif" type="image/avif">`;
+const AVIF_LINE = (indent, prefix, basename) =>
+  `${indent}<source srcset="${prefix}assets/img/photos/${basename}.avif" type="image/avif">`;
 
 function avifExists(basename) {
   return fs.existsSync(path.join(PHOTOS_DIR, `${basename}.avif`));
@@ -55,8 +56,8 @@ function processFile(file) {
     const m = line.match(WEBP_SOURCE_RE);
 
     if (m) {
-      const [, indent, basename] = m;
-      const avifLine = AVIF_LINE(indent, basename);
+      const [, indent, prefix, basename] = m;
+      const avifLine = AVIF_LINE(indent, prefix, basename);
 
       // Idempotency: if previous output line is already this AVIF source, skip insertion.
       const prev = out.length > 0 ? out[out.length - 1] : '';
@@ -96,10 +97,21 @@ function processFile(file) {
   };
 }
 
+function walkHtmlFiles(dir, baseDir, results = []) {
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    if (entry.isDirectory()) {
+      // Skip noise: node_modules, docs/, .git/, scripts/, api/, css/, js/.
+      if (['node_modules', 'docs', '.git', 'scripts', 'api', 'css', 'js', 'assets', 'supabase'].includes(entry.name)) continue;
+      walkHtmlFiles(path.join(dir, entry.name), baseDir, results);
+    } else if (entry.isFile() && entry.name.endsWith('.html')) {
+      results.push(path.relative(baseDir, path.join(dir, entry.name)));
+    }
+  }
+  return results;
+}
+
 function main() {
-  const htmlFiles = fs.readdirSync(REPO_ROOT)
-    .filter(f => f.endsWith('.html'))
-    .sort();
+  const htmlFiles = walkHtmlFiles(REPO_ROOT, REPO_ROOT).sort();
 
   let totalInserted = 0;
   let totalSkippedPresent = 0;
@@ -119,7 +131,11 @@ function main() {
         (r.skippedMissingAvif ? `  (${r.skippedMissingAvif} skipped, AVIF missing)` : '')
       );
     }
-    if (r.changed && !DRY_RUN) {
+    // Only write when an AVIF source was actually inserted. Comparing
+    // `updated !== original` would also match line-ending normalisation
+    // (split/join can mix LF/CRLF on Windows + git-autocrlf checkouts),
+    // which produces noisy "modified" files with empty git diffs.
+    if (r.inserted > 0 && !DRY_RUN) {
       fs.writeFileSync(r.filePath, r.updated);
       changedFiles.push(file);
     }
