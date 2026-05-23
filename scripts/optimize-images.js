@@ -37,10 +37,13 @@ const REPO_ROOT = path.resolve(__dirname, '..');
 const PHOTOS_DIR = path.join(REPO_ROOT, 'assets', 'img', 'photos');
 const IMG_DIR = path.join(REPO_ROOT, 'assets', 'img');
 
-// Landing-page photos still referenced as <picture> sources after the
-// P0 cleanup. coastal-window.webp stays on disk because billing.html
-// or other surfaces may still use it; for landing it's only the 7 below.
+// All photos referenced as <picture> WebP sources across the public
+// HTML pages. Auto-discovered via:
+//   grep -rhoE 'srcset="assets/img/photos/[^"]*\.webp"' *.html | \
+//     sed -E 's|.*/([^"/]+\.webp)"|\1|' | sort -u
+// Anything you ship in a future <picture> block, append here and re-run.
 const LANDING_PHOTOS = [
+  // Landing page
   'hero-ledger.webp',
   'compass-on-paper.webp',
   'key-on-velvet.webp',
@@ -48,6 +51,50 @@ const LANDING_PHOTOS = [
   'desk-corner.webp',
   'match-flame.webp',
   'gold-leaf-arrow.webp',
+  // About / Auth / Onboarding / Waitlist
+  'about-house-portrait.webp',
+  'auth-left-still-life.webp',
+  'auth-success-keepsake.webp',
+  'onboarding-welcome-vignette.webp',
+  'onboarding-complete-keepsake.webp',
+  // Blog
+  'blog-50-30-20-hero.webp',
+  'blog-50-30-20-jar-triptych.webp',
+  'blog-debt-avalanche-method-hero.webp',
+  'blog-debt-avalanche-toppling-matches.webp',
+  'blog-emergency-fund-hero.webp',
+  'blog-index-funds-hero.webp',
+  'blog-inflation-hero.webp',
+  'blog-inflation-fading-banknote.webp',
+  'blog-net-worth-hero.webp',
+  'blog-salary-negotiation-hero.webp',
+  'blog-featured-art.webp',
+  // Cash forecast / Dashboard
+  'cashflow-tide-band.webp',
+  'cashflow-surplus-envelope.webp',
+  'dashboard-upgrade-banner-flourish.webp',
+  'dashboard-masthead-band.webp',
+  'dashboard-savings-rate-vignette.webp',
+  'dashboard-networth-pullquote.webp',
+  // Tools
+  'debt-avalanche-vs-snowball-still-life.webp',
+  'debt-empty-quiet.webp',
+  'goals-empty-horizon.webp',
+  'help-vade-mecum.webp',
+  'history-archive-eyebrow.webp',
+  'journal-page-hero.webp',
+  'networth-archive-hero.webp',
+  'portfolio-share-certificate-close.webp',
+  'portfolio-empty-vault.webp',
+  'recurring-csv-invitation.webp',
+  'report-card-merit-certificate.webp',
+  'report-card-overdue-stamp.webp',
+  'report-card-keepsake.webp',
+  'sage-welcome-portrait.webp',
+  'sage-empty-context.webp',
+  'salary-empty-envelope.webp',
+  'scenarios-page-hero.webp',
+  'scenarios-empty-compass.webp',
 ];
 
 // Photos the audit flagged as significantly over-served vs displayed size.

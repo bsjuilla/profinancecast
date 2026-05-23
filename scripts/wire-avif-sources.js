@@ -1,69 +1,135 @@
+#!/usr/bin/env node
 /**
- * wire-avif-sources.js — For the 4 photos that now have AVIF siblings,
- * inject a <source type="image/avif"> BEFORE the existing webp source
- * in every <picture> that references them. Browsers select sources
- * top-to-bottom by media + type acceptability; AVIF goes first so AVIF-
- * capable engines pick the smaller file, while older browsers fall
- * through to WebP and then the <img> src.
+ * scripts/wire-avif-sources.js
  *
- * Idempotent: skips files that already have an avif source for the slot.
+ * Idempotent transform: for every HTML file at the repo root, finds
+ * each `<source srcset="assets/img/photos/<name>.webp" type="image/webp">`
+ * line and prepends a matching AVIF source line ABOVE it, but only if:
+ *   (a) the corresponding .avif file actually exists on disk, AND
+ *   (b) an AVIF source for the same image isn't already present.
+ *
+ * Why this is safer than per-file Edit calls:
+ *   - One pass handles all 32 HTML files identically
+ *   - Filename derivation is mechanical (.webp → .avif on same basename)
+ *   - Existing AVIF references are detected and skipped
+ *   - Original indentation is preserved character-for-character
+ *   - --dry-run shows the diff before any file is touched
+ *
+ * Usage:
+ *   node scripts/wire-avif-sources.js --dry-run    # preview, no writes
+ *   node scripts/wire-avif-sources.js              # apply
  */
+
 const fs = require('fs');
 const path = require('path');
 
-const ROOT = path.join(__dirname, '..');
+const REPO_ROOT = path.resolve(__dirname, '..');
+const PHOTOS_DIR = path.join(REPO_ROOT, 'assets', 'img', 'photos');
+const DRY_RUN = process.argv.includes('--dry-run');
 
-const SLOTS = [
-  'cashflow-tide-band',
-  'onboarding-complete-keepsake',
-  'portfolio-holdings-eyebrow',
-  'onboarding-welcome-vignette',
-];
+// Matches lines like:
+//   <source srcset="assets/img/photos/foo.webp" type="image/webp">
+// with optional whitespace. Capture: leading indent, basename.
+const WEBP_SOURCE_RE = /^(\s*)<source\s+srcset="assets\/img\/photos\/([A-Za-z0-9_-]+)\.webp"\s+type="image\/webp">\s*$/;
 
-function walk(dir, results) {
-  for (const f of fs.readdirSync(dir, { withFileTypes: true })) {
-    const p = path.join(dir, f.name);
-    if (f.isDirectory()) {
-      if (f.name === 'node_modules' || f.name === '.git' || f.name === 'assets') continue;
-      walk(p, results);
-    } else if (f.name.endsWith('.html')) {
-      results.push(p);
+const AVIF_LINE = (indent, basename) =>
+  `${indent}<source srcset="assets/img/photos/${basename}.avif" type="image/avif">`;
+
+function avifExists(basename) {
+  return fs.existsSync(path.join(PHOTOS_DIR, `${basename}.avif`));
+}
+
+function processFile(file) {
+  const filePath = path.join(REPO_ROOT, file);
+  const original = fs.readFileSync(filePath, 'utf8');
+  const lines = original.split(/\r?\n/);
+  const lineEnding = original.includes('\r\n') ? '\r\n' : '\n';
+
+  const out = [];
+  let inserted = 0;
+  let skippedAlreadyPresent = 0;
+  let skippedMissingAvif = 0;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const m = line.match(WEBP_SOURCE_RE);
+
+    if (m) {
+      const [, indent, basename] = m;
+      const avifLine = AVIF_LINE(indent, basename);
+
+      // Idempotency: if previous output line is already this AVIF source, skip insertion.
+      const prev = out.length > 0 ? out[out.length - 1] : '';
+      const alreadyPresent = prev.trim() === avifLine.trim();
+
+      if (alreadyPresent) {
+        skippedAlreadyPresent += 1;
+        out.push(line);
+        continue;
+      }
+
+      if (!avifExists(basename)) {
+        skippedMissingAvif += 1;
+        out.push(line);
+        continue;
+      }
+
+      out.push(avifLine);
+      out.push(line);
+      inserted += 1;
+    } else {
+      out.push(line);
     }
   }
+
+  const updated = out.join(lineEnding);
+  const changed = updated !== original;
+
+  return {
+    file,
+    inserted,
+    skippedAlreadyPresent,
+    skippedMissingAvif,
+    changed,
+    updated,
+    filePath,
+  };
 }
 
-const files = [];
-walk(ROOT, files);
+function main() {
+  const htmlFiles = fs.readdirSync(REPO_ROOT)
+    .filter(f => f.endsWith('.html'))
+    .sort();
 
-let totalPatched = 0;
-for (const file of files) {
-  let src = fs.readFileSync(file, 'utf8');
-  let changed = false;
+  let totalInserted = 0;
+  let totalSkippedPresent = 0;
+  let totalSkippedMissing = 0;
+  const changedFiles = [];
 
-  for (const slot of SLOTS) {
-    // Match: <source srcset="...path/SLOT.webp" type="image/webp">
-    // - Capture any path prefix (e.g. assets/img/photos/ or ../assets/img/photos/)
-    const re = new RegExp(
-      `(<source srcset="([^"]*?/)${slot}\\.webp" type="image/webp">)`,
-      'g'
-    );
-    src = src.replace(re, (whole, fullTag, pathPrefix) => {
-      // Skip if previous line already has avif for the same slot
-      // (idempotency check) — look 200 chars back.
-      const idx = src.indexOf(whole);
-      const window = src.slice(Math.max(0, idx - 200), idx);
-      if (window.includes(`${slot}.avif`)) return whole;
-      const avifTag = `<source srcset="${pathPrefix}${slot}.avif" type="image/avif">\n        $&`;
-      changed = true;
-      totalPatched++;
-      return `<source srcset="${pathPrefix}${slot}.avif" type="image/avif">\n        ${fullTag}`;
-    });
+  for (const file of htmlFiles) {
+    const r = processFile(file);
+    totalInserted += r.inserted;
+    totalSkippedPresent += r.skippedAlreadyPresent;
+    totalSkippedMissing += r.skippedMissingAvif;
+
+    if (r.inserted > 0 || r.skippedMissingAvif > 0) {
+      console.log(
+        `  ${file.padEnd(40)}  +${String(r.inserted).padStart(2)} avif` +
+        (r.skippedAlreadyPresent ? `  (${r.skippedAlreadyPresent} already present)` : '') +
+        (r.skippedMissingAvif ? `  (${r.skippedMissingAvif} skipped, AVIF missing)` : '')
+      );
+    }
+    if (r.changed && !DRY_RUN) {
+      fs.writeFileSync(r.filePath, r.updated);
+      changedFiles.push(file);
+    }
   }
 
-  if (changed) {
-    fs.writeFileSync(file, src, 'utf8');
-    console.log(`+ ${path.relative(ROOT, file)}`);
-  }
+  console.log('');
+  console.log(`Total AVIF sources inserted:  ${totalInserted}`);
+  console.log(`Already present (skipped):    ${totalSkippedPresent}`);
+  console.log(`AVIF missing on disk:         ${totalSkippedMissing}`);
+  console.log(`Files modified:               ${changedFiles.length}${DRY_RUN ? ' (DRY-RUN)' : ''}`);
 }
 
-console.log(`\nPatched ${totalPatched} <picture> blocks.`);
+main();
