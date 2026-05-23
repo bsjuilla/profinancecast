@@ -228,13 +228,53 @@ export default async function handler(req, res) {
     console.warn('[webhook-paypal] no transmission_id and no event.id; cannot deduplicate');
   }
 
+  // W27-b #24 — strip PII before persisting PayPal payloads to
+  // subscription_events.raw_payload. PayPal webhook bodies include
+  // payer.email_address, billing addresses, full name, and (on dispute
+  // events) free-text reason/note fields. Even though the table is
+  // RLS-locked to service_role, defense-in-depth: never write PII we
+  // don't need for audit. We keep the structural fields (event_type,
+  // resource.id, amount, currency, status, custom_id, reference_id,
+  // links) and drop everything that smells personal.
+  //
+  // Allowlist approach: build a fresh object from known-safe keys rather
+  // than blocklisting, so a future PayPal API change doesn't accidentally
+  // start leaking new PII fields into our log.
+  const _redactPII = (val) => {
+    if (val == null || typeof val !== 'object') return val;
+    if (Array.isArray(val)) return val.map(_redactPII);
+    const SAFE_KEYS = new Set([
+      'id', 'event_type', 'event_version', 'resource_type', 'resource_version',
+      'create_time', 'event_time', 'time', 'summary',
+      // resource-level
+      'status', 'reference_id', 'custom_id', 'invoice_id',
+      'amount', 'value', 'currency_code',
+      'links', 'rel', 'href', 'method',
+      'purchase_units', 'payments', 'captures', 'refunds', 'supplementary_data', 'related_ids',
+      // dispute-specific structural fields (NOT the free-text reason/note)
+      'dispute_id', 'dispute_state', 'dispute_amount', 'dispute_outcome',
+      'seller_transaction_id', 'buyer_transaction_id', 'disputed_transactions',
+      // resource ids we already log explicitly
+      'transmission_id', 'event_id',
+    ]);
+    const out = {};
+    for (const [k, v] of Object.entries(val)) {
+      if (SAFE_KEYS.has(k)) out[k] = _redactPII(v);
+    }
+    return out;
+  };
+
   // Helper: append-only event log for audit M3.
   // W27-a #25 — surfaces both throws AND Supabase-shaped errors. We don't
   // re-throw (audit-log failures should never break the webhook 200-ack), but
   // we make sure the failure isn't invisible: it gets a structured console
   // record AND a best-effort email to ALERT_EMAIL.
+  // W27-b #24 — raw_payload is now passed through _redactPII to strip
+  // payer email, addresses, free-text reasons, and any future PII fields.
   const _logEvent = async (extra) => {
     try {
+      const rawPayload = extra.raw_payload || event;
+      const redactedPayload = _redactPII(rawPayload);
       const { error: insertErr } = await supabase.from('subscription_events').insert({
         user_id: extra.user_id || null,
         event_type: extra.event_type || eventType,
@@ -242,7 +282,7 @@ export default async function handler(req, res) {
         provider_id: extra.provider_id || null,
         amount: extra.amount || null,
         currency: extra.currency || null,
-        raw_payload: extra.raw_payload || event,
+        raw_payload: redactedPayload,
       });
       if (insertErr) {
         console.error('[webhook-paypal] event-log insert error:', {
@@ -472,8 +512,13 @@ export default async function handler(req, res) {
         }
 
         // Refund matches the user's current active capture — downgrade them.
+        // W27-b #27 — use distinct status='refunded' (not 'cancelled') so
+        // founders-claimed.js can correctly free the seat back to the pool.
+        // 'cancelled' continues to mean "user opted out, period ended"
+        // (Founders seat stays consumed); 'refunded' means money returned
+        // (Founders seat releases).
         const { error: updErr } = await supabase.from('subscriptions').update({
-          status: 'cancelled',
+          status: 'refunded',
           cancelled_at: new Date().toISOString(),
           cancel_reason: eventType,
           updated_at: new Date().toISOString(),
@@ -485,6 +530,31 @@ export default async function handler(req, res) {
           console.error('[webhook-paypal] refund update err:', updErr);
         }
         await supabase.from('profiles').update({ plan: 'free' }).eq('id', userId);
+
+        // W27-b #27 — free the Founders seat back to the pool on refund.
+        // We look up directly by (claimed_by, capture_id); if the user
+        // wasn't a Founder the query returns no row and the update is a
+        // no-op. Idempotent across webhook retries (W26-c protects from
+        // double-firing in the first place, but defense-in-depth).
+        const { data: seat } = await supabase
+          .from('founders_seats')
+          .select('seat_no')
+          .eq('claimed_by', userId)
+          .eq('capture_id', captureId)
+          .maybeSingle();
+        if (seat?.seat_no) {
+          await supabase
+            .from('founders_seats')
+            .update({
+              claimed_by: null,
+              capture_id: null,
+              claimed_at: null,
+              reserved_by: null,
+              reserved_until: null,
+            })
+            .eq('seat_no', seat.seat_no);
+        }
+
         await _logEvent({
           user_id: userId,
           event_type: eventType === 'PAYMENT.CAPTURE.REFUNDED' ? 'refund' : 'reversal',
@@ -517,17 +587,65 @@ export default async function handler(req, res) {
       }
 
       case 'CUSTOMER.DISPUTE.CREATED': {
-        // Flag for manual review — don't auto-cancel since most disputes are resolved.
+        // W27-b #26 — Dispute handling with user-binding + AI suspension.
+        // Previous behaviour: dispute_open flag flipped but the user kept
+        // using Sage AI (burning quota that already led to a chargeback).
+        // Also _logEvent.user_id was always null because we resolved
+        // the user FROM the dispute AFTER logging. Now we look up the
+        // user FIRST, then both write the dispute flag AND pause AI.
         const orderId = resource.disputed_transactions?.[0]?.seller_transaction_id;
+        const disputeId = resource.dispute_id || resource.id || null;
+
+        let disputeUserId = null;
+        // Validate orderId before interpolating into a PostgREST .or() filter.
+        // PayPal seller_transaction_id is alphanumeric; refuse anything else
+        // so a malformed webhook can't smuggle filter syntax (comma, dot,
+        // paren) into the query string.
+        if (orderId && /^[A-Za-z0-9_-]{8,40}$/.test(orderId)) {
+          // Match on either the capture or the order — we don't always
+          // know which one PayPal passes as seller_transaction_id.
+          const { data: sub } = await supabase
+            .from('subscriptions')
+            .select('user_id')
+            .or(`provider_capture_id.eq.${orderId},provider_order_id.eq.${orderId}`)
+            .maybeSingle();
+          disputeUserId = sub?.user_id || null;
+        }
+
         await _logEvent({
-          user_id: null,
+          user_id: disputeUserId,
           event_type: 'dispute_created',
-          provider_id: orderId || resource.dispute_id || resource.id || null,
+          provider_id: orderId || disputeId,
         });
         if (!orderId) break;
-        await supabase.from('subscriptions').update({
-          dispute_open: true, updated_at: new Date().toISOString(),
-        }).eq('provider_capture_id', orderId);
+
+        // Flag the subscription for support visibility.
+        // orderId is regex-validated above (only reaches this branch via
+        // disputeUserId set, which requires the format check to pass).
+        if (disputeUserId) {
+          await supabase.from('subscriptions').update({
+            dispute_open: true, updated_at: new Date().toISOString(),
+          }).or(`provider_capture_id.eq.${orderId},provider_order_id.eq.${orderId}`);
+        }
+
+        // Auto-suspend AI access while PayPal investigates. Most disputes
+        // resolve in the merchant's favour for legitimate subs, but a
+        // disputing user shouldn't burn quota mid-investigation.
+        // We don't downgrade entitlement (plan stays); we just zero
+        // the AI quota so requirePlan('pro') still passes but Sage
+        // refuses to spend tokens.
+        if (disputeUserId) {
+          await supabase.from('profiles').update({
+            ai_queries_limit: 0,
+            updated_at: new Date().toISOString(),
+          }).eq('id', disputeUserId);
+          _alertOps(
+            'Dispute opened — AI access auto-suspended',
+            `disputeId: ${disputeId}\norderId: ${orderId}\nuser_id: ${disputeUserId}\n` +
+            `\nAI quota set to 0. If the dispute resolves in our favour, ` +
+            `restore the quota via the profiles table (200 for Pro / 500 for Premium).`
+          );
+        }
         break;
       }
 
