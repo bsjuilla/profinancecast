@@ -170,6 +170,80 @@ function renderPayPalButtons() {
   container.innerHTML = '';
   if (typeof paypal === 'undefined') return;
 
+  // W29-b #14 — Recurring (Billing Plans) vs one-shot (Orders) decision.
+  // Founders Lifetime is always one-shot; everything else attempts the
+  // subscription flow first. The server returns 503 with fallback:'use_create_order'
+  // when the PAYPAL_PLAN_ID_* env vars aren't configured — we catch that and
+  // render the one-shot button instead.
+  if (checkoutPlan === 'founders') {
+    return _renderOneShotButton();
+  }
+  // Recurring SKU: try subscription, fall back to one-shot on 503/feature-off.
+  _tryRenderSubscriptionButton().catch(err => {
+    console.warn('[billing] subscription flow unavailable, falling back to one-shot:', err?.message);
+    _renderOneShotButton();
+  });
+}
+
+// W29-b — Render the recurring-subscription button. Throws if the server
+// returns "feature not configured" (503), causing the caller to fall back
+// to the one-shot button.
+async function _tryRenderSubscriptionButton() {
+  // Pre-flight probe — call create-subscription without committing. If the
+  // server returns 503 with fallback:'use_create_order', the feature isn't
+  // configured for this SKU yet. We use a HEAD-like POST that we'll actually
+  // commit in createSubscription below; the probe is wasted work in the
+  // happy path but skipped in fallback. Net cost: one extra round-trip when
+  // recurring IS configured — acceptable trade for clean fallback.
+  //
+  // Implementation: actually we delegate the "feature check" to the
+  // createSubscription callback itself — the SDK swallows the throw and
+  // re-renders the button as failed, which isn't great UX. So we probe
+  // FIRST with a real call and either render the subscription button OR
+  // throw to trigger fallback.
+  const probe = await fetch('/api/paypal/create-subscription', {
+    method: 'POST',
+    headers: _authHeaders(),
+    body: JSON.stringify({ plan: checkoutPlan }),
+  });
+
+  if (probe.status === 503) {
+    // Feature not configured — fall back. (Throw triggers the catch in caller.)
+    throw new Error('subscription_flow_disabled');
+  }
+
+  let probeData;
+  try { probeData = await probe.json(); }
+  catch (_) { throw new Error('subscription_response_unparseable'); }
+
+  if (!probe.ok || !probeData.subscriptionID || !probeData.approveUrl) {
+    // 4xx / 5xx — caller handles fallback. Server has already logged details.
+    throw new Error(probeData.error || 'subscription_create_failed');
+  }
+
+  // We already created a real subscription. Render a single button that
+  // sends the user to the approveUrl. PayPal then redirects back to
+  // /billing.html?subscription=ok and the BILLING.SUBSCRIPTION.ACTIVATED
+  // webhook lands to flip our DB row from APPROVAL_PENDING → ACTIVE.
+  const btn = document.createElement('a');
+  btn.href = probeData.approveUrl;
+  btn.className = 'pay-now-btn';
+  btn.textContent = 'Approve with PayPal — auto-renews';
+  btn.style.cssText = 'display:block;text-align:center;text-decoration:none;background:#ffc439;color:#003087;font-weight:600;padding:12px 16px;border-radius:6px;';
+  btn.setAttribute('data-pfc-subscription-id', probeData.subscriptionID);
+  document.getElementById('paypal-button-container').appendChild(btn);
+
+  // Small helper line below the button — sets expectations about renewal.
+  const note = document.createElement('div');
+  note.style.cssText = 'margin-top:8px;font-size:11px;color:var(--pfc-ink-muted);text-align:center;';
+  note.textContent = 'Renews automatically. Cancel any time — Pro stays active until period end.';
+  document.getElementById('paypal-button-container').appendChild(note);
+}
+
+// W29-b — Render the original one-shot Orders button. Used for Founders
+// SKU always, and for Pro/Premium SKUs when subscription flow is disabled
+// (env-var fallback).
+function _renderOneShotButton() {
   paypal.Buttons({
     style: {
       layout:  'vertical',
@@ -221,6 +295,50 @@ function renderPayPalButtons() {
       // User closed PayPal popup — do nothing
     }
   }).render('#paypal-button-container');
+}
+
+// W29-b — Handle return from PayPal subscription approval.
+// PayPal redirects to /billing.html?subscription=ok after approval. We:
+//   1. Strip the query string from the URL (don't leave the marker in the
+//      browser history)
+//   2. Refresh PFCPlan to pick up the new active sub
+//   3. Show the success screen
+// The webhook BILLING.SUBSCRIPTION.ACTIVATED will arrive within a few seconds
+// and finalize the DB state; PFCPlan.refresh() pulls the active plan.
+async function _handleSubscriptionReturn() {
+  try {
+    const params = new URLSearchParams(location.search);
+    if (params.get('subscription') === 'ok') {
+      history.replaceState(null, '', location.pathname);
+      if (typeof PFCPlan !== 'undefined') {
+        // The webhook may not have landed yet; poll PFCPlan.refresh a few
+        // times so the UI flips to Pro as soon as the server has the row.
+        for (let i = 0; i < 5; i++) {
+          await PFCPlan.refresh();
+          if (PFCPlan.get() !== 'free') break;
+          await new Promise(r => setTimeout(r, 1500));
+        }
+      }
+      // Show the success screen (re-use existing checkout-modal success state)
+      const successScreen = document.getElementById('success-screen');
+      const paymentForm   = document.getElementById('payment-form');
+      const successMsg    = document.getElementById('success-msg');
+      const overlay       = document.getElementById('overlay');
+      if (overlay)        overlay.classList.add('active');
+      if (paymentForm)    paymentForm.style.display = 'none';
+      if (successScreen)  successScreen.classList.add('show');
+      if (successMsg) {
+        successMsg.textContent = "Auto-renewing subscription approved. Your next charge will appear in PayPal on the renewal date.";
+      }
+    } else if (params.get('subscription') === 'cancel') {
+      // User clicked Cancel at PayPal — clean the URL, no state change.
+      history.replaceState(null, '', location.pathname);
+    }
+  } catch (_) { /* silently ignore — non-critical UX */ }
+}
+if (typeof document !== 'undefined') {
+  if (document.readyState !== 'loading') _handleSubscriptionReturn();
+  else document.addEventListener('DOMContentLoaded', _handleSubscriptionReturn, { once: true });
 }
 
 // W28-b #34 — capture-error matrix.

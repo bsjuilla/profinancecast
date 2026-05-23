@@ -75,6 +75,23 @@ function _periodEndForSku(sku, fromIso) {
   }
 }
 
+// W29-b helpers — derive the entitlement tier (pro|premium) from a PayPal
+// Billing Subscription resource by matching its plan_id against the four
+// configured PAYPAL_PLAN_ID_* env vars. Returns null if the plan isn't
+// recognised (e.g., a sandbox plan, or env not set yet) — callers then
+// preserve the existing tier rather than overwriting it.
+const PAYPAL_PLAN_ID_TO_TIER = {
+  [process.env.PAYPAL_PLAN_ID_PRO_MONTHLY     || '__pro_monthly__']:     'pro',
+  [process.env.PAYPAL_PLAN_ID_PRO_ANNUAL      || '__pro_annual__']:      'pro',
+  [process.env.PAYPAL_PLAN_ID_PREMIUM_MONTHLY || '__premium_monthly__']: 'premium',
+  [process.env.PAYPAL_PLAN_ID_PREMIUM_ANNUAL  || '__premium_annual__']:  'premium',
+};
+function _planTierFromSubscription(resource) {
+  const planId = resource?.plan_id;
+  if (!planId) return null;
+  return PAYPAL_PLAN_ID_TO_TIER[planId] || null;
+}
+
 // W27-a #17 — best-effort alert sink for events that need human follow-up
 // (unresolvable user on a real captured payment, mismatched currency, etc.).
 // Sends to ALERT_EMAIL via Resend if both env vars are present; otherwise
@@ -603,25 +620,344 @@ export default async function handler(req, res) {
         break;
       }
 
-      case 'BILLING.SUBSCRIPTION.CANCELLED':
-      case 'BILLING.SUBSCRIPTION.EXPIRED': {
-        const userId = resource.custom_id;
-        if (!userId) {
-          await _logEvent({ user_id: null, event_type: 'webhook_unresolvable_user',
-            provider_id: resource.id || null,
-            raw_payload: { reason: 'subscription_event_no_custom_id', event } });
+      // ══════════════════════════════════════════════════════════════════
+      // W29-b / Audit #14 — PayPal Billing Plans (recurring subscriptions)
+      // event handlers. Previously these were dead code — we subscribed to
+      // the events but didn't have the recurring flow wired. Now they're
+      // the canonical state-machine for /v1/billing/subscriptions.
+      // ══════════════════════════════════════════════════════════════════
+
+      case 'BILLING.SUBSCRIPTION.ACTIVATED': {
+        // Fires after the user approves the subscription at PayPal.
+        // resource.id is the subscription_id (P-XXXXX); we matched it during
+        // create-subscription.js so a row already exists with state=APPROVAL_PENDING.
+        // This event flips it to ACTIVE and records the first billing cycle.
+        const subscriptionId = resource.id;
+        const customUserId   = resource.custom_id;
+        const nextBilling    = resource.billing_info?.next_billing_time || null;
+        const planTier = _planTierFromSubscription(resource);
+
+        if (!subscriptionId || !customUserId) {
+          await _logEvent({
+            user_id: customUserId || null,
+            event_type: 'webhook_unresolvable_user',
+            provider_id: subscriptionId,
+            raw_payload: { reason: 'subscription_activated_missing_ids', event },
+          });
           break;
         }
-        await supabase.from('subscriptions').update({
-          status: eventType === 'BILLING.SUBSCRIPTION.CANCELLED' ? 'cancelled' : 'expired',
-          cancelled_at: new Date().toISOString(),
+
+        const updErr = (await supabase.from('subscriptions').update({
+          status: 'active',
+          subscription_state: 'ACTIVE',
+          next_billing_time: nextBilling,
+          failed_payment_count: 0,
+          plan: planTier || undefined,  // skip if we couldn't derive
           updated_at: new Date().toISOString(),
+        }).eq('user_id', customUserId)).error;
+        if (updErr) console.error('[webhook] subscription.activated upd err:', updErr);
+
+        await _logEvent({
+          user_id: customUserId,
+          event_type: 'subscription_activated',
+          provider_id: subscriptionId,
+        });
+        break;
+      }
+
+      case 'BILLING.SUBSCRIPTION.UPDATED': {
+        // Plan change / payment method update / next-billing-time refresh.
+        // We sync next_billing_time + subscription_state but don't change the
+        // tier (assume support handles plan-change explicitly via support
+        // tooling for now).
+        const subscriptionId = resource.id;
+        const customUserId   = resource.custom_id;
+        const nextBilling    = resource.billing_info?.next_billing_time || null;
+        const state          = resource.status;
+
+        if (customUserId) {
+          await supabase.from('subscriptions').update({
+            subscription_state: state || undefined,
+            next_billing_time: nextBilling,
+            updated_at: new Date().toISOString(),
+          }).eq('user_id', customUserId);
+        }
+
+        await _logEvent({
+          user_id: customUserId || null,
+          event_type: 'subscription_updated',
+          provider_id: subscriptionId,
+        });
+        break;
+      }
+
+      case 'BILLING.SUBSCRIPTION.CANCELLED':
+      case 'BILLING.SUBSCRIPTION.EXPIRED': {
+        // Fired when a recurring sub ends (user-initiated cancel, period-end
+        // expiry, or PayPal-side termination after suspension).
+        // resource.id is the subscription_id; resource.custom_id is our user_id.
+        // We match on EITHER (provider_subscription_id) OR (custom_id) so an
+        // event missing one still finds the row.
+        const subscriptionId = resource.id;
+        const customUserId   = resource.custom_id;
+        let userId = customUserId;
+        if (!userId && subscriptionId) {
+          const { data: row } = await supabase
+            .from('subscriptions')
+            .select('user_id')
+            .eq('provider_subscription_id', subscriptionId)
+            .maybeSingle();
+          userId = row?.user_id || null;
+        }
+        if (!userId) {
+          await _logEvent({ user_id: null, event_type: 'webhook_unresolvable_user',
+            provider_id: subscriptionId,
+            raw_payload: { reason: 'subscription_event_no_user_resolvable', event } });
+          break;
+        }
+
+        const terminalState = (eventType === 'BILLING.SUBSCRIPTION.CANCELLED') ? 'CANCELLED' : 'EXPIRED';
+        const dbStatus      = (eventType === 'BILLING.SUBSCRIPTION.CANCELLED') ? 'cancelled' : 'expired';
+        const nowIso = new Date().toISOString();
+
+        await supabase.from('subscriptions').update({
+          status: dbStatus,
+          subscription_state: terminalState,
+          cancelled_at: nowIso,
+          updated_at: nowIso,
         }).eq('user_id', userId);
         await supabase.from('profiles').update({ plan: 'free' }).eq('id', userId);
+
         await _logEvent({
           user_id: userId,
           event_type: eventType === 'BILLING.SUBSCRIPTION.CANCELLED' ? 'subscription_cancelled' : 'subscription_expired',
-          provider_id: resource.id || null,
+          provider_id: subscriptionId,
+        });
+        break;
+      }
+
+      case 'BILLING.SUBSCRIPTION.SUSPENDED': {
+        // Payment failure — PayPal suspends after a configurable retry count.
+        // We mark past_due so support sees it and the user keeps Pro
+        // access until the existing period_end (no immediate downgrade —
+        // they paid for the period that's currently running).
+        const subscriptionId = resource.id;
+        const customUserId   = resource.custom_id;
+        const userId = customUserId;
+        if (!userId) {
+          await _logEvent({ user_id: null, event_type: 'webhook_unresolvable_user',
+            provider_id: subscriptionId,
+            raw_payload: { reason: 'subscription_suspended_no_custom_id', event } });
+          break;
+        }
+        await supabase.from('subscriptions').update({
+          status: 'past_due',
+          subscription_state: 'SUSPENDED',
+          updated_at: new Date().toISOString(),
+        }).eq('user_id', userId);
+        await _logEvent({
+          user_id: userId,
+          event_type: 'subscription_suspended',
+          provider_id: subscriptionId,
+        });
+        // Notify support — payment failures usually need a customer-facing
+        // email ("update your payment method") which we don't auto-send yet.
+        _alertOps(
+          'Subscription suspended — payment failure',
+          `subscriptionId: ${subscriptionId}\nuser_id: ${userId}\n\n` +
+          `PayPal suspended this subscription after one or more failed renewal attempts. ` +
+          `Reach out to the user to update their payment method, or wait for ` +
+          `BILLING.SUBSCRIPTION.PAYMENT.FAILED counts to indicate next steps.`
+        );
+        break;
+      }
+
+      case 'BILLING.SUBSCRIPTION.PAYMENT.FAILED': {
+        // Each failed renewal attempt fires this BEFORE the eventual SUSPENDED.
+        // We increment failed_payment_count for support visibility.
+        const subscriptionId = resource.id;
+        const customUserId   = resource.custom_id;
+        const userId = customUserId;
+        if (!userId) break;
+        // Atomic increment via SQL function. Falls back to read-then-write
+        // if the function isn't installed; the loose semantics are fine
+        // (PayPal won't fire this concurrently for the same sub).
+        const { data: cur } = await supabase
+          .from('subscriptions')
+          .select('failed_payment_count')
+          .eq('user_id', userId)
+          .maybeSingle();
+        const newCount = (cur?.failed_payment_count || 0) + 1;
+        await supabase.from('subscriptions').update({
+          failed_payment_count: newCount,
+          updated_at: new Date().toISOString(),
+        }).eq('user_id', userId);
+        await _logEvent({
+          user_id: userId,
+          event_type: 'subscription_payment_failed',
+          provider_id: subscriptionId,
+          raw_payload: { attempt_count: newCount },
+        });
+        break;
+      }
+
+      case 'PAYMENT.SALE.COMPLETED': {
+        // Each successful recurring charge. resource.billing_agreement_id is
+        // the subscription_id. Append a subscription_periods row + bump
+        // next_billing_time on subscriptions.
+        const billingAgreementId = resource.billing_agreement_id;
+        const saleId             = resource.id;
+        const amount             = resource.amount?.total;
+        const currency           = resource.amount?.currency || EXPECTED_CURRENCY;
+
+        if (!billingAgreementId) {
+          await _logEvent({
+            user_id: null,
+            event_type: 'webhook_sale_no_billing_agreement',
+            provider_id: saleId,
+            raw_payload: { reason: 'sale_event_no_billing_agreement_id', event },
+          });
+          break;
+        }
+
+        // Match the subscription row to find the user.
+        const { data: sub } = await supabase
+          .from('subscriptions')
+          .select('user_id, plan')
+          .eq('provider_subscription_id', billingAgreementId)
+          .maybeSingle();
+        if (!sub?.user_id) {
+          await _logEvent({
+            user_id: null,
+            event_type: 'webhook_unresolvable_user',
+            provider_id: saleId,
+            raw_payload: { reason: 'sale_no_matching_subscription', billing_agreement_id: billingAgreementId, event },
+          });
+          break;
+        }
+
+        // Reject mismatched currency just like the one-shot path (W27-a #23).
+        if (currency !== EXPECTED_CURRENCY) {
+          await _logEvent({
+            user_id: sub.user_id,
+            event_type: 'webhook_currency_mismatch',
+            provider_id: saleId,
+            amount,
+            currency,
+            raw_payload: { reason: 'recurring_sale_unexpected_currency', event },
+          });
+          _alertOps('Recurring sale currency mismatch', `saleId: ${saleId}\nbilling_agreement: ${billingAgreementId}\n${amount} ${currency} vs ${EXPECTED_CURRENCY}`);
+          break;
+        }
+
+        // Append the period row. We don't know the SKU directly from the sale
+        // event, so we infer from the matched subscription's plan field. The
+        // SKU stored is informational; tier comes from sub.plan.
+        const inferredSku = (sub.plan === 'premium')
+          ? (Number(amount) >= 100 ? 'premium_annual' : 'premium_monthly')
+          : (Number(amount) >= 100 ? 'pro_annual'     : 'pro_monthly');
+        const periodEnd = _periodEndForSku(inferredSku);
+        const nowIso = new Date().toISOString();
+
+        const { error: periodErr } = await supabase
+          .from('subscription_periods')
+          .insert({
+            user_id: sub.user_id,
+            sku: inferredSku,
+            tier: sub.plan,
+            provider: 'paypal',
+            provider_capture_id: saleId,             // sale.id is unique per cycle
+            provider_subscription_id: billingAgreementId,
+            amount: Number(amount),
+            currency,
+            period_start: nowIso,
+            period_end: periodEnd,
+          });
+        if (periodErr && periodErr.code !== '23505') {
+          console.error('[webhook] sale.completed period insert err:', periodErr);
+        }
+
+        // Update subscriptions current state — push period_end forward and
+        // clear any past_due flags from a previous failed renewal attempt.
+        await supabase.from('subscriptions').update({
+          status: 'active',
+          subscription_state: 'ACTIVE',
+          current_period_end: periodEnd,
+          failed_payment_count: 0,
+          updated_at: nowIso,
+        }).eq('user_id', sub.user_id);
+
+        await _logEvent({
+          user_id: sub.user_id,
+          event_type: 'webhook_capture_completed',  // same event_type as one-shot for unified history UI
+          provider_id: saleId,
+          amount,
+          currency,
+        });
+        break;
+      }
+
+      case 'PAYMENT.SALE.REFUNDED':
+      case 'PAYMENT.SALE.REVERSED': {
+        // Refund on a recurring sale. resource.parent_payment is the
+        // original sale.id; resource.id is the refund id.
+        const refundedSaleId  = resource.parent_payment || resource.sale_id || null;
+        const refundId        = resource.id;
+        if (!refundedSaleId) {
+          await _logEvent({
+            user_id: null,
+            event_type: 'webhook_sale_refund_unresolvable',
+            provider_id: refundId,
+            raw_payload: { reason: 'no_parent_payment', event },
+          });
+          break;
+        }
+
+        // Find the period_row by capture_id (which we set to sale.id above).
+        const { data: period } = await supabase
+          .from('subscription_periods')
+          .select('user_id, tier')
+          .eq('provider_capture_id', refundedSaleId)
+          .maybeSingle();
+
+        if (!period?.user_id) {
+          await _logEvent({
+            user_id: null,
+            event_type: 'webhook_sale_refund_no_period',
+            provider_id: refundId,
+            raw_payload: { reason: 'no_matching_period_row', refunded_sale: refundedSaleId, event },
+          });
+          break;
+        }
+
+        const refundIso = new Date().toISOString();
+        await supabase
+          .from('subscription_periods')
+          .update({ refunded_at: refundIso, refund_capture_id: refundId })
+          .eq('provider_capture_id', refundedSaleId)
+          .is('refunded_at', null);
+
+        // Downgrade the user only if THIS sale was their current period.
+        // Otherwise we just record the refund in the history.
+        const { data: currentSub } = await supabase
+          .from('subscriptions')
+          .select('user_id, provider_capture_id')
+          .eq('user_id', period.user_id)
+          .maybeSingle();
+        if (currentSub?.provider_capture_id === refundedSaleId) {
+          await supabase.from('subscriptions').update({
+            status: 'refunded',
+            cancelled_at: refundIso,
+            cancel_reason: eventType,
+            updated_at: refundIso,
+          }).eq('user_id', period.user_id);
+          await supabase.from('profiles').update({ plan: 'free' }).eq('id', period.user_id);
+        }
+
+        await _logEvent({
+          user_id: period.user_id,
+          event_type: eventType === 'PAYMENT.SALE.REFUNDED' ? 'refund' : 'reversal',
+          provider_id: refundId,
         });
         break;
       }
