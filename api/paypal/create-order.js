@@ -5,7 +5,11 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { rateLimitOrReject } from '../_lib/rate-limit.js';
-import { geoBlockOrReject } from '../_lib/geo-gate.js';
+// Geo-gate disabled per operator request 2026-05-23. To re-enable:
+//   1. Re-add: import { geoBlockOrReject } from '../_lib/geo-gate.js';
+//   2. Re-add the call below in handler (search "CISO #1 — VAT geo-gate").
+//   3. Set PAYMENTS_ALLOWED_COUNTRIES in Vercel env.
+// File at api/_lib/geo-gate.js is preserved unchanged for fast re-enable.
 
 const PAYPAL_BASE = (process.env.PAYPAL_ENV === 'sandbox')
   ? 'https://api-m.sandbox.paypal.com'
@@ -151,10 +155,6 @@ export default async function handler(req, res) {
       maintenance: true,
     });
   }
-
-  // CISO #1 — VAT geo-gate. Set PAYMENTS_ALLOWED_COUNTRIES env to enable.
-  // See docs/runbooks/vat-strategy.md for the rationale + allow-list picks.
-  if (geoBlockOrReject(req, res)) return;
 
   // W26-a #12: reject cross-origin/no-origin requests on mutating payment ops.
   if (!_originAllowed(req)) {
