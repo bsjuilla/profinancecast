@@ -1527,6 +1527,68 @@
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════
+     W28-c CANCEL MODAL — replaces native confirm() + alert().
+     Reuses the .overlay / .modal classes from the checkout modal.
+     Hidden by default; opened by confirmCancel() in billing-2.js.
+═══════════════════════════════════════════════════════════ -->
+<div class="overlay" id="cancel-overlay" data-pfc-on-click="closeCancelModalOnOverlay" data-pfc-arg-event style="display:none;">
+  <div class="modal" id="cancel-modal" style="max-width:480px;">
+    <div class="modal-header">
+      <div class="modal-title">Cancel Pro?</div>
+      <div class="modal-close" data-pfc-on-click="closeCancelModal">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 1l12 12M13 1L1 13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      </div>
+    </div>
+    <div class="modal-body">
+
+      <!-- CANCEL CONFIRMATION STATE -->
+      <div id="cancel-confirm-state">
+        <div id="cancel-period-end-block" style="background:rgba(244,239,229,0.04);border-radius:6px;padding:12px 14px;margin-bottom:14px;font-size:13px;color:var(--pfc-ink);line-height:1.55;">
+          <div style="font-size:11px;color:var(--pfc-ink-muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px;">Pro access continues until</div>
+          <div id="cancel-period-end-date" style="font-size:16px;color:var(--pfc-ink-strong);font-weight:600;">Loading…</div>
+          <div style="font-size:12px;color:var(--pfc-ink-muted);margin-top:4px;">No clawbacks — you keep everything you've already paid for.</div>
+        </div>
+
+        <div style="font-size:13px;color:var(--pfc-ink);line-height:1.55;margin-bottom:14px;">
+          Before you cancel — is there anything we could help with first? Hit reply on any email or write to
+          <a href="mailto:founder@profinancecast.com" style="color:var(--pfc-emerald);">founder@profinancecast.com</a>.
+          One line is enough.
+        </div>
+
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button id="cancel-keep-btn" class="pay-now-btn" style="flex:1 1 200px;" data-pfc-on-click="onCancelKept">Keep Pro for now</button>
+          <button id="cancel-confirm-btn" class="cancel-btn" style="flex:1 1 200px;" data-pfc-on-click="onCancelConfirmed">Cancel anyway</button>
+        </div>
+      </div>
+
+      <!-- CANCEL DONE STATE (shown after confirm-btn fires successfully) -->
+      <div id="cancel-done-state" style="display:none;text-align:center;padding:8px 0;">
+        <div style="width:48px;height:48px;border-radius:50%;background:rgba(106,156,124,0.12);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;">
+          <svg width="20" height="20" viewBox="0 0 26 26" fill="none"><path d="M4 13l6 6L22 5" stroke="var(--pfc-emerald)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div style="font-size:16px;color:var(--pfc-ink-strong);font-weight:600;margin-bottom:6px;">Cancellation scheduled</div>
+        <div id="cancel-done-msg" style="font-size:13px;color:var(--pfc-ink);line-height:1.55;margin-bottom:14px;">
+          Your Pro features stay active until the end of the current billing period.
+          After that, your account returns to Free.
+        </div>
+        <button class="pay-now-btn" data-pfc-on-click="closeCancelModal">Done</button>
+      </div>
+
+      <!-- CANCEL ERROR STATE -->
+      <div id="cancel-error-state" style="display:none;text-align:center;padding:8px 0;">
+        <div style="font-size:14px;color:var(--pfc-terracotta);font-weight:600;margin-bottom:8px;">Could not cancel</div>
+        <div id="cancel-error-msg" style="font-size:13px;color:var(--pfc-ink);line-height:1.55;margin-bottom:14px;">Please try again, or email support if this keeps happening.</div>
+        <div style="display:flex;gap:10px;justify-content:center;">
+          <button class="pay-now-btn" data-pfc-on-click="onCancelConfirmed">Try again</button>
+          <a href="mailto:support@profinancecast.com?subject=Cancel%20issue" class="cancel-btn" style="display:inline-block;text-align:center;text-decoration:none;">Email support</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
      SCRIPTS — preserved structure; SKUs updated to
      pro_monthly | pro_annual | founders
 ═══════════════════════════════════════════════════════════ -->

@@ -398,19 +398,127 @@ function upgradePlan(plan) {
     </tr>`;
 }
 
+// W28-c #33 / #38 — styled cancel modal replaces native confirm/alert.
+// Shows the user's actual current_period_end and a retention prompt
+// before they cancel. Wires PFCFunnel analytics on each step
+// (cancel_intent_opened / cancel_kept / cancel_confirmed / cancel_failed)
+// so the funnel is visible in analytics — native confirm() emitted nothing.
+function _trackCancel(name, props) {
+  try {
+    if (window.PFC && typeof window.PFC.track === 'function') {
+      window.PFC.track('pfc.' + name, props || {});
+    }
+  } catch (_) { /* analytics never blocks UX */ }
+}
+
+function _showCancelState(stateId) {
+  ['cancel-confirm-state', 'cancel-done-state', 'cancel-error-state'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = (id === stateId) ? '' : 'none';
+  });
+}
+
+function openCancelModal() {
+  const ov = document.getElementById('cancel-overlay');
+  if (!ov) return;
+  ov.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  _showCancelState('cancel-confirm-state');
+}
+
+function closeCancelModal() {
+  const ov = document.getElementById('cancel-overlay');
+  if (!ov) return;
+  ov.style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+function closeCancelModalOnOverlay(e) {
+  // Only close when the user clicks the dark overlay (not the modal itself).
+  if (e && e.target && e.target.id === 'cancel-overlay') {
+    _trackCancel('cancel_abandoned', { via: 'overlay_click' });
+    closeCancelModal();
+  }
+}
+
+// Format an ISO timestamp into "15 June 2026" UK-style.
+function _formatPeriodEnd(iso) {
+  if (!iso) return 'the end of your current billing period';
+  try {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return 'the end of your current billing period';
+    return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' });
+  } catch (_) { return 'the end of your current billing period'; }
+}
+
 async function confirmCancel() {
-  if (!confirm('Cancel your subscription? Your Pro features stay active until the end of the current billing period.')) return;
-  const btn = document.getElementById('cancel-btn');
+  _trackCancel('cancel_intent_opened');
+  openCancelModal();
+  // Fetch fresh period_end in parallel — the modal shows "Loading…" until
+  // we have it. If status.js fails or is slow, the modal still renders;
+  // the user just sees a generic "end of current period" phrase.
+  try {
+    const headers = _authHeaders();
+    const res = await fetch('/api/subscription/status', { headers });
+    if (res.ok) {
+      const data = await res.json();
+      const dateEl = document.getElementById('cancel-period-end-date');
+      if (dateEl) dateEl.textContent = _formatPeriodEnd(data.currentPeriodEnd);
+    } else {
+      // Network/auth error — show neutral fallback rather than spinning forever.
+      const dateEl = document.getElementById('cancel-period-end-date');
+      if (dateEl) dateEl.textContent = _formatPeriodEnd(null);
+    }
+  } catch (_) {
+    const dateEl = document.getElementById('cancel-period-end-date');
+    if (dateEl) dateEl.textContent = _formatPeriodEnd(null);
+  }
+}
+
+function onCancelKept() {
+  _trackCancel('cancel_kept');
+  closeCancelModal();
+}
+
+async function onCancelConfirmed() {
+  const btn = document.getElementById('cancel-confirm-btn');
   if (btn) { btn.disabled = true; btn.textContent = 'Cancelling…'; }
   try {
     const res = await fetch('/api/subscription/cancel', { method: 'POST', headers: _authHeaders() });
-    if (!res.ok) throw new Error((await res.json()).error || 'Could not cancel');
+    if (!res.ok) {
+      let errMsg = 'Could not cancel';
+      try { errMsg = (await res.json()).error || errMsg; } catch (_) {}
+      throw new Error(errMsg);
+    }
+    const result = await res.json().catch(() => ({}));
     if (typeof PFCPlan !== 'undefined') await PFCPlan.refresh();
-    alert('Subscription cancelled. Your plan reverts to Free at the end of the current billing period.');
-    if (btn) btn.style.display = 'none';
+
+    // Show success state with the actual period_end echoed from the
+    // server response (server is source of truth for the date).
+    const doneMsg = document.getElementById('cancel-done-msg');
+    if (doneMsg) {
+      const dateStr = _formatPeriodEnd(result.current_period_end);
+      doneMsg.textContent =
+        'Your Pro features stay active until ' + dateStr + '. After that, your account returns to Free.';
+    }
+    _showCancelState('cancel-done-state');
+
+    // Hide the cancel button on the page so the user can't open the modal again.
+    const cancelBtn = document.getElementById('cancel-btn');
+    if (cancelBtn) cancelBtn.style.display = 'none';
+
+    _trackCancel('cancel_confirmed', { reason: 'user_requested' });
   } catch (e) {
-    alert('Could not cancel: ' + e.message + '\nIf this keeps happening, email support@profinancecast.com.');
-    if (btn) { btn.disabled = false; btn.textContent = 'Cancel subscription'; }
+    const errEl = document.getElementById('cancel-error-msg');
+    if (errEl) {
+      errEl.textContent = (e && e.message)
+        ? e.message + '. If this keeps happening, email support@profinancecast.com.'
+        : 'Please try again, or email support if this keeps happening.';
+    }
+    _showCancelState('cancel-error-state');
+    _trackCancel('cancel_failed', { error: String(e?.message || e).slice(0, 80) });
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Cancel anyway'; }
   }
 }
 
