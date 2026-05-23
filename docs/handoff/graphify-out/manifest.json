@@ -1,0 +1,86 @@
+{
+  "C:\\Users\\Nitin\\profinancecast-audit\\profinancecast\\docs\\handoff\\payments-corpus\\20260508_subscriptions.sql": {
+    "mtime": 1779536980.4587615,
+    "hash": "441561f9bdabd12ff9d85e1135a173bd"
+  },
+  "C:\\Users\\Nitin\\profinancecast-audit\\profinancecast\\docs\\handoff\\payments-corpus\\20260509_cancel_at_period_end.sql": {
+    "mtime": 1779536980.5207677,
+    "hash": "b66df2d9f377f9991f7ac94a69a33c4d"
+  },
+  "C:\\Users\\Nitin\\profinancecast-audit\\profinancecast\\docs\\handoff\\payments-corpus\\20260523_billing_plans_columns.sql": {
+    "mtime": 1779536980.1930704,
+    "hash": "46ac1943685547c9ad0ccf2efd1d2dd2"
+  },
+  "C:\\Users\\Nitin\\profinancecast-audit\\profinancecast\\docs\\handoff\\payments-corpus\\20260523_founders_seats.sql": {
+    "mtime": 1779536980.223071,
+    "hash": "f6e37fc03b78e6481ef6254589b84911"
+  },
+  "C:\\Users\\Nitin\\profinancecast-audit\\profinancecast\\docs\\handoff\\payments-corpus\\20260523_status_pending.sql": {
+    "mtime": 1779536980.259637,
+    "hash": "e555d0e82c0be08276c85e5e65e0f954"
+  },
+  "C:\\Users\\Nitin\\profinancecast-audit\\profinancecast\\docs\\handoff\\payments-corpus\\20260523_status_refunded.sql": {
+    "mtime": 1779536980.2896173,
+    "hash": "2e619666723c917da1ed0470f243c8c8"
+  },
+  "C:\\Users\\Nitin\\profinancecast-audit\\profinancecast\\docs\\handoff\\payments-corpus\\20260523_subscription_periods.sql": {
+    "mtime": 1779536980.3136308,
+    "hash": "a7c51aac0172286caa824436e2ee2131"
+  },
+  "C:\\Users\\Nitin\\profinancecast-audit\\profinancecast\\docs\\handoff\\payments-corpus\\20260523_w27d_schema_verification.sql": {
+    "mtime": 1779536980.346626,
+    "hash": "49994082c0d3dfea316fa74c085f157f"
+  },
+  "C:\\Users\\Nitin\\profinancecast-audit\\profinancecast\\docs\\handoff\\payments-corpus\\20260523_webhook_events_processed.sql": {
+    "mtime": 1779536980.3711357,
+    "hash": "dd3d0c89875317dca6374049304da92f"
+  },
+  "C:\\Users\\Nitin\\profinancecast-audit\\profinancecast\\docs\\handoff\\payments-corpus\\cancel.js": {
+    "mtime": 1779536980.817989,
+    "hash": "a2681136cdf7a48723ed951d33bfc542"
+  },
+  "C:\\Users\\Nitin\\profinancecast-audit\\profinancecast\\docs\\handoff\\payments-corpus\\capture-order.js": {
+    "mtime": 1779536980.5793498,
+    "hash": "a61a4f90afd492ae06d0a8bc6130c35e"
+  },
+  "C:\\Users\\Nitin\\profinancecast-audit\\profinancecast\\docs\\handoff\\payments-corpus\\card-order.js": {
+    "mtime": 1779536980.6304693,
+    "hash": "050585a722afc029f0b98ae45745addb"
+  },
+  "C:\\Users\\Nitin\\profinancecast-audit\\profinancecast\\docs\\handoff\\payments-corpus\\create-order.js": {
+    "mtime": 1779536980.6661575,
+    "hash": "d1b39f7cca1947e3b77c3d493ff8b09d"
+  },
+  "C:\\Users\\Nitin\\profinancecast-audit\\profinancecast\\docs\\handoff\\payments-corpus\\create-subscription.js": {
+    "mtime": 1779536980.7183156,
+    "hash": "cfe074e84ce6a4fcc02878b7a3bf6338"
+  },
+  "C:\\Users\\Nitin\\profinancecast-audit\\profinancecast\\docs\\handoff\\payments-corpus\\history.js": {
+    "mtime": 1779536980.8665743,
+    "hash": "766f79942cfa04866ff4b04d1451bb0b"
+  },
+  "C:\\Users\\Nitin\\profinancecast-audit\\profinancecast\\docs\\handoff\\payments-corpus\\status.js": {
+    "mtime": 1779536980.8745804,
+    "hash": "08950515593264f2b363fac2340946c9"
+  },
+  "C:\\Users\\Nitin\\profinancecast-audit\\profinancecast\\docs\\handoff\\payments-corpus\\webhook-paypal.js": {
+    "mtime": 1779536980.8815756,
+    "hash": "596c79fcfa9135d636a7a7fa71c3e9f6"
+  },
+  "C:\\Users\\Nitin\\profinancecast-audit\\profinancecast\\docs\\handoff\\payments-corpus\\2026-05-23-payments-code-audit.md": {
+    "mtime": 1779536979.9364026,
+    "hash": "acfb081bae46e04721402850e2bd139a"
+  },
+  "C:\\Users\\Nitin\\profinancecast-audit\\profinancecast\\docs\\handoff\\payments-corpus\\2026-05-23-payments-launch-state.md": {
+    "mtime": 1779536979.8684149,
+    "hash": "190ebdcf5f4470c9450cb11c5c3553e8"
+  },
+  "C:\\Users\\Nitin\\profinancecast-audit\\profinancecast\\docs\\handoff\\payments-corpus\\2026-05-23-payments-reaudit.md": {
+    "mtime": 1779536980.0029721,
+    "hash": "a78a41502c7fe4d31c3b828448772998"
+  },
+  "C:\\Users\\Nitin\\profinancecast-audit\\profinancecast\\docs\\handoff\\payments-corpus\\paypal-billing-plans-setup.md": {
+    "mtime": 1779536980.10653,
+    "hash": "126e393c744b218e148dda35d7c78913"
+  }
+}

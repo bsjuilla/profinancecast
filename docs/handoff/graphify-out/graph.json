@@ -1,0 +1,3269 @@
+{
+  "directed": false,
+  "multigraph": false,
+  "graph": {
+    "hyperedges": [
+      {
+        "id": "hyper_w29_billing_plans_rollout",
+        "label": "W29-b Billing Plans rollout (code + migration + env vars + dashboard)",
+        "nodes": [
+          "commit_1cc6618",
+          "mig_billing_plans_columns",
+          "setup_vercel_env",
+          "setup_paypal_dashboard",
+          "file_create_subscription"
+        ],
+        "relation": "participate_in",
+        "confidence": "EXTRACTED",
+        "confidence_score": 1.0,
+        "source_file": "2026-05-23-payments-launch-state.md"
+      },
+      {
+        "id": "hyper_founders_atomic_cap",
+        "label": "Founders 100-seat atomic enforcement (3 RPCs + table + 3 code sites)",
+        "nodes": [
+          "commit_fcf5848",
+          "mig_founders_seats",
+          "file_create_order",
+          "file_capture_order",
+          "file_webhook_paypal"
+        ],
+        "relation": "implement",
+        "confidence": "EXTRACTED",
+        "confidence_score": 1.0,
+        "source_file": "create-order.js"
+      },
+      {
+        "id": "hyper_w29final_status_pending_chain",
+        "label": "status=pending exploit fix chain (migration + endpoint + status.js contract)",
+        "nodes": [
+          "commit_4469cf4",
+          "mig_status_pending",
+          "file_create_subscription",
+          "file_status"
+        ],
+        "relation": "form",
+        "confidence": "EXTRACTED",
+        "confidence_score": 1.0,
+        "source_file": "create-subscription.js"
+      }
+    ]
+  },
+  "nodes": [
+    {
+      "label": "cancel.js",
+      "file_type": "code",
+      "source_file": "cancel.js",
+      "source_location": "L1",
+      "id": "cancel_js",
+      "community": 7,
+      "norm_label": "cancel.js"
+    },
+    {
+      "label": "_paypalBase()",
+      "file_type": "code",
+      "source_file": "cancel.js",
+      "source_location": "L22",
+      "id": "payments_corpus_cancel_paypalbase",
+      "community": 7,
+      "norm_label": "_paypalbase()"
+    },
+    {
+      "label": "_getPayPalAccessToken()",
+      "file_type": "code",
+      "source_file": "cancel.js",
+      "source_location": "L27",
+      "id": "payments_corpus_cancel_getpaypalaccesstoken",
+      "community": 7,
+      "norm_label": "_getpaypalaccesstoken()"
+    },
+    {
+      "label": "_normalizeOrigin()",
+      "file_type": "code",
+      "source_file": "cancel.js",
+      "source_location": "L42",
+      "id": "payments_corpus_cancel_normalizeorigin",
+      "community": 7,
+      "norm_label": "_normalizeorigin()"
+    },
+    {
+      "label": "_originAllowed()",
+      "file_type": "code",
+      "source_file": "cancel.js",
+      "source_location": "L49",
+      "id": "payments_corpus_cancel_originallowed",
+      "community": 7,
+      "norm_label": "_originallowed()"
+    },
+    {
+      "label": "handler()",
+      "file_type": "code",
+      "source_file": "cancel.js",
+      "source_location": "L63",
+      "id": "payments_corpus_cancel_handler",
+      "community": 7,
+      "norm_label": "handler()"
+    },
+    {
+      "label": "capture-order.js",
+      "file_type": "code",
+      "source_file": "capture-order.js",
+      "source_location": "L1",
+      "id": "capture_order_js",
+      "community": 1,
+      "norm_label": "capture-order.js"
+    },
+    {
+      "label": "_normalizeOrigin()",
+      "file_type": "code",
+      "source_file": "capture-order.js",
+      "source_location": "L28",
+      "id": "payments_corpus_capture_order_normalizeorigin",
+      "community": 1,
+      "norm_label": "_normalizeorigin()"
+    },
+    {
+      "label": "_originAllowed()",
+      "file_type": "code",
+      "source_file": "capture-order.js",
+      "source_location": "L35",
+      "id": "payments_corpus_capture_order_originallowed",
+      "community": 1,
+      "norm_label": "_originallowed()"
+    },
+    {
+      "label": "PLAN_PRICES",
+      "file_type": "code",
+      "source_file": "capture-order.js",
+      "source_location": "L52",
+      "id": "payments_corpus_capture_order_plan_prices",
+      "community": 1,
+      "norm_label": "plan_prices"
+    },
+    {
+      "label": "SKU_TO_PLAN",
+      "file_type": "code",
+      "source_file": "capture-order.js",
+      "source_location": "L64",
+      "id": "payments_corpus_capture_order_sku_to_plan",
+      "community": 1,
+      "norm_label": "sku_to_plan"
+    },
+    {
+      "label": "PLAN_QUERIES",
+      "file_type": "code",
+      "source_file": "capture-order.js",
+      "source_location": "L75",
+      "id": "payments_corpus_capture_order_plan_queries",
+      "community": 1,
+      "norm_label": "plan_queries"
+    },
+    {
+      "label": "_addMonthsUTC()",
+      "file_type": "code",
+      "source_file": "capture-order.js",
+      "source_location": "L80",
+      "id": "payments_corpus_capture_order_addmonthsutc",
+      "community": 1,
+      "norm_label": "_addmonthsutc()"
+    },
+    {
+      "label": "_addYearsUTC()",
+      "file_type": "code",
+      "source_file": "capture-order.js",
+      "source_location": "L87",
+      "id": "payments_corpus_capture_order_addyearsutc",
+      "community": 1,
+      "norm_label": "_addyearsutc()"
+    },
+    {
+      "label": "_periodEndForSku()",
+      "file_type": "code",
+      "source_file": "capture-order.js",
+      "source_location": "L94",
+      "id": "payments_corpus_capture_order_periodendforsku",
+      "community": 1,
+      "norm_label": "_periodendforsku()"
+    },
+    {
+      "label": "_supabaseAdmin()",
+      "file_type": "code",
+      "source_file": "capture-order.js",
+      "source_location": "L106",
+      "id": "payments_corpus_capture_order_supabaseadmin",
+      "community": 1,
+      "norm_label": "_supabaseadmin()"
+    },
+    {
+      "label": "_fetchPayPalWithRetry()",
+      "file_type": "code",
+      "source_file": "capture-order.js",
+      "source_location": "L120",
+      "id": "payments_corpus_capture_order_fetchpaypalwithretry",
+      "community": 1,
+      "norm_label": "_fetchpaypalwithretry()"
+    },
+    {
+      "label": "_autoRefund()",
+      "file_type": "code",
+      "source_file": "capture-order.js",
+      "source_location": "L148",
+      "id": "payments_corpus_capture_order_autorefund",
+      "community": 1,
+      "norm_label": "_autorefund()"
+    },
+    {
+      "label": "_verifyUser()",
+      "file_type": "code",
+      "source_file": "capture-order.js",
+      "source_location": "L171",
+      "id": "payments_corpus_capture_order_verifyuser",
+      "community": 1,
+      "norm_label": "_verifyuser()"
+    },
+    {
+      "label": "_getAccessToken()",
+      "file_type": "code",
+      "source_file": "capture-order.js",
+      "source_location": "L187",
+      "id": "payments_corpus_capture_order_getaccesstoken",
+      "community": 1,
+      "norm_label": "_getaccesstoken()"
+    },
+    {
+      "label": "handler()",
+      "file_type": "code",
+      "source_file": "capture-order.js",
+      "source_location": "L202",
+      "id": "payments_corpus_capture_order_handler",
+      "community": 1,
+      "norm_label": "handler()"
+    },
+    {
+      "label": "card-order.js",
+      "file_type": "code",
+      "source_file": "card-order.js",
+      "source_location": "L1",
+      "id": "card_order_js",
+      "community": 14,
+      "norm_label": "card-order.js"
+    },
+    {
+      "label": "handler()",
+      "file_type": "code",
+      "source_file": "card-order.js",
+      "source_location": "L22",
+      "id": "payments_corpus_card_order_handler",
+      "community": 14,
+      "norm_label": "handler()"
+    },
+    {
+      "label": "create-order.js",
+      "file_type": "code",
+      "source_file": "create-order.js",
+      "source_location": "L1",
+      "id": "create_order_js",
+      "community": 5,
+      "norm_label": "create-order.js"
+    },
+    {
+      "label": "PLAN_PRICES",
+      "file_type": "code",
+      "source_file": "create-order.js",
+      "source_location": "L17",
+      "id": "payments_corpus_create_order_plan_prices",
+      "community": 5,
+      "norm_label": "plan_prices"
+    },
+    {
+      "label": "PLAN_DESCRIPTIONS",
+      "file_type": "code",
+      "source_file": "create-order.js",
+      "source_location": "L24",
+      "id": "payments_corpus_create_order_plan_descriptions",
+      "community": 5,
+      "norm_label": "plan_descriptions"
+    },
+    {
+      "label": "_normalizeOrigin()",
+      "file_type": "code",
+      "source_file": "create-order.js",
+      "source_location": "L46",
+      "id": "payments_corpus_create_order_normalizeorigin",
+      "community": 5,
+      "norm_label": "_normalizeorigin()"
+    },
+    {
+      "label": "_originAllowed()",
+      "file_type": "code",
+      "source_file": "create-order.js",
+      "source_location": "L53",
+      "id": "payments_corpus_create_order_originallowed",
+      "community": 5,
+      "norm_label": "_originallowed()"
+    },
+    {
+      "label": "_requestOrigin()",
+      "file_type": "code",
+      "source_file": "create-order.js",
+      "source_location": "L73",
+      "id": "payments_corpus_create_order_requestorigin",
+      "community": 5,
+      "norm_label": "_requestorigin()"
+    },
+    {
+      "label": "_verifyUser()",
+      "file_type": "code",
+      "source_file": "create-order.js",
+      "source_location": "L83",
+      "id": "payments_corpus_create_order_verifyuser",
+      "community": 5,
+      "norm_label": "_verifyuser()"
+    },
+    {
+      "label": "_fetchPayPalWithRetry()",
+      "file_type": "code",
+      "source_file": "create-order.js",
+      "source_location": "L106",
+      "id": "payments_corpus_create_order_fetchpaypalwithretry",
+      "community": 5,
+      "norm_label": "_fetchpaypalwithretry()"
+    },
+    {
+      "label": "_getAccessToken()",
+      "file_type": "code",
+      "source_file": "create-order.js",
+      "source_location": "L127",
+      "id": "payments_corpus_create_order_getaccesstoken",
+      "community": 5,
+      "norm_label": "_getaccesstoken()"
+    },
+    {
+      "label": "handler()",
+      "file_type": "code",
+      "source_file": "create-order.js",
+      "source_location": "L140",
+      "id": "payments_corpus_create_order_handler",
+      "community": 5,
+      "norm_label": "handler()"
+    },
+    {
+      "label": "create-subscription.js",
+      "file_type": "code",
+      "source_file": "create-subscription.js",
+      "source_location": "L1",
+      "id": "create_subscription_js",
+      "community": 3,
+      "norm_label": "create-subscription.js"
+    },
+    {
+      "label": "config",
+      "file_type": "code",
+      "source_file": "create-subscription.js",
+      "source_location": "L42",
+      "id": "payments_corpus_create_subscription_config",
+      "community": 3,
+      "norm_label": "config"
+    },
+    {
+      "label": "SKU_TO_PLAN_ENV",
+      "file_type": "code",
+      "source_file": "create-subscription.js",
+      "source_location": "L53",
+      "id": "payments_corpus_create_subscription_sku_to_plan_env",
+      "community": 3,
+      "norm_label": "sku_to_plan_env"
+    },
+    {
+      "label": "SKU_TO_TIER",
+      "file_type": "code",
+      "source_file": "create-subscription.js",
+      "source_location": "L59",
+      "id": "payments_corpus_create_subscription_sku_to_tier",
+      "community": 3,
+      "norm_label": "sku_to_tier"
+    },
+    {
+      "label": "SKU_DESCRIPTIONS",
+      "file_type": "code",
+      "source_file": "create-subscription.js",
+      "source_location": "L65",
+      "id": "payments_corpus_create_subscription_sku_descriptions",
+      "community": 3,
+      "norm_label": "sku_descriptions"
+    },
+    {
+      "label": "_json()",
+      "file_type": "code",
+      "source_file": "create-subscription.js",
+      "source_location": "L72",
+      "id": "payments_corpus_create_subscription_json",
+      "community": 3,
+      "norm_label": "_json()"
+    },
+    {
+      "label": "_normalizeOrigin()",
+      "file_type": "code",
+      "source_file": "create-subscription.js",
+      "source_location": "L81",
+      "id": "payments_corpus_create_subscription_normalizeorigin",
+      "community": 3,
+      "norm_label": "_normalizeorigin()"
+    },
+    {
+      "label": "_originAllowed()",
+      "file_type": "code",
+      "source_file": "create-subscription.js",
+      "source_location": "L88",
+      "id": "payments_corpus_create_subscription_originallowed",
+      "community": 3,
+      "norm_label": "_originallowed()"
+    },
+    {
+      "label": "_requestOrigin()",
+      "file_type": "code",
+      "source_file": "create-subscription.js",
+      "source_location": "L103",
+      "id": "payments_corpus_create_subscription_requestorigin",
+      "community": 3,
+      "norm_label": "_requestorigin()"
+    },
+    {
+      "label": "_fetchPayPalWithRetry()",
+      "file_type": "code",
+      "source_file": "create-subscription.js",
+      "source_location": "L114",
+      "id": "payments_corpus_create_subscription_fetchpaypalwithretry",
+      "community": 3,
+      "norm_label": "_fetchpaypalwithretry()"
+    },
+    {
+      "label": "_getAccessToken()",
+      "file_type": "code",
+      "source_file": "create-subscription.js",
+      "source_location": "L135",
+      "id": "payments_corpus_create_subscription_getaccesstoken",
+      "community": 3,
+      "norm_label": "_getaccesstoken()"
+    },
+    {
+      "label": "handler()",
+      "file_type": "code",
+      "source_file": "create-subscription.js",
+      "source_location": "L146",
+      "id": "payments_corpus_create_subscription_handler",
+      "community": 3,
+      "norm_label": "handler()"
+    },
+    {
+      "label": "history.js",
+      "file_type": "code",
+      "source_file": "history.js",
+      "source_location": "L1",
+      "id": "history_js",
+      "community": 6,
+      "norm_label": "history.js"
+    },
+    {
+      "label": "config",
+      "file_type": "code",
+      "source_file": "history.js",
+      "source_location": "L25",
+      "id": "payments_corpus_history_config",
+      "community": 6,
+      "norm_label": "config"
+    },
+    {
+      "label": "_json()",
+      "file_type": "code",
+      "source_file": "history.js",
+      "source_location": "L29",
+      "id": "payments_corpus_history_json",
+      "community": 6,
+      "norm_label": "_json()"
+    },
+    {
+      "label": "VISIBLE_EVENT_TYPES",
+      "file_type": "code",
+      "source_file": "history.js",
+      "source_location": "L39",
+      "id": "payments_corpus_history_visible_event_types",
+      "community": 6,
+      "norm_label": "visible_event_types"
+    },
+    {
+      "label": "EVENT_LABEL",
+      "file_type": "code",
+      "source_file": "history.js",
+      "source_location": "L53",
+      "id": "payments_corpus_history_event_label",
+      "community": 6,
+      "norm_label": "event_label"
+    },
+    {
+      "label": "STATUS_BY_TYPE",
+      "file_type": "code",
+      "source_file": "history.js",
+      "source_location": "L65",
+      "id": "payments_corpus_history_status_by_type",
+      "community": 6,
+      "norm_label": "status_by_type"
+    },
+    {
+      "label": "handler()",
+      "file_type": "code",
+      "source_file": "history.js",
+      "source_location": "L77",
+      "id": "payments_corpus_history_handler",
+      "community": 6,
+      "norm_label": "handler()"
+    },
+    {
+      "label": "status.js",
+      "file_type": "code",
+      "source_file": "status.js",
+      "source_location": "L1",
+      "id": "status_js",
+      "community": 11,
+      "norm_label": "status.js"
+    },
+    {
+      "label": "OWNER_EMAILS",
+      "file_type": "code",
+      "source_file": "status.js",
+      "source_location": "L16",
+      "id": "payments_corpus_status_owner_emails",
+      "community": 11,
+      "norm_label": "owner_emails"
+    },
+    {
+      "label": "_withDebug()",
+      "file_type": "code",
+      "source_file": "status.js",
+      "source_location": "L25",
+      "id": "payments_corpus_status_withdebug",
+      "community": 11,
+      "norm_label": "_withdebug()"
+    },
+    {
+      "label": "handler()",
+      "file_type": "code",
+      "source_file": "status.js",
+      "source_location": "L29",
+      "id": "payments_corpus_status_handler",
+      "community": 11,
+      "norm_label": "handler()"
+    },
+    {
+      "label": "webhook-paypal.js",
+      "file_type": "code",
+      "source_file": "webhook-paypal.js",
+      "source_location": "L1",
+      "id": "webhook_paypal_js",
+      "community": 4,
+      "norm_label": "webhook-paypal.js"
+    },
+    {
+      "label": "config",
+      "file_type": "code",
+      "source_file": "webhook-paypal.js",
+      "source_location": "L28",
+      "id": "payments_corpus_webhook_paypal_config",
+      "community": 4,
+      "norm_label": "config"
+    },
+    {
+      "label": "_addMonthsUTC()",
+      "file_type": "code",
+      "source_file": "webhook-paypal.js",
+      "source_location": "L42",
+      "id": "payments_corpus_webhook_paypal_addmonthsutc",
+      "community": 4,
+      "norm_label": "_addmonthsutc()"
+    },
+    {
+      "label": "_addYearsUTC()",
+      "file_type": "code",
+      "source_file": "webhook-paypal.js",
+      "source_location": "L54",
+      "id": "payments_corpus_webhook_paypal_addyearsutc",
+      "community": 4,
+      "norm_label": "_addyearsutc()"
+    },
+    {
+      "label": "_periodEndForSku()",
+      "file_type": "code",
+      "source_file": "webhook-paypal.js",
+      "source_location": "L62",
+      "id": "payments_corpus_webhook_paypal_periodendforsku",
+      "community": 4,
+      "norm_label": "_periodendforsku()"
+    },
+    {
+      "label": "PAYPAL_PLAN_ID_TO_TIER",
+      "file_type": "code",
+      "source_file": "webhook-paypal.js",
+      "source_location": "L83",
+      "id": "payments_corpus_webhook_paypal_paypal_plan_id_to_tier",
+      "community": 4,
+      "norm_label": "paypal_plan_id_to_tier"
+    },
+    {
+      "label": "_planTierFromSubscription()",
+      "file_type": "code",
+      "source_file": "webhook-paypal.js",
+      "source_location": "L89",
+      "id": "payments_corpus_webhook_paypal_plantierfromsubscription",
+      "community": 4,
+      "norm_label": "_plantierfromsubscription()"
+    },
+    {
+      "label": "_alertOps()",
+      "file_type": "code",
+      "source_file": "webhook-paypal.js",
+      "source_location": "L100",
+      "id": "payments_corpus_webhook_paypal_alertops",
+      "community": 4,
+      "norm_label": "_alertops()"
+    },
+    {
+      "label": "_readRawBody()",
+      "file_type": "code",
+      "source_file": "webhook-paypal.js",
+      "source_location": "L122",
+      "id": "payments_corpus_webhook_paypal_readrawbody",
+      "community": 4,
+      "norm_label": "_readrawbody()"
+    },
+    {
+      "label": "_getAccessToken()",
+      "file_type": "code",
+      "source_file": "webhook-paypal.js",
+      "source_location": "L130",
+      "id": "payments_corpus_webhook_paypal_getaccesstoken",
+      "community": 4,
+      "norm_label": "_getaccesstoken()"
+    },
+    {
+      "label": "_verifySignature()",
+      "file_type": "code",
+      "source_file": "webhook-paypal.js",
+      "source_location": "L151",
+      "id": "payments_corpus_webhook_paypal_verifysignature",
+      "community": 4,
+      "norm_label": "_verifysignature()"
+    },
+    {
+      "label": "handler()",
+      "file_type": "code",
+      "source_file": "webhook-paypal.js",
+      "source_location": "L179",
+      "id": "payments_corpus_webhook_paypal_handler",
+      "community": 4,
+      "norm_label": "handler()"
+    },
+    {
+      "label": "P0 #1 \u00e2\u20ac\u201d Client/server price drift",
+      "file_type": "document",
+      "source_file": "2026-05-23-payments-code-audit.md",
+      "source_location": "L13-17",
+      "id": "audit_p0_1",
+      "community": 8,
+      "norm_label": "p0 #1 a\u20ac\u201d client/server price drift"
+    },
+    {
+      "label": "P0 #2 \u00e2\u20ac\u201d Currency UI EUR vs server USD",
+      "file_type": "document",
+      "source_file": "2026-05-23-payments-code-audit.md",
+      "source_location": "L19-23",
+      "id": "audit_p0_2",
+      "community": 8,
+      "norm_label": "p0 #2 a\u20ac\u201d currency ui eur vs server usd"
+    },
+    {
+      "label": "P0 #3 \u00e2\u20ac\u201d Refund branch user_id-only scoping",
+      "file_type": "document",
+      "source_file": "2026-05-23-payments-code-audit.md",
+      "source_location": "L25-29",
+      "id": "audit_p0_3",
+      "community": 9,
+      "norm_label": "p0 #3 a\u20ac\u201d refund branch user_id-only scoping"
+    },
+    {
+      "label": "P0 #4 \u00e2\u20ac\u201d Founders cap not enforced",
+      "file_type": "document",
+      "source_file": "2026-05-23-payments-code-audit.md",
+      "source_location": "L31-35",
+      "id": "audit_p0_4",
+      "community": 2,
+      "norm_label": "p0 #4 a\u20ac\u201d founders cap not enforced"
+    },
+    {
+      "label": "P0 #5 \u00e2\u20ac\u201d Founders cap copy/API mismatch 100/500",
+      "file_type": "document",
+      "source_file": "2026-05-23-payments-code-audit.md",
+      "source_location": "L37-41",
+      "id": "audit_p0_5",
+      "community": 2,
+      "norm_label": "p0 #5 a\u20ac\u201d founders cap copy/api mismatch 100/500"
+    },
+    {
+      "label": "P0 #6 \u00e2\u20ac\u201d Webhook amount-to-plan inference broken",
+      "file_type": "document",
+      "source_file": "2026-05-23-payments-code-audit.md",
+      "source_location": "L43-47",
+      "id": "audit_p0_6",
+      "community": 8,
+      "norm_label": "p0 #6 a\u20ac\u201d webhook amount-to-plan inference broken"
+    },
+    {
+      "label": "P0 #7 \u00e2\u20ac\u201d Webhook idempotency only on current sub",
+      "file_type": "document",
+      "source_file": "2026-05-23-payments-code-audit.md",
+      "source_location": "L49-53",
+      "id": "audit_p0_7",
+      "community": 0,
+      "norm_label": "p0 #7 a\u20ac\u201d webhook idempotency only on current sub"
+    },
+    {
+      "label": "P0 #8 \u00e2\u20ac\u201d Capture endpoint no replay protection",
+      "file_type": "document",
+      "source_file": "2026-05-23-payments-code-audit.md",
+      "source_location": "L55-59",
+      "id": "audit_p0_8",
+      "community": 9,
+      "norm_label": "p0 #8 a\u20ac\u201d capture endpoint no replay protection"
+    },
+    {
+      "label": "P0 #9 \u00e2\u20ac\u201d _verifyUser ignores email_confirmed_at",
+      "file_type": "document",
+      "source_file": "2026-05-23-payments-code-audit.md",
+      "source_location": "L61-65",
+      "id": "audit_p0_9",
+      "community": 2,
+      "norm_label": "p0 #9 a\u20ac\u201d _verifyuser ignores email_confirmed_at"
+    },
+    {
+      "label": "P0 #10 \u00e2\u20ac\u201d Webhook signature on parsed body",
+      "file_type": "document",
+      "source_file": "2026-05-23-payments-code-audit.md",
+      "source_location": "L67-71",
+      "id": "audit_p0_10",
+      "community": 8,
+      "norm_label": "p0 #10 a\u20ac\u201d webhook signature on parsed body"
+    },
+    {
+      "label": "P0 #11 \u00e2\u20ac\u201d PAYPAL_CLIENT_ID interpolated unchecked",
+      "file_type": "document",
+      "source_file": "2026-05-23-payments-code-audit.md",
+      "source_location": "L73-77",
+      "id": "audit_p0_11",
+      "community": 2,
+      "norm_label": "p0 #11 a\u20ac\u201d paypal_client_id interpolated unchecked"
+    },
+    {
+      "label": "P0 #12 \u00e2\u20ac\u201d No origin/CSRF check on payment endpoints",
+      "file_type": "document",
+      "source_file": "2026-05-23-payments-code-audit.md",
+      "source_location": "L79-83",
+      "id": "audit_p0_12",
+      "community": 2,
+      "norm_label": "p0 #12 a\u20ac\u201d no origin/csrf check on payment endpoints"
+    },
+    {
+      "label": "P1 #13 \u00e2\u20ac\u201d subscription_periods history table missing",
+      "file_type": "document",
+      "source_file": "2026-05-23-payments-code-audit.md",
+      "source_location": "L89-93",
+      "id": "audit_p1_13",
+      "community": 0,
+      "norm_label": "p1 #13 a\u20ac\u201d subscription_periods history table missing"
+    },
+    {
+      "label": "P1 #14 \u00e2\u20ac\u201d Renewal logic not implemented",
+      "file_type": "document",
+      "source_file": "2026-05-23-payments-code-audit.md",
+      "source_location": "L95-99",
+      "id": "audit_p1_14",
+      "community": 0,
+      "norm_label": "p1 #14 a\u20ac\u201d renewal logic not implemented"
+    },
+    {
+      "label": "P1 #15 \u00e2\u20ac\u201d 30-day arithmetic vs calendar months",
+      "file_type": "document",
+      "source_file": "2026-05-23-payments-code-audit.md",
+      "source_location": "L101-105",
+      "id": "audit_p1_15",
+      "community": 10,
+      "norm_label": "p1 #15 a\u20ac\u201d 30-day arithmetic vs calendar months"
+    },
+    {
+      "label": "P1 #18 \u00e2\u20ac\u201d status.js silent demotion to Free on DB error",
+      "file_type": "document",
+      "source_file": "2026-05-23-payments-code-audit.md",
+      "source_location": "L119-123",
+      "id": "audit_p1_18",
+      "community": 10,
+      "norm_label": "p1 #18 a\u20ac\u201d status.js silent demotion to free on db error"
+    },
+    {
+      "label": "P1 #20 \u00e2\u20ac\u201d Refund unconditionally sets profiles.plan=free",
+      "file_type": "document",
+      "source_file": "2026-05-23-payments-code-audit.md",
+      "source_location": "L131-135",
+      "id": "audit_p1_20",
+      "community": 9,
+      "norm_label": "p1 #20 a\u20ac\u201d refund unconditionally sets profiles.plan=free"
+    },
+    {
+      "label": "P2 #31 \u00e2\u20ac\u201d Fake 14-day trial CTA copy (LEGAL RISK)",
+      "file_type": "document",
+      "source_file": "2026-05-23-payments-code-audit.md",
+      "source_location": "L201-205",
+      "id": "audit_p2_31",
+      "community": 13,
+      "norm_label": "p2 #31 a\u20ac\u201d fake 14-day trial cta copy (legal risk)"
+    },
+    {
+      "label": "P2 #32 \u00e2\u20ac\u201d No card required claim contradicts flow",
+      "file_type": "document",
+      "source_file": "2026-05-23-payments-code-audit.md",
+      "source_location": "L207-211",
+      "id": "audit_p2_32",
+      "community": 13,
+      "norm_label": "p2 #32 a\u20ac\u201d no card required claim contradicts flow"
+    },
+    {
+      "label": "P2 #37 \u00e2\u20ac\u201d Billing history overwritten on success",
+      "file_type": "document",
+      "source_file": "2026-05-23-payments-code-audit.md",
+      "source_location": "L237-241",
+      "id": "audit_p2_37",
+      "community": 12,
+      "norm_label": "p2 #37 a\u20ac\u201d billing history overwritten on success"
+    },
+    {
+      "label": "P2 #40 \u00e2\u20ac\u201d pfc-config.js loaded without SRI",
+      "file_type": "document",
+      "source_file": "2026-05-23-payments-code-audit.md",
+      "source_location": "L255-259",
+      "id": "audit_p2_40",
+      "community": 15,
+      "norm_label": "p2 #40 a\u20ac\u201d pfc-config.js loaded without sri"
+    },
+    {
+      "label": "W29-final P0a \u00e2\u20ac\u201d create-subscription.js status=active pre-write",
+      "file_type": "document",
+      "source_file": "2026-05-23-payments-launch-state.md",
+      "source_location": "L52-58",
+      "id": "audit_w29final_p0a",
+      "community": 0,
+      "norm_label": "w29-final p0a a\u20ac\u201d create-subscription.js status=active pre-write"
+    },
+    {
+      "label": "W29-final P0b \u00e2\u20ac\u201d current_period_end not set on ACTIVATED",
+      "file_type": "document",
+      "source_file": "2026-05-23-payments-launch-state.md",
+      "source_location": "L60-64",
+      "id": "audit_w29final_p0b",
+      "community": 0,
+      "norm_label": "w29-final p0b a\u20ac\u201d current_period_end not set on activated"
+    },
+    {
+      "label": "W29-final P0c \u00e2\u20ac\u201d Pro Annual \u00e2\u201a\u00ac79 misclassified as monthly",
+      "file_type": "document",
+      "source_file": "2026-05-23-payments-launch-state.md",
+      "source_location": "L66-71",
+      "id": "audit_w29final_p0c",
+      "community": 0,
+      "norm_label": "w29-final p0c a\u20ac\u201d pro annual a\u201a\u00ac79 misclassified as monthly"
+    },
+    {
+      "label": "Re-audit NEW-P0a \u00e2\u20ac\u201d ACTIVATED writes null period_end if PayPal omits next_billing_time",
+      "file_type": "document",
+      "source_file": "2026-05-23-payments-reaudit.md",
+      "source_location": "webhook-paypal.js:637-665",
+      "id": "audit_reaudit_newp0a",
+      "community": 0,
+      "norm_label": "re-audit new-p0a a\u20ac\u201d activated writes null period_end if paypal omits next_billing_time"
+    },
+    {
+      "label": "W25 \u00e2\u20ac\u201d P0 money-loss trio (f5bd602)",
+      "file_type": "rationale",
+      "source_file": "git-log",
+      "source_location": null,
+      "id": "commit_f5bd602",
+      "community": 8,
+      "norm_label": "w25 a\u20ac\u201d p0 money-loss trio (f5bd602)"
+    },
+    {
+      "label": "W26-a \u00e2\u20ac\u201d quick-win P0s (4ecc166)",
+      "file_type": "rationale",
+      "source_file": "git-log",
+      "source_location": null,
+      "id": "commit_4ecc166",
+      "community": 2,
+      "norm_label": "w26-a a\u20ac\u201d quick-win p0s (4ecc166)"
+    },
+    {
+      "label": "W26-b \u00e2\u20ac\u201d refund scoping + capture replay (2a077f3)",
+      "file_type": "rationale",
+      "source_file": "git-log",
+      "source_location": null,
+      "id": "commit_2a077f3",
+      "community": 9,
+      "norm_label": "w26-b a\u20ac\u201d refund scoping + capture replay (2a077f3)"
+    },
+    {
+      "label": "W26-c \u00e2\u20ac\u201d webhook idempotency table (1f900b1)",
+      "file_type": "rationale",
+      "source_file": "git-log",
+      "source_location": null,
+      "id": "commit_1f900b1",
+      "community": 0,
+      "norm_label": "w26-c a\u20ac\u201d webhook idempotency table (1f900b1)"
+    },
+    {
+      "label": "W26-d \u00e2\u20ac\u201d Founders cap atomic enforcement (fcf5848)",
+      "file_type": "rationale",
+      "source_file": "git-log",
+      "source_location": null,
+      "id": "commit_fcf5848",
+      "community": 2,
+      "norm_label": "w26-d a\u20ac\u201d founders cap atomic enforcement (fcf5848)"
+    },
+    {
+      "label": "W27-a \u00e2\u20ac\u201d surgical P1s (d3e3cc1)",
+      "file_type": "rationale",
+      "source_file": "git-log",
+      "source_location": null,
+      "id": "commit_d3e3cc1",
+      "community": 10,
+      "norm_label": "w27-a a\u20ac\u201d surgical p1s (d3e3cc1)"
+    },
+    {
+      "label": "W27-b \u00e2\u20ac\u201d compliance + fraud (3923ce5)",
+      "file_type": "rationale",
+      "source_file": "git-log",
+      "source_location": null,
+      "id": "commit_3923ce5",
+      "community": 9,
+      "norm_label": "w27-b a\u20ac\u201d compliance + fraud (3923ce5)"
+    },
+    {
+      "label": "W27-c \u00e2\u20ac\u201d client + reliability (3f238e0)",
+      "file_type": "rationale",
+      "source_file": "git-log",
+      "source_location": null,
+      "id": "commit_3f238e0",
+      "community": 2,
+      "norm_label": "w27-c a\u20ac\u201d client + reliability (3f238e0)"
+    },
+    {
+      "label": "W27-d \u00e2\u20ac\u201d status=refunded migration (cf14f84)",
+      "file_type": "rationale",
+      "source_file": "git-log",
+      "source_location": null,
+      "id": "commit_cf14f84",
+      "community": 0,
+      "norm_label": "w27-d a\u20ac\u201d status=refunded migration (cf14f84)"
+    },
+    {
+      "label": "W28-a \u00e2\u20ac\u201d truthful marketing (f4dc17d)",
+      "file_type": "rationale",
+      "source_file": "git-log",
+      "source_location": null,
+      "id": "commit_f4dc17d",
+      "community": 13,
+      "norm_label": "w28-a a\u20ac\u201d truthful marketing (f4dc17d)"
+    },
+    {
+      "label": "W28-b \u00e2\u20ac\u201d UX polish bundle (1b88193)",
+      "file_type": "rationale",
+      "source_file": "git-log",
+      "source_location": null,
+      "id": "commit_1b88193",
+      "community": 16,
+      "norm_label": "w28-b a\u20ac\u201d ux polish bundle (1b88193)"
+    },
+    {
+      "label": "W28-c \u00e2\u20ac\u201d cancel modal (e6ddcbe)",
+      "file_type": "rationale",
+      "source_file": "git-log",
+      "source_location": null,
+      "id": "commit_e6ddcbe",
+      "community": 17,
+      "norm_label": "w28-c a\u20ac\u201d cancel modal (e6ddcbe)"
+    },
+    {
+      "label": "W28-d \u00e2\u20ac\u201d billing history endpoint (36dd276)",
+      "file_type": "rationale",
+      "source_file": "git-log",
+      "source_location": null,
+      "id": "commit_36dd276",
+      "community": 12,
+      "norm_label": "w28-d a\u20ac\u201d billing history endpoint (36dd276)"
+    },
+    {
+      "label": "W28-e \u00e2\u20ac\u201d pfc-config supply-chain (7c616f8)",
+      "file_type": "rationale",
+      "source_file": "git-log",
+      "source_location": null,
+      "id": "commit_7c616f8",
+      "community": 15,
+      "norm_label": "w28-e a\u20ac\u201d pfc-config supply-chain (7c616f8)"
+    },
+    {
+      "label": "W29-a \u00e2\u20ac\u201d subscription_periods history (46a6178)",
+      "file_type": "rationale",
+      "source_file": "git-log",
+      "source_location": null,
+      "id": "commit_46a6178",
+      "community": 0,
+      "norm_label": "w29-a a\u20ac\u201d subscription_periods history (46a6178)"
+    },
+    {
+      "label": "W29-b \u00e2\u20ac\u201d PayPal Billing Plans recurring (1cc6618)",
+      "file_type": "rationale",
+      "source_file": "git-log",
+      "source_location": null,
+      "id": "commit_1cc6618",
+      "community": 0,
+      "norm_label": "w29-b a\u20ac\u201d paypal billing plans recurring (1cc6618)"
+    },
+    {
+      "label": "W29-c \u00e2\u20ac\u201d origin www+apex fix (9106fe4)",
+      "file_type": "rationale",
+      "source_file": "git-log",
+      "source_location": null,
+      "id": "commit_9106fe4",
+      "community": 2,
+      "norm_label": "w29-c a\u20ac\u201d origin www+apex fix (9106fe4)"
+    },
+    {
+      "label": "W29-d \u00e2\u20ac\u201d card payment UX clarity (b60c619)",
+      "file_type": "rationale",
+      "source_file": "git-log",
+      "source_location": null,
+      "id": "commit_b60c619",
+      "community": 18,
+      "norm_label": "w29-d a\u20ac\u201d card payment ux clarity (b60c619)"
+    },
+    {
+      "label": "W29-final \u00e2\u20ac\u201d three P0 bugs fixed (4469cf4)",
+      "file_type": "rationale",
+      "source_file": "git-log",
+      "source_location": null,
+      "id": "commit_4469cf4",
+      "community": 0,
+      "norm_label": "w29-final a\u20ac\u201d three p0 bugs fixed (4469cf4)"
+    },
+    {
+      "label": "api/paypal/create-order.js",
+      "file_type": "code",
+      "source_file": "create-order.js",
+      "source_location": null,
+      "id": "file_create_order",
+      "community": 2,
+      "norm_label": "api/paypal/create-order.js"
+    },
+    {
+      "label": "api/paypal/capture-order.js",
+      "file_type": "code",
+      "source_file": "capture-order.js",
+      "source_location": null,
+      "id": "file_capture_order",
+      "community": 2,
+      "norm_label": "api/paypal/capture-order.js"
+    },
+    {
+      "label": "api/paypal/create-subscription.js",
+      "file_type": "code",
+      "source_file": "create-subscription.js",
+      "source_location": null,
+      "id": "file_create_subscription",
+      "community": 0,
+      "norm_label": "api/paypal/create-subscription.js"
+    },
+    {
+      "label": "api/paypal/card-order.js (410 stub)",
+      "file_type": "code",
+      "source_file": "card-order.js",
+      "source_location": null,
+      "id": "file_card_order",
+      "community": 19,
+      "norm_label": "api/paypal/card-order.js (410 stub)"
+    },
+    {
+      "label": "api/subscription/webhook-paypal.js",
+      "file_type": "code",
+      "source_file": "webhook-paypal.js",
+      "source_location": null,
+      "id": "file_webhook_paypal",
+      "community": 0,
+      "norm_label": "api/subscription/webhook-paypal.js"
+    },
+    {
+      "label": "api/subscription/cancel.js",
+      "file_type": "code",
+      "source_file": "cancel.js",
+      "source_location": null,
+      "id": "file_cancel",
+      "community": 2,
+      "norm_label": "api/subscription/cancel.js"
+    },
+    {
+      "label": "api/subscription/status.js",
+      "file_type": "code",
+      "source_file": "status.js",
+      "source_location": null,
+      "id": "file_status",
+      "community": 10,
+      "norm_label": "api/subscription/status.js"
+    },
+    {
+      "label": "api/subscription/history.js (Edge)",
+      "file_type": "code",
+      "source_file": "history.js",
+      "source_location": null,
+      "id": "file_history",
+      "community": 12,
+      "norm_label": "api/subscription/history.js (edge)"
+    },
+    {
+      "label": "20260523_webhook_events_processed.sql",
+      "file_type": "code",
+      "source_file": "20260523_webhook_events_processed.sql",
+      "source_location": null,
+      "id": "mig_webhook_events",
+      "community": 0,
+      "norm_label": "20260523_webhook_events_processed.sql"
+    },
+    {
+      "label": "20260523_founders_seats.sql",
+      "file_type": "code",
+      "source_file": "20260523_founders_seats.sql",
+      "source_location": null,
+      "id": "mig_founders_seats",
+      "community": 2,
+      "norm_label": "20260523_founders_seats.sql"
+    },
+    {
+      "label": "20260523_status_refunded.sql",
+      "file_type": "code",
+      "source_file": "20260523_status_refunded.sql",
+      "source_location": null,
+      "id": "mig_status_refunded",
+      "community": 0,
+      "norm_label": "20260523_status_refunded.sql"
+    },
+    {
+      "label": "20260523_subscription_periods.sql",
+      "file_type": "code",
+      "source_file": "20260523_subscription_periods.sql",
+      "source_location": null,
+      "id": "mig_subscription_periods",
+      "community": 0,
+      "norm_label": "20260523_subscription_periods.sql"
+    },
+    {
+      "label": "20260523_billing_plans_columns.sql",
+      "file_type": "code",
+      "source_file": "20260523_billing_plans_columns.sql",
+      "source_location": null,
+      "id": "mig_billing_plans_columns",
+      "community": 0,
+      "norm_label": "20260523_billing_plans_columns.sql"
+    },
+    {
+      "label": "20260523_status_pending.sql",
+      "file_type": "code",
+      "source_file": "20260523_status_pending.sql",
+      "source_location": null,
+      "id": "mig_status_pending",
+      "community": 0,
+      "norm_label": "20260523_status_pending.sql"
+    },
+    {
+      "label": "Vercel env vars (PAYPAL_PLAN_ID_* + ALERT_EMAIL)",
+      "file_type": "rationale",
+      "source_file": "2026-05-23-payments-launch-state.md",
+      "source_location": "Section B",
+      "id": "setup_vercel_env",
+      "community": 0,
+      "norm_label": "vercel env vars (paypal_plan_id_* + alert_email)"
+    },
+    {
+      "label": "PayPal dashboard \u00e2\u20ac\u201d 4 Plans + 13 webhook events",
+      "file_type": "rationale",
+      "source_file": "paypal-billing-plans-setup.md",
+      "source_location": null,
+      "id": "setup_paypal_dashboard",
+      "community": 0,
+      "norm_label": "paypal dashboard a\u20ac\u201d 4 plans + 13 webhook events"
+    },
+    {
+      "label": "Apply 6 Supabase migrations in SQL Editor",
+      "file_type": "rationale",
+      "source_file": "2026-05-23-payments-launch-state.md",
+      "source_location": "Section A",
+      "id": "setup_supabase_migrations",
+      "community": 0,
+      "norm_label": "apply 6 supabase migrations in sql editor"
+    },
+    {
+      "label": "Founders welcome email (DEFERRED)",
+      "file_type": "rationale",
+      "source_file": "2026-05-23-payments-launch-state.md",
+      "source_location": "Next deferred work",
+      "id": "deferred_founders_email",
+      "community": 0,
+      "norm_label": "founders welcome email (deferred)"
+    },
+    {
+      "label": "Legacy one-shot users migration to recurring (DEFERRED)",
+      "file_type": "rationale",
+      "source_file": "2026-05-23-payments-launch-state.md",
+      "source_location": "Known limitations",
+      "id": "deferred_subscription_periods_migration_path",
+      "community": 20,
+      "norm_label": "legacy one-shot users migration to recurring (deferred)"
+    },
+    {
+      "label": "PayPal (external system)",
+      "file_type": "rationale",
+      "source_file": null,
+      "source_location": null,
+      "id": "god_paypal",
+      "community": 2,
+      "norm_label": "paypal (external system)"
+    },
+    {
+      "label": "Supabase (DB + Auth)",
+      "file_type": "rationale",
+      "source_file": null,
+      "source_location": null,
+      "id": "god_supabase",
+      "community": 2,
+      "norm_label": "supabase (db + auth)"
+    },
+    {
+      "label": "Vercel (hosting, 12 Node function cap)",
+      "file_type": "rationale",
+      "source_file": null,
+      "source_location": null,
+      "id": "god_vercel",
+      "community": 12,
+      "norm_label": "vercel (hosting, 12 node function cap)"
+    },
+    {
+      "label": "status.js as plan source-of-truth",
+      "file_type": "rationale",
+      "source_file": "status.js",
+      "source_location": "L115",
+      "id": "god_status_js_contract",
+      "community": 10,
+      "norm_label": "status.js as plan source-of-truth"
+    }
+  ],
+  "links": [
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "cancel.js",
+      "source_location": "L22",
+      "weight": 1.0,
+      "source": "cancel_js",
+      "target": "payments_corpus_cancel_paypalbase",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "cancel.js",
+      "source_location": "L27",
+      "weight": 1.0,
+      "source": "cancel_js",
+      "target": "payments_corpus_cancel_getpaypalaccesstoken",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "cancel.js",
+      "source_location": "L42",
+      "weight": 1.0,
+      "source": "cancel_js",
+      "target": "payments_corpus_cancel_normalizeorigin",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "cancel.js",
+      "source_location": "L49",
+      "weight": 1.0,
+      "source": "cancel_js",
+      "target": "payments_corpus_cancel_originallowed",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "cancel.js",
+      "source_location": "L63",
+      "weight": 1.0,
+      "source": "cancel_js",
+      "target": "payments_corpus_cancel_handler",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "cancel.js",
+      "source_location": "L31",
+      "weight": 1.0,
+      "source": "payments_corpus_cancel_getpaypalaccesstoken",
+      "target": "payments_corpus_cancel_paypalbase",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "cancel.js",
+      "source_location": "L125",
+      "weight": 1.0,
+      "source": "payments_corpus_cancel_handler",
+      "target": "payments_corpus_cancel_paypalbase",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "cancel.js",
+      "source_location": "L123",
+      "weight": 1.0,
+      "source": "payments_corpus_cancel_handler",
+      "target": "payments_corpus_cancel_getpaypalaccesstoken",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "cancel.js",
+      "source_location": "L51",
+      "weight": 1.0,
+      "source": "payments_corpus_cancel_originallowed",
+      "target": "payments_corpus_cancel_normalizeorigin",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "cancel.js",
+      "source_location": "L67",
+      "weight": 1.0,
+      "source": "payments_corpus_cancel_handler",
+      "target": "payments_corpus_cancel_originallowed",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "capture-order.js",
+      "source_location": "L28",
+      "weight": 1.0,
+      "source": "capture_order_js",
+      "target": "payments_corpus_capture_order_normalizeorigin",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "capture-order.js",
+      "source_location": "L35",
+      "weight": 1.0,
+      "source": "capture_order_js",
+      "target": "payments_corpus_capture_order_originallowed",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "capture-order.js",
+      "source_location": "L52",
+      "weight": 1.0,
+      "source": "capture_order_js",
+      "target": "payments_corpus_capture_order_plan_prices",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "capture-order.js",
+      "source_location": "L64",
+      "weight": 1.0,
+      "source": "capture_order_js",
+      "target": "payments_corpus_capture_order_sku_to_plan",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "capture-order.js",
+      "source_location": "L75",
+      "weight": 1.0,
+      "source": "capture_order_js",
+      "target": "payments_corpus_capture_order_plan_queries",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "capture-order.js",
+      "source_location": "L80",
+      "weight": 1.0,
+      "source": "capture_order_js",
+      "target": "payments_corpus_capture_order_addmonthsutc",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "capture-order.js",
+      "source_location": "L87",
+      "weight": 1.0,
+      "source": "capture_order_js",
+      "target": "payments_corpus_capture_order_addyearsutc",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "capture-order.js",
+      "source_location": "L94",
+      "weight": 1.0,
+      "source": "capture_order_js",
+      "target": "payments_corpus_capture_order_periodendforsku",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "capture-order.js",
+      "source_location": "L106",
+      "weight": 1.0,
+      "source": "capture_order_js",
+      "target": "payments_corpus_capture_order_supabaseadmin",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "capture-order.js",
+      "source_location": "L120",
+      "weight": 1.0,
+      "source": "capture_order_js",
+      "target": "payments_corpus_capture_order_fetchpaypalwithretry",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "capture-order.js",
+      "source_location": "L148",
+      "weight": 1.0,
+      "source": "capture_order_js",
+      "target": "payments_corpus_capture_order_autorefund",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "capture-order.js",
+      "source_location": "L171",
+      "weight": 1.0,
+      "source": "capture_order_js",
+      "target": "payments_corpus_capture_order_verifyuser",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "capture-order.js",
+      "source_location": "L187",
+      "weight": 1.0,
+      "source": "capture_order_js",
+      "target": "payments_corpus_capture_order_getaccesstoken",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "capture-order.js",
+      "source_location": "L202",
+      "weight": 1.0,
+      "source": "capture_order_js",
+      "target": "payments_corpus_capture_order_handler",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "capture-order.js",
+      "source_location": "L37",
+      "weight": 1.0,
+      "source": "payments_corpus_capture_order_originallowed",
+      "target": "payments_corpus_capture_order_normalizeorigin",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "capture-order.js",
+      "source_location": "L206",
+      "weight": 1.0,
+      "source": "payments_corpus_capture_order_handler",
+      "target": "payments_corpus_capture_order_originallowed",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "capture-order.js",
+      "source_location": "L98",
+      "weight": 1.0,
+      "source": "payments_corpus_capture_order_periodendforsku",
+      "target": "payments_corpus_capture_order_addmonthsutc",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "capture-order.js",
+      "source_location": "L100",
+      "weight": 1.0,
+      "source": "payments_corpus_capture_order_periodendforsku",
+      "target": "payments_corpus_capture_order_addyearsutc",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "capture-order.js",
+      "source_location": "L347",
+      "weight": 1.0,
+      "source": "payments_corpus_capture_order_handler",
+      "target": "payments_corpus_capture_order_periodendforsku",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "capture-order.js",
+      "source_location": "L175",
+      "weight": 1.0,
+      "source": "payments_corpus_capture_order_verifyuser",
+      "target": "payments_corpus_capture_order_supabaseadmin",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "capture-order.js",
+      "source_location": "L193",
+      "weight": 1.0,
+      "source": "payments_corpus_capture_order_getaccesstoken",
+      "target": "payments_corpus_capture_order_fetchpaypalwithretry",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "capture-order.js",
+      "source_location": "L238",
+      "weight": 1.0,
+      "source": "payments_corpus_capture_order_handler",
+      "target": "payments_corpus_capture_order_fetchpaypalwithretry",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "capture-order.js",
+      "source_location": "L308",
+      "weight": 1.0,
+      "source": "payments_corpus_capture_order_handler",
+      "target": "payments_corpus_capture_order_autorefund",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "capture-order.js",
+      "source_location": "L223",
+      "weight": 1.0,
+      "source": "payments_corpus_capture_order_handler",
+      "target": "payments_corpus_capture_order_verifyuser",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "capture-order.js",
+      "source_location": "L228",
+      "weight": 1.0,
+      "source": "payments_corpus_capture_order_handler",
+      "target": "payments_corpus_capture_order_getaccesstoken",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "card-order.js",
+      "source_location": "L22",
+      "weight": 1.0,
+      "source": "card_order_js",
+      "target": "payments_corpus_card_order_handler",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "create-order.js",
+      "source_location": "L17",
+      "weight": 1.0,
+      "source": "create_order_js",
+      "target": "payments_corpus_create_order_plan_prices",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "create-order.js",
+      "source_location": "L24",
+      "weight": 1.0,
+      "source": "create_order_js",
+      "target": "payments_corpus_create_order_plan_descriptions",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "create-order.js",
+      "source_location": "L46",
+      "weight": 1.0,
+      "source": "create_order_js",
+      "target": "payments_corpus_create_order_normalizeorigin",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "create-order.js",
+      "source_location": "L53",
+      "weight": 1.0,
+      "source": "create_order_js",
+      "target": "payments_corpus_create_order_originallowed",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "create-order.js",
+      "source_location": "L73",
+      "weight": 1.0,
+      "source": "create_order_js",
+      "target": "payments_corpus_create_order_requestorigin",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "create-order.js",
+      "source_location": "L83",
+      "weight": 1.0,
+      "source": "create_order_js",
+      "target": "payments_corpus_create_order_verifyuser",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "create-order.js",
+      "source_location": "L106",
+      "weight": 1.0,
+      "source": "create_order_js",
+      "target": "payments_corpus_create_order_fetchpaypalwithretry",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "create-order.js",
+      "source_location": "L127",
+      "weight": 1.0,
+      "source": "create_order_js",
+      "target": "payments_corpus_create_order_getaccesstoken",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "create-order.js",
+      "source_location": "L140",
+      "weight": 1.0,
+      "source": "create_order_js",
+      "target": "payments_corpus_create_order_handler",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "create-order.js",
+      "source_location": "L55",
+      "weight": 1.0,
+      "source": "payments_corpus_create_order_originallowed",
+      "target": "payments_corpus_create_order_normalizeorigin",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "create-order.js",
+      "source_location": "L144",
+      "weight": 1.0,
+      "source": "payments_corpus_create_order_handler",
+      "target": "payments_corpus_create_order_originallowed",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "create-order.js",
+      "source_location": "L219",
+      "weight": 1.0,
+      "source": "payments_corpus_create_order_handler",
+      "target": "payments_corpus_create_order_requestorigin",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "create-order.js",
+      "source_location": "L154",
+      "weight": 1.0,
+      "source": "payments_corpus_create_order_handler",
+      "target": "payments_corpus_create_order_verifyuser",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "create-order.js",
+      "source_location": "L131",
+      "weight": 1.0,
+      "source": "payments_corpus_create_order_getaccesstoken",
+      "target": "payments_corpus_create_order_fetchpaypalwithretry",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "create-order.js",
+      "source_location": "L197",
+      "weight": 1.0,
+      "source": "payments_corpus_create_order_handler",
+      "target": "payments_corpus_create_order_fetchpaypalwithretry",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "create-order.js",
+      "source_location": "L193",
+      "weight": 1.0,
+      "source": "payments_corpus_create_order_handler",
+      "target": "payments_corpus_create_order_getaccesstoken",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "create-subscription.js",
+      "source_location": "L42",
+      "weight": 1.0,
+      "source": "create_subscription_js",
+      "target": "payments_corpus_create_subscription_config",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "create-subscription.js",
+      "source_location": "L53",
+      "weight": 1.0,
+      "source": "create_subscription_js",
+      "target": "payments_corpus_create_subscription_sku_to_plan_env",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "create-subscription.js",
+      "source_location": "L59",
+      "weight": 1.0,
+      "source": "create_subscription_js",
+      "target": "payments_corpus_create_subscription_sku_to_tier",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "create-subscription.js",
+      "source_location": "L65",
+      "weight": 1.0,
+      "source": "create_subscription_js",
+      "target": "payments_corpus_create_subscription_sku_descriptions",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "create-subscription.js",
+      "source_location": "L72",
+      "weight": 1.0,
+      "source": "create_subscription_js",
+      "target": "payments_corpus_create_subscription_json",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "create-subscription.js",
+      "source_location": "L81",
+      "weight": 1.0,
+      "source": "create_subscription_js",
+      "target": "payments_corpus_create_subscription_normalizeorigin",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "create-subscription.js",
+      "source_location": "L88",
+      "weight": 1.0,
+      "source": "create_subscription_js",
+      "target": "payments_corpus_create_subscription_originallowed",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "create-subscription.js",
+      "source_location": "L103",
+      "weight": 1.0,
+      "source": "create_subscription_js",
+      "target": "payments_corpus_create_subscription_requestorigin",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "create-subscription.js",
+      "source_location": "L114",
+      "weight": 1.0,
+      "source": "create_subscription_js",
+      "target": "payments_corpus_create_subscription_fetchpaypalwithretry",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "create-subscription.js",
+      "source_location": "L135",
+      "weight": 1.0,
+      "source": "create_subscription_js",
+      "target": "payments_corpus_create_subscription_getaccesstoken",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "create-subscription.js",
+      "source_location": "L146",
+      "weight": 1.0,
+      "source": "create_subscription_js",
+      "target": "payments_corpus_create_subscription_handler",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "create-subscription.js",
+      "source_location": "L147",
+      "weight": 1.0,
+      "source": "payments_corpus_create_subscription_handler",
+      "target": "payments_corpus_create_subscription_json",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "create-subscription.js",
+      "source_location": "L90",
+      "weight": 1.0,
+      "source": "payments_corpus_create_subscription_originallowed",
+      "target": "payments_corpus_create_subscription_normalizeorigin",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "create-subscription.js",
+      "source_location": "L150",
+      "weight": 1.0,
+      "source": "payments_corpus_create_subscription_handler",
+      "target": "payments_corpus_create_subscription_originallowed",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "create-subscription.js",
+      "source_location": "L222",
+      "weight": 1.0,
+      "source": "payments_corpus_create_subscription_handler",
+      "target": "payments_corpus_create_subscription_requestorigin",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "create-subscription.js",
+      "source_location": "L137",
+      "weight": 1.0,
+      "source": "payments_corpus_create_subscription_getaccesstoken",
+      "target": "payments_corpus_create_subscription_fetchpaypalwithretry",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "create-subscription.js",
+      "source_location": "L229",
+      "weight": 1.0,
+      "source": "payments_corpus_create_subscription_handler",
+      "target": "payments_corpus_create_subscription_fetchpaypalwithretry",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "create-subscription.js",
+      "source_location": "L207",
+      "weight": 1.0,
+      "source": "payments_corpus_create_subscription_handler",
+      "target": "payments_corpus_create_subscription_getaccesstoken",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "history.js",
+      "source_location": "L25",
+      "weight": 1.0,
+      "source": "history_js",
+      "target": "payments_corpus_history_config",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "history.js",
+      "source_location": "L29",
+      "weight": 1.0,
+      "source": "history_js",
+      "target": "payments_corpus_history_json",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "history.js",
+      "source_location": "L39",
+      "weight": 1.0,
+      "source": "history_js",
+      "target": "payments_corpus_history_visible_event_types",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "history.js",
+      "source_location": "L53",
+      "weight": 1.0,
+      "source": "history_js",
+      "target": "payments_corpus_history_event_label",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "history.js",
+      "source_location": "L65",
+      "weight": 1.0,
+      "source": "history_js",
+      "target": "payments_corpus_history_status_by_type",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "history.js",
+      "source_location": "L77",
+      "weight": 1.0,
+      "source": "history_js",
+      "target": "payments_corpus_history_handler",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "history.js",
+      "source_location": "L78",
+      "weight": 1.0,
+      "source": "payments_corpus_history_handler",
+      "target": "payments_corpus_history_json",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "status.js",
+      "source_location": "L16",
+      "weight": 1.0,
+      "source": "status_js",
+      "target": "payments_corpus_status_owner_emails",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "status.js",
+      "source_location": "L25",
+      "weight": 1.0,
+      "source": "status_js",
+      "target": "payments_corpus_status_withdebug",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "status.js",
+      "source_location": "L29",
+      "weight": 1.0,
+      "source": "status_js",
+      "target": "payments_corpus_status_handler",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "status.js",
+      "source_location": "L75",
+      "weight": 1.0,
+      "source": "payments_corpus_status_handler",
+      "target": "payments_corpus_status_withdebug",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "webhook-paypal.js",
+      "source_location": "L28",
+      "weight": 1.0,
+      "source": "webhook_paypal_js",
+      "target": "payments_corpus_webhook_paypal_config",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "webhook-paypal.js",
+      "source_location": "L42",
+      "weight": 1.0,
+      "source": "webhook_paypal_js",
+      "target": "payments_corpus_webhook_paypal_addmonthsutc",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "webhook-paypal.js",
+      "source_location": "L54",
+      "weight": 1.0,
+      "source": "webhook_paypal_js",
+      "target": "payments_corpus_webhook_paypal_addyearsutc",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "webhook-paypal.js",
+      "source_location": "L62",
+      "weight": 1.0,
+      "source": "webhook_paypal_js",
+      "target": "payments_corpus_webhook_paypal_periodendforsku",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "webhook-paypal.js",
+      "source_location": "L83",
+      "weight": 1.0,
+      "source": "webhook_paypal_js",
+      "target": "payments_corpus_webhook_paypal_paypal_plan_id_to_tier",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "webhook-paypal.js",
+      "source_location": "L89",
+      "weight": 1.0,
+      "source": "webhook_paypal_js",
+      "target": "payments_corpus_webhook_paypal_plantierfromsubscription",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "webhook-paypal.js",
+      "source_location": "L100",
+      "weight": 1.0,
+      "source": "webhook_paypal_js",
+      "target": "payments_corpus_webhook_paypal_alertops",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "webhook-paypal.js",
+      "source_location": "L122",
+      "weight": 1.0,
+      "source": "webhook_paypal_js",
+      "target": "payments_corpus_webhook_paypal_readrawbody",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "webhook-paypal.js",
+      "source_location": "L130",
+      "weight": 1.0,
+      "source": "webhook_paypal_js",
+      "target": "payments_corpus_webhook_paypal_getaccesstoken",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "webhook-paypal.js",
+      "source_location": "L151",
+      "weight": 1.0,
+      "source": "webhook_paypal_js",
+      "target": "payments_corpus_webhook_paypal_verifysignature",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "webhook-paypal.js",
+      "source_location": "L179",
+      "weight": 1.0,
+      "source": "webhook_paypal_js",
+      "target": "payments_corpus_webhook_paypal_handler",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "webhook-paypal.js",
+      "source_location": "L67",
+      "weight": 1.0,
+      "source": "payments_corpus_webhook_paypal_periodendforsku",
+      "target": "payments_corpus_webhook_paypal_addmonthsutc",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "webhook-paypal.js",
+      "source_location": "L70",
+      "weight": 1.0,
+      "source": "payments_corpus_webhook_paypal_periodendforsku",
+      "target": "payments_corpus_webhook_paypal_addyearsutc",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "webhook-paypal.js",
+      "source_location": "L427",
+      "weight": 1.0,
+      "source": "payments_corpus_webhook_paypal_handler",
+      "target": "payments_corpus_webhook_paypal_periodendforsku",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "webhook-paypal.js",
+      "source_location": "L638",
+      "weight": 1.0,
+      "source": "payments_corpus_webhook_paypal_handler",
+      "target": "payments_corpus_webhook_paypal_plantierfromsubscription",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "webhook-paypal.js",
+      "source_location": "L358",
+      "weight": 1.0,
+      "source": "payments_corpus_webhook_paypal_handler",
+      "target": "payments_corpus_webhook_paypal_alertops",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "webhook-paypal.js",
+      "source_location": "L185",
+      "weight": 1.0,
+      "source": "payments_corpus_webhook_paypal_handler",
+      "target": "payments_corpus_webhook_paypal_readrawbody",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "webhook-paypal.js",
+      "source_location": "L160",
+      "weight": 1.0,
+      "source": "payments_corpus_webhook_paypal_verifysignature",
+      "target": "payments_corpus_webhook_paypal_getaccesstoken",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "webhook-paypal.js",
+      "source_location": "L509",
+      "weight": 1.0,
+      "source": "payments_corpus_webhook_paypal_handler",
+      "target": "payments_corpus_webhook_paypal_getaccesstoken",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "webhook-paypal.js",
+      "source_location": "L192",
+      "weight": 1.0,
+      "source": "payments_corpus_webhook_paypal_handler",
+      "target": "payments_corpus_webhook_paypal_verifysignature",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "closes",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "git-log",
+      "weight": 1.0,
+      "source": "commit_f5bd602",
+      "target": "audit_p0_1"
+    },
+    {
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "2026-05-23-payments-code-audit.md",
+      "weight": 1.0,
+      "source": "audit_p0_1",
+      "target": "audit_p0_6"
+    },
+    {
+      "relation": "closes",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "git-log",
+      "weight": 1.0,
+      "source": "commit_f5bd602",
+      "target": "audit_p0_2"
+    },
+    {
+      "relation": "closes",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "git-log",
+      "weight": 1.0,
+      "source": "commit_2a077f3",
+      "target": "audit_p0_3"
+    },
+    {
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "2026-05-23-payments-code-audit.md",
+      "weight": 1.0,
+      "source": "audit_p0_3",
+      "target": "audit_p1_20"
+    },
+    {
+      "relation": "closes",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "git-log",
+      "weight": 1.0,
+      "source": "commit_fcf5848",
+      "target": "audit_p0_4"
+    },
+    {
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "2026-05-23-payments-code-audit.md",
+      "weight": 1.0,
+      "source": "audit_p0_4",
+      "target": "audit_p0_5"
+    },
+    {
+      "relation": "closes",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "git-log",
+      "weight": 1.0,
+      "source": "commit_fcf5848",
+      "target": "audit_p0_5"
+    },
+    {
+      "relation": "closes",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "git-log",
+      "weight": 1.0,
+      "source": "commit_f5bd602",
+      "target": "audit_p0_6"
+    },
+    {
+      "relation": "closes",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "git-log",
+      "weight": 1.0,
+      "source": "commit_1f900b1",
+      "target": "audit_p0_7"
+    },
+    {
+      "relation": "closes",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "git-log",
+      "weight": 1.0,
+      "source": "commit_2a077f3",
+      "target": "audit_p0_8"
+    },
+    {
+      "relation": "closes",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "git-log",
+      "weight": 1.0,
+      "source": "commit_4ecc166",
+      "target": "audit_p0_9"
+    },
+    {
+      "relation": "closes",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "git-log",
+      "weight": 1.0,
+      "source": "commit_f5bd602",
+      "target": "audit_p0_10"
+    },
+    {
+      "relation": "closes",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "git-log",
+      "weight": 1.0,
+      "source": "commit_4ecc166",
+      "target": "audit_p0_11"
+    },
+    {
+      "relation": "closes",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "git-log",
+      "weight": 1.0,
+      "source": "commit_4ecc166",
+      "target": "audit_p0_12"
+    },
+    {
+      "relation": "closes",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "git-log",
+      "weight": 1.0,
+      "source": "commit_46a6178",
+      "target": "audit_p1_13"
+    },
+    {
+      "relation": "closes",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "git-log",
+      "weight": 1.0,
+      "source": "commit_1cc6618",
+      "target": "audit_p1_14"
+    },
+    {
+      "relation": "closes",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "git-log",
+      "weight": 1.0,
+      "source": "commit_d3e3cc1",
+      "target": "audit_p1_15"
+    },
+    {
+      "relation": "closes",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "git-log",
+      "weight": 1.0,
+      "source": "commit_d3e3cc1",
+      "target": "audit_p1_18"
+    },
+    {
+      "relation": "closes",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "git-log",
+      "weight": 1.0,
+      "source": "commit_3923ce5",
+      "target": "audit_p1_20"
+    },
+    {
+      "relation": "closes",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "git-log",
+      "weight": 1.0,
+      "source": "commit_f4dc17d",
+      "target": "audit_p2_31"
+    },
+    {
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "2026-05-23-payments-code-audit.md",
+      "weight": 1.0,
+      "source": "audit_p2_31",
+      "target": "audit_p2_32"
+    },
+    {
+      "relation": "closes",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "git-log",
+      "weight": 1.0,
+      "source": "commit_f4dc17d",
+      "target": "audit_p2_32"
+    },
+    {
+      "relation": "closes",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "git-log",
+      "weight": 1.0,
+      "source": "commit_36dd276",
+      "target": "audit_p2_37"
+    },
+    {
+      "relation": "closes",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "git-log",
+      "weight": 1.0,
+      "source": "commit_7c616f8",
+      "target": "audit_p2_40"
+    },
+    {
+      "relation": "closes",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "git-log",
+      "weight": 1.0,
+      "source": "commit_4469cf4",
+      "target": "audit_w29final_p0a"
+    },
+    {
+      "relation": "fixes_in",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "2026-05-23-payments-launch-state.md",
+      "weight": 1.0,
+      "source": "audit_w29final_p0a",
+      "target": "file_create_subscription"
+    },
+    {
+      "relation": "closes",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "git-log",
+      "weight": 1.0,
+      "source": "commit_4469cf4",
+      "target": "audit_w29final_p0b"
+    },
+    {
+      "relation": "fixes_in",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "2026-05-23-payments-launch-state.md",
+      "weight": 1.0,
+      "source": "audit_w29final_p0b",
+      "target": "file_webhook_paypal"
+    },
+    {
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "2026-05-23-payments-reaudit.md",
+      "weight": 1.0,
+      "source": "audit_reaudit_newp0a",
+      "target": "audit_w29final_p0b"
+    },
+    {
+      "relation": "closes",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "git-log",
+      "weight": 1.0,
+      "source": "commit_4469cf4",
+      "target": "audit_w29final_p0c"
+    },
+    {
+      "relation": "fixes_in",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "2026-05-23-payments-launch-state.md",
+      "weight": 1.0,
+      "source": "audit_w29final_p0c",
+      "target": "file_webhook_paypal"
+    },
+    {
+      "relation": "fixes_in",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "2026-05-23-payments-reaudit.md",
+      "weight": 1.0,
+      "source": "audit_reaudit_newp0a",
+      "target": "file_webhook_paypal"
+    },
+    {
+      "relation": "touches",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "git-log",
+      "weight": 1.0,
+      "source": "commit_4ecc166",
+      "target": "file_create_order"
+    },
+    {
+      "relation": "touches",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "git-log",
+      "weight": 1.0,
+      "source": "commit_4ecc166",
+      "target": "file_capture_order"
+    },
+    {
+      "relation": "touches",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "git-log",
+      "weight": 1.0,
+      "source": "commit_2a077f3",
+      "target": "file_capture_order"
+    },
+    {
+      "relation": "touches",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "git-log",
+      "weight": 1.0,
+      "source": "commit_2a077f3",
+      "target": "file_webhook_paypal"
+    },
+    {
+      "relation": "touches",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "git-log",
+      "weight": 1.0,
+      "source": "commit_1f900b1",
+      "target": "file_webhook_paypal"
+    },
+    {
+      "relation": "adds",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "git-log",
+      "weight": 1.0,
+      "source": "commit_1f900b1",
+      "target": "mig_webhook_events"
+    },
+    {
+      "relation": "touches",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "git-log",
+      "weight": 1.0,
+      "source": "commit_fcf5848",
+      "target": "file_create_order"
+    },
+    {
+      "relation": "touches",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "git-log",
+      "weight": 1.0,
+      "source": "commit_fcf5848",
+      "target": "file_capture_order"
+    },
+    {
+      "relation": "touches",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "git-log",
+      "weight": 1.0,
+      "source": "commit_fcf5848",
+      "target": "file_webhook_paypal"
+    },
+    {
+      "relation": "adds",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "git-log",
+      "weight": 1.0,
+      "source": "commit_fcf5848",
+      "target": "mig_founders_seats"
+    },
+    {
+      "relation": "touches",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "git-log",
+      "weight": 1.0,
+      "source": "commit_d3e3cc1",
+      "target": "file_status"
+    },
+    {
+      "relation": "touches",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "git-log",
+      "weight": 1.0,
+      "source": "commit_d3e3cc1",
+      "target": "file_webhook_paypal"
+    },
+    {
+      "relation": "touches",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "git-log",
+      "weight": 1.0,
+      "source": "commit_3923ce5",
+      "target": "file_webhook_paypal"
+    },
+    {
+      "relation": "touches",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "git-log",
+      "weight": 1.0,
+      "source": "commit_3f238e0",
+      "target": "file_capture_order"
+    },
+    {
+      "relation": "touches",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "git-log",
+      "weight": 1.0,
+      "source": "commit_3f238e0",
+      "target": "file_create_order"
+    },
+    {
+      "relation": "adds",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "git-log",
+      "weight": 1.0,
+      "source": "commit_cf14f84",
+      "target": "mig_status_refunded"
+    },
+    {
+      "relation": "touches",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "git-log",
+      "weight": 1.0,
+      "source": "commit_36dd276",
+      "target": "file_history"
+    },
+    {
+      "relation": "touches",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "git-log",
+      "weight": 1.0,
+      "source": "commit_46a6178",
+      "target": "file_capture_order"
+    },
+    {
+      "relation": "touches",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "git-log",
+      "weight": 1.0,
+      "source": "commit_46a6178",
+      "target": "file_webhook_paypal"
+    },
+    {
+      "relation": "adds",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "git-log",
+      "weight": 1.0,
+      "source": "commit_46a6178",
+      "target": "mig_subscription_periods"
+    },
+    {
+      "relation": "touches",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "git-log",
+      "weight": 1.0,
+      "source": "commit_1cc6618",
+      "target": "file_create_subscription"
+    },
+    {
+      "relation": "touches",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "git-log",
+      "weight": 1.0,
+      "source": "commit_1cc6618",
+      "target": "file_cancel"
+    },
+    {
+      "relation": "touches",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "git-log",
+      "weight": 1.0,
+      "source": "commit_1cc6618",
+      "target": "file_webhook_paypal"
+    },
+    {
+      "relation": "adds",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "git-log",
+      "weight": 1.0,
+      "source": "commit_1cc6618",
+      "target": "mig_billing_plans_columns"
+    },
+    {
+      "relation": "touches",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "git-log",
+      "weight": 1.0,
+      "source": "commit_9106fe4",
+      "target": "file_create_order"
+    },
+    {
+      "relation": "touches",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "git-log",
+      "weight": 1.0,
+      "source": "commit_9106fe4",
+      "target": "file_capture_order"
+    },
+    {
+      "relation": "touches",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "git-log",
+      "weight": 1.0,
+      "source": "commit_9106fe4",
+      "target": "file_create_subscription"
+    },
+    {
+      "relation": "touches",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "git-log",
+      "weight": 1.0,
+      "source": "commit_9106fe4",
+      "target": "file_cancel"
+    },
+    {
+      "relation": "touches",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "git-log",
+      "weight": 1.0,
+      "source": "commit_4469cf4",
+      "target": "file_create_subscription"
+    },
+    {
+      "relation": "touches",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "git-log",
+      "weight": 1.0,
+      "source": "commit_4469cf4",
+      "target": "file_webhook_paypal"
+    },
+    {
+      "relation": "adds",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "git-log",
+      "weight": 1.0,
+      "source": "commit_4469cf4",
+      "target": "mig_status_pending"
+    },
+    {
+      "relation": "depends_on",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "create-order.js",
+      "weight": 1.0,
+      "source": "file_create_order",
+      "target": "mig_founders_seats"
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "create-order.js",
+      "weight": 1.0,
+      "source": "file_create_order",
+      "target": "god_paypal"
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "create-order.js",
+      "weight": 1.0,
+      "source": "file_create_order",
+      "target": "god_supabase"
+    },
+    {
+      "relation": "depends_on",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "capture-order.js",
+      "weight": 1.0,
+      "source": "file_capture_order",
+      "target": "mig_founders_seats"
+    },
+    {
+      "relation": "depends_on",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "capture-order.js",
+      "weight": 1.0,
+      "source": "file_capture_order",
+      "target": "mig_subscription_periods"
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "capture-order.js",
+      "weight": 1.0,
+      "source": "file_capture_order",
+      "target": "god_paypal"
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "capture-order.js",
+      "weight": 1.0,
+      "source": "file_capture_order",
+      "target": "god_supabase"
+    },
+    {
+      "relation": "depends_on",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "create-subscription.js",
+      "weight": 1.0,
+      "source": "file_create_subscription",
+      "target": "mig_billing_plans_columns"
+    },
+    {
+      "relation": "depends_on",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "create-subscription.js",
+      "weight": 1.0,
+      "source": "file_create_subscription",
+      "target": "mig_status_pending"
+    },
+    {
+      "relation": "gates",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "create-subscription.js",
+      "weight": 1.0,
+      "source": "setup_vercel_env",
+      "target": "file_create_subscription"
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "create-subscription.js",
+      "weight": 1.0,
+      "source": "file_create_subscription",
+      "target": "god_paypal"
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "create-subscription.js",
+      "weight": 1.0,
+      "source": "file_create_subscription",
+      "target": "god_supabase"
+    },
+    {
+      "relation": "hosts",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "create-subscription.js",
+      "weight": 1.0,
+      "source": "god_vercel",
+      "target": "file_create_subscription"
+    },
+    {
+      "relation": "depends_on",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "webhook-paypal.js",
+      "weight": 1.0,
+      "source": "file_webhook_paypal",
+      "target": "mig_webhook_events"
+    },
+    {
+      "relation": "depends_on",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "webhook-paypal.js",
+      "weight": 1.0,
+      "source": "file_webhook_paypal",
+      "target": "mig_founders_seats"
+    },
+    {
+      "relation": "depends_on",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "webhook-paypal.js",
+      "weight": 1.0,
+      "source": "file_webhook_paypal",
+      "target": "mig_status_refunded"
+    },
+    {
+      "relation": "depends_on",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "webhook-paypal.js",
+      "weight": 1.0,
+      "source": "file_webhook_paypal",
+      "target": "mig_subscription_periods"
+    },
+    {
+      "relation": "depends_on",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "webhook-paypal.js",
+      "weight": 1.0,
+      "source": "file_webhook_paypal",
+      "target": "mig_billing_plans_columns"
+    },
+    {
+      "relation": "gates",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "webhook-paypal.js",
+      "weight": 1.0,
+      "source": "setup_paypal_dashboard",
+      "target": "file_webhook_paypal"
+    },
+    {
+      "relation": "receives_from",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "webhook-paypal.js",
+      "weight": 1.0,
+      "source": "file_webhook_paypal",
+      "target": "god_paypal"
+    },
+    {
+      "relation": "would_extend",
+      "confidence": "INFERRED",
+      "confidence_score": 0.75,
+      "source_file": "2026-05-23-payments-launch-state.md",
+      "weight": 1.0,
+      "source": "deferred_founders_email",
+      "target": "file_webhook_paypal"
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "webhook-paypal.js",
+      "weight": 1.0,
+      "source": "file_webhook_paypal",
+      "target": "god_supabase"
+    },
+    {
+      "relation": "depends_on",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "cancel.js",
+      "weight": 1.0,
+      "source": "file_cancel",
+      "target": "mig_billing_plans_columns"
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "cancel.js",
+      "weight": 1.0,
+      "source": "file_cancel",
+      "target": "god_paypal"
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "cancel.js",
+      "weight": 1.0,
+      "source": "file_cancel",
+      "target": "god_supabase"
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "status.js",
+      "weight": 1.0,
+      "source": "file_status",
+      "target": "god_status_js_contract"
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "status.js",
+      "weight": 1.0,
+      "source": "file_status",
+      "target": "god_supabase"
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "history.js",
+      "weight": 1.0,
+      "source": "file_history",
+      "target": "god_supabase"
+    },
+    {
+      "relation": "hosts",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "history.js",
+      "weight": 1.0,
+      "source": "god_vercel",
+      "target": "file_history"
+    },
+    {
+      "relation": "applies",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "2026-05-23-payments-launch-state.md",
+      "weight": 1.0,
+      "source": "setup_supabase_migrations",
+      "target": "mig_webhook_events"
+    },
+    {
+      "relation": "applies",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "2026-05-23-payments-launch-state.md",
+      "weight": 1.0,
+      "source": "setup_supabase_migrations",
+      "target": "mig_founders_seats"
+    },
+    {
+      "relation": "applies",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "2026-05-23-payments-launch-state.md",
+      "weight": 1.0,
+      "source": "setup_supabase_migrations",
+      "target": "mig_status_refunded"
+    },
+    {
+      "relation": "applies",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "2026-05-23-payments-launch-state.md",
+      "weight": 1.0,
+      "source": "setup_supabase_migrations",
+      "target": "mig_subscription_periods"
+    },
+    {
+      "relation": "applies",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "2026-05-23-payments-launch-state.md",
+      "weight": 1.0,
+      "source": "setup_supabase_migrations",
+      "target": "mig_billing_plans_columns"
+    },
+    {
+      "relation": "applies",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "2026-05-23-payments-launch-state.md",
+      "weight": 1.0,
+      "source": "setup_supabase_migrations",
+      "target": "mig_status_pending"
+    },
+    {
+      "relation": "depends_on",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "2026-05-23-payments-launch-state.md",
+      "weight": 1.0,
+      "source": "deferred_founders_email",
+      "target": "setup_vercel_env"
+    }
+  ],
+  "hyperedges": [
+    {
+      "id": "hyper_w29_billing_plans_rollout",
+      "label": "W29-b Billing Plans rollout (code + migration + env vars + dashboard)",
+      "nodes": [
+        "commit_1cc6618",
+        "mig_billing_plans_columns",
+        "setup_vercel_env",
+        "setup_paypal_dashboard",
+        "file_create_subscription"
+      ],
+      "relation": "participate_in",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "2026-05-23-payments-launch-state.md"
+    },
+    {
+      "id": "hyper_founders_atomic_cap",
+      "label": "Founders 100-seat atomic enforcement (3 RPCs + table + 3 code sites)",
+      "nodes": [
+        "commit_fcf5848",
+        "mig_founders_seats",
+        "file_create_order",
+        "file_capture_order",
+        "file_webhook_paypal"
+      ],
+      "relation": "implement",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "create-order.js"
+    },
+    {
+      "id": "hyper_w29final_status_pending_chain",
+      "label": "status=pending exploit fix chain (migration + endpoint + status.js contract)",
+      "nodes": [
+        "commit_4469cf4",
+        "mig_status_pending",
+        "file_create_subscription",
+        "file_status"
+      ],
+      "relation": "form",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "create-subscription.js"
+    }
+  ],
+  "built_at_commit": "520dd0e9294676ac5012c4f283e95562949da0d5"
+}

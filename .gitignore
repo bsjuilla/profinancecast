@@ -1,8 +1,12 @@
-graphify-out/.graphify_*
-graphify-out/cache/
+# graphify scratch files (any graphify-out/ folder, at any depth)
+**/graphify-out/.graphify_*
+**/graphify-out/cache/
+**/graphify-out/.needs_update
 
-# Graphify output (regenerated locally)
-graphify-out/
+# Graphify output at REPO ROOT only (regenerated locally; transient)
+# — but graphify-out/ committed under docs/handoff/ is intentional
+# (the persistent handoff graph). Use leading slash for root-only match.
+/graphify-out/
 
 # Tool-builder swarm worker scratch state (do not commit)
 .claude-flow/

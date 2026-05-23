@@ -1,0 +1,8 @@
+# graphify corpus folder — these are copies of files that exist elsewhere
+# in the repo. Don't commit the copies; the graph itself is what matters.
+payments-corpus/
+
+# graphify temp / cache (shouldn't exist after pipeline finishes anyway)
+.graphify_*.json
+.graphify_chunk_*.json
+graphify-out/cache/
