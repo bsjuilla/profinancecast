@@ -4,7 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-<link rel="apple-touch-icon" href="/favicon.svg">
+<!-- iOS Safari ignores SVG apple-touch-icons (MOB-6). Point at logo PNG instead.
+     A 180×180 cropped variant is still TODO (would shrink from 1.4 MB to ~10 KB) — IMG-12. -->
+<link rel="apple-touch-icon" href="/assets/img/logo-512.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#0B1410">
 <title>ProFinanceCast — Plan the next ten years, without a bank password</title>
 <meta name="description" content="Drop in your numbers. See exactly when you'll be debt-free, your net worth in 2036, and which goals you'll hit. No bank login. Free forever.">
@@ -63,6 +68,8 @@
         { "@type": "Offer", "name": "Free", "price": "0", "priceCurrency": "EUR" },
         { "@type": "Offer", "name": "Pro monthly", "price": "9", "priceCurrency": "EUR", "billingDuration": "P1M" },
         { "@type": "Offer", "name": "Pro annual", "price": "79", "priceCurrency": "EUR", "billingDuration": "P1Y" },
+        { "@type": "Offer", "name": "Premium monthly", "price": "19", "priceCurrency": "EUR", "billingDuration": "P1M" },
+        { "@type": "Offer", "name": "Premium annual", "price": "169", "priceCurrency": "EUR", "billingDuration": "P1Y" },
         { "@type": "Offer", "name": "Founders Lifetime", "price": "149", "priceCurrency": "EUR" }
       ],
       "publisher": { "@id": "https://profinancecast.com/#org" }
@@ -308,12 +315,15 @@
      mesh-blob in the hero, where translucent backdrop went muddy) and
      gets lighter once scrolled past the hero. */
   nav {
-    position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
+    /* MOB-5: respect iOS notch / Dynamic Island via env(safe-area-inset-top). */
+    position: fixed; top: max(16px, env(safe-area-inset-top, 16px)); left: 50%; transform: translateX(-50%);
     width: calc(100% - 48px); max-width: 1200px;
     z-index: 50;
     display: flex; align-items: center; justify-content: space-between;
     padding: 11px 18px;
     background: rgba(11, 20, 16, 0.92);
+    /* COMPAT-1: -webkit- prefix for Safari < 17 (iOS 16.x still ships WebKit 16). */
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
     backdrop-filter: blur(20px) saturate(140%);
     border: 1px solid var(--line-2);
     border-radius: 999px;
@@ -352,8 +362,11 @@
   /* Buttons */
   .btn {
     font-family: var(--font-body); font-size: var(--t-14); font-weight: 500;
-    padding: 10px 18px; border-radius: 999px; border: 1px solid transparent;
-    cursor: pointer; display: inline-flex; align-items: center; gap: 8px;
+    /* A11Y-4 / MOB tap target: WCAG 2.5.8 (AA) requires ≥24×24; WCAG 2.5.5
+       (enhanced) wants ≥44×44. min-height 44px hits both. */
+    padding: 11px 20px; border-radius: 999px; border: 1px solid transparent;
+    min-height: 44px;
+    cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
     transition: transform var(--t-base) var(--ease-spring), background var(--t-base) var(--ease-out), border-color var(--t-base) var(--ease-out), box-shadow var(--t-slow) var(--ease-out);
     text-decoration: none; color: inherit; position: relative;
   }
@@ -487,9 +500,12 @@
     background: linear-gradient(90deg, var(--money) var(--p,40%), var(--surface-3) var(--p,40%));
     outline: none; cursor: pointer;
   }
+  /* MOB-4: slider thumb bumped from 22px → 28px so it meets a reasonable
+     touch target on mobile (still <44px but the input row pads around it).
+     The slider IS the primary mobile interaction on the page. */
   input[type=range]::-webkit-slider-thumb {
     -webkit-appearance: none;
-    width: 22px; height: 22px; border-radius: 50%;
+    width: 28px; height: 28px; border-radius: 50%;
     background: var(--ink); border: 4px solid var(--money);
     box-shadow: 0 4px 14px rgba(43,182,125,0.4);
     cursor: grab;
@@ -497,7 +513,7 @@
   }
   input[type=range]::-webkit-slider-thumb:active { cursor: grabbing; transform: scale(1.15); }
   input[type=range]::-moz-range-thumb {
-    width: 22px; height: 22px; border-radius: 50%;
+    width: 28px; height: 28px; border-radius: 50%;
     background: var(--ink); border: 4px solid var(--money);
     cursor: grab;
   }
@@ -653,7 +669,11 @@
   }
 
   /* ── PRICING ────────────────────────────────────────────────────── */
-  .pricing { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  /* LP-P1-1: 4-card pricing grid (Free / Pro / Premium / Founders).
+     auto-fit keeps the layout sensible at every width without manually
+     managing 4-col → 2x2 → 1-col breakpoints. Cards never narrower
+     than 220px so the price + features remain legible. */
+  .pricing { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; }
   .price-card {
     background: linear-gradient(180deg, var(--surface-2) 0%, var(--surface) 100%);
     border: 1px solid var(--line);
@@ -780,6 +800,8 @@
     max-width: 1240px; margin: 80px auto 0;
     display: grid; grid-template-columns: 1.4fr repeat(3, 1fr); gap: 48px;
   }
+  /* Selector covers both legacy h4 and the post-A11Y-3 h3. */
+  footer .col h3,
   footer .col h4 {
     font-family: var(--font-mono); font-size: var(--t-11);
     color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.14em;
@@ -878,8 +900,12 @@
     touch-action: manipulation;
   }
   .pfc-sticky-cta-dismiss {
-    width: 40px; height: 40px;
+    /* MOB-3: 40x40 was below WCAG 2.5.5 floor and right next to the
+       primary CTA (high accidental-dismiss risk). Bumped to 44x44 +
+       added margin so it can't be fat-fingered. */
+    width: 44px; height: 44px;
     flex-shrink: 0;
+    margin-left: 6px;
     border: none; background: transparent;
     color: var(--ink-3);
     font-size: 18px; line-height: 1;
@@ -1012,6 +1038,23 @@
     body.features-in-view .bento-card { animation: none !important; }
     .hero-anchor .ha-spark .spark-line { stroke-dashoffset: 0 !important; transition: none !important; }
     .hero-anchor .ha-spark .spark-end { opacity: 1 !important; transition: none !important; }
+  }
+
+  /* MOB-7: drift mesh-blobs cost real GPU on low-end mobile —
+     hide entirely on small viewports. */
+  @media (max-width: 540px) {
+    .hero-mesh .mesh-blob { display: none !important; }
+  }
+
+  /* COMPAT-2: Windows High Contrast / forced-colors.
+     Without these, our cards rely on background-only color and become
+     invisible buttons. Set explicit borders + neutralise the brand SVG. */
+  @media (forced-colors: active) {
+    .btn, .price-card, .bento-card, .nav-item, .step, .blog-card {
+      border: 1px solid CanvasText !important;
+    }
+    .btn-primary { background: ButtonFace !important; color: ButtonText !important; }
+    .pfc-brand-mark svg, .price-tag, .eyebrow .dot { forced-color-adjust: none; }
   }
 
   /* ─────────────────────────────────────────────────────────────────
@@ -1372,7 +1415,8 @@
   }
   .pricing-compare-row {
     display: grid;
-    grid-template-columns: 1.6fr 1fr 1fr 1fr;
+    /* LP-P1-1: 5 columns (label + 4 plans). */
+    grid-template-columns: 1.6fr 1fr 1fr 1fr 1fr;
     align-items: center;
     padding: 14px 22px;
     font-size: var(--t-13);
@@ -2063,8 +2107,12 @@
         <div class="icon" style="background: rgba(143,160,146,0.10); border-color: rgba(143,160,146,0.25); color: var(--sage);">
           <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="7.5" stroke="currentColor" stroke-width="1.6"/><path d="M11 6v5l4 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
         </div>
-        <h3>Sage AI · your personal advisor</h3>
-        <p>An AI that holds your full picture in context. Ask anything — "should I pay off the car or invest?" — and get a numbered answer in plain English, with the formula it used and a one-line caveat where the answer changes by jurisdiction. No upselling, no hedging.</p>
+        <!-- TRUST-5: 'AI advisor' framing replaced with 'planning assistant' —
+             "advisor" + a personalised buy/sell example flag UK FCA / EU
+             AI-Act draft transparency concerns. Sage explains and projects,
+             never recommends a specific instrument. -->
+        <h3>Sage AI · planning assistant</h3>
+        <p>An AI that holds your full picture in context. Ask questions about your numbers — "when do I clear the car loan?" — and get an answer in plain English, with the formula it used and a one-line caveat where the answer changes by jurisdiction. Sage explains the math; it never recommends a specific investment.</p>
       </div>
       <div class="bento-data bento-quote" aria-label="Sample Sage AI exchange">
         <div class="ask">When can I retire on &euro;3,200/month?</div>
@@ -2130,7 +2178,7 @@
 <section id="pricing">
   <div class="section-head reveal">
     <div class="section-index"><span class="roman">iii.</span><span class="rule"></span>Pricing</div>
-    <h2 class="section-title">Three tiers. <em>One product.</em></h2>
+    <h2 class="section-title">Four tiers. <em>One product.</em></h2>
     <p class="pfc-lede" style="margin-top:14px;">Free covers the ten-year forecast forever, with no time limit and no degradation. Pro is for households running multiple scenarios in parallel — a job offer, a relocation, a paid-off mortgage. Cancel any time — refund within 14 days, email support@profinancecast.com.</p>
   </div>
 
@@ -2173,7 +2221,24 @@
         <li><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="var(--money)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg> Sage AI — 200 messages / month</li>
         <li><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="var(--money)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg> CSV / JSON / PDF export</li>
       </ul>
-      <a href="auth.html?next=/billing.html" class="btn btn-primary" style="justify-content: center;">Subscribe — cancel any time</a>
+      <a href="auth.html?next=/billing.html#card-pro" class="btn btn-primary" style="justify-content: center;">Subscribe — cancel any time</a>
+    </div>
+
+    <!-- LP-P1-1: Premium tier surfaced on landing.
+         Was previously billing.html-only — visitors who clicked through
+         from a landing "Pro" CTA found a 4th tier they didn't know
+         existed, at 2× the price. Now disclosed up-front. -->
+    <div class="price-card pfc-card--elev">
+      <div class="price-name">Premium</div>
+      <div class="price-amount num"><span class="currency">&euro;</span>169<span class="period">· /year</span></div>
+      <div class="price-pitch">For heavier Sage users and households running many parallel scenarios. <span style="display:block;font-size:12px;color:var(--ink-3);margin-top:4px;">&euro;14.08/month annual &middot; or &euro;19/month billed monthly.</span></div>
+      <ul class="price-feats">
+        <li><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="var(--money)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg> Everything in Pro, plus</li>
+        <li><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="var(--money)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg> Sage AI &mdash; 500 questions / month (vs 200)</li>
+        <li><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="var(--money)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg> Advanced report-card analytics</li>
+        <li><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="var(--money)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg> Priority email response</li>
+      </ul>
+      <a href="auth.html?next=/billing.html#card-premium" class="btn btn-outline" style="justify-content: center;">Subscribe to Premium</a>
     </div>
 
     <div class="price-card pfc-card--elev">
@@ -2186,7 +2251,7 @@
         <li><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="var(--money)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg> Priority access to new tools</li>
         <li><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="var(--money)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg> Direct feedback channel into the roadmap</li>
       </ul>
-      <a href="auth.html?next=/billing.html#founders" class="btn btn-outline" style="justify-content: center;">Claim founders price</a>
+      <a href="auth.html?next=/billing.html#card-founders" class="btn btn-outline" style="justify-content: center;">Claim founders price</a>
     </div>
   </div>
   <!-- Compare at a glance — concrete feature checkmarks per tier so the
@@ -2196,11 +2261,13 @@
       <div class="feat" role="columnheader">What you get</div>
       <div class="col" role="columnheader">Free</div>
       <div class="col hot" role="columnheader">Pro</div>
+      <div class="col" role="columnheader">Premium</div>
       <div class="col" role="columnheader">Founders</div>
     </div>
     <div class="pricing-compare-row" role="row">
       <div class="feat">Ten-year compound-growth forecast</div>
       <div class="col yes" aria-label="Included">Included</div>
+      <div class="col yes">Included</div>
       <div class="col yes">Included</div>
       <div class="col yes">Included</div>
     </div>
@@ -2209,17 +2276,20 @@
       <div class="col no">1 scenario</div>
       <div class="col yes">Unlimited</div>
       <div class="col yes">Unlimited</div>
+      <div class="col yes">Unlimited</div>
     </div>
     <div class="pricing-compare-row" role="row">
-      <div class="feat">Sage AI advisor messages, monthly</div>
+      <div class="feat">Sage AI questions, monthly</div>
       <div class="col">10</div>
       <div class="col yes">200</div>
+      <div class="col yes">500</div>
       <div class="col yes">200</div>
     </div>
     <div class="pricing-compare-row" role="row">
       <div class="feat">Quarterly Report Card (PDF, mailed)</div>
-      <div class="col no">—</div>
+      <div class="col no">&mdash;</div>
       <div class="col yes">Included</div>
+      <div class="col yes">Advanced</div>
       <div class="col yes">Included</div>
     </div>
     <div class="pricing-compare-row" role="row">
@@ -2227,17 +2297,20 @@
       <div class="col">24 months</div>
       <div class="col yes">Forever</div>
       <div class="col yes">Forever</div>
+      <div class="col yes">Forever</div>
     </div>
     <div class="pricing-compare-row" role="row">
-      <div class="feat">Permanent founders badge · roadmap input</div>
-      <div class="col no">—</div>
-      <div class="col no">—</div>
+      <div class="feat">Permanent founders badge &middot; roadmap input</div>
+      <div class="col no">&mdash;</div>
+      <div class="col no">&mdash;</div>
+      <div class="col no">&mdash;</div>
       <div class="col yes">Included</div>
     </div>
   </div>
 
   <p style="text-align:center;margin-top:28px;font-family:var(--font-body);font-size:13px;color:var(--ink-3);max-width:60ch;margin-left:auto;margin-right:auto;line-height:1.6;">
     14-day refund on any paid plan — cancel from Settings and email support@profinancecast.com to trigger the refund. Free covers the ten-year forecast forever, with no time limit.
+    <span style="display:block;margin-top:6px;font-size:12px;">Prices shown are inclusive of VAT where applicable.</span>
   </p>
 </section>
 
@@ -2367,16 +2440,20 @@
     </a>
     <p>Plan the next ten years of your money — without a bank password. Calculations run in your browser; encrypted at rest.</p>
   </div>
+  <!-- A11Y-3 / SEO-3 — promoted footer h4 → h3 (no h3 parent existed; level skip).
+       Visual size preserved via existing `footer .col h4` selector, which we
+       also broadened to h3 in the matching CSS rule. -->
   <div class="col">
-    <h4>Product</h4>
+    <h3>Product</h3>
     <a href="#how">How it works</a>
     <a href="#features">Features</a>
     <a href="#pricing">Pricing</a>
     <a href="sage.html">Sage AI</a>
-    <a href="blog">Blog</a>
+    <a href="blog.html">Blog</a>
+    <a href="accessibility.html">Accessibility</a>
   </div>
   <div class="col">
-    <h4>Company</h4>
+    <h3>Company</h3>
     <a href="about.html">About</a>
     <a href="about.html#methodology">Methodology</a>
     <a href="mailto:support@profinancecast.com">Contact</a>
@@ -2384,9 +2461,9 @@
     <a href="terms.html">Terms</a>
   </div>
   <div class="col">
-    <h4>Account</h4>
+    <h3>Account</h3>
     <a href="auth.html">Sign in</a>
-    <a href="auth.html">Create account</a>
+    <a href="auth.html#signup">Create account</a>
     <a href="billing.html">Billing</a>
   </div>
   <div class="footer-bottom">

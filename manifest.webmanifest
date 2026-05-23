@@ -1,0 +1,26 @@
+{
+  "name": "ProFinanceCast",
+  "short_name": "PFC",
+  "description": "Plan the next ten years of your money — without a bank password. Calculations run in your browser; encrypted at rest.",
+  "start_url": "/dashboard.html",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0B1410",
+  "theme_color": "#0B1410",
+  "orientation": "portrait-primary",
+  "lang": "en",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/img/logo-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

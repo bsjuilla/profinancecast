@@ -50,6 +50,7 @@ a:hover { border-color: var(--pfc-accent); }
 .pfc-header {
   position: sticky; top: 0; z-index: 20;
   background: rgba(11, 20, 16, 0.92);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--pfc-rule);
 }

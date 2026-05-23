@@ -1272,6 +1272,10 @@
 
       <!-- FOUNDERS LIFETIME — ivory paper surface -->
       <div class="plan-card plan-card--founders" id="card-founders" data-surface="ivory">
+        <!-- LP-P1 / FNL-1: legacy `#founders` anchor preserved so old shared links
+             from the landing page (which used `auth.html?next=/billing.html#founders`)
+             still scroll-anchor to this card. Both fragments resolve here. -->
+        <a id="founders" aria-hidden="true" tabindex="-1"></a>
         <div class="sash sash--ivory">Limited — 100 seats · closes day 30</div>
         <div class="plan-eyebrow">Founders Lifetime</div>
         <div class="plan-price">

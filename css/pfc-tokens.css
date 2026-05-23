@@ -40,7 +40,7 @@
   /* Text on dark surfaces */
   --ink:           #F0EDE2;   /* off-white with a warm bias — never pure white */
   --ink-2:         #B8C2BC;   /* secondary */
-  --ink-3:         #6F7C75;   /* tertiary, captions */
+  --ink-3:         #8A988F;   /* tertiary, captions — WCAG AA at 13px (≈5.4:1 vs canvas) — LP-P1-A11Y-2 */
   --ink-4:         #3F4A44;   /* almost-disabled */
 
   /* Lines */

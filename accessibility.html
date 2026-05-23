@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Accessibility — ProFinanceCast</title>
+<meta name="description" content="ProFinanceCast's accessibility commitment, WCAG 2.1 AA target, known gaps, and contact for accessibility issues.">
+<meta name="robots" content="index,follow">
+<link rel="canonical" href="https://profinancecast.com/accessibility.html">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="stylesheet" href="css/pfc-tokens.css">
+<link rel="stylesheet" href="css/pfc-footer.css">
+<link rel="stylesheet" href="css/pfc-app.css">
+<link rel="stylesheet" href="css/pfc-fonts.css">
+<link rel="stylesheet" href="css/pfc-reskin.css">
+<style>
+  *,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family: var(--font-body); background: var(--canvas); color: var(--ink-2); line-height: 1.7; }
+  nav { position: sticky; top: 0; z-index: 100; display: flex; align-items: center; justify-content: space-between; padding: 0 var(--space-6); height: 64px; background: rgba(11,20,16,0.85); border-bottom: 1px solid var(--line); -webkit-backdrop-filter: blur(16px) saturate(140%); backdrop-filter: blur(16px) saturate(140%); }
+  .nav-logo { display: flex; align-items: center; gap: var(--space-2); font-family: var(--font-display); font-style: italic; font-size: 18px; font-weight: 500; color: var(--ink); text-decoration: none; }
+  .nav-back { font-size: 13px; color: var(--ink-3); text-decoration: none; transition: color 160ms ease-out; }
+  .nav-back:hover { color: var(--ink-2); }
+  .content { max-width: 720px; margin: 0 auto; padding: var(--space-9) var(--space-5); }
+  .page-tag { display: inline-block; font-family: var(--font-mono); font-size: 11px; font-weight: 500; padding: 3px 10px; border-radius: var(--r-pill); margin-bottom: var(--space-3); background: var(--gold-soft); color: var(--gold); letter-spacing: 0.08em; text-transform: uppercase; }
+  h1 { font-family: var(--font-display); font-style: italic; font-size: clamp(36px,5vw,56px); font-weight: 500; line-height: 1.05; letter-spacing: -0.01em; color: var(--ink); margin-bottom: var(--space-2); }
+  .meta { font-size: 13px; color: var(--ink-3); margin-bottom: var(--space-7); }
+  h2 { font-family: var(--font-display); font-style: italic; font-size: 24px; font-weight: 500; color: var(--ink); margin: var(--space-7) 0 var(--space-3); padding-top: var(--space-5); border-top: 1px solid var(--line); }
+  h2:first-of-type { border-top: none; padding-top: 0; margin-top: 0; }
+  p { font-size: 15px; color: var(--ink-2); margin-bottom: var(--space-3); }
+  ul { padding-left: 20px; margin-bottom: var(--space-3); display: flex; flex-direction: column; gap: var(--space-2); }
+  li { font-size: 15px; color: var(--ink-2); line-height: 1.6; }
+  a { color: var(--money); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  strong { color: var(--ink); font-weight: 600; }
+</style>
+</head>
+<body>
+<nav>
+  <a href="index.html" class="nav-logo">
+    <span class="pfc-brand-mark" aria-hidden="true">
+      <svg viewBox="0 0 32 32" width="32" height="32" aria-hidden="true">
+        <text x="16" y="19" text-anchor="middle" font-family="'Fraunces','Cormorant Garamond',Georgia,serif" font-size="14" font-weight="500" letter-spacing="-0.4" fill="#D4AF6A">PFC</text>
+        <rect x="14.5" y="23" width="3" height="3" fill="#D4AF6A" transform="rotate(45 16 24.5)"/>
+      </svg>
+    </span>
+    ProFinanceCast
+  </a>
+  <a href="index.html" class="nav-back">&larr; Back to home</a>
+</nav>
+
+<div class="content">
+  <span class="page-tag">Legal</span>
+  <h1>Accessibility statement</h1>
+  <p class="meta">Last reviewed: May 23, 2026 &middot; Compliance target: WCAG 2.1 Level AA</p>
+
+  <h2>Our commitment</h2>
+  <p>ProFinanceCast aims to be usable by people with disabilities, including those who rely on assistive technology such as screen readers, keyboard-only navigation, or high-contrast display modes. We target conformance with the <a href="https://www.w3.org/TR/WCAG21/" target="_blank" rel="noopener">Web Content Accessibility Guidelines (WCAG) 2.1 Level AA</a>.</p>
+
+  <h2>Known gaps</h2>
+  <p>We audit the public site on each material release. As of the date above, the following items are known and on the roadmap:</p>
+  <ul>
+    <li><strong>Variable font weights:</strong> the editorial display typography currently ships only weight 400 of each face. Heavier weights may render with synthetic bolding on some browsers (Issue tracked: <code>LP-P1-DES-2</code>; fix in progress).</li>
+    <li><strong>Mobile touch targets:</strong> several legacy elements were below the WCAG 2.5.5 floor of 44&times;44 px. The hero CTAs, sticky-CTA dismiss, and slider thumbs were corrected on 2026-05-23. Footer link spacing remains under review.</li>
+    <li><strong>Reduced-data preference:</strong> we do not yet honour <code>prefers-reduced-data</code>; large hero photography ships at full resolution to all visitors.</li>
+    <li><strong>Light mode:</strong> the brand currently forces dark mode. A light-mode swap respecting <code>prefers-color-scheme</code> is on the design backlog.</li>
+  </ul>
+  <p>If you discover an accessibility issue not listed here, please tell us using the contact below. We aim to acknowledge accessibility reports within 2 business days and to fix material issues within 30 days.</p>
+
+  <h2>What works well</h2>
+  <ul>
+    <li>One <code>&lt;h1&gt;</code> per page, structural heading hierarchy.</li>
+    <li>Skip-to-content link as the first interactive element.</li>
+    <li>All non-decorative images carry descriptive <code>alt</code> text.</li>
+    <li>Range inputs in the hero forecast widget are programmatically labelled (<code>&lt;label for=&quot;...&quot;&gt;</code>) and announce a unit-bearing <code>aria-valuetext</code>.</li>
+    <li><code>prefers-reduced-motion: reduce</code> disables all decorative animation (drift, breath, sparkline draw) globally.</li>
+    <li>Forced-colors mode (Windows High Contrast, equivalents): explicit borders applied so buttons remain visible.</li>
+    <li>Calculations run in your browser &mdash; no network round-trip per interaction, so screen-reader users are not delayed by latency.</li>
+  </ul>
+
+  <h2>Contact</h2>
+  <p>To report an accessibility issue, email <a href="mailto:support@profinancecast.com?subject=Accessibility">support@profinancecast.com</a> with the subject line &quot;Accessibility&quot;. Include the page URL, the assistive technology you use, and a description of the issue.</p>
+
+  <h2>Regulatory background</h2>
+  <p>This statement is published in alignment with the European Accessibility Act (Directive 2019/882, applicable from 28 June 2025) and the UK Equality Act 2010 reasonable-adjustments duty. The Web Content Accessibility Guidelines 2.1 are the underlying technical reference.</p>
+</div>
+</body>
+</html>

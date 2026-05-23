@@ -43,6 +43,7 @@ html body .topbar {
 }
 html body .topbar {
   background: rgba(11, 20, 16, 0.85) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
   backdrop-filter: blur(14px) saturate(140%);
 }
 html body .sidebar-logo,
