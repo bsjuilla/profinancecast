@@ -1235,8 +1235,20 @@
   // W18-fix — previous version appended to pf-sub which got wiped by
   // textContent= updates. Now we insert as a SIBLING of pf-sub, not a
   // child, so pf-sub's text updates don't clobber it.
+  // W23-fix — pill is a dev marker; only show on preview / localhost.
+  // In production it was overflowing the fixed-height topbar and visually
+  // overlapping the page title. Hostname check makes it visible on every
+  // non-production deploy (Vercel preview URLs end in .vercel.app) so the
+  // verification value is preserved.
   const PFC_PORTFOLIO_BUILD = 'w23-2026-05-22-17:30';
+  function _isProdHost() {
+    try {
+      const h = (typeof location !== 'undefined' && location.hostname) ? location.hostname : '';
+      return h === 'profinancecast.com' || h === 'www.profinancecast.com';
+    } catch (_) { return false; }
+  }
   function _stampVersion() {
+    if (_isProdHost()) return;  // dev marker only on preview / localhost
     const sub = document.getElementById('pf-sub');
     if (!sub || !sub.parentNode) return;
     let pill = document.getElementById('pf-build');
@@ -1264,17 +1276,51 @@
     _wireEditModal();
     _wireCSVImport();
     const refreshBtn = document.getElementById('pf-refresh-btn');
-    if (refreshBtn) refreshBtn.addEventListener('click', _refresh);
+    if (refreshBtn) {
+      // W23-fix — explicit clicks always re-verify entitlement with the
+      // server before re-rendering. Was: clicking Refresh just re-ran
+      // _refresh() against the in-memory _plan, which could be stale
+      // 'free' from an earlier failed boot. Now: force-refresh the plan
+      // first, then re-run portfolio render. Worst case the plan call
+      // fails (network blip) and we proceed with whatever _plan was —
+      // identical to the previous behaviour. Best case: an out-of-band
+      // entitlement change (upgrade in another tab, webhook just landed)
+      // is picked up immediately.
+      refreshBtn.addEventListener('click', async () => {
+        try {
+          if (window.PFCPlan && typeof PFCPlan.refresh === 'function') {
+            await PFCPlan.refresh();
+          }
+        } catch (_) { /* fall through — _refresh will use whatever _plan is */ }
+        _refresh();
+      });
+    }
     _detectSetup();
 
     // Initial render: wait for PFCUser + plan to resolve so we know whether
     // to show the Pro-gate or the working UI.
+    //
+    // W23-fix — also await PFCPlan.refresh() before the FIRST _refresh()
+    // call, not just register onChange. Without this, the first _refresh
+    // sees the stale-or-default _plan ('free') and renders the Pro-gate
+    // banner; the gate only auto-hides if PFCPlan's own background refresh
+    // both succeeds AND emits a change event (which doesn't fire if
+    // prev === next per pfc-entitlements.js _emit). Awaiting here makes
+    // the gate decision based on the settled server value rather than
+    // the boot-time default.
     function _whenPlanReady() {
       try {
         if (window.PFCPlan && typeof PFCPlan.onChange === 'function') {
           PFCPlan.onChange(() => _refresh());
         }
       } catch (_) {}
+      // Force a plan-fetch before first render so we don't flash the
+      // Pro-gate to a paying user whose 30s cache TTL has expired.
+      // .finally() so we still render even if the plan-fetch rejects.
+      if (window.PFCPlan && typeof PFCPlan.refresh === 'function') {
+        Promise.resolve(PFCPlan.refresh()).catch(() => null).finally(() => _refresh());
+        return;
+      }
       _refresh();
     }
     if (typeof PFCAuth !== 'undefined' && typeof PFCAuth.onReady === 'function') {
