@@ -15,8 +15,29 @@
 
 import { createClient } from '@supabase/supabase-js';
 
+const APP_ORIGIN = process.env.APP_ORIGIN || 'https://profinancecast.com';
+
+// W26-a #12: origin/referer same-site check on mutating subscription ops.
+// Cancellation is destructive (revokes Pro entitlement at period end); same
+// defense-in-depth as create/capture order endpoints.
+function _originAllowed(req) {
+  if (!APP_ORIGIN || !APP_ORIGIN.startsWith('https://')) return true;
+  const origin = req.headers.origin || '';
+  const referer = req.headers.referer || '';
+  if (origin) return origin === APP_ORIGIN;
+  if (referer) {
+    try { return new URL(referer).origin === APP_ORIGIN; } catch { return false; }
+  }
+  return false;
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+  // W26-a #12: reject cross-origin/no-origin requests.
+  if (!_originAllowed(req)) {
+    return res.status(403).json({ error: 'Forbidden: invalid origin' });
+  }
 
   const auth = req.headers.authorization || '';
   const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;

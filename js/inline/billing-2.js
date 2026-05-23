@@ -125,12 +125,28 @@ function setMethod(m) {
 }
 
 // ── LOAD PAYPAL SDK ──
+// W26-a #11: PayPal client IDs are always [A-Za-z0-9_-]. If pfc-config.js is
+// tainted (misedit, copy-paste from a phishing page, or a future config
+// supply-chain bug), refuse to interpolate the value into <script src>
+// rather than letting an attacker-controlled string flow into the URL.
+// Real PayPal client IDs are ~80 chars; we allow 30..160 to stay forgiving.
+const PAYPAL_CLIENT_ID_RE = /^[A-Za-z0-9_-]{30,160}$/;
+
 function loadPayPal() {
   if (paypalLoaded) { renderPayPalButtons(); return; }
   if (!PAYPAL_CLIENT_ID || PAYPAL_CLIENT_ID === 'YOUR_PAYPAL_CLIENT_ID') {
     document.getElementById('paypal-button-container').innerHTML =
       '<div style="background:var(--pfc-gold-soft);border-radius:var(--radius-sm);padding:var(--space-4);font-size:13px;color:var(--pfc-gold);line-height:1.6;">' +
       '<strong>Setup needed:</strong> Add your PayPal Client ID to PFC_CONFIG.PAYPAL_CLIENT_ID. See pfc-config.js.</div>';
+    return;
+  }
+  if (!PAYPAL_CLIENT_ID_RE.test(PAYPAL_CLIENT_ID)) {
+    // Don't echo the value back to the DOM — even in an error message — to
+    // avoid making the page useful for testing XSS payloads against the SDK URL.
+    console.error('[billing] PAYPAL_CLIENT_ID failed format validation; refusing to load SDK.');
+    document.getElementById('paypal-button-container').innerHTML =
+      '<div style="background:#fee;border-radius:var(--radius-sm);padding:var(--space-4);font-size:13px;color:#900;line-height:1.6;">' +
+      '<strong>Payment unavailable:</strong> Configuration error. Please contact support.</div>';
     return;
   }
   const script  = document.createElement('script');

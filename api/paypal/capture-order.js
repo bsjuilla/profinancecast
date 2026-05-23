@@ -18,6 +18,23 @@ const PAYPAL_BASE = (process.env.PAYPAL_ENV === 'sandbox')
   ? 'https://api-m.sandbox.paypal.com'
   : 'https://api-m.paypal.com';
 
+const APP_ORIGIN = process.env.APP_ORIGIN || 'https://profinancecast.com';
+
+// W26-a #12: origin/referer same-site check on mutating payment ops.
+// Defense-in-depth against a leaked or replayed JWT. Browsers always send
+// Origin or Referer for cross-origin POSTs; rejecting requests without one
+// blocks the easiest CSRF-style replay paths.
+function _originAllowed(req) {
+  if (!APP_ORIGIN || !APP_ORIGIN.startsWith('https://')) return true;
+  const origin = req.headers.origin || '';
+  const referer = req.headers.referer || '';
+  if (origin) return origin === APP_ORIGIN;
+  if (referer) {
+    try { return new URL(referer).origin === APP_ORIGIN; } catch { return false; }
+  }
+  return false;
+}
+
 // SKU prices — must match create-order.js. W25 P0 #1: added premium SKUs and
 // corrected pro_annual to 79 to match the W14-B CFO pricing in pricing.md and
 // the client (js/inline/billing-2.js openCheckout calls).
@@ -72,6 +89,12 @@ async function _verifyUser(req) {
   const supabase = _supabaseAdmin();
   const { data, error } = await supabase.auth.getUser(token);
   if (error || !data?.user) return { error: 'Invalid auth token', status: 401 };
+  // W26-a #9: don't let an unconfirmed account capture a payment. Pairs with
+  // the same check in create-order; defense-in-depth in case create-order
+  // was deployed at an older version when the order was minted.
+  if (!data.user.email_confirmed_at) {
+    return { error: 'Please confirm your email address before purchasing.', status: 403 };
+  }
   return { user: data.user, supabase };
 }
 
@@ -90,6 +113,11 @@ async function _getAccessToken() {
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+  // W26-a #12: reject cross-origin/no-origin requests on mutating payment ops.
+  if (!_originAllowed(req)) {
+    return res.status(403).json({ error: 'Forbidden: invalid origin' });
+  }
 
   const { orderID, plan } = req.body || {};
   if (!orderID || !plan) return res.status(400).json({ error: 'Missing orderID or plan' });

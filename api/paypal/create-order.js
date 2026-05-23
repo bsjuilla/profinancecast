@@ -30,6 +30,28 @@ const PLAN_DESCRIPTIONS = {
 };
 const APP_ORIGIN  = process.env.APP_ORIGIN || 'https://profinancecast.com';
 
+// W26-a #12: origin/referer same-site check.
+// Even with Supabase JWT auth, defense-in-depth against:
+//   - token leaked into a third-party page (e.g., user pastes their session
+//     into a malicious browser extension or a phishing site)
+//   - a stolen token replayed from elsewhere
+// We accept the request only if Origin (or Referer) matches APP_ORIGIN.
+// In sandbox/dev we allow missing Origin (server-to-server scripts).
+function _originAllowed(req) {
+  // If APP_ORIGIN is the placeholder default in a dev/preview env, skip the
+  // check — only enforce on production-shaped origins.
+  if (!APP_ORIGIN || !APP_ORIGIN.startsWith('https://')) return true;
+  const origin = req.headers.origin || '';
+  const referer = req.headers.referer || '';
+  if (origin) return origin === APP_ORIGIN;
+  if (referer) {
+    try { return new URL(referer).origin === APP_ORIGIN; } catch { return false; }
+  }
+  // No Origin and no Referer — likely a non-browser client. Reject mutating
+  // payment ops from such clients; legitimate browsers always send one.
+  return false;
+}
+
 async function _verifyUser(req) {
   const auth = req.headers.authorization || '';
   const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
@@ -40,6 +62,13 @@ async function _verifyUser(req) {
   );
   const { data, error } = await supabase.auth.getUser(token);
   if (error || !data?.user) return { error: 'Invalid auth token', status: 401 };
+  // W26-a #9: refuse to start a payment flow for an unconfirmed account.
+  // Otherwise an attacker who signs up with someone else's email can pay
+  // for THEIR account, or a typo'd email becomes an orphaned paid sub.
+  // Supabase Auth populates email_confirmed_at after the verification link.
+  if (!data.user.email_confirmed_at) {
+    return { error: 'Please confirm your email address before purchasing.', status: 403 };
+  }
   return { user: data.user };
 }
 
@@ -58,6 +87,11 @@ async function _getAccessToken() {
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+  // W26-a #12: reject cross-origin/no-origin requests on mutating payment ops.
+  if (!_originAllowed(req)) {
+    return res.status(403).json({ error: 'Forbidden: invalid origin' });
+  }
 
   const { plan } = req.body || {};
   if (!plan || !PLAN_PRICES[plan]) {
