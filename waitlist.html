@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Join the waitlist — ProFinanceCast</title>
+  <meta name="description" content="Be among the first 100 founders to use ProFinanceCast. Privacy-first 12-month financial forecasting. No bank login.">
+  <meta name="robots" content="index,follow">
+  <link rel="canonical" href="https://profinancecast.com/waitlist.html">
+
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Join the ProFinanceCast waitlist">
+  <meta property="og:description" content="Privacy-first 12-month financial forecasting. Founders Lifetime closes day 30. Join the waitlist.">
+  <meta property="og:url" content="https://profinancecast.com/waitlist.html">
+  <meta property="og:image" content="https://profinancecast.com/api/og?title=Join+the+waitlist.&eyebrow=ProFinanceCast&subtitle=Privacy-first+12-month+financial+forecasting.+First+100+founders+only.">
+  <meta property="og:site_name" content="ProFinanceCast">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Join the ProFinanceCast waitlist">
+
+  <link rel="stylesheet" href="css/pfc-tokens.css">
+  <link rel="stylesheet" href="css/pfc-fonts.css">
+  <link rel="stylesheet" href="css/pfc-reskin.css">
+
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  html{scroll-behavior:smooth;}
+  body{
+    font-family:var(--font-body);background:var(--canvas);color:var(--ink);
+    min-height:100vh;display:flex;flex-direction:column;
+    -webkit-font-smoothing:antialiased;
+  }
+  .bg-glow{position:fixed;top:-100px;left:50%;transform:translateX(-50%);
+    width:700px;height:500px;
+    background:radial-gradient(ellipse,rgba(43,182,125,0.06) 0%,transparent 65%);
+    pointer-events:none;}
+  nav{position:sticky;top:12px;z-index:100;width:calc(100% - 48px);max-width:1200px;
+    margin:12px auto 0;display:flex;align-items:center;justify-content:space-between;
+    padding:10px 18px;background:rgba(11,20,16,0.72);border:1px solid var(--line);
+    border-radius:var(--r-pill);backdrop-filter:blur(14px) saturate(120%);}
+  .logo{display:flex;align-items:center;gap:10px;font-family:var(--font-display);
+    font-size:16px;font-weight:500;color:var(--ink);text-decoration:none;
+    letter-spacing:-0.01em;}
+  .logo-mark{width:30px;height:30px;display:inline-grid;place-items:center;flex-shrink:0;}
+
+  main{flex:1;display:flex;align-items:center;justify-content:center;padding:60px 20px;}
+  .wrap{width:100%;max-width:520px;text-align:center;}
+  .eyebrow{font-family:var(--font-mono);font-size:11px;color:var(--gold);
+    letter-spacing:0.16em;text-transform:uppercase;margin-bottom:16px;}
+  h1{font-family:var(--font-display);font-size:clamp(36px,5vw,52px);font-weight:480;
+    line-height:1.05;letter-spacing:-0.02em;margin-bottom:18px;color:var(--ink);}
+  h1 em{font-style:italic;color:var(--gold);font-weight:460;}
+  .lede{font-size:16px;color:var(--ink-2);line-height:1.6;max-width:44ch;margin:0 auto 36px;}
+
+  .form-card{background:rgba(255,255,255,0.03);border:1px solid var(--line-2);
+    border-radius:var(--r-lg);padding:32px;text-align:left;}
+  .field{margin-bottom:18px;}
+  .field-label{display:block;font-size:11px;color:var(--ink-3);font-weight:500;
+    letter-spacing:0.04em;text-transform:uppercase;margin-bottom:8px;}
+  input[type=email],select{width:100%;background:rgba(255,255,255,0.04);
+    border:1px solid var(--line-2);color:var(--ink);padding:11px 14px;
+    border-radius:8px;font-size:15px;font-family:var(--font-body);outline:none;
+    transition:border-color .15s,box-shadow .15s;}
+  input[type=email]:focus,select:focus{border-color:var(--money);
+    box-shadow:0 0 0 3px rgba(43,182,125,0.08);}
+  select{cursor:pointer;}
+  .consent-row{display:flex;align-items:flex-start;gap:10px;margin-bottom:20px;
+    font-size:13px;color:var(--ink-2);line-height:1.5;}
+  .consent-row input[type=checkbox]{margin-top:3px;flex-shrink:0;
+    accent-color:var(--money);width:16px;height:16px;cursor:pointer;}
+  .consent-row label{cursor:pointer;}
+  .consent-row a{color:var(--ink);text-decoration:underline;text-underline-offset:2px;}
+  .submit-btn{width:100%;padding:13px 18px;background:var(--money);color:#0B1410;
+    border:none;border-radius:8px;font-size:15px;font-weight:600;font-family:var(--font-body);
+    cursor:pointer;transition:opacity .15s,transform .1s;}
+  .submit-btn:hover{opacity:0.9;}
+  .submit-btn:active{transform:scale(0.98);}
+  .submit-btn:disabled{opacity:0.4;cursor:not-allowed;}
+
+  .success-state{display:none;text-align:center;padding:20px 0;}
+  .success-state.show{display:block;}
+  .success-icon{width:64px;height:64px;border-radius:50%;
+    background:rgba(43,182,125,0.12);border:1px solid rgba(43,182,125,0.3);
+    display:flex;align-items:center;justify-content:center;margin:0 auto 20px;}
+  .success-state h2{font-family:var(--font-display);font-size:24px;font-weight:600;
+    color:var(--ink);margin-bottom:10px;letter-spacing:-0.01em;}
+  .success-state p{font-size:14px;color:var(--ink-2);line-height:1.6;}
+
+  .form-state.hide{display:none;}
+
+  .error-row{margin-top:12px;font-size:13px;color:#E07B7B;display:none;}
+  .error-row.show{display:block;}
+
+  .meta-row{display:flex;justify-content:space-between;font-size:11px;color:var(--ink-3);
+    margin-top:24px;letter-spacing:0.02em;}
+  .meta-row a{color:var(--ink-2);text-decoration:none;border-bottom:1px solid var(--line-2);}
+
+  footer{text-align:center;padding:24px;font-size:12px;color:var(--ink-3);
+    border-top:1px solid var(--line);}
+</style>
+
+<script src="js/pfc-fonts.js" defer></script>
+<script src="js/pfc-funnel.js?v=w24" defer></script>
+<script src="js/pfc-analytics.js?v=w24" defer></script>
+</head>
+<body data-pfc-surface="marketing">
+
+<div class="bg-glow"></div>
+
+<nav>
+  <a href="index.html" class="logo">
+    <span class="logo-mark" aria-hidden="true">
+      <svg viewBox="0 0 32 32" width="32" height="32"><text x="16" y="19" text-anchor="middle" font-family="'Fraunces','Cormorant Garamond',Georgia,serif" font-size="14" font-weight="500" letter-spacing="-0.4" fill="#D4AF6A">PFC</text><rect x="14.5" y="23" width="3" height="3" fill="#D4AF6A" transform="rotate(45 16 24.5)"/></svg>
+    </span>
+    ProFinanceCast
+  </a>
+  <a href="index.html" style="font-size:13.5px;color:var(--ink-2);text-decoration:none;">← Back home</a>
+</nav>
+
+<main>
+  <div class="wrap">
+    <div class="eyebrow">Pre-launch · founders cohort</div>
+    <h1>The ledger opens <em>soon</em>.</h1>
+    <p class="lede">
+      ProFinanceCast is a privacy-first 12-month financial forecast. No bank login,
+      no advisor relationship, calculations run in your browser. Founders Lifetime
+      is capped at 100 seats. Join the waitlist and we'll email you when your spot opens.
+    </p>
+
+    <div class="form-card">
+      <div class="form-state" id="form-state">
+        <div class="field">
+          <label for="email" class="field-label">Email</label>
+          <input type="email" id="email" required autocomplete="email"
+                 inputmode="email" enterkeyhint="next"
+                 placeholder="you@example.com">
+        </div>
+        <div class="field">
+          <label for="use-case" class="field-label">What brings you here? (optional)</label>
+          <select id="use-case">
+            <option value="">Pick one (optional)</option>
+            <option value="cross-border">I have cross-border / multi-country finances</option>
+            <option value="fire">I'm pursuing FIRE / early retirement</option>
+            <option value="household">I'm planning household finances long-term</option>
+            <option value="other">Other / curious</option>
+          </select>
+        </div>
+        <div class="consent-row">
+          <input type="checkbox" id="consent" required>
+          <label for="consent">
+            I agree to receive a launch-announcement email from ProFinanceCast.
+            My email will not be shared. I can unsubscribe at any time.
+            See the <a href="privacy.html">privacy policy</a>.
+          </label>
+        </div>
+        <button id="submit-btn" class="submit-btn" type="button">Join the waitlist</button>
+        <div id="error-row" class="error-row"></div>
+        <div class="meta-row">
+          <span>GDPR · single opt-in</span>
+          <a href="privacy.html">Privacy</a>
+        </div>
+      </div>
+
+      <div class="success-state" id="success-state">
+        <div class="success-icon">
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+            <path d="M5 14l6 6L23 7" stroke="#2BB67D" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <h2>You're on the list.</h2>
+        <p>
+          Check your inbox for a welcome email from ProFinanceCast. If you don't see it
+          within a minute, check spam — and reply to it once so future emails land in your
+          main inbox. We'll email you when your Founders Lifetime seat is ready.
+        </p>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  © 2026 ProFinanceCast · <a href="privacy.html" style="color:inherit;">Privacy</a> · <a href="terms.html" style="color:inherit;">Terms</a>
+</footer>
+
+<script src="./js/inline/waitlist-1.js?v=w24"></script>
+</body>
+</html>
