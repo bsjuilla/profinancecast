@@ -100,6 +100,63 @@ function _supabaseAdmin() {
   );
 }
 
+// W27-c #16 — retry-with-jittered-backoff wrapper for PayPal fetches.
+// Retries only on transient failures (network errors, 502/503/504/429),
+// never on 4xx auth/validation errors. Max 2 retries (3 total attempts),
+// jittered exponential delay capped at ~1.5s. The PayPal-Request-Id on
+// each fetch makes retries idempotent on PayPal's side — a retried
+// capture POST returns the same captureId, never a double-charge.
+async function _fetchPayPalWithRetry(url, opts, label) {
+  const RETRYABLE = new Set([429, 502, 503, 504]);
+  let lastErr = null;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const res = await fetch(url, opts);
+      if (res.ok) return res;
+      if (!RETRYABLE.has(res.status) || attempt === 2) return res;
+      lastErr = new Error(`PayPal ${label} returned ${res.status}`);
+    } catch (e) {
+      lastErr = e;
+      if (attempt === 2) throw e;
+    }
+    // Jittered backoff: 200ms, 600ms, then return.
+    const baseMs = attempt === 0 ? 200 : 600;
+    const jitter = Math.floor(Math.random() * 200);
+    await new Promise(r => setTimeout(r, baseMs + jitter));
+  }
+  if (lastErr) throw lastErr;
+  // Unreachable, satisfies TS-style flow analysis.
+  return null;
+}
+
+// W27-c #21 — best-effort auto-refund when a captured amount doesn't match
+// the expected plan price. Money is already with PayPal at this point;
+// refusing to upgrade the user without ALSO returning the money creates a
+// support ticket and an angry customer. This calls PayPal's /refund endpoint
+// directly so the funds bounce back automatically.
+async function _autoRefund(captureId, amount, currency, token, reason) {
+  try {
+    const res = await fetch(
+      `https://api-m.${process.env.PAYPAL_ENV === 'sandbox' ? 'sandbox.' : ''}paypal.com/v2/payments/captures/${captureId}/refund`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'PayPal-Request-Id': `pfc-autorefund-${captureId}`,
+        },
+        body: JSON.stringify({
+          amount: { value: String(amount), currency_code: currency },
+          note_to_payer: reason || 'Auto-refund: price mismatch on capture.',
+        }),
+      }
+    );
+    return { ok: res.ok, status: res.status, body: res.ok ? null : await res.text() };
+  } catch (e) {
+    return { ok: false, status: 0, body: String(e?.message || e) };
+  }
+}
+
 async function _verifyUser(req) {
   const auth = req.headers.authorization || '';
   const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
@@ -120,11 +177,13 @@ async function _getAccessToken() {
   const creds = Buffer.from(
     `${process.env.PAYPAL_CLIENT_ID}:${process.env.PAYPAL_CLIENT_SECRET}`
   ).toString('base64');
-  const res = await fetch(`${PAYPAL_BASE}/v1/oauth2/token`, {
+  // W27-c #16: retry on transient 5xx/429 — PayPal's auth endpoint is
+  // documented to have transient outages.
+  const res = await _fetchPayPalWithRetry(`${PAYPAL_BASE}/v1/oauth2/token`, {
     method: 'POST',
     headers: { 'Authorization': `Basic ${creds}`, 'Content-Type': 'application/x-www-form-urlencoded' },
     body: 'grant_type=client_credentials',
-  });
+  }, 'oauth2/token');
   if (!res.ok) throw new Error('PayPal auth failed');
   return (await res.json()).access_token;
 }
@@ -164,9 +223,12 @@ export default async function handler(req, res) {
     //   (c) it isn't already COMPLETED (replay protection — capturing a
     //       COMPLETED order is a no-op at PayPal but we'd still upsert and
     //       could reset cancel_at_period_end / period_end unexpectedly).
-    const preflightRes = await fetch(`${PAYPAL_BASE}/v2/checkout/orders/${orderID}`, {
-      headers: { 'Authorization': `Bearer ${token}` },
-    });
+    // W27-c #16: retry on transient PayPal 5xx for the preflight too.
+    const preflightRes = await _fetchPayPalWithRetry(
+      `${PAYPAL_BASE}/v2/checkout/orders/${orderID}`,
+      { headers: { 'Authorization': `Bearer ${token}` } },
+      'order-preflight'
+    );
     if (!preflightRes.ok) {
       console.error('[capture-order] preflight GET failed', { orderID, status: preflightRes.status });
       return res.status(404).json({ error: 'Order not found' });
@@ -195,14 +257,22 @@ export default async function handler(req, res) {
     // replay with the same Request-Id returns the same result instead of
     // double-charging. We key it on the orderID so the same order
     // re-captured by us yields the same response from PayPal.
-    const capRes = await fetch(`${PAYPAL_BASE}/v2/checkout/orders/${orderID}/capture`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-        'PayPal-Request-Id': `pfc-capture-${orderID}`,
+    // W27-c #16: retry the capture call on transient 5xx. The
+    // PayPal-Request-Id header keeps the retry idempotent on PayPal's
+    // side — a replayed capture returns the same captureId rather than
+    // double-charging.
+    const capRes = await _fetchPayPalWithRetry(
+      `${PAYPAL_BASE}/v2/checkout/orders/${orderID}/capture`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'PayPal-Request-Id': `pfc-capture-${orderID}`,
+        },
       },
-    });
+      'capture'
+    );
     if (!capRes.ok) {
       const err = await capRes.text();
       console.error('Capture error:', err);
@@ -220,9 +290,40 @@ export default async function handler(req, res) {
     const currencyPaid = capture?.amount?.currency_code;
     if (currencyPaid !== 'EUR' || Math.abs(amountPaid - PLAN_PRICES[plan]) > 0.005) {
       console.error(`Amount mismatch: paid ${amountPaid} ${currencyPaid}, expected ${PLAN_PRICES[plan]} EUR for plan ${plan}`);
-      // Money was captured but at the wrong amount — we refuse to upgrade.
-      // Operations team must reconcile manually via PayPal dashboard.
-      return res.status(409).json({ error: 'Payment amount mismatch — please contact support.' });
+      // W27-c #21 — auto-refund. Previously we refused to upgrade and left
+      // the money sitting in PayPal awaiting manual reconciliation. Now we
+      // fire an auto-refund and log the outcome to subscription_events so
+      // the user gets their money back without a support ticket.
+      const refund = await _autoRefund(capture?.id, amountPaid, currencyPaid, token,
+        `Auto-refund: captured ${amountPaid} ${currencyPaid}, expected ${PLAN_PRICES[plan]} EUR for plan ${plan}.`);
+      try {
+        await supabase.from('subscription_events').insert({
+          user_id: user.id,
+          event_type: refund.ok ? 'auto_refund_on_amount_mismatch' : 'auto_refund_failed',
+          provider: 'paypal',
+          provider_id: capture?.id || null,
+          amount: amountPaid,
+          currency: currencyPaid,
+          raw_payload: {
+            expected_amount: PLAN_PRICES[plan],
+            expected_currency: 'EUR',
+            refund_status: refund.status,
+            refund_body: refund.ok ? null : refund.body,
+            orderID,
+            plan,
+          },
+        });
+      } catch (logErr) {
+        console.error('[capture-order] failed to log auto-refund event:', logErr);
+      }
+      const userMsg = refund.ok
+        ? 'Payment amount didn\'t match the expected price — we\'ve issued an automatic refund. It should appear in 3-5 business days.'
+        : 'Payment amount didn\'t match the expected price. Our team has been notified and will issue a manual refund within 24 hours.';
+      return res.status(409).json({
+        error: userMsg,
+        refundIssued: refund.ok,
+        captureID: capture?.id,
+      });
     }
 
     // 4. Upsert the subscription row (server is source of truth).

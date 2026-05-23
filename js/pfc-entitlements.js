@@ -238,5 +238,23 @@ const PFCPlan = (() => {
     });
   }
 
+  // W27-c #22 — periodic refresh for paying users while the tab is open.
+  // visibilitychange catches background→foreground transitions, but a user
+  // who keeps the tab focused for hours can keep using Pro UI after a
+  // webhook-driven refund downgrade has landed server-side. A 10-minute
+  // poll closes that window. We only run it for paid plans (the typical
+  // browse session for a free user shouldn't poll the API) and skip
+  // when the tab is hidden (visibilitychange already covers re-entry).
+  if (typeof window !== 'undefined' && typeof setInterval === 'function') {
+    const PAID = (p) => p === 'pro' || p === 'premium';
+    setInterval(() => {
+      try {
+        if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return;
+        if (!PAID(_plan)) return;
+        refresh().then(() => applyBadges());
+      } catch (_) { /* never throw out of a setInterval */ }
+    }, 10 * 60 * 1000);
+  }
+
   return { get, refresh, requirePlan, applyBadges, onChange };
 })();

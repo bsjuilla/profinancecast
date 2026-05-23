@@ -72,15 +72,39 @@ async function _verifyUser(req) {
   return { user: data.user };
 }
 
+// W27-c #16 — retry-with-jittered-backoff for PayPal fetches.
+// Retries only on transient failures (network errors, 502/503/504/429).
+// Max 2 retries (3 total attempts), backoff capped ~1.5s.
+async function _fetchPayPalWithRetry(url, opts, label) {
+  const RETRYABLE = new Set([429, 502, 503, 504]);
+  let lastErr = null;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const res = await fetch(url, opts);
+      if (res.ok) return res;
+      if (!RETRYABLE.has(res.status) || attempt === 2) return res;
+      lastErr = new Error(`PayPal ${label} returned ${res.status}`);
+    } catch (e) {
+      lastErr = e;
+      if (attempt === 2) throw e;
+    }
+    const baseMs = attempt === 0 ? 200 : 600;
+    const jitter = Math.floor(Math.random() * 200);
+    await new Promise(r => setTimeout(r, baseMs + jitter));
+  }
+  if (lastErr) throw lastErr;
+  return null;
+}
+
 async function _getAccessToken() {
   const creds = Buffer.from(
     `${process.env.PAYPAL_CLIENT_ID}:${process.env.PAYPAL_CLIENT_SECRET}`
   ).toString('base64');
-  const res = await fetch(`${PAYPAL_BASE}/v1/oauth2/token`, {
+  const res = await _fetchPayPalWithRetry(`${PAYPAL_BASE}/v1/oauth2/token`, {
     method: 'POST',
     headers: { 'Authorization': `Basic ${creds}`, 'Content-Type': 'application/x-www-form-urlencoded' },
     body: 'grant_type=client_credentials',
-  });
+  }, 'oauth2/token');
   if (!res.ok) throw new Error('Could not authenticate with PayPal');
   return (await res.json()).access_token;
 }
@@ -139,7 +163,10 @@ export default async function handler(req, res) {
 
   try {
     const token = await _getAccessToken();
-    const order = await fetch(`${PAYPAL_BASE}/v2/checkout/orders`, {
+    // W27-c #16: retry on transient 5xx. PayPal-Request-Id keeps the
+    // retry idempotent on PayPal's side — duplicate POST returns the
+    // same orderID rather than creating a second order.
+    const order = await _fetchPayPalWithRetry(`${PAYPAL_BASE}/v2/checkout/orders`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -163,7 +190,7 @@ export default async function handler(req, res) {
           cancel_url: `${APP_ORIGIN}/billing.html`,
         },
       }),
-    });
+    }, 'create-order');
 
     if (!order.ok) {
       const err = await order.text();
