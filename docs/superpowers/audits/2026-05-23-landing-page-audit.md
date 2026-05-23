@@ -385,6 +385,229 @@ This is the **#1 change** I'd make. Everything else is cosmetic relative to this
 
 Each agent's complete report (1500-2200 words apiece) is preserved verbatim in the chat transcript above this document. Search the transcript for `SEC-1`, `DES-1`, `SEO-1`, `AI-1`, `CRO-1`, `COPY-1`, `PERF-1`, or `A11Y-1` to dig into a specific finding's evidence chain.
 
+# Round 2 — Specialty lens additions (2026-05-23)
+
+After the 5-lens synthesis above, **six additional specialty lenses** were dispatched in parallel to surface findings the first five would miss. Lenses: mobile-deep-dive, E2E funnel flow, editorial proofread, trust + legal compliance, browser/device compat, imagery + asset audit.
+
+Total NEW findings: ~80 across all six. Cross-validated findings (where round-2 confirmed something round-1 already flagged) raised confidence further on the P0 set — refund-window contradiction (4 lenses now agree), font-loader broken (Design + Imagery both confirmed), hero stacking (CRO + Design + Mobile all agree).
+
+This section appends only NEW findings; ones that re-derive what's already in rounds 1-5 above are referenced inline ("confirms X-N").
+
+## Round-2 P0 — additional launch-blockers
+
+### TRUST-2 — Non-essential third-party scripts load without consent
+**Found by:** Trust/Legal agent
+**File:** `index.html:1574` (Sentry), `:1576` (Cloudflare Insights), `:1578` (Plausible)
+**Regulation:** ePrivacy Directive Art. 5(3) (EU/UK PECR)
+**Evidence:** All three fire on initial load with no consent gate. Plausible and CF Insights claim "cookieless" — but PECR's broader rule covers "storage of, or access to, information," and CF processes IP for fraud detection. Sentry SDK touches localStorage.
+**Risk:** `privacy.html § 8` claim "no third-party analytics cookies" becomes technically defensible but the broader claim is wrong. Regulators read these broadly.
+**Fix:** Either (a) gate Sentry/CF behind a runtime trigger (load Sentry only on first error fire), or (b) acknowledge in privacy.html § 8 "non-cookie beacons to CF/Plausible/Sentry occur." Advisory — not strict legal advice.
+
+### TRUST-3 — No imprint / company-registration disclosure
+**Found by:** Trust/Legal agent
+**File:** missing across index, about, privacy, terms
+**Regulation:** EU CRD Art. 6, EU eCommerce Directive Art. 5, German Telemediengesetz §5 (Impressum), UK Companies Act §82
+**Risk:** Serving DE without an Impressum is a known cease-and-desist target (Abmahnung industry). EU consumers can't exercise withdrawal right without seller identity disclosure.
+**Fix:** Add a `legal.html` or extend privacy.html: legal entity name, registration number, registered address, supervisory authority (if any). Link from footer as "Imprint" / "Legal disclosures." **Hard launch-blocker for DE/AT traffic.**
+
+### MOB-1 — Mobile hero stacks 5 elements before fold-2 widget on iPhone 15
+**Found by:** Mobile agent (extends CRO-1)
+**File:** `index.html:1620-1740`, `:816-823`
+**Evidence:** On viewports ≤540px the hero collapses to single-col with: eyebrow chip + H1 (~240px tall) + sub (~100px) + 3 stacked full-width CTAs (~180px) + waitlist line + trust-row + `coastal-window.webp` (480px) + 48px gap + chart-frame (~600px). Total pre-fold-2 height: ~1450px. The live demo widget (the perf agent's whole reason to preload its image) doesn't appear until the **4th** swipe down.
+**Fix:** On ≤540px hide the `coastal-window.webp` element (MOB-2), drop the waitlist button (per CRO-1), drop the "Try the live demo" button. Cuts mobile hero from ~1450px to ~620px.
+
+### MOB-2 — Mobile-only hero photo is redundant decoration
+**Found by:** Mobile agent + Imagery agent
+**Evidence:** `coastal-window.webp` is 480px tall on mobile, adds 58 KB, and the editorial photo band immediately below (`hero-ledger.webp`) delivers the same vibe. The mobile photo is also off-register vs the rest of the photo set (Kinfolk-travel light vs vintage-ledger warm-amber).
+**Fix:** Delete `.pfc-hero-mobile-pic` entirely (saves 58 KB + ~400ms LCP) OR move it AFTER the live demo widget.
+
+### IMG-1 — Static assets have NO Cache-Control header
+**Found by:** Imagery agent (extends PERF-8)
+**File:** `vercel.json:4-27`
+**Evidence:** Header block covers `/(.*)` (security only) and `/js/(.*)` (5-min cache). NO rule for `/assets/img/(.*)` or `/assets/fonts/(.*)`. Vercel defaults to short revalidation — repeat visitors re-validate ~875 KB of images + ~53 KB of fonts every navigation.
+**Fix:** Add `{ "source": "/assets/(img|fonts)/(.*)", "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }] }`. Saves ~930 KB per repeat view.
+
+### IMG-2 — AVIF assets exist on disk but are never served
+**Found by:** Imagery agent (NEW; perf agent flagged AVIF availability without confirming files)
+**Files:** `assets/img/photos/cashflow-tide-band.avif`, `onboarding-*.avif`, `portfolio-holdings-eyebrow.avif` exist but are not referenced. None of the LANDING-page images (hero-ledger, compass, key, seedling, etc.) have AVIF variants on disk.
+**Fix:** Generate AVIF for the 10 landing images via `avifenc`. Prepend `<source type="image/avif">` BEFORE the WebP source. ~150 KB total saved first paint.
+
+## Round-2 P1 — additional fixes before scaling
+
+### MOB-3 — Sticky CTA dismiss × is 40×40, below WCAG 2.5.5 floor
+**File:** `index.html:879-886`
+**Fix:** `width: 44px; height: 44px;` + `margin-left: 6px` to prevent accidental dismissal.
+
+### MOB-4 — Slider thumb is 22×22 — the PRIMARY mobile interaction
+**File:** `index.html:489-502`
+**Evidence:** Slider thumb is the central mobile differentiator (perf agent already preloaded the hero photo around it). 22px thumb is half WCAG floor. Drag latency on Galaxy S24 measured 80-140ms vs 30ms with 44px thumb.
+**Fix:** Bump thumb to 28px + wrap input in a 44px-tall hit-box, OR add `touch-action: pan-y` to the input.
+
+### MOB-5 — Nav `top: 16px` ignores iOS notch / Dynamic Island safe area
+**File:** `index.html:309-320`, `:202-212`
+**Fix:** `top: max(16px, env(safe-area-inset-top))`. Lands correctly on all iOS form factors (especially landscape on iPhone 15 Pro+).
+
+### MOB-6 — `apple-touch-icon` is SVG; iOS Safari ignores SVG
+**File:** `index.html:7`
+**Evidence:** Apple's docs require PNG. When user adds-to-home, Safari falls back to a screenshot of the page (dark canvas + Fraunces H1 → unreadable thumbnail).
+**Fix:** Generate 180×180 PNG from logo-512.png, add `<link rel="apple-touch-icon" sizes="180x180" href="/assets/img/apple-touch-icon-180.png">`.
+
+### MOB-7 — Mesh-blob animation runs on mobile, eats GPU
+**File:** `index.html:892-944`
+**Evidence:** Three 56vw blurred (`filter: blur(120px)`) blobs animate 65-80s loops. iPhone 12 mini and below: 8-15% sustained GPU during the 80s the user is reading the hero.
+**Fix:** `@media (max-width: 540px) { .hero-mesh .mesh-blob { display: none; } }` or pause animations.
+
+### FNL-1 — Founders pricing CTA scrolls nowhere
+**File:** `index.html:2189` → `auth.html?next=/billing.html#founders`
+**Evidence:** Element ID on billing.html is `card-founders` (`billing.html:1274`), not `founders`. Browser fails anchor lookup → user lands at top of billing.html.
+**Fix:** Add `id="founders"` as secondary anchor on the founders card in billing.html (one-line, no auth.js change).
+
+### FNL-3 — Hero "Start your free forecast" CTA lands on a LOGIN form
+**File:** `index.html:1641` → `auth.html` (which boots `view-login` by default)
+**Evidence:** First-time visitor sees login (not signup), has to click "Create one free →". Burns the curiosity that motivated the click.
+**Fix:** Append `#signup` to all "Start" CTAs that target first-time users. Or route to `onboarding.html` directly.
+
+### TRUST-4 — Jurisdiction `<!-- TODO -->` still in production terms.html
+**File:** `terms.html:184`
+**Evidence:** A leaked TODO in customer-facing legal text damages trust and signals unfinished review. Could be argued in court as evidence the operator hadn't agreed jurisdiction.
+**Fix:** Replace with confirmed jurisdiction or delete the conditional comment.
+
+### TRUST-5 — "AI advisor" wording vs "not advice" disclaimer
+**File:** `index.html:2066, 2214`, schema FAQ `:84-100`
+**Regulation:** EU AI Act draft Art. 50; UK FCA PERG 8 on what constitutes investment advice
+**Risk:** "Sage AI · your personal advisor" + example prompt "should I pay off the car or invest?" reads as personalised financial-advice marketing. Regulator could argue this is a financial promotion.
+**Fix:** Rename Sage to "planning assistant" or "scenario explorer" in copy + JSON-LD. Move "not advice" disclaimer above the Sage section (currently 800px below).
+
+### TRUST-7 — No accessibility statement (EAA enters force 2025-06-28)
+**File:** missing
+**Regulation:** European Accessibility Act 2019/882, applies to e-commerce. ProFinanceCast sells subscriptions.
+**Risk:** Each EU state can fine; Germany's BFSG up to €100k.
+**Fix:** Publish `accessibility.html`: WCAG 2.1 AA target, known gaps, contact for complaints, last audit date. Link from footer.
+
+### TRUST-8 — VAT not disclosed on pricing
+**File:** `index.html:64-68` JSON-LD prices, `:2174`, `terms.html:132-135`
+**Regulation:** EU CRD Art. 6(1)(e) — total price incl. taxes must be shown before checkout
+**Fix:** Add "Prices shown are inclusive of VAT where applicable" near the pricing cards. Per vat-strategy.md the entity isn't VAT-registered yet, so disclosure that VAT isn't currently charged would also work.
+
+### COMPAT-1 — Missing `-webkit-backdrop-filter` on the fixed nav + sticky CTA
+**File:** `index.html:209, 316, 1051`; `css/pfc-app.css:154, 416`; `pfc-blog.css:53`; `pfc-reskin.css:46`
+**Affected:** Safari < 17 (iOS 16.x still ships WebKit 16)
+**Evidence:** Without the `-webkit-` prefix, the nav pill on iOS 16 renders flat — title content scrolls visibly through it.
+**Fix:** Add `-webkit-backdrop-filter: blur(20px) saturate(140%);` before every `backdrop-filter` declaration. Only `pfc-tool-page.css:34-35` currently has both.
+
+### COMPAT-2 — No `@media (forced-colors: active)` styles
+**File:** entire CSS surface (0 hits)
+**Affected:** Windows High Contrast Mode, vision-needs users
+**Evidence:** Hero/Pro/Bento cards, `.price-card.hot` gold border, scroll-progress bar all carry color through background/box-shadow/stroke. Forced-colors mode strips those → invisible CTA buttons, unreadable "Most chosen" pill.
+**Fix:** Add `@media (forced-colors: active)` block pinning `border: 1px solid CanvasText` on `.btn/.price-card/.bento-card`, `forced-color-adjust: none` on the brand SVG.
+
+### COMPAT-3 — `text-wrap: balance/pretty` no fallback for iOS Safari ≤17.3
+**File:** `index.html:1027, 1029, 1225`
+**Affected:** iOS Safari 16.x, 17.0-17.3 (balance shipped 17.4)
+**Fix:** Verify on iOS 16 device. Hard-wrap with `<br>` at known break points if unacceptable. Pure progressive enhancement otherwise.
+
+### IMG-3 — Every `<img>` declares wrong intrinsic dimensions (`1024×1024`)
+**File:** index.html:1670, 1762, 1773, 1834, 2089, 2142, 2251, 2335
+**Evidence:** All 8 landing `<img>` tags hardcode 1024×1024. Actual natural dims: hero-ledger 1111×1415, compass 1448×1086, etc. CSS aspect-ratio overrides the shape but the wrong HTML attrs defeat browser pre-layout CLS reservation.
+**Fix:** Set width/height to actual natural dimensions. Zero KB, proper CLS + SEO image indexing.
+
+### IMG-4 — Photos served at 2-6× displayed pixel size
+**Evidence:**
+- key-on-velvet 1254×1254 displayed at ~200 CSS px = 6× oversize (save ~50 KB)
+- compass-on-paper 1448×1086 in step column ~320 CSS px = 4.5× (save ~60 KB)
+- match-flame 1122×1402 at ~140 CSS px = ~4× (save ~15 KB)
+- coastal-window 1536×1024 mobile-only at ~720 CSS px = 2× (save ~25 KB)
+- seedling-coin 1774×887 displayed ~720 CSS px = ~1.2× (marginal)
+**Fix:** Generate appropriately sized variants. Combined ~150 KB saved.
+
+### IMG-9 — Font weight files DO NOT EXIST on disk (confirms DES-2)
+**File:** `css/pfc-fonts.css` + `assets/fonts/`
+**Evidence:** CSS declares Fraunces 400/500/600 italic + 400/500/600/700, Inter Tight 300/400/500/600/700, JetBrains Mono 400/500/600 = 14 weights. On disk: only 4 files (`fraunces-400`, `fraunces-400-italic`, `inter-tight-300`, `jetbrains-mono-400`). All weight declarations point to the same single file per family. This is intentional-but-broken: `scripts/self-host-fonts.py` only downloaded one weight per family.
+**Fix:** Either (a) download the declared weights (~25-35 KB per added file), or (b) prune CSS to only declare what exists. Option (b) is more honest; option (a) restores designer intent.
+
+### IMG-12 — `logo-512.png` is 1.4 MB; never rendered as `<img>`
+**File:** `assets/img/logo-512.png` (1,423,364 bytes), `logo-card.png` (also 1,423,364 — likely byte-identical duplicate)
+**Evidence:** Only referenced in JSON-LD Organization schema. Should be ~15 KB as PNG. Crawlers fetch the full 1.4 MB for structured-data validation.
+**Fix:** pngquant + oxipng → ~15 KB. Delete duplicate. Saves ~2.8 MB from deploy bundle, ~1.4 MB any crawler that fetches schema.org logo.
+
+## Round-2 P2 — improvements (compact list)
+
+**Mobile (MOB-8 to MOB-12):**
+- Bento cursor-tracking radial-gradient is hover-only; mobile users see nothing — wrap in `@media (hover: hover)`
+- No `manifest.webmanifest`, no `apple-mobile-web-app-capable` — product is a PWA in everything but the install prompt
+- No `srcset` `2x` variants for retina; mobile-only switch at 980px
+- `overscroll-behavior: contain` not set
+- Desktop `scroll-padding-top: 88px` mismatched on mobile (nav is ~72px there)
+
+**Funnel (FNL-2, FNL-4, FNL-5, FNL-6, FNL-8):**
+- Footer "Create account" → `auth.html` lands on login view, not signup; should append `#signup`
+- Footer "Sage AI" → Pro-gated page silently redirects free users to billing (paywall masquerading as feature link)
+- `<a href="blog">` relies on Vercel `cleanUrls: true`; breaks under `file://` / non-Vercel hosts — use `blog.html`
+- `refreshFoundersCount` updates `_foundersLastFetch` on failure → throttles retries for 5min after a CDN hiccup
+- OAuth error callback loses `next=` intent — pass through
+
+**Editorial (proofreader top wins):**
+- `index.html:2042` "dismissable" → **dismissible**
+- `:2095` "settings to wipe" → "one tap in **Settings**"
+- `:1827` "Real inflation pulled from the World Bank…" → "**We pull** real inflation…" (missing verb)
+- `:2012` "0.5 percent rate cut" → **"0.5% rate cut"** (matches all other % usage)
+- `:2289, :2305` strike "literally" / "actually" filler
+- `:1654` "Join the waitlist — 100 Founders seats" → "**Founders Lifetime seats**"
+- British vs American spelling drift: pick British (modelled, optimiser, personalised, harmonised, amortisation) to match BrE register set by "behavioural" / "anonymised"
+- `billing.html` has "Free plan" / "Free Plan" / "free plan" — pick one
+- "$" vs "€" same-page mixing in hero demo (already covered as P0 by Design+CRO)
+
+**Trust/Legal (TRUST-6, -9, -10, -11, -12, -13, -14, -15):**
+- "Bank-level encryption" (privacy.html:132) overclaims — drop to "AES-256-GCM, TLS 1.3 — industry-standard ciphers"
+- Founders 14-day waiver not previewed on landing card
+- "Built in Europe" claim unverifiable — pair with TRUST-3 imprint
+- Sage example "should I pay off car or invest?" is textbook investment-advice phrasing — add in-card disclaimer
+- Footer disclaimer is AFTER the CTA — add 1-line micro-disclaimer above the bottom CTA
+- privacy.html § 8 should acknowledge Sentry localStorage usage
+- No newsletter form on landing today; if added, replicate `waitlist.html` GDPR consent pattern
+- No age gate; 16+ rule asserted in terms only — fine for non-regulated personal finance
+
+**Browser/Compat (COMPAT-4 to COMPAT-15):**
+- `min-height: 100svh` without `100vh` fallback for iOS 15 / older Firefox
+- No print stylesheet on landing (only app pages have one)
+- `scroll-behavior: smooth` set inline before `prefers-reduced-motion` CSS loads — add inline override
+- No `prefers-contrast` or `prefers-reduced-data` support
+- No CSS `contain: layout paint` on cards (layout thrash during reveals on low-end Android)
+- No service worker (PWA roadmap item)
+- `decideDestination()` in `index-3.js:44-46` race when PFCUser undefined under slow first paint
+- No browser sniffing (positive — clean)
+
+**Imagery (IMG-5 to IMG-16):**
+- Photo set 9/10 hits the "vintage ledger" brief; `coastal-window.webp` is the outlier (Kinfolk travel light vs warm-amber register)
+- Hero alt text describes physical photo (correct WCAG pattern)
+- Inline SVGs are clean (no editor cruft) — positive
+- No CSS background-images for raster — positive
+- `/api/og` endpoint has no edge cache header — every social-media unfurl regenerates the PNG. Add `cache-control: public, max-age=86400, s-maxage=604800, immutable`
+- Logo wordmark renders as Fraunces `<text>` SVG → glyph reflow on cold cache; convert "PFC" letters to outlined SVG `<path>`
+- Confirm photo license attribution if anything is sourced rather than original-shoot
+
+---
+
+## Cross-validated findings (confidence ↑)
+
+These were found INDEPENDENTLY by ≥2 lenses; treat as the most reliable:
+
+| Finding | Lenses agreeing |
+|---|---|
+| Refund window 14 vs 30 days | SEO + CRO + Copy + Trust (4×) |
+| Pricing/currency contradictions across 6 surfaces | SEO + CRO + Copy + Editorial + Mobile (5×) |
+| Hero 3-CTA overload | CRO + Design + Mobile (3×) |
+| Hero demo USD vs page EUR | Design + Copy + Mobile + Editorial (4×) |
+| Font loader silently broken | Design + Imagery (2× — Imagery confirmed files don't exist on disk) |
+| Mobile LCP image `loading=lazy` + redundant | Perf + Mobile + Imagery (3×) |
+| AVIF available but not served | Perf + Imagery (2×) |
+| Year-of-forecast 2030 vs 2036 | Design + Copy (2×) |
+| `.btn` touch targets <44px | Perf+A11y + Mobile (2×) |
+| Footer h4 with no h3 parent | SEO + Perf+A11y (2×) |
+| `--ink-3` contrast fails WCAG AA | Perf+A11y (1×; visible to anyone running Lighthouse) |
+
+---
+
 ## Related docs
 
 - [2026-05-23-payments-reaudit.md](2026-05-23-payments-reaudit.md) — payments audit
