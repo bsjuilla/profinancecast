@@ -285,6 +285,20 @@ export default async function handler(req, res) {
             raw_payload: { event, db_error: upsertErr },
           });
         }
+
+        // W26-d #4/#5: finalize the Founders seat as a fallback if this is
+        // a founders SKU and the seat wasn't already finalized by
+        // capture-order.js (e.g., the user closed the tab before the
+        // capture-order response landed). Idempotent.
+        if (sku === 'founders') {
+          const { error: finErr } = await supabase.rpc(
+            'finalize_founders_seat',
+            { p_user_id: userId, p_capture_id: captureId }
+          );
+          if (finErr) {
+            console.error('[webhook-paypal] finalize_founders_seat err:', finErr);
+          }
+        }
         break;
       }
 

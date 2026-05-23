@@ -2,15 +2,20 @@
 //
 // Public endpoint that returns how many Founders Lifetime seats have been
 // claimed. Used by billing.html and index.html to replace the static
-// "— of 500 claimed" placeholder with a live count.
+// "— of 100 claimed" placeholder with a live count.
 //
 // Counts subscriptions where amount_usd = 149 (the Founders Lifetime SKU).
 // Capture-order.js writes amount_usd from the actual PayPal capture, so this
 // is the authoritative count regardless of whether the row's plan column is
 // 'pro' (SKU normalization — see capture-order.js#SKU_TO_PLAN).
 //
+// Note: this counter is for marketing display only; it is allowed to be
+// slightly stale. The HARD cap is enforced atomically by W26-d's
+// founders_seats table + claim_founders_seat() Postgres function inside
+// api/paypal/create-order.js. This endpoint is just a count.
+//
 // Returns:
-//   200 { claimed: N, cap: 500, remaining: 500-N }
+//   200 { claimed: N, cap: 100, remaining: 100-N }
 //
 // No auth required (public count, no PII).
 // Cached briefly so a viral homepage spike doesn't spam Supabase.
@@ -18,7 +23,9 @@
 import { createClient } from '@supabase/supabase-js';
 
 const FOUNDERS_PRICE_USD = 149;
-const FOUNDERS_CAP       = 500;
+// W26-d: corrected from stale 500 to canonical 100 (pricing.md, about.html,
+// billing.html, index.html copy, waitlist.html all consistently say 100).
+const FOUNDERS_CAP       = 100;
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {

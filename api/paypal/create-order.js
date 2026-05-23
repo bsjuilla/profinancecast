@@ -106,6 +106,37 @@ export default async function handler(req, res) {
   // Server-side amount (never trust the client)
   const amount = PLAN_PRICES[plan];
 
+  // W26-d #4/#5 — Atomic Founders cap enforcement.
+  // For the founders SKU, claim one of the 100 pre-numbered seats BEFORE we
+  // mint the PayPal order. SELECT ... FOR UPDATE SKIP LOCKED inside the
+  // Supabase function makes this race-safe: two concurrent buyers cannot
+  // win the same seat. If all 100 are claimed/reserved, we return 409 and
+  // never expose the user to the PayPal checkout (avoids the embarrassing
+  // case of "you paid but there were no seats left").
+  let foundersSeatNo = null;
+  let foundersSupabase = null;
+  if (plan === 'founders') {
+    foundersSupabase = createClient(
+      process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY,
+      { auth: { persistSession: false, autoRefreshToken: false } }
+    );
+    const { data: seat, error: seatErr } = await foundersSupabase.rpc(
+      'claim_founders_seat',
+      { p_user_id: user.id, p_ttl_minutes: 15 }
+    );
+    if (seatErr) {
+      console.error('[create-order] claim_founders_seat error:', seatErr);
+      return res.status(500).json({ error: 'Could not reserve Founders seat — please try again.' });
+    }
+    foundersSeatNo = typeof seat === 'number' ? seat : (seat?.seat_no ?? null);
+    if (!foundersSeatNo) {
+      return res.status(409).json({
+        error: 'All 100 Founders Lifetime seats are currently reserved or claimed. Pro is still available at €9/mo or €79/yr.',
+        sold_out: true,
+      });
+    }
+  }
+
   try {
     const token = await _getAccessToken();
     const order = await fetch(`${PAYPAL_BASE}/v2/checkout/orders`, {
@@ -137,13 +168,29 @@ export default async function handler(req, res) {
     if (!order.ok) {
       const err = await order.text();
       console.error('PayPal create order error:', err);
+      // W26-d #4/#5: release the Founders seat we reserved above so the
+      // next buyer can claim it. Best-effort — even if the release fails,
+      // the 15-minute TTL will eventually free the row.
+      if (foundersSeatNo && foundersSupabase) {
+        await foundersSupabase.rpc('release_founders_seat', { p_user_id: user.id })
+          .then(({ error }) => { if (error) console.error('[create-order] release_founders_seat err:', error); });
+      }
       return res.status(502).json({ error: 'Could not create PayPal order' });
     }
     const orderData = await order.json();
-    return res.status(200).json({ orderID: orderData.id });
+    return res.status(200).json({
+      orderID: orderData.id,
+      ...(foundersSeatNo ? { foundersSeatNo } : {}),
+    });
 
   } catch (err) {
     console.error('create-order error:', err);
+    // Release the seat on any thrown error from the PayPal side too.
+    if (foundersSeatNo && foundersSupabase) {
+      await foundersSupabase.rpc('release_founders_seat', { p_user_id: user.id })
+        .then(({ error }) => { if (error) console.error('[create-order] release_founders_seat err:', error); })
+        .catch((e) => console.error('[create-order] release_founders_seat threw:', e));
+    }
     return res.status(500).json({ error: 'Internal server error' });
   }
 }

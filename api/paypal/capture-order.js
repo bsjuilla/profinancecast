@@ -255,10 +255,29 @@ export default async function handler(req, res) {
       ai_queries_reset_at: periodEnd,
     }).eq('id', user.id);
 
+    // W26-d #4/#5: finalize the Founders seat reservation if this was a
+    // Founders purchase. Idempotent — safe if create-order already pre-claimed
+    // and the webhook also fires later. Best-effort: a failure here doesn't
+    // unwind the successful capture (the subscriptions row is the
+    // entitlement source of truth; the seats table is the cap accounting).
+    let foundersSeatNo = null;
+    if (sku === 'founders') {
+      const { data: seat, error: finErr } = await supabase.rpc(
+        'finalize_founders_seat',
+        { p_user_id: user.id, p_capture_id: capture?.id || orderID }
+      );
+      if (finErr) {
+        console.error('[capture-order] finalize_founders_seat err:', finErr);
+      } else {
+        foundersSeatNo = typeof seat === 'number' ? seat : (seat?.seat_no ?? null);
+      }
+    }
+
     return res.status(200).json({
       status: 'COMPLETED', plan: dbPlan, sku, orderID,
       captureID: capture?.id,
       currentPeriodEnd: periodEnd,
+      ...(foundersSeatNo ? { foundersSeatNo } : {}),
     });
 
   } catch (err) {
