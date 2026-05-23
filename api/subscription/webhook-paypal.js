@@ -31,6 +31,75 @@ const PAYPAL_BASE = (process.env.PAYPAL_ENV === 'sandbox')
   ? 'https://api-m.sandbox.paypal.com'
   : 'https://api-m.paypal.com';
 
+// W27-a #23 — every SKU is billed in EUR (see create-order.js, capture-order.js).
+// The webhook fallback used to default currency to 'USD' if PayPal omitted the
+// field, which would let a misconfigured order silently upgrade a user.
+const EXPECTED_CURRENCY = 'EUR';
+
+// W27-a #15 — period lengths in months/years, not 30-day chunks.
+// addMonths and addYears do calendar-correct arithmetic in UTC so a user who
+// pays on 31-Jan doesn't get an Apr-02 period end via 60-day arithmetic.
+function _addMonthsUTC(date, months) {
+  const d = new Date(date);
+  const desiredMonth = d.getUTCMonth() + months;
+  d.setUTCMonth(desiredMonth);
+  // If the original day-of-month doesn't exist in the target month (e.g. 31->Feb),
+  // setUTCMonth rolls over into the next month. Detect that and clamp to the
+  // last day of the intended month.
+  if (d.getUTCMonth() !== ((desiredMonth % 12) + 12) % 12) {
+    d.setUTCDate(0); // last day of previous month = last day of target month
+  }
+  return d;
+}
+function _addYearsUTC(date, years) {
+  const d = new Date(date);
+  const target = d.getUTCFullYear() + years;
+  d.setUTCFullYear(target);
+  // Handle Feb-29 anniversaries on non-leap years.
+  if (d.getUTCFullYear() !== target) d.setUTCDate(0);
+  return d;
+}
+function _periodEndForSku(sku, fromIso) {
+  const from = fromIso ? new Date(fromIso) : new Date();
+  switch (sku) {
+    case 'pro_monthly':
+    case 'premium_monthly':
+      return _addMonthsUTC(from, 1).toISOString();
+    case 'pro_annual':
+    case 'premium_annual':
+      return _addYearsUTC(from, 1).toISOString();
+    case 'founders':
+      return _addYearsUTC(from, 100).toISOString();
+    default:
+      return null;
+  }
+}
+
+// W27-a #17 — best-effort alert sink for events that need human follow-up
+// (unresolvable user on a real captured payment, mismatched currency, etc.).
+// Sends to ALERT_EMAIL via Resend if both env vars are present; otherwise
+// becomes a no-op and the event lives only in subscription_events + Vercel logs.
+// Non-blocking on the happy path; never throws.
+async function _alertOps(subject, body) {
+  const apiKey = process.env.RESEND_API_KEY;
+  const to     = process.env.ALERT_EMAIL;
+  const from   = process.env.ALERT_FROM_EMAIL || 'alerts@profinancecast.com';
+  if (!apiKey || !to) return;
+  try {
+    await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        from, to: [to],
+        subject: `[PFC alerts] ${subject}`,
+        text: body,
+      }),
+    });
+  } catch (e) {
+    console.error('[webhook-paypal] _alertOps failed:', e?.message || e);
+  }
+}
+
 // Reads the raw incoming bytes as a Buffer. Used for PayPal webhook
 // signature verification (which must see byte-identical input).
 async function _readRawBody(req) {
@@ -160,9 +229,13 @@ export default async function handler(req, res) {
   }
 
   // Helper: append-only event log for audit M3.
+  // W27-a #25 — surfaces both throws AND Supabase-shaped errors. We don't
+  // re-throw (audit-log failures should never break the webhook 200-ack), but
+  // we make sure the failure isn't invisible: it gets a structured console
+  // record AND a best-effort email to ALERT_EMAIL.
   const _logEvent = async (extra) => {
     try {
-      await supabase.from('subscription_events').insert({
+      const { error: insertErr } = await supabase.from('subscription_events').insert({
         user_id: extra.user_id || null,
         event_type: extra.event_type || eventType,
         provider: 'paypal',
@@ -171,8 +244,19 @@ export default async function handler(req, res) {
         currency: extra.currency || null,
         raw_payload: extra.raw_payload || event,
       });
+      if (insertErr) {
+        console.error('[webhook-paypal] event-log insert error:', {
+          message: insertErr.message, details: insertErr.details, code: insertErr.code,
+          event_type: extra.event_type, provider_id: extra.provider_id,
+        });
+        _alertOps('subscription_events insert failed', JSON.stringify({
+          db_error: { message: insertErr.message, code: insertErr.code },
+          extra,
+        }, null, 2));
+      }
     } catch (e) {
-      console.error('[webhook-paypal] event log non-fatal:', e?.message || e);
+      console.error('[webhook-paypal] event log threw:', e?.message || e);
+      _alertOps('subscription_events insert threw', String(e?.stack || e));
     }
   };
 
@@ -199,11 +283,12 @@ export default async function handler(req, res) {
         });
 
         if (!userId) {
-          // Fail-open audit: PayPal verified the event but we cannot map it
-          // to a user. Returning 200 (below) is intentional — PayPal must not
-          // retry indefinitely — but we need this to land in subscription_events
-          // so operations can reconcile manually. The console.warn alone was
-          // lost on Vercel's log rotation.
+          // W27-a #17 — Fail-open audit + ALERT.
+          // PayPal verified the event but we cannot map it to a user. We
+          // 200-ack so PayPal stops retrying, but operations MUST know: real
+          // money landed and we don't know whose entitlement to flip.
+          // Logs subscription_events for audit AND fires an email if
+          // ALERT_EMAIL + RESEND_API_KEY are configured.
           console.warn(`[webhook-paypal] capture.completed without resolvable userId (capture ${captureId})`);
           await _logEvent({
             user_id: null,
@@ -213,6 +298,34 @@ export default async function handler(req, res) {
             currency,
             raw_payload: { reason: 'no_custom_id_no_invoice_id', event },
           });
+          _alertOps(
+            'Payment captured without resolvable user — manual reconciliation needed',
+            `A PayPal capture completed but we cannot map it to a user.\n\n` +
+            `captureId: ${captureId}\namount: ${amount} ${currency}\nevent.id: ${event.id}\n\n` +
+            `Reconcile via the PayPal dashboard and look up the buyer's email; ` +
+            `if they have an account, manually upsert their subscriptions row.`
+          );
+          break;
+        }
+
+        // W27-a #23 — verify currency before any state-changing work. The
+        // create-order side bills exclusively in EUR; a webhook event whose
+        // currency_code is anything else is either misconfiguration or a
+        // suspicious replay from a sandbox tenant. Refuse to upgrade.
+        if (currency !== EXPECTED_CURRENCY) {
+          console.warn(`[webhook-paypal] capture.completed currency mismatch: ${currency}, expected ${EXPECTED_CURRENCY}`);
+          await _logEvent({
+            user_id: userId,
+            event_type: 'webhook_currency_mismatch',
+            provider_id: captureId,
+            amount,
+            currency,
+            raw_payload: { reason: 'unexpected_currency', expected: EXPECTED_CURRENCY, event },
+          });
+          _alertOps(
+            'Webhook currency mismatch on capture',
+            `captureId: ${captureId}\nuser_id: ${userId}\namount: ${amount} ${currency}\nexpected: ${EXPECTED_CURRENCY}`
+          );
           break;
         }
 
@@ -252,14 +365,9 @@ export default async function handler(req, res) {
           break;
         }
 
-        // Period length depends on SKU. Founders = 100 years (one-time).
-        const SKU_TO_DAYS = {
-          pro_monthly: 30, pro_annual: 365,
-          premium_monthly: 30, premium_annual: 365,
-          founders: 365 * 100,
-        };
-        const days = SKU_TO_DAYS[sku];
-        const periodEnd = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
+        // W27-a #15 — calendar-correct period end (months/years, not 30-day
+        // chunks). Buying on 31-Jan now renews on 28-Feb, not 02-Mar.
+        const periodEnd = _periodEndForSku(sku, new Date().toISOString());
         const nowIso = new Date().toISOString();
 
         const { error: upsertErr } = await supabase.from('subscriptions').upsert({

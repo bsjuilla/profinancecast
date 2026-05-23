@@ -63,16 +63,34 @@ const SKU_TO_PLAN  = {
 // (W14-C: "Sage AI — 500 messages/month (vs Pro's 200)").
 const PLAN_QUERIES = { pro: 200, premium: 500 };
 
-// How long the subscription period runs from capture time, per SKU.
-// Founders is one-time; we set a 100-year period_end so status.js never
-// expires it via the !expired check. Cancellation still works the same way.
-const PLAN_PERIOD_DAYS = {
-  pro_monthly:     30,
-  pro_annual:      365,
-  premium_monthly: 30,
-  premium_annual:  365,
-  founders:        365 * 100,
-};
+// W27-a #15 — calendar-correct period end. Previous code used 30-day chunks
+// for monthly and 365-day chunks for annual, which drifts ~5 days/year and
+// breaks for anyone billing on the 31st of a month. Now month-aware in UTC.
+function _addMonthsUTC(date, months) {
+  const d = new Date(date);
+  const desiredMonth = d.getUTCMonth() + months;
+  d.setUTCMonth(desiredMonth);
+  if (d.getUTCMonth() !== ((desiredMonth % 12) + 12) % 12) d.setUTCDate(0);
+  return d;
+}
+function _addYearsUTC(date, years) {
+  const d = new Date(date);
+  const target = d.getUTCFullYear() + years;
+  d.setUTCFullYear(target);
+  if (d.getUTCFullYear() !== target) d.setUTCDate(0);
+  return d;
+}
+function _periodEndForSku(sku, from) {
+  const f = from ? new Date(from) : new Date();
+  switch (sku) {
+    case 'pro_monthly':
+    case 'premium_monthly': return _addMonthsUTC(f, 1).toISOString();
+    case 'pro_annual':
+    case 'premium_annual':  return _addYearsUTC(f, 1).toISOString();
+    case 'founders':        return _addYearsUTC(f, 100).toISOString();
+    default:                return null;
+  }
+}
 
 function _supabaseAdmin() {
   return createClient(
@@ -213,8 +231,8 @@ export default async function handler(req, res) {
     // requirePlan) stays SKU-agnostic.
     const sku = plan;
     const dbPlan = SKU_TO_PLAN[sku];
-    const periodDays = PLAN_PERIOD_DAYS[sku];
-    const periodEnd = new Date(Date.now() + periodDays * 24 * 60 * 60 * 1000).toISOString();
+    // W27-a #15: calendar-correct period_end via _periodEndForSku.
+    const periodEnd = _periodEndForSku(sku);
     const { error: upsertErr } = await supabase
       .from('subscriptions')
       .upsert({

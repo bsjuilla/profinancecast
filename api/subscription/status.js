@@ -16,6 +16,16 @@ import { createClient } from '@supabase/supabase-js';
 const OWNER_EMAILS = (process.env.OWNER_EMAILS || '')
   .split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
 
+// W27-a #29 — only include diagnostic fields (_reason, _ownerEmailsConfigured)
+// in non-production builds. In production these leak the existence of an
+// OWNER_EMAILS allowlist and the decision-path through the entitlement
+// resolver, which is unnecessary surface area for any authenticated user.
+const IS_PROD = (process.env.VERCEL_ENV === 'production')
+              || (process.env.NODE_ENV === 'production');
+function _withDebug(payload, debug) {
+  return IS_PROD ? payload : { ...payload, ...debug };
+}
+
 export default async function handler(req, res) {
   try {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
@@ -54,17 +64,27 @@ export default async function handler(req, res) {
   // Owner override: env-driven, server-side. Single source of truth — every
   // gate downstream reads from this endpoint, so flipping the env propagates.
   if (userEmail && OWNER_EMAILS.includes(userEmail)) {
-    return res.status(200).json({
-      plan: 'pro',
-      status: 'owner_override',
-      currentPeriodEnd: null,
-      cancelAtPeriodEnd: false,
-      cancelledAt: null,
-      provider: null,
-      queries: { used: 0, limit: 999999, resetsAt: null },
-      _reason: 'owner_override',
-      _ownerEmailsConfigured: OWNER_EMAILS.length > 0,
-    });
+    // W27-a #9 carry-over: owner override also requires confirmed email so a
+    // malicious unverified signup using business060407@gmail.com can't grab
+    // owner access. Auditor noted this risk under finding #9 — we already
+    // gated the payment flow in W26-a; doing the same here for completeness.
+    if (!userData.user.email_confirmed_at) {
+      // Fall through to the normal subscription lookup; this user gets no
+      // override. They will be treated like any other unconfirmed account.
+    } else {
+      return res.status(200).json(_withDebug({
+        plan: 'pro',
+        status: 'owner_override',
+        currentPeriodEnd: null,
+        cancelAtPeriodEnd: false,
+        cancelledAt: null,
+        provider: null,
+        queries: { used: 0, limit: 999999, resetsAt: null },
+      }, {
+        _reason: 'owner_override',
+        _ownerEmailsConfigured: OWNER_EMAILS.length > 0,
+      }));
+    }
   }
 
   // Look up active subscription. If none, return free.
@@ -75,13 +95,15 @@ export default async function handler(req, res) {
     .maybeSingle();
 
   if (subErr) {
+    // W27-a #18 — return HTTP 503 on DB error so PFCPlan.refresh() treats
+    // the response as a transient failure and preserves the user's
+    // last-known-good cached plan (pfc-entitlements.js:84-115) rather than
+    // silently demoting every Pro user to Free while Supabase is degraded.
     console.error('subscription/status query error:', subErr);
-    return res.status(200).json({
-      plan: 'free',
-      status: 'unknown',
-      _reason: 'db_error',
-      _ownerEmailsConfigured: OWNER_EMAILS.length > 0,
-    });
+    return res.status(503).json(_withDebug(
+      { plan: 'unknown', status: 'db_error' },
+      { _reason: 'db_error', _ownerEmailsConfigured: OWNER_EMAILS.length > 0 }
+    ));
   }
 
   // Treat subscriptions whose period_end is in the past as "free".
@@ -104,7 +126,7 @@ export default async function handler(req, res) {
     .eq('id', userId)
     .maybeSingle();
 
-  return res.status(200).json({
+  return res.status(200).json(_withDebug({
     plan,
     status: sub?.status || 'free',
     currentPeriodEnd: sub?.current_period_end || null,
@@ -116,11 +138,18 @@ export default async function handler(req, res) {
       limit: profile.ai_queries_limit || (plan === 'premium' ? 500 : plan === 'pro' ? 200 : 10),
       resetsAt: profile.ai_queries_reset_at,
     } : null,
+  }, {
     _reason: reason,
     _ownerEmailsConfigured: OWNER_EMAILS.length > 0,
-  });
+  }));
   } catch (err) {
+    // W27-a #18 — return 503 on unhandled errors too so PFCPlan.refresh()
+    // preserves the user's last-known-good plan instead of silently
+    // demoting every Pro user to Free during a server hiccup.
     console.error('subscription/status: unhandled error', err);
-    return res.status(200).json({ plan: 'free', status: 'error_fallback' });
+    return res.status(503).json(_withDebug(
+      { plan: 'unknown', status: 'error_fallback' },
+      { _reason: 'unhandled_error' }
+    ));
   }
 }
