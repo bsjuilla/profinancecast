@@ -225,19 +225,43 @@ async function _tryRenderSubscriptionButton() {
   // sends the user to the approveUrl. PayPal then redirects back to
   // /billing.html?subscription=ok and the BILLING.SUBSCRIPTION.ACTIVATED
   // webhook lands to flip our DB row from APPROVAL_PENDING → ACTIVE.
+  //
+  // W29-d UX fix: button copy now communicates that BOTH PayPal account
+  // and direct card payment are supported. PayPal's hosted approval page
+  // shows "Pay with Debit or Credit Card" as a primary option below the
+  // PayPal login, so users without a PayPal account can still subscribe.
+  // Without this copy fix, conversions were leaking from card-only users
+  // who saw "PayPal" and bounced.
+  const container = document.getElementById('paypal-button-container');
+
   const btn = document.createElement('a');
   btn.href = probeData.approveUrl;
   btn.className = 'pay-now-btn';
-  btn.textContent = 'Approve with PayPal — auto-renews';
-  btn.style.cssText = 'display:block;text-align:center;text-decoration:none;background:#ffc439;color:#003087;font-weight:600;padding:12px 16px;border-radius:6px;';
+  btn.style.cssText = 'display:flex;align-items:center;justify-content:center;gap:10px;text-align:center;text-decoration:none;background:#ffc439;color:#003087;font-weight:600;padding:12px 16px;border-radius:6px;';
   btn.setAttribute('data-pfc-subscription-id', probeData.subscriptionID);
-  document.getElementById('paypal-button-container').appendChild(btn);
 
-  // Small helper line below the button — sets expectations about renewal.
+  // PayPal logo + Card icon next to button label so the dual-method
+  // story is visible at a glance.
+  const icons = document.createElement('span');
+  icons.style.cssText = 'display:inline-flex;align-items:center;gap:6px;';
+  icons.innerHTML =
+    '<svg width="18" height="18" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M12.5 3C12 1.5 10.5 1 9 1H4L2 12h3l.5-3h2c3 0 5.5-1.5 5.5-4.5 0-.8-.2-1.1-.5-1.5z" fill="#003087"/><path d="M13.5 5c-.5 2.5-2.5 4-5.5 4H6.5L5.5 14h3l.3-2h1.7c3 0 5-1.5 5.5-4.5.2-1-.1-2-.5-2.5z" fill="#009CDE"/></svg>' +
+    '<svg width="20" height="14" viewBox="0 0 20 14" fill="none" aria-hidden="true"><rect x="1" y="1" width="18" height="12" rx="1.5" stroke="#003087" stroke-width="1.3" fill="none"/><path d="M1 4.5h18" stroke="#003087" stroke-width="1.3"/><rect x="3" y="8" width="4" height="2" rx=".5" fill="#003087" opacity=".6"/></svg>';
+  btn.appendChild(icons);
+
+  const label = document.createElement('span');
+  label.textContent = 'Subscribe with PayPal or Card';
+  btn.appendChild(label);
+
+  container.appendChild(btn);
+
+  // Helper line — explicit on both renewal AND card-without-paypal-account.
   const note = document.createElement('div');
-  note.style.cssText = 'margin-top:8px;font-size:11px;color:var(--pfc-ink-muted);text-align:center;';
-  note.textContent = 'Renews automatically. Cancel any time — Pro stays active until period end.';
-  document.getElementById('paypal-button-container').appendChild(note);
+  note.style.cssText = 'margin-top:8px;font-size:11px;color:var(--pfc-ink-muted);text-align:center;line-height:1.5;';
+  note.innerHTML =
+    'Use any major credit or debit card — <strong>no PayPal account needed</strong>.<br>' +
+    'Renews automatically. Cancel any time — Pro stays active until period end.';
+  container.appendChild(note);
 }
 
 // W29-b — Render the original one-shot Orders button. Used for Founders
