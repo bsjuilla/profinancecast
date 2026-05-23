@@ -410,6 +410,27 @@ export default async function handler(req, res) {
         const periodEnd = _periodEndForSku(sku, new Date().toISOString());
         const nowIso = new Date().toISOString();
 
+        // W29-a #13 — append a subscription_periods row. Idempotent via
+        // the unique constraint on provider_capture_id. If capture-order
+        // already wrote this row, the INSERT returns 23505 and we move
+        // on; the entitlement upsert below remains the source of truth.
+        const { error: periodErr } = await supabase
+          .from('subscription_periods')
+          .insert({
+            user_id: userId,
+            sku,
+            tier: plan,
+            provider: 'paypal',
+            provider_capture_id: captureId,
+            amount: Number(amount),
+            currency,
+            period_start: nowIso,
+            period_end: periodEnd,
+          });
+        if (periodErr && periodErr.code !== '23505') {
+          console.error('[webhook-paypal] subscription_periods insert err:', periodErr);
+        }
+
         const { error: upsertErr } = await supabase.from('subscriptions').upsert({
           user_id: userId,
           status: 'active',
@@ -517,14 +538,33 @@ export default async function handler(req, res) {
         // 'cancelled' continues to mean "user opted out, period ended"
         // (Founders seat stays consumed); 'refunded' means money returned
         // (Founders seat releases).
+        const refundIso = new Date().toISOString();
         const { error: updErr } = await supabase.from('subscriptions').update({
           status: 'refunded',
-          cancelled_at: new Date().toISOString(),
+          cancelled_at: refundIso,
           cancel_reason: eventType,
-          updated_at: new Date().toISOString(),
+          updated_at: refundIso,
         })
         .eq('user_id', userId)
         .eq('provider_capture_id', captureId);  // belt-and-braces double bind
+
+        // W29-a #13 — mark the matching subscription_periods row as
+        // refunded. This is the per-period audit trail that survives
+        // the subscriptions upsert overwrites. refund_capture_id holds
+        // PayPal's refund.id (resource.id on this event) so we can
+        // cross-reference in the PayPal dashboard.
+        const { error: periodRefundErr } = await supabase
+          .from('subscription_periods')
+          .update({
+            refunded_at: refundIso,
+            refund_capture_id: resource.id || null,
+          })
+          .eq('user_id', userId)
+          .eq('provider_capture_id', captureId)
+          .is('refunded_at', null);  // don't double-mark on retry
+        if (periodRefundErr) {
+          console.error('[webhook-paypal] subscription_periods refund mark err:', periodRefundErr);
+        }
 
         if (updErr) {
           console.error('[webhook-paypal] refund update err:', updErr);

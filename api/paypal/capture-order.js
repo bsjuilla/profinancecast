@@ -334,6 +334,35 @@ export default async function handler(req, res) {
     const dbPlan = SKU_TO_PLAN[sku];
     // W27-a #15: calendar-correct period_end via _periodEndForSku.
     const periodEnd = _periodEndForSku(sku);
+    const nowIso = new Date().toISOString();
+
+    // W29-a #13: append a row to subscription_periods BEFORE the current-
+    // state upsert. ON CONFLICT(provider_capture_id) DO NOTHING makes this
+    // idempotent across webhook+capture-order races (e.g., capture-order
+    // succeeds, then PAYMENT.CAPTURE.COMPLETED webhook tries to insert
+    // the same captureId — the second insert is a no-op). The unique
+    // constraint at the DB level is the canonical guard.
+    const { error: periodErr } = await supabase
+      .from('subscription_periods')
+      .insert({
+        user_id: user.id,
+        sku,
+        tier: dbPlan,
+        provider: 'paypal',
+        provider_capture_id: capture?.id || orderID,
+        provider_order_id: orderID,
+        amount: amountPaid,
+        currency: currencyPaid,
+        period_start: nowIso,
+        period_end: periodEnd,
+      });
+    if (periodErr && periodErr.code !== '23505') {
+      // 23505 = unique_violation (this capture already logged). Anything
+      // else is a real error worth logging — but DON'T fail the upgrade,
+      // the subscriptions upsert below is the entitlement source of truth.
+      console.error('[capture-order] subscription_periods insert err:', periodErr);
+    }
+
     const { error: upsertErr } = await supabase
       .from('subscriptions')
       .upsert({
@@ -345,7 +374,7 @@ export default async function handler(req, res) {
         provider_capture_id: capture?.id || null,
         amount_usd: amountPaid,
         current_period_end: periodEnd,
-        updated_at: new Date().toISOString(),
+        updated_at: nowIso,
       }, { onConflict: 'user_id' });
 
     if (upsertErr) {
