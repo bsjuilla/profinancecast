@@ -1017,46 +1017,9 @@
 
 <div class="pfc-sidebar-scrim" id="pfc-sidebar-scrim" aria-hidden="true"></div>
 
-<!-- G-P0-3: mobile sidebar toggle. CSP-friendly addEventListener pattern.
-     Mirrors net-worth.html / dashboard.html for cross-page consistency. -->
-<script>
-(function(){
-  var btn   = document.getElementById('pfc-mobile-menu-btn');
-  var nav   = document.getElementById('primary-sidebar');
-  var scrim = document.getElementById('pfc-sidebar-scrim');
-  if (!btn || !nav || !scrim) return;
-  function open(){
-    nav.classList.add('is-open');
-    scrim.classList.add('is-open');
-    btn.setAttribute('aria-expanded','true');
-    scrim.setAttribute('aria-hidden','false');
-    document.body.style.overflow = 'hidden';
-  }
-  function close(){
-    nav.classList.remove('is-open');
-    scrim.classList.remove('is-open');
-    btn.setAttribute('aria-expanded','false');
-    scrim.setAttribute('aria-hidden','true');
-    document.body.style.overflow = '';
-  }
-  function toggle(){
-    if (nav.classList.contains('is-open')) close(); else open();
-  }
-  btn.addEventListener('click', toggle);
-  scrim.addEventListener('click', close);
-  document.addEventListener('keydown', function(e){
-    if (e.key === 'Escape' && nav.classList.contains('is-open')) close();
-  });
-  nav.querySelectorAll('.nav-item').forEach(function(a){
-    a.addEventListener('click', function(){
-      if (window.matchMedia('(max-width: 800px)').matches) close();
-    });
-  });
-  window.addEventListener('resize', function(){
-    if (!window.matchMedia('(max-width: 800px)').matches) close();
-  });
-})();
-</script>
+<!-- PROD-FIX-7 (2026-05-24) — mobile sidebar toggle extracted to shared
+     external file. Was inline <script> which failed CSP. -->
+<script src="./js/pfc-mobile-sidebar.js?v=20260524c" defer></script>
 
 <script src="js/pfc-inline-bootstrap.js" defer></script>
 </body>
