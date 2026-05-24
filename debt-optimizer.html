@@ -103,13 +103,21 @@
   .extra-wrap{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:18px 22px;margin-bottom:20px;}
   .extra-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
   .slider-track{width:100%;appearance:none;-moz-appearance:none;height:5px;border-radius:3px;background:var(--bg3);outline:none;cursor:pointer;}
-  .slider-track::-webkit-slider-thumb{appearance:none;width:18px;height:18px;border-radius:50%;background:var(--teal);cursor:pointer;border:2px solid var(--bg2);transition:transform .15s;}
-  .slider-track::-webkit-slider-thumb:hover{transform:scale(1.2);}
+  /* D-PROD-3 fix (user feedback 2026-05-24) — thumb shrunk 18px → 14px.
+     Pre-fix the 18×18px circle overlapped the "$0" tick label below and
+     read as visually clumsy on the polished page ("the dot is too big and
+     overlaps and doesnt seem professional"). 14px matches the modal
+     control sizing throughout the rest of the app and clears the 4-pixel
+     tick rail (top:-6px, height:4px) with breathing room. Hover transform
+     reduced from 1.2 → 1.15 to keep the hover-state under 18px so even
+     interaction doesn't re-introduce the overlap. */
+  .slider-track::-webkit-slider-thumb{appearance:none;width:14px;height:14px;border-radius:50%;background:var(--teal);cursor:pointer;border:2px solid var(--bg2);transition:transform .15s;}
+  .slider-track::-webkit-slider-thumb:hover{transform:scale(1.15);}
   /* D-COMPAT-5 fix (audit 2026-05-24) — Firefox slider thumb. Pre-fix only
      the -webkit- pseudo-element was styled, so Firefox showed a native OS
      thumb that ignored the brand teal. */
-  .slider-track::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:var(--teal);cursor:pointer;border:2px solid var(--bg2);transition:transform .15s;}
-  .slider-track::-moz-range-thumb:hover{transform:scale(1.2);}
+  .slider-track::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:var(--teal);cursor:pointer;border:2px solid var(--bg2);transition:transform .15s;}
+  .slider-track::-moz-range-thumb:hover{transform:scale(1.15);}
   .slider-track::-moz-range-track{background:var(--bg3);height:5px;border-radius:3px;border:none;}
   /* D-DES-9 fix — slider tick rail under the input. Renders 5 anchor marks
      keyed to the <datalist id="extra-ticks"> stops so users can eyeball
@@ -830,6 +838,15 @@
           </select>
         </div>
       </div>
+
+      <!-- D-PROD-2 fix (Sentry 2026-05-24) — inline-hint slot. Pre-fix the
+           modalCalc live preview computed a 50-year amortization for any
+           rate > 100% (e.g. 345%) producing astronomical garbage numbers
+           like $16,431,939,378,238,803,000,000. The strict validator
+           _parseFiniteAmount now gates the preview path and surfaces the
+           reason here instead. Hidden by default; populated only when an
+           input fails validation. -->
+      <div id="m-input-hint" style="display:none;background:rgba(224,82,82,0.08);border:1px solid rgba(224,82,82,0.3);border-radius:var(--r-sm);padding:8px 12px;margin-bottom:12px;font-size:12px;color:var(--red);line-height:1.4;" role="status" aria-live="polite"></div>
 
       <!-- Live preview -->
       <div id="m-preview" style="display:none;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px 14px;margin-bottom:16px;">

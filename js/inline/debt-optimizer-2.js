@@ -601,7 +601,42 @@ function _legacyCalcPayoff(debts, strategy, extra) {
 }
 
 // ── RENDER ALL ──
+// D-PROD-1 fix (Sentry 2026-05-24) — wrap body in try/catch defensive net.
+// Pre-fix: a single throw inside renderAll (e.g. TDZ from a future helper
+// added above its data declaration) aborts ALL downstream renders so the
+// page shows a blank strip + empty list + empty chart with the user's data
+// silently INTACT in storage. That's worse than a half-render — users see
+// "no data" and panic about data loss. With this wrapper, future renderAll
+// regressions surface a single visible error banner instead of a blank
+// page, AND the underlying root cause is also fixed by the hoist below.
 function renderAll() {
+  try {
+    _renderAllImpl();
+  } catch (err) {
+    // Surface error so the next render attempt (slider drag / debt add)
+    // tries again with fresh state. Console + Sentry capture the trace.
+    try { console.error('[renderAll]', err); } catch (_) {}
+    _showRenderErrorBanner(err);
+  }
+}
+
+function _showRenderErrorBanner(err) {
+  // Idempotent — replace any prior banner instead of stacking.
+  const existing = document.getElementById('render-error-banner');
+  if (existing) existing.remove();
+  const strip = document.querySelector('.summary-strip');
+  if (!strip) return;
+  const banner = document.createElement('div');
+  banner.id = 'render-error-banner';
+  banner.setAttribute('role', 'alert');
+  banner.style.cssText = 'grid-column:1/-1;background:rgba(224,82,82,0.08);border:1px solid rgba(224,82,82,0.3);border-radius:var(--r);padding:12px 16px;margin-bottom:12px;font-size:13px;color:var(--text);font-family:var(--font-body);line-height:1.5;';
+  // textContent only — no HTML interpolation of err.message (which could
+  // contain user data). Reassures the user their data is safe.
+  banner.textContent = 'Something went wrong rendering this page, but your debt data is safe in storage. Try refreshing — if this keeps happening, contact support.';
+  strip.parentNode.insertBefore(banner, strip);
+}
+
+function _renderAllImpl() {
   const sym = window.PFCSym ? PFCSym(USER.currency) : (USER.currency || '$');
   const hasDebts = DEBTS.length > 0;
 
@@ -615,6 +650,17 @@ function renderAll() {
     renderChart(null, null);
     return;
   }
+
+  // D-PROD-1 fix (Sentry 2026-05-24) — HOISTED totalMin/totalDebt. Pre-fix
+  // these were declared at the "Summary strip" section below, but D-P2 +
+  // D-DEFERRED-FOLLOWUPS introduced _renderDtiBanner / _renderDtiActionable /
+  // _renderDtiStackedBar calls that read totalMin BEFORE its declaration,
+  // hitting the TDZ (ReferenceError: Cannot access 'totalMin' before
+  // initialization) and aborting the whole render. The fix is to compute
+  // the totals FIRST since multiple downstream blocks need them. Any future
+  // helper that needs totalMin/totalDebt can safely read it from here down.
+  const totalDebt = DEBTS.reduce((s, d) => s + d.balance, 0);
+  const totalMin  = DEBTS.reduce((s, d) => s + d.minPay, 0);
 
   // D-PERF-6 fix (audit 2026-05-24) — dedupe redundant calcPayoff calls.
   // Pre-fix: 5 calls per render (opt, base, aval, snow, noExtra). But
@@ -631,6 +677,11 @@ function renderAll() {
   const noExtra = base; // identical: same strategy + extra=0
 
   SCHEDULE_DATA = opt.schedule;
+
+  // Defensive: clear any prior render-error banner now that we got past
+  // the TDZ point. Successful render → user shouldn't see stale error.
+  const prevErr = document.getElementById('render-error-banner');
+  if (prevErr) prevErr.remove();
 
   // D-CRO-12 fix (CEO call 2026-05-24) — DTI (debt-to-income) micro-banner.
   // Reads USER.income (already loaded for slider max). Renders ONLY when
@@ -670,9 +721,7 @@ function renderAll() {
   // user knows their minimum is mathematically insufficient.
   _renderNegAmortBanner(opt, sym);
 
-  // Summary strip
-  const totalDebt = DEBTS.reduce((s, d) => s + d.balance, 0);
-  const totalMin  = DEBTS.reduce((s, d) => s + d.minPay, 0);
+  // Summary strip (totalDebt + totalMin computed above for TDZ-safety)
   document.getElementById('m-total').textContent = sym + Math.round(totalDebt).toLocaleString();
   document.getElementById('m-total-hint').textContent = `across ${DEBTS.length} debt${DEBTS.length!==1?'s':''}`;
 
@@ -1281,22 +1330,50 @@ function _renderDtiStackedBar(totalMin, income, sym) {
   }
   // Threshold marker at 36% (or scaled position if overflow squished).
   const thresholdX = Math.min(100, 36 * scale);
+  // D-CRO-12-NATIONAL-AVG (CEO call 2026-05-24) — static national/industry
+  // reference markers. NY Fed Household Debt Service Ratio sits around
+  // 10% (Q4 2024 baseline; updated quarterly at
+  // https://www.federalreserve.gov/releases/housedebt/) and the industry
+  // mortgage-qualification cap is 43% (CFPB QM rule). Static because
+  // a quarterly download isn't worth a fetch on a client-only app — the
+  // bands move <1pp/year so a hardcoded baseline is more honest than
+  // a faux-live number. Citation surfaces in the legend tooltip below.
+  const NATIONAL_AVG_X = Math.min(100, 10 * scale);
+  const MORTGAGE_CAP_X = Math.min(100, 43 * scale);
   // SR-only summary text for users with the bar collapsed visually.
+  const youPct = (totalShown / income) * 100;
+  const youVsNatl = youPct < 10
+    ? ` (you are below the ~10% U.S. household average)`
+    : youPct < 36
+      ? ` (you are above the ~10% U.S. average but below the 36% comfort threshold)`
+      : ` (you are above the 36% comfort threshold; banks typically cap mortgage qualification at 43%)`;
   const srSummary = 'Per-debt-type debt-to-income breakdown: ' +
     entries.map(([t, mp]) => (TYPE_COLORS[t] || TYPE_COLORS.other).label + ' ' + ((mp / income) * 100).toFixed(1) + '%').join(', ') +
-    '. Comfort threshold is 36% of income.';
+    '. Reference: ~10% U.S. household average (NY Fed); 36% comfort threshold; 43% mortgage qualification cap (CFPB).' + youVsNatl;
 
   const wrap = document.createElement('div');
   wrap.className = 'dti-bar';
+  // Three reference lines on the bar:
+  //   - National avg ~10% (light dotted, neutral grey — informational only)
+  //   - 36% comfort threshold (existing, prominent dashed)
+  //   - 43% mortgage qualification cap (light dotted, amber — warning band)
+  // Each line is drawn dark-then-light to read on both dark/light segments.
   wrap.innerHTML = `<div class="dti-bar-track" role="img" aria-label="${escHtml(srSummary)}">
     <svg viewBox="0 0 100 12" preserveAspectRatio="none" width="100%" height="12" aria-hidden="true">
       ${segs}
+      <line x1="${NATIONAL_AVG_X.toFixed(2)}" y1="-1" x2="${NATIONAL_AVG_X.toFixed(2)}" y2="13" stroke="#0B1410" stroke-width="0.5" stroke-dasharray="0.5,1"/>
+      <line x1="${NATIONAL_AVG_X.toFixed(2)}" y1="-1" x2="${NATIONAL_AVG_X.toFixed(2)}" y2="13" stroke="#A8B3AF" stroke-width="0.3" stroke-dasharray="0.5,1"/>
       <line x1="${thresholdX.toFixed(2)}" y1="-1" x2="${thresholdX.toFixed(2)}" y2="13" stroke="#0B1410" stroke-width="0.8" stroke-dasharray="1,1"/>
       <line x1="${thresholdX.toFixed(2)}" y1="-1" x2="${thresholdX.toFixed(2)}" y2="13" stroke="#F0EDE2" stroke-width="0.4"/>
+      <line x1="${MORTGAGE_CAP_X.toFixed(2)}" y1="-1" x2="${MORTGAGE_CAP_X.toFixed(2)}" y2="13" stroke="#0B1410" stroke-width="0.5" stroke-dasharray="0.5,1"/>
+      <line x1="${MORTGAGE_CAP_X.toFixed(2)}" y1="-1" x2="${MORTGAGE_CAP_X.toFixed(2)}" y2="13" stroke="#D4A85A" stroke-width="0.3" stroke-dasharray="0.5,1"/>
     </svg>
+    <div class="dti-bar-threshold-label" style="left:${NATIONAL_AVG_X.toFixed(2)}%;font-size:9px;color:var(--text3);" title="NY Fed Household Debt Service Ratio, Q4 2024 baseline">~10% U.S. avg</div>
     <div class="dti-bar-threshold-label" style="left:${thresholdX.toFixed(2)}%;">36% comfort</div>
+    <div class="dti-bar-threshold-label" style="left:${MORTGAGE_CAP_X.toFixed(2)}%;font-size:9px;color:var(--amber);" title="CFPB Qualified Mortgage rule — banks typically refuse mortgages above this ratio">43% mortgage cap</div>
   </div>
   <div class="dti-bar-legend">${legendRows}</div>
+  <div class="dti-bar-references" style="font-size:10px;color:var(--text3);margin-top:6px;line-height:1.4;">References: ~10% = U.S. household average (NY Fed Household Debt Service Ratio); 36% = industry comfort threshold; 43% = mortgage qualification cap (CFPB Qualified Mortgage rule).</div>
   ${overCap ? '<div class="dti-bar-overflow">Total debts exceed 100% of income — the bar is scaled to fit.</div>' : ''}`;
 
   banner.appendChild(wrap);
@@ -1913,11 +1990,63 @@ function closeModal() {
   document.getElementById('debt-modal').classList.remove('open');
 }
 
+// D-PROD-2 fix (Sentry 2026-05-24) — strict validation in the live-preview
+// path. Pre-fix `parseFloat` accepted any string, so typing rate=345 (the
+// real user case) computed a 50-year amortisation with overflow garbage
+// like $16,431,939,378,238,803,000,000. The live preview MUST share the
+// same validation contract as saveDebt's _parseFiniteAmount(rate, 100) —
+// otherwise we lie to the user during typing and reject only on Save. Now
+// the preview hides + an inline hint explains exactly which field failed.
+//
+// Why hint-driven (not silent): the user wrote 345 because they think the
+// field accepts percentages-of-credit-utilization or some other mental
+// model. A silent hide leaves them guessing. The hint says "0–100%" and
+// they fix it in one keystroke instead of wondering if the form is broken.
 function modalCalc() {
-  const bal  = parseFloat(document.getElementById('m-balance').value) || 0;
-  const rate = parseFloat(document.getElementById('m-rate').value) || 0;
-  const pay  = parseFloat(document.getElementById('m-minpay').value) || 0;
-  if (!bal || !rate || !pay) { document.getElementById('m-preview').style.display = 'none'; return; }
+  const preview = document.getElementById('m-preview');
+  const hint = document.getElementById('m-input-hint');
+  if (hint) { hint.style.display = 'none'; hint.textContent = ''; }
+
+  const rawBal  = document.getElementById('m-balance').value;
+  const rawRate = document.getElementById('m-rate').value;
+  const rawPay  = document.getElementById('m-minpay').value;
+
+  // Empty-string short circuit — user is still typing. No preview, no hint.
+  // Also treat trailing-dot intermediates (e.g. "5.") as still-typing so the
+  // hint doesn't flash on every legitimate keystroke between "5" and "5.5".
+  // Security note: trailing-dot strings can never reach saveDebt without
+  // failing _parseFiniteAmount there too, so this is a UX softener with
+  // zero attack surface — the strict validator still gates the write.
+  const stillTyping = v => {
+    const s = String(v).trim();
+    return s === '' || /\.$/.test(s);
+  };
+  if (stillTyping(rawBal) || stillTyping(rawRate) || stillTyping(rawPay)) {
+    preview.style.display = 'none';
+    return;
+  }
+
+  // Strict numeric validation — same contract as saveDebt. Returns null on
+  // scientific notation, negatives, NaN/Infinity, or value > max.
+  const bal  = _parseFiniteAmount(rawBal, 10000000);
+  const rate = _parseFiniteAmount(rawRate, 100);
+  const pay  = _parseFiniteAmount(rawPay, 10000000);
+
+  // Per-field hinting: surface the first failing field's reason. Saves the
+  // user from guessing which input is wrong when multiple are invalid.
+  const failures = [];
+  if (bal === null)  failures.push('Enter a valid balance (1–10,000,000).');
+  if (rate === null) failures.push('Enter a valid rate (0–100%).');
+  if (pay === null)  failures.push('Enter a valid minimum payment (1–10,000,000).');
+  if (failures.length) {
+    if (hint) { hint.textContent = failures[0]; hint.style.display = 'block'; }
+    preview.style.display = 'none';
+    return;
+  }
+  if (bal <= 0 || pay <= 0) {
+    preview.style.display = 'none';
+    return;
+  }
 
   const sym = window.PFCSym ? PFCSym(USER.currency) : (USER.currency || '$');
   const monthlyInt = bal * (rate / 100 / 12);
@@ -1933,7 +2062,7 @@ function modalCalc() {
   document.getElementById('m-monthly-int').textContent = sym + Math.round(monthlyInt).toLocaleString();
   document.getElementById('m-payoff-mo').textContent = months < 600 ? months + ' mo' : '50yr+';
   document.getElementById('m-total-int').textContent = sym + Math.round(totalInt).toLocaleString();
-  document.getElementById('m-preview').style.display = 'block';
+  preview.style.display = 'block';
 }
 
 async function saveDebt() {

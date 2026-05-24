@@ -179,6 +179,16 @@ const CAT_WHY = {
   custom:    ({months}) => months ? 'On track in ~' + months + ' months.' : 'Named the goal — now the maths does the rest.',
 };
 
+// tech-debt — NOT migrated to PFCIcons (D-DES-2-NEXT-EXTEND scope, CEO call
+// 2026-05-24). Reason: these glyphs are rendered INSIDE an <svg><text>
+// element at the centre of the goal-progress ring (see renderGoals around
+// line 398). PFCIcons.get() returns a full <svg>...</svg> string which
+// cannot be legally nested inside another <svg><text> node. Migrating
+// would require restructuring the ring SVG to layer a sibling icon with
+// absolute positioning — a larger refactor than the visual win justifies
+// given the icon is decorative (the percentage IS the primary signal).
+// If a future redesign moves the category icon OUT of the ring, swap
+// these emoji for `PFCIcons.get('finance' / 'mortgage' / 'car-loan' / ...)`.
 const CAT_ICONS = {
   emergency:'🛡️', home:'🏠', car:'🚗', travel:'✈️',
   invest:'📈', retire:'🌅', education:'🎓', wedding:'💍', custom:'⭐'
