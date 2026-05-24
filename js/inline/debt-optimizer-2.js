@@ -1297,9 +1297,13 @@ function _renderInterestDelta(totalMonthlyInterest, sym) {
 function _renderDtiStackedBar(totalMin, income, sym) {
   const banner = document.querySelector('.dti-banner');
   if (!banner) return;
-  // Idempotent: remove any prior bar so re-renders don't stack duplicates.
-  const existing = banner.querySelector('.dti-bar');
-  if (existing) existing.remove();
+  // Idempotent: remove any prior bar AND any prior crisis block so re-renders
+  // don't stack duplicates. D-DESIGN-3 (2026-05-25) added the crisis variant
+  // which is the same render-slot as the bar (mutually exclusive).
+  const existingBar = banner.querySelector('.dti-bar');
+  if (existingBar) existingBar.remove();
+  const existingCrisis = banner.querySelector('.dti-crisis');
+  if (existingCrisis) existingCrisis.remove();
   if (!DEBTS || DEBTS.length < 1) return;
   if (!Number.isFinite(income) || income <= 0) return;
 
@@ -1324,6 +1328,31 @@ function _renderDtiStackedBar(totalMin, income, sym) {
   const totalPct = (totalShown / income) * 100;
   const overCap = totalPct > 100;
   const scale = overCap ? (100 / totalPct) : 1; // squish only if overflow
+
+  // D-DESIGN-3 fix (Senior Designer audit 2026-05-25) — DTI > 100% crisis
+  // mode. Above 100% the scaled bar is fundamentally misleading (375%
+  // squished into 100% pretends to be a chart but is decorative noise),
+  // AND the three reference markers (10/36/43) collapse into the leftmost
+  // ~12% of the bar where their text labels physically overlap. Replace
+  // the bar entirely with stark text + counseling resource link. The
+  // reference labels at the legend remain via the references strip.
+  if (totalPct > 100) {
+    const overBy = Math.round(totalPct - 100);
+    const excess = Math.max(0, totalShown - income);
+    const wrap = document.createElement('div');
+    wrap.className = 'dti-crisis';
+    // All interpolations are numeric or pre-escaped (sym). Static template;
+    // no user-controlled HTML reaches innerHTML.
+    wrap.innerHTML =
+      '<div class="dti-crisis-title">Your minimum payments exceed your income.</div>' +
+      '<div class="dti-crisis-body">Required minimums total <strong>' + sym + Math.round(totalShown).toLocaleString() + '/mo</strong> against income of <strong>' + sym + Math.round(income).toLocaleString() + '/mo</strong> — an excess of <strong>' + sym + Math.round(excess).toLocaleString() + '/mo (' + overBy + '% over).</strong> At these numbers debts will grow even with full minimum payments. Refinancing, restructuring, or negotiating reduced minimums is needed before the optimiser can help meaningfully.</div>' +
+      '<div class="dti-crisis-help">Free counselling resources: ' +
+      '<a href="https://www.nfcc.org/" target="_blank" rel="noopener noreferrer">NFCC (US)</a> · ' +
+      '<a href="https://www.consumerfinance.gov/consumer-tools/debt-collection/" target="_blank" rel="noopener noreferrer">CFPB Debt Help</a> · ' +
+      '<a href="https://www.stepchange.org/" target="_blank" rel="noopener noreferrer">StepChange (UK)</a></div>';
+    banner.appendChild(wrap);
+    return; // skip the bar entirely
+  }
 
   // Build segments sorted by size descending so the dominant type shows first
   // on the left. Minimum 0.5% (~2px on a 400px-wide bar) visual width per
@@ -1418,6 +1447,12 @@ function _renderDtiActionableCallout(totalMin, income, sym) {
   if (!Number.isFinite(income) || income <= 0) return;
   const dtiPct = (totalMin / income) * 100;
   if (dtiPct <= 28) return; // already healthy, callout adds nothing
+  // D-DESIGN-3 (2026-05-25) — when DTI > 100% the crisis block in
+  // _renderDtiStackedBar takes over with counselling resources; the
+  // "if you cleared X, DTI drops to Y%" callout is misleading (the
+  // counterfactual is still > 100% — clearing one debt doesn't move the
+  // needle in any meaningful way at this scale).
+  if (dtiPct > 100) return;
   // Find the debt with the HIGHEST interest rate (avalanche-priority debt).
   // This is the cheapest one to clear in interest-saved terms.
   let top = DEBTS[0];
@@ -1469,7 +1504,11 @@ function _renderDtiBanner(totalMin, sym) {
   // msg is a static template literal (no user data). HTML interpolation
   // is safe here — defence-in-depth: msg is built from hardcoded strings,
   // and the only dynamic bits are numbers.
-  banner.innerHTML = `<span style="font-size:18px;line-height:1;">📊</span><div style="flex:1;">Your <span class="dti-pct">${dtiPct}%</span> debt-to-income (${sym}${Math.round(totalMin).toLocaleString()}/mo of ${sym}${Math.round(income).toLocaleString()}/mo income). ${msg}</div>`;
+  // D-DESIGN-1 (2026-05-25) — wrap icon + text in .dti-banner-head so
+  // subsequent banner.appendChild() calls (callout, bar, crisis block)
+  // land as full-width rows BELOW this head instead of as horizontal
+  // siblings. The parent .dti-banner is now flex-direction:column.
+  banner.innerHTML = `<div class="dti-banner-head"><span style="font-size:18px;line-height:1;">📊</span><div>Your <span class="dti-pct">${dtiPct}%</span> debt-to-income (${sym}${Math.round(totalMin).toLocaleString()}/mo of ${sym}${Math.round(income).toLocaleString()}/mo income). ${msg}</div></div>`;
   wrap.appendChild(banner);
 }
 

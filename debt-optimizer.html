@@ -122,9 +122,17 @@
   /* D-DES-9 fix — slider tick rail under the input. Renders 5 anchor marks
      keyed to the <datalist id="extra-ticks"> stops so users can eyeball
      $0/$250/$500/$750/$1000 quickly. */
-  .slider-ticks{display:flex;justify-content:space-between;padding:4px 8px 0;font-size:10px;color:var(--text3);font-family:var(--font-body);}
+  /* D-PROD-AUDIT-2 fix (user feedback 2026-05-25) — increase padding-top
+     14px (was 4px) so the slider thumb (14×14px, half extends ~7px below
+     the 5px track) no longer reaches into the tick label row and hides
+     the "$0" tick label at rest. The ::before tick line extends UP from
+     the label row to stay visually connected to the rail (top:-10px to
+     compensate for the larger padding). Symmetric across all 5 ticks —
+     no special-casing the $0 anchor, which preserves the
+     justify-content:space-between rhythm. */
+  .slider-ticks{display:flex;justify-content:space-between;padding:14px 8px 0;font-size:10px;color:var(--text3);font-family:var(--font-body);}
   .slider-tick{position:relative;}
-  .slider-tick::before{content:"";position:absolute;top:-6px;left:50%;width:1px;height:4px;background:var(--border2);transform:translateX(-50%);}
+  .slider-tick::before{content:"";position:absolute;top:-10px;left:50%;width:1px;height:4px;background:var(--border2);transform:translateX(-50%);}
   .extra-impact{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px;}
   .impact-box{background:var(--bg3);border-radius:var(--r-sm);padding:10px 14px;text-align:center;}
   .impact-val{font-family:var(--font-display);font-size:16px;font-weight:700;margin-bottom:2px;}
@@ -207,7 +215,18 @@
      the sticky <th> row. Subtle drop-shadow signals the layering. */
   .sched-table th{box-shadow:0 4px 6px -4px rgba(0,0,0,0.4);}
   /* D-CRO-12 (CEO call 2026-05-24) — DTI banner thresholds. */
-  .dti-banner{grid-column:1/-1;border-radius:var(--r);padding:12px 18px;margin-bottom:14px;display:flex;align-items:center;gap:12px;font-size:13px;line-height:1.5;font-family:var(--font-body);}
+  /* D-DESIGN-1 fix (user feedback 2026-05-25) — vertical stack. Pre-fix
+     .dti-banner was a horizontal flex row, then 3 helpers each did
+     banner.appendChild(): the result was 4 sibling children competing
+     horizontally (icon, text, callout, bar) which squeezed the prose
+     into a 10-char-wide column at any DTI > a few percent. Senior
+     designer audit (2026-05-25): kill the horizontal layout for the
+     parent, keep horizontal only inside the icon+text head row via
+     .dti-banner-head. Each subsequent helper append now lands as a
+     full-width row beneath: callout below head, bar below callout. */
+  .dti-banner{grid-column:1/-1;border-radius:var(--r);padding:14px 18px;margin-bottom:14px;display:flex;flex-direction:column;gap:10px;align-items:stretch;font-size:13px;line-height:1.5;font-family:var(--font-body);}
+  .dti-banner-head{display:flex;align-items:flex-start;gap:12px;}
+  .dti-banner-head>div{flex:1;min-width:0;}
   .dti-banner--good{background:rgba(43,182,125,0.08);border:1px solid rgba(43,182,125,0.25);color:var(--text);}
   .dti-banner--warn{background:rgba(245,166,35,0.08);border:1px solid rgba(245,166,35,0.25);color:var(--text);}
   .dti-banner--bad {background:rgba(224,82,82,0.08);border:1px solid rgba(224,82,82,0.25);color:var(--text);}
@@ -227,6 +246,20 @@
   .dti-bar-legend-item{display:inline-flex;align-items:center;gap:5px;}
   .dti-bar-legend-swatch{display:inline-block;width:10px;height:10px;border-radius:2px;flex-shrink:0;}
   .dti-bar-overflow{margin-top:6px;font-size:11px;color:var(--amber);font-family:var(--font-body);font-style:italic;}
+  /* D-DESIGN-3 fix (user feedback 2026-05-25) — DTI > 100% crisis mode.
+     When minimum payments exceed income the stacked-bar viz becomes
+     dishonest (a scaled bar showing 375% as if it fits in a bar). Senior
+     designer audit: replace the bar entirely with stark text + a counseling
+     resource link. The crisis block lives INSIDE .dti-banner (still in the
+     vertical stack) so the banner remains the single source of truth for
+     DTI state — no new card, no layout disruption. */
+  .dti-crisis{margin-top:10px;padding:12px 14px;border-radius:var(--r-sm);background:rgba(224,82,82,0.12);border:1px solid rgba(224,82,82,0.35);}
+  .dti-crisis-title{font-family:var(--font-display);font-size:14px;font-weight:700;color:var(--red);margin-bottom:6px;}
+  .dti-crisis-body{font-size:12px;line-height:1.55;color:var(--text);font-family:var(--font-body);}
+  .dti-crisis-body strong{font-weight:700;color:var(--red);}
+  .dti-crisis-help{margin-top:8px;font-size:11px;color:var(--text2);font-family:var(--font-body);}
+  .dti-crisis-help a{color:var(--teal);text-decoration:underline;}
+  .dti-crisis-help a:hover{color:var(--text);}
   /* D-WORTH-1d — scenarios compare modal. Reuses existing .modal-overlay
      class (defined elsewhere in this stylesheet, role=dialog, escape-close
      handled by the shared keydown listener at debt-optimizer-2.js:593). */
@@ -932,7 +965,7 @@
   not bumped — same URL → browser served stale JS → fix invisible. Don't
   let this happen again.
 -->
-<script src="./js/inline/debt-optimizer-2.js?v=20260524i-tdzfix2"></script>
+<script src="./js/inline/debt-optimizer-2.js?v=20260525a-designfix"></script>
   <!-- Route guard: redirect unauthed users to sign-in -->
   <script src="./js/inline/debt-optimizer-3.js?v=20260524d"></script>
   <!-- D-P0-8 — scrim element for mobile drawer; shared sidebar JS toggles. -->
