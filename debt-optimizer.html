@@ -189,6 +189,12 @@
   /* D-WORTH-1 — inline Pro badge for the Download PDF topbar button. */
   .pro-badge{display:inline-block;font-size:9.5px;font-weight:700;color:var(--canvas);background:var(--gold,#D4AF6A);border-radius:3px;padding:1px 5px;margin-left:4px;letter-spacing:0.03em;text-transform:uppercase;vertical-align:middle;}
 
+  /* D-A11Y-8/9 — sr-only utility for chart fallback + live region. */
+  .visually-hidden{position:absolute !important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
+
+  /* D-CRO-4 — celebratory toast variant (matches /recurring R-CRO-10 pattern). */
+  .toast.toast--success{border-color:rgba(43,182,125,0.6);background:linear-gradient(135deg,rgba(43,182,125,0.12),var(--card));box-shadow:0 4px 20px rgba(43,182,125,0.2);}
+
   /* D-P0-8 — mobile breakpoints (matches NW-P0-4 / R-P0-10 grafts). */
   @media (max-width:800px){
     .summary-strip{grid-template-columns:repeat(2,1fr);}
@@ -210,6 +216,11 @@
     /* Compare/schedule tables: enable horizontal scroll inside the card */
     .compare-table,.sched-table{font-size:11px;}
     .summary-strip{grid-template-columns:1fr;gap:10px;}
+    /* D-MOB-6 fix (audit 2026-05-24) — bump row-button tap targets to the
+       WCAG-recommended 44×44px on phones. The 22-25px buttons in the debt
+       grid were below threshold and easy to mis-tap. */
+    .debt-row-btn{min-height:44px;padding:10px 14px !important;font-size:12px !important;}
+    .debt-row-actions{gap:6px !important;}
   }
   /* D-P0-15 / D-COMPAT — safe-area, dvh, webkit prefix, reduced-motion,
      forced-colors, print. Same compat layer pattern as R-P0-15. */
@@ -472,7 +483,13 @@
           </div>
           <div style="font-family:var(--font-display);font-size:22px;font-weight:700;color:var(--teal);" id="extra-val">+$0</div>
         </div>
+        <!-- D-A11Y-7 fix (audit 2026-05-24) — slider gets aria-label so SR
+             users hear what it controls; aria-valuetext is updated live
+             from updateExtra so they hear "+$N per month" instead of a
+             bare integer. -->
         <input class="slider-track" type="range" id="extra-slider" min="0" max="1000" step="25" value="0"
+           aria-label="Extra monthly payment beyond the minimums"
+           aria-valuetext="+$0 per month"
            data-pfc-on-input="updateExtra" data-pfc-arg-this-value>
         <div class="extra-impact">
           <div class="impact-box">
@@ -545,7 +562,11 @@
           </div>
         </div>
         <div class="chart-wrap">
-          <canvas id="payoffChart"></canvas>
+          <!-- D-A11Y-8 fix (audit 2026-05-24) — chart canvas now has role=img +
+               dynamic aria-label updated each render in debt-optimizer-2.js
+               renderChart. sr-only fallback below names the data source. -->
+          <canvas id="payoffChart" role="img" aria-label="Debt elimination timeline — add debts to see the chart"></canvas>
+          <span class="visually-hidden" id="payoffChart-fallback">Line chart comparing your optimised payoff timeline (teal) against the minimum-only baseline (dashed red). Exact months and savings are surfaced in the metric strip above and the comparison table below.</span>
         </div>
       </div>
     </div>
@@ -691,7 +712,31 @@
   </div>
 </div>
 
-<script src="./js/inline/debt-optimizer-2.js?v=20260524d"></script>
+<!-- D-BUG-10 + D-SEC-15 (audit 2026-05-24) — confirm modal markup so
+     _pfcConfirm / _pfcAlert in debt-optimizer-2.js can find their targets.
+     Without this, the modal helpers fall back to native confirm/alert (which
+     are iOS-PWA-broken). Mirrors the rec-confirm-modal pattern on /recurring. -->
+<div class="modal-overlay" id="debt-confirm-modal" role="dialog" aria-modal="true" aria-labelledby="debt-confirm-title">
+  <div class="modal-box" style="max-width:420px;">
+    <div class="modal-head">
+      <div class="modal-title" id="debt-confirm-title">Are you sure?</div>
+    </div>
+    <div class="modal-body">
+      <p id="debt-confirm-msg" style="margin:0 0 18px;font-size:14px;line-height:1.55;color:var(--text2);font-family:var(--font-body);">&nbsp;</p>
+      <div style="display:flex;gap:10px;justify-content:flex-end;">
+        <button type="button" id="debt-confirm-cancel" style="padding:11px 16px;background:transparent;border:1px solid var(--border2);border-radius:var(--r-sm);font-size:13px;color:var(--text2);font-family:var(--font-body);cursor:pointer;">Cancel</button>
+        <button type="button" id="debt-confirm-ok" style="padding:11px 18px;background:var(--teal);border:none;border-radius:var(--r-sm);font-size:14px;font-weight:700;color:var(--canvas);font-family:var(--font-body);cursor:pointer;">Confirm</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- D-A11Y-9 (audit 2026-05-24) — sr-only live region for strategy /
+     extra-slider settle announcements. role=status + aria-live=polite means
+     SR users hear changes without losing focus. Updated by _srAnnounce(). -->
+<div id="sr-announce" class="visually-hidden" role="status" aria-live="polite" aria-atomic="true"></div>
+
+<script src="./js/inline/debt-optimizer-2.js?v=20260524e"></script>
   <!-- Route guard: redirect unauthed users to sign-in -->
   <script src="./js/inline/debt-optimizer-3.js?v=20260524d"></script>
   <!-- D-P0-8 — scrim element for mobile drawer; shared sidebar JS toggles. -->

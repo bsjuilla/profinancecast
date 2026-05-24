@@ -1,4 +1,26 @@
 // ─────────────────────────────────────────────────────────────────────────────
+// CROSS-PAGE CONTRACT (D-XDEP-1 audit 2026-05-24)
+// ─────────────────────────────────────────────────────────────────────────────
+// Schema written to PFCStorage key `debts` (namespaced `pfc:{uid}:debts`).
+// Each entry is an object with at minimum:
+//   id      — stable string from `_mintDebtId()` (D-P0-1, persisted, never reused).
+//   name    — display name (must be escHtml'd at every sink).
+//   balance — Number (cleaned via `_parseFiniteAmount` at save).
+//   rate    — Number (annual APR %, 0-100, validated at save).
+//   minPay  — Number (monthly minimum, validated at save).
+//   type    — enum into TYPE_COLORS (credit_card / personal_loan / car_loan /
+//             student_loan / mortgage / other).
+//
+// **Cross-page consumer**: `js/inline/dashboard-2.js` reads `{name, balance,
+// rate, minPay}` to compute the dashboard's debt summary. It also accepts the
+// legacy field name `minimum` as a fallback (for cross-tool drift with
+// /tools/debt-strategy — see D-WORTH-2 block below). DO NOT rename `minPay`
+// without updating dashboard's reader AND keeping the fallback alive.
+//
+// `debt_strategy` storage key: single-writer (this file only). Plain string.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ─────────────────────────────────────────────────────────────────────────────
 // CROSS-TOOL DRIFT WARNING (D-WORTH-2 CEO call 2026-05-24)
 // ─────────────────────────────────────────────────────────────────────────────
 // `tools/debt-strategy.html` + `js/tools/debt-strategy-compare.js` host a
@@ -41,6 +63,103 @@ function _safeParseJson(str) {
       return v;
     });
   } catch (_) { return null; }
+}
+
+// D-BUG-10 + D-SEC-15 fix (audit 2026-05-24) — replace native confirm()/alert()
+// with promise-based modal helpers. Pre-fix the `confirm("Delete '...'?")` at
+// deleteDebtById and `alert("Minimum payment...")` at saveDebt were silently
+// no-op in iOS standalone PWA mode → user thought delete worked when it
+// didn't, or never saw the validation error. Mirrors NW-P1-6 / G-P1-D /
+// R-P0-9 pattern. Markup at #debt-confirm-modal in debt-optimizer.html.
+let _pfcModalActive = false;
+function _pfcConfirm(message, okLabel) {
+  return new Promise((resolve) => {
+    if (_pfcModalActive) { resolve(false); return; }
+    _pfcModalActive = true;
+    const modal = document.getElementById('debt-confirm-modal');
+    const msgEl = document.getElementById('debt-confirm-msg');
+    const okBtn = document.getElementById('debt-confirm-ok');
+    const cancelBtn = document.getElementById('debt-confirm-cancel');
+    if (!modal || !msgEl || !okBtn || !cancelBtn) {
+      // Fallback if markup missing — preserves behaviour but warns once.
+      _pfcModalActive = false;
+      resolve(window.confirm(message));
+      return;
+    }
+    const previousFocus = document.activeElement;
+    msgEl.textContent = message;
+    okBtn.textContent = okLabel || 'Confirm';
+    cancelBtn.style.display = '';
+    modal.classList.add('open');
+    okBtn.focus();
+    function cleanup(result) {
+      modal.classList.remove('open');
+      okBtn.removeEventListener('click', onOk);
+      cancelBtn.removeEventListener('click', onCancel);
+      document.removeEventListener('keydown', onKey);
+      _pfcModalActive = false;
+      try { if (previousFocus && previousFocus.focus) previousFocus.focus(); } catch (_) {}
+      resolve(result);
+    }
+    function onOk() { cleanup(true); }
+    function onCancel() { cleanup(false); }
+    function onKey(e) {
+      if (e.key === 'Escape') cleanup(false);
+      if (e.key === 'Enter') cleanup(true);
+    }
+    okBtn.addEventListener('click', onOk);
+    cancelBtn.addEventListener('click', onCancel);
+    document.addEventListener('keydown', onKey);
+  });
+}
+function _pfcAlert(message) {
+  return new Promise((resolve) => {
+    if (_pfcModalActive) { resolve(); return; }
+    _pfcModalActive = true;
+    const modal = document.getElementById('debt-confirm-modal');
+    const msgEl = document.getElementById('debt-confirm-msg');
+    const okBtn = document.getElementById('debt-confirm-ok');
+    const cancelBtn = document.getElementById('debt-confirm-cancel');
+    if (!modal || !msgEl || !okBtn) {
+      _pfcModalActive = false;
+      resolve(window.alert(message));
+      return;
+    }
+    const previousFocus = document.activeElement;
+    msgEl.textContent = message;
+    okBtn.textContent = 'OK';
+    if (cancelBtn) cancelBtn.style.display = 'none';
+    modal.classList.add('open');
+    okBtn.focus();
+    function cleanup() {
+      modal.classList.remove('open');
+      if (cancelBtn) cancelBtn.style.display = '';
+      okBtn.removeEventListener('click', onOk);
+      document.removeEventListener('keydown', onKey);
+      _pfcModalActive = false;
+      try { if (previousFocus && previousFocus.focus) previousFocus.focus(); } catch (_) {}
+      resolve();
+    }
+    function onOk() { cleanup(); }
+    function onKey(e) { if (e.key === 'Escape' || e.key === 'Enter') cleanup(); }
+    okBtn.addEventListener('click', onOk);
+    document.addEventListener('keydown', onKey);
+  });
+}
+
+// D-BUG-7 helper — strict numeric input validation. parseFloat accepts
+// scientific notation ("5e10" → 50000000000) and "Infinity" strings. We
+// reject anything not a plain decimal string in human range so localStorage
+// can't be poisoned by paste-bombs that overflow chart axes or balloon JSON.
+function _parseFiniteAmount(raw, maxValue) {
+  const str = String(raw == null ? '' : raw).trim();
+  // Reject scientific notation explicitly (allow optional minus, digits, dot).
+  if (!/^-?\d*\.?\d+$/.test(str)) return null;
+  const n = parseFloat(str);
+  if (!Number.isFinite(n)) return null;
+  if (n < 0) return null;
+  if (typeof maxValue === 'number' && n > maxValue) return null;
+  return n;
 }
 
 // D-P0-1 — backfill stable ids for any pre-rollout debt entry without one.
@@ -127,6 +246,10 @@ function setStrategy(s, recalc = true) {
   }
   document.getElementById('debt-order-hint').textContent =
     s === 'avalanche' ? 'Ordered: highest interest rate first' : 'Ordered: lowest balance first';
+  // D-A11Y-9 — announce strategy change to SR users via live region.
+  _srAnnounce(s === 'avalanche'
+    ? 'Strategy switched to Avalanche — highest interest rate first.'
+    : 'Strategy switched to Snowball — lowest balance first.');
   if (recalc) renderAll();
 }
 
@@ -136,15 +259,17 @@ function setStrategy(s, recalc = true) {
 // routing to billing.html. Pro/Founders go straight to the browser's
 // native print → "Save as PDF". Print stylesheet (see <style> @media print)
 // strips chrome and brands the output.
-function printDebtPlan() {
+async function printDebtPlan() {
   const isPaid = (typeof PFCEntitlements !== 'undefined') && PFCEntitlements.isPaid();
   if (!isPaid) {
-    const goPro = window.confirm(
-      'Branded PDF plan is a Pro feature.\n\n' +
-      'Pro (€9/mo) or Founders Lifetime (€39 one-time) unlocks the printable plan ' +
-      'you can share with your partner or take to your bank, plus full CSV-history ' +
-      'export on /recurring.\n\n' +
-      'Continue to billing?'
+    // D-BUG-10 follow-up — was using native window.confirm(), which is silently
+    // no-op in iOS PWA standalone mode (the same iOS-PWA-broken behaviour we
+    // fixed for deleteDebtById + saveDebt). Now routes through _pfcConfirm
+    // (which renders the existing #debt-confirm-modal markup) so the Pro
+    // upsell actually opens for iOS Add-to-Home-Screen users.
+    const goPro = await _pfcConfirm(
+      'Branded PDF plan is a Pro feature. Pro (€9/mo) or Founders Lifetime (€39 one-time) unlocks the printable plan you can share with your partner or take to your bank, plus full CSV-history export on /recurring. Continue to billing?',
+      'See Pro plans'
     );
     if (goPro) { try { window.location.href = 'billing.html'; } catch (_) {} }
     return;
@@ -172,11 +297,29 @@ function _hidePdfProBadgeIfPaid() {
 }
 
 // ── EXTRA SLIDER ──
+// D-PERF-5 fix (audit 2026-05-24) — debounce renderAll. Pre-fix the slider's
+// native `input` event fired ~40× during a single drag (0→1000 at $25 step),
+// each firing a full renderAll → 5× calcPayoff + chart destroy/recreate.
+// Now we update the on-screen `+$N` label IMMEDIATELY (so the user sees
+// drag responsiveness) but debounce the heavy render to settle in 80ms.
+// Same pattern as R-PERF-9 sortCards debounce.
+// D-A11Y-7 — also update slider's aria-valuetext + announce via live region
+// (debounced once settled, otherwise SR would spam).
+let _extraRenderDebounce = null;
+let _extraAnnounceDebounce = null;
 function updateExtra(val) {
   EXTRA = parseInt(val) || 0;
   const sym = window.PFCSym ? PFCSym(USER.currency) : (USER.currency || '$');
   document.getElementById('extra-val').textContent = '+' + sym + EXTRA.toLocaleString();
-  renderAll();
+  // D-A11Y-7 — bind aria-valuetext on the slider live (cheap).
+  const slider = document.getElementById('extra-slider');
+  if (slider) slider.setAttribute('aria-valuetext', '+' + sym + EXTRA.toLocaleString() + ' per month');
+  if (_extraRenderDebounce) clearTimeout(_extraRenderDebounce);
+  _extraRenderDebounce = setTimeout(() => renderAll(), 80);
+  // D-A11Y-9 — announce settled value to SR after a longer beat so the
+  // user isn't bombarded mid-drag.
+  if (_extraAnnounceDebounce) clearTimeout(_extraAnnounceDebounce);
+  _extraAnnounceDebounce = setTimeout(() => _srAnnounce(`Extra payment now ${sym}${EXTRA.toLocaleString()} per month`), 400);
 }
 
 // ── CORE CALCULATION ENGINE ──
@@ -314,15 +457,19 @@ function renderAll() {
     return;
   }
 
-  // Calc optimised (with strategy + extra)
-  const opt   = calcPayoff(DEBTS, STRATEGY, EXTRA);
-  // Calc minimum-only baseline (no extra, avalanche for comparison)
-  const base  = calcPayoff(DEBTS, STRATEGY, 0);
-  // Calc both strategies for comparison table
-  const aval  = calcPayoff(DEBTS, 'avalanche', EXTRA);
-  const snow  = calcPayoff(DEBTS, 'snowball', EXTRA);
-  // Calc impact of extra vs $0 extra
-  const noExtra = calcPayoff(DEBTS, STRATEGY, 0);
+  // D-PERF-6 fix (audit 2026-05-24) — dedupe redundant calcPayoff calls.
+  // Pre-fix: 5 calls per render (opt, base, aval, snow, noExtra). But
+  //   - `base` and `noExtra` are IDENTICAL (both: STRATEGY + extra=0)
+  //   - `aval` === `opt` when STRATEGY === 'avalanche'
+  //   - `snow` === `opt` when STRATEGY === 'snowball'
+  // So real work is at most 3 calls (opt + base + the OTHER strategy).
+  // For an aggressive slider drag (D-PERF-5 debounce coalesces but each
+  // settled render now does 3 full sims instead of 5 — 40% fewer).
+  const opt    = calcPayoff(DEBTS, STRATEGY, EXTRA);
+  const base   = calcPayoff(DEBTS, STRATEGY, 0);
+  const aval   = STRATEGY === 'avalanche' ? opt : calcPayoff(DEBTS, 'avalanche', EXTRA);
+  const snow   = STRATEGY === 'snowball'  ? opt : calcPayoff(DEBTS, 'snowball',  EXTRA);
+  const noExtra = base; // identical: same strategy + extra=0
 
   SCHEDULE_DATA = opt.schedule;
 
@@ -351,9 +498,28 @@ function renderAll() {
   document.getElementById('m-payment').textContent = sym + (totalMin + EXTRA).toLocaleString();
   document.getElementById('m-payment-hint').textContent = sym + totalMin.toLocaleString() + ' min + ' + sym + EXTRA.toLocaleString() + ' extra';
 
+  // D-CRO-1 fix (CEO call 2026-05-24) — "since last visit" pill. Stamps
+  // `debts_lastSeen` and surfaces a humanised delta in the topbar so the
+  // user sees freshness anchor on every return. Same pattern as R-CRO-3
+  // on /recurring (and DASH-P1-4 on dashboard).
+  let stalenessTail = '';
+  try {
+    const stamp = Number(PFCStorage.getJSON('debts_lastSeen')) || 0;
+    if (stamp > 0) {
+      const days = Math.max(0, Math.floor((Date.now() - stamp) / 86400000));
+      if (days === 0) stalenessTail = ' · viewed today';
+      else if (days === 1) stalenessTail = ' · viewed yesterday';
+      else if (days < 14) stalenessTail = ` · viewed ${days} days ago`;
+      else if (days < 60) stalenessTail = ` · viewed ${Math.floor(days/7)} weeks ago — log progress?`;
+      else stalenessTail = ` · viewed ${Math.floor(days/30)} months ago — balances may be stale`;
+    }
+    // Stamp now AFTER reading, so the next render shows the right delta.
+    PFCStorage.setJSON('debts_lastSeen', Date.now());
+  } catch (_) {}
+
   // Topbar
   document.getElementById('topbar-sub').textContent =
-    `${DEBTS.length} debt${DEBTS.length!==1?'s':''} · ${sym}${Math.round(totalDebt).toLocaleString()} total · debt-free by ${dfStr}`;
+    `${DEBTS.length} debt${DEBTS.length!==1?'s':''} · ${sym}${Math.round(totalDebt).toLocaleString()} total · debt-free by ${dfStr}${stalenessTail}`;
 
   // Extra impact boxes
   if (EXTRA > 0) {
@@ -415,6 +581,95 @@ function _renderNegAmortBanner(opt, sym) {
   wrap.parentNode.insertBefore(banner, wrap);
 }
 
+// D-A11Y-9 helper — announce a transient message to the SR live region.
+// Markup at #sr-announce in debt-optimizer.html (role=status aria-live=polite).
+function _srAnnounce(message) {
+  const el = document.getElementById('sr-announce');
+  if (!el) return;
+  // Briefly clear then set so identical successive messages still announce.
+  el.textContent = '';
+  setTimeout(() => { el.textContent = message; }, 30);
+}
+
+// D-CRO-4 helper (CEO call 2026-05-24) — celebratory toast when a debt is
+// cleared (either via deleteDebtById or via D-CRO-2 logPaymentById dropping
+// balance to ≤0). Variant 'success' tints the toast teal. Goal-link
+// appended ONLY if goals exist in storage AND freed monthly > 0
+// (D-CRO-5 lightweight — matches R-CRO-5 pattern on /recurring).
+function _celebrateClearedDebt(name, freedMonthly) {
+  const sym = USER.sym || (window.PFCSym ? PFCSym(USER.currency) : (USER.currency || '$'));
+  const goalsRaw = (() => { try { return PFCStorage.get('goals'); } catch (_) { return null; } })();
+  const goals = goalsRaw ? _safeParseJson(goalsRaw) : null;
+  const hasGoals = Array.isArray(goals) && goals.length > 0;
+  if (freedMonthly > 0 && hasGoals) {
+    // HTML-mode toast so we can embed a routing link. Name is escaped at the
+    // sink because deleteDebt's caller validated d.name but defence-in-depth.
+    const msg = `🎉 Cleared ${escHtml(name)} — freed ${sym}${freedMonthly}/mo cashflow. <a href="goals.html" style="color:var(--teal);text-decoration:underline;">Apply ${sym}${freedMonthly}/mo to a goal →</a>`;
+    _showCelebrationToast(msg, 'html');
+  } else if (freedMonthly > 0) {
+    _showCelebrationToast(`🎉 Cleared ${name} — freed ${sym}${freedMonthly}/mo cashflow.`);
+  } else {
+    _showCelebrationToast(`🎉 Cleared ${name}.`);
+  }
+  _srAnnounce(`Debt cleared. ${name} removed.`);
+}
+// Toast variant supporting opt-in HTML mode (D-CRO-5 link) — defaults to
+// textContent for safety. Reuses single element + variant tinting like the
+// /recurring R-CRO-10 pattern.
+let _celebrationTimer = null;
+function _showCelebrationToast(msg, mode) {
+  let t = document.getElementById('pfc-celebrate-toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'pfc-celebrate-toast';
+    t.className = 'toast toast--success';
+    t.setAttribute('role', 'status');
+    t.setAttribute('aria-live', 'polite');
+    document.body.appendChild(t);
+  }
+  if (mode === 'html') { t.innerHTML = msg; t.style.pointerEvents = 'auto'; }
+  else { t.textContent = msg; t.style.pointerEvents = ''; }
+  t.style.opacity = '1'; t.style.transition = '';
+  if (_celebrationTimer) clearTimeout(_celebrationTimer);
+  // Hold longer when a clickable link is present.
+  const holdMs = mode === 'html' ? 6000 : 3500;
+  _celebrationTimer = setTimeout(() => {
+    t.style.transition = 'opacity .3s'; t.style.opacity = '0';
+  }, holdMs);
+}
+
+// D-CRO-2 (CEO call 2026-05-24) — one-tap log-payment affordance. Decrements
+// `d.balance` by `d.minPay` (or whatever fraction remains, floored at 0),
+// re-saves, re-renders, fires confirmation toast. If the payment clears the
+// debt entirely, falls through to _celebrateClearedDebt.
+function logPaymentById(id) {
+  if (!id) return;
+  const d = DEBTS.find(x => x.id === id);
+  if (!d) return;
+  const minPay = Number(d.minPay) || 0;
+  if (minPay <= 0) return;
+  const sym = USER.sym || (window.PFCSym ? PFCSym(USER.currency) : (USER.currency || '$'));
+  const before = Number(d.balance) || 0;
+  const applied = Math.min(minPay, before);
+  const after = Math.max(0, before - applied);
+  d.balance = after;
+  saveDebts();
+  // D-CRO-1 — bump lastSeen so the staleness pill resets on the win moment.
+  try { PFCStorage.setJSON('debts_lastSeen', Date.now()); } catch (_) {}
+  renderAll();
+  if (after <= 0) {
+    _celebrateClearedDebt(d.name, minPay);
+    // Remove from active list after celebrating — same UX as Delete would
+    // produce, but framed as a payoff, not a removal.
+    DEBTS = DEBTS.filter(x => x.id !== id);
+    saveDebts();
+    renderAll();
+  } else {
+    showToast(`Logged ${sym}${Math.round(applied)} on ${d.name} — new balance ${sym}${Math.round(after).toLocaleString()}`);
+    _srAnnounce(`Payment logged on ${d.name}. New balance ${Math.round(after)}.`);
+  }
+}
+
 // HTML-escape helper. Used to wrap any user-controlled string (e.g. debt name)
 // before it gets interpolated into an innerHTML template literal — otherwise
 // a name like '<img src=x onerror=alert(1)>' would execute as script in the
@@ -469,9 +724,15 @@ function renderDebtList(opt, sym) {
         <div style="font-size:11px;color:var(--text3);margin-bottom:5px;">${sym}${monthlyInt}/mo interest</div>
         <div class="debt-payoff-badge" style="background:${tc.color}22;color:${tc.color};">↳ ${clearDate}</div>
       </div>
-      <div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0;">
-        <button type="button" data-action="editDebt" data-id="${safeId}" aria-label="Edit ${escHtml(d.name)}" style="padding:5px 10px;background:transparent;border:1px solid var(--border2);border-radius:var(--r-sm);font-size:11px;color:var(--text2);cursor:pointer;font-family:var(--font-body);">Edit</button>
-        <button type="button" data-action="deleteDebt" data-id="${safeId}" aria-label="Delete ${escHtml(d.name)}" style="padding:5px 10px;background:transparent;border:1px solid rgba(224,82,82,0.2);border-radius:var(--r-sm);font-size:11px;color:var(--red);cursor:pointer;font-family:var(--font-body);">Delete</button>
+      <!-- D-CRO-2 (CEO call 2026-05-24) — "Log payment" button is the one-tap
+           progress affordance that turns this from a read-only projection
+           into a tool users return to monthly. Decrements balance by minPay
+           via logPaymentById. D-MOB-6 — buttons now have row-button class
+           for the mobile 44px touch-target bump in @media (max-width:540px). -->
+      <div class="debt-row-actions" style="display:flex;flex-direction:column;gap:5px;flex-shrink:0;">
+        <button type="button" class="debt-row-btn debt-row-btn--log" data-action="logPayment" data-id="${safeId}" aria-label="Log a payment on ${escHtml(d.name)} — decrements balance by ${sym}${d.minPay}" title="Log this month's minimum payment (decrements balance by ${sym}${d.minPay})" style="padding:5px 10px;background:rgba(43,182,125,0.08);border:1px solid rgba(43,182,125,0.3);border-radius:var(--r-sm);font-size:11px;color:var(--teal);cursor:pointer;font-family:var(--font-body);font-weight:600;">✓ Logged</button>
+        <button type="button" class="debt-row-btn" data-action="editDebt" data-id="${safeId}" aria-label="Edit ${escHtml(d.name)}" style="padding:5px 10px;background:transparent;border:1px solid var(--border2);border-radius:var(--r-sm);font-size:11px;color:var(--text2);cursor:pointer;font-family:var(--font-body);">Edit</button>
+        <button type="button" class="debt-row-btn" data-action="deleteDebt" data-id="${safeId}" aria-label="Delete ${escHtml(d.name)}" style="padding:5px 10px;background:transparent;border:1px solid rgba(224,82,82,0.2);border-radius:var(--r-sm);font-size:11px;color:var(--red);cursor:pointer;font-family:var(--font-body);">Delete</button>
       </div>
     </div>`;
   }).join('');
@@ -489,17 +750,24 @@ function renderDebtList(opt, sym) {
       btn.addEventListener('click', () => editDebtById(id));
     } else if (action === 'deleteDebt') {
       btn.addEventListener('click', () => deleteDebtById(id));
+    } else if (action === 'logPayment') {
+      // D-CRO-2 — one-tap payment logger.
+      btn.addEventListener('click', () => logPaymentById(id));
     }
   });
 }
 
 function renderChart(opt, base) {
   const canvas = document.getElementById('payoffChart');
-  if (payoffChart) { payoffChart.destroy(); payoffChart = null; }
 
   if (!opt) {
+    // No debts: tear down any existing chart and clear canvas.
+    if (payoffChart) { payoffChart.destroy(); payoffChart = null; }
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // D-A11Y-8 — reset aria-label when empty.
+    canvas.setAttribute('role', 'img');
+    canvas.setAttribute('aria-label', 'Debt elimination timeline — no debts yet');
     return;
   }
 
@@ -517,6 +785,27 @@ function renderChart(opt, base) {
   optData.push(0);
   baseData.push(base.schedule[base.schedule.length-1]?.balance ?? 0);
 
+  // D-A11Y-8 fix (audit 2026-05-24) — chart canvas now exposes a meaningful
+  // role=img + aria-label that names the optimised vs minimum-only outcome.
+  // SR users get an actionable summary instead of an opaque canvas. Updated
+  // every render so the announced summary tracks the slider.
+  const ariaSummary = `Debt elimination timeline. Optimised plan reaches zero in ${opt.months} months${base && base.months !== opt.months ? ` (vs ${base.months} on minimum-only payments)` : ''}.`;
+  canvas.setAttribute('role', 'img');
+  canvas.setAttribute('aria-label', ariaSummary);
+
+  // D-PERF-7 fix (audit 2026-05-24) — Chart.update('none') instead of
+  // destroy+recreate. Pre-fix every render rebuilt the canvas, regenerated
+  // scales, ran animation init — ~30-80ms per call. Now we mutate
+  // chart.data in place and trigger an instant repaint (animation:'none'
+  // because the slider drag already coalesces via D-PERF-5 debounce).
+  // Falls back to destroy+new on first call only.
+  if (payoffChart) {
+    payoffChart.data.labels = labels;
+    payoffChart.data.datasets[0].data = baseData;
+    payoffChart.data.datasets[1].data = optData;
+    payoffChart.update('none');
+    return;
+  }
   payoffChart = new Chart(canvas, {
     type: 'line',
     data: {
@@ -675,16 +964,32 @@ function renderPayoffOrder(opt, sym) {
 }
 
 // ── EXPORT CSV ──
+// D-BUG-12 fix (audit 2026-05-24) — RFC 4180 quote-escape + UTF-8 BOM for
+// Excel. Pre-fix a debt name like `Visa, Chase` produced an event field
+// `Visa, Chase cleared.` which the naive `r.join(',')` split into TWO
+// columns, shifting every downstream row. Now we wrap any cell containing
+// `,` / `"` / newline in double quotes and escape inner quotes by doubling.
+// Number.isFinite guard prevents "NaN" cells if SCHEDULE_DATA was corrupt.
+function _csvCell(v) {
+  const s = String(v == null ? '' : v);
+  return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}
 function exportScheduleCSV() {
   if (!SCHEDULE_DATA.length) return;
   const sym = window.PFCSym ? PFCSym(USER.currency) : (USER.currency || '$');
   const rows = [['Month','Date','Payment','Balance','Event']];
-  SCHEDULE_DATA.forEach(r => rows.push([r.month, r.date, sym+r.payment, sym+r.balance, r.event || '']));
-  const csv = rows.map(r => r.join(',')).join('\n');
-  const blob = new Blob([csv], { type: 'text/csv' });
+  SCHEDULE_DATA.forEach(r => {
+    const payment = Number.isFinite(r.payment) ? sym + r.payment : '';
+    const balance = Number.isFinite(r.balance) ? sym + r.balance : '';
+    rows.push([r.month, r.date, payment, balance, r.event || '']);
+  });
+  const csv = rows.map(row => row.map(_csvCell).join(',')).join('\n');
+  // UTF-8 BOM (﻿) so Excel detects encoding for currency symbols.
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
-  const a = document.createElement('a'); a.href = url; a.download = 'debt-payoff-schedule.csv'; a.click();
-  URL.revokeObjectURL(url);
+  const a = document.createElement('a'); a.href = url; a.download = 'debt-payoff-schedule.csv';
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 100);
   showToast('Schedule exported as CSV');
 }
 
@@ -722,19 +1027,21 @@ function editDebtById(id) {
   modalCalc();
   document.getElementById('debt-modal').classList.add('open');
 }
-function deleteDebtById(id) {
+async function deleteDebtById(id) {
   if (!id) return;
   const d = DEBTS.find(x => x.id === id);
   if (!d) return;
-  // P1 note: confirm() is iOS-PWA-broken (D-BUG-10 / R-P0-9 class) — will be
-  // replaced with a _pfcConfirm modal in the D-P1 batch alongside the
-  // alert() at line 559 (D-BUG-15).
-  if (!confirm(`Delete "${d.name}"?`)) return;
+  // D-BUG-10 fix — _pfcConfirm replaces native confirm() (iOS-PWA-broken).
+  const ok = await _pfcConfirm(`Delete "${d.name}"? This can't be undone.`, 'Delete debt');
+  if (!ok) return;
   const name = d.name;
+  // D-CRO-4 (CEO call) — capture monthly cashflow before mutation so we can
+  // celebrate the freed money in the toast, not just announce removal.
+  const freedMonthly = Math.round(Number(d.minPay) || 0);
   DEBTS = DEBTS.filter(x => x.id !== id);
   saveDebts();
   renderAll();
-  showToast('Removed — ' + name);
+  _celebrateClearedDebt(name, freedMonthly);
 }
 // Legacy index-keyed aliases — kept so any external caller (none known)
 // doesn't break. New code uses ById.
@@ -774,18 +1081,29 @@ function modalCalc() {
   document.getElementById('m-preview').style.display = 'block';
 }
 
-function saveDebt() {
+async function saveDebt() {
   const name = document.getElementById('m-name').value.trim();
-  const bal  = parseFloat(document.getElementById('m-balance').value);
-  const rate = parseFloat(document.getElementById('m-rate').value);
-  const pay  = parseFloat(document.getElementById('m-minpay').value);
+  // D-BUG-7 fix — strict numeric validation. Pre-fix `parseFloat` accepted
+  // "5e10" → 50000000000 → chart axis overflow + localStorage bloat. The
+  // _parseFiniteAmount helper rejects scientific notation and clamps to a
+  // human range. Max balance: €10M (covers mortgages worldwide).
+  const bal  = _parseFiniteAmount(document.getElementById('m-balance').value, 10000000);
+  const rate = _parseFiniteAmount(document.getElementById('m-rate').value, 100);
+  const pay  = _parseFiniteAmount(document.getElementById('m-minpay').value, 10000000);
   const type = document.getElementById('m-type').value;
 
   if (!name) { flashField('m-name'); return; }
-  if (!bal || bal <= 0) { flashField('m-balance'); return; }
-  if (rate < 0 || isNaN(rate)) { flashField('m-rate'); return; }
-  if (!pay || pay <= 0) { flashField('m-minpay'); return; }
-  if (pay >= bal) { alert('Minimum payment must be less than the balance.'); return; }
+  // D-BUG-8 — also cap name length at 80 chars (defence-in-depth; escHtml
+  // handles XSS but a 10MB paste-bomb still bloats DOM + storage).
+  if (name.length > 80) { flashField('m-name'); await _pfcAlert('Name is too long (max 80 characters).'); return; }
+  if (bal === null || bal <= 0) { flashField('m-balance'); await _pfcAlert('Enter a positive balance (max 10,000,000).'); return; }
+  if (rate === null) { flashField('m-rate'); await _pfcAlert('Enter a valid interest rate 0–100%.'); return; }
+  if (pay === null || pay <= 0) { flashField('m-minpay'); await _pfcAlert('Enter a positive minimum payment.'); return; }
+  // D-BUG-6 fix — strict `>` not `>=`. Pre-fix a legitimate final payment
+  // where the user enters minPay equal to remaining balance (e.g. last
+  // €50 on a card) was rejected with a confusing alert. minPay > balance
+  // is the real broken case (a payment that exceeds what's owed).
+  if (pay > bal) { await _pfcAlert('Minimum payment cannot exceed the balance. Lower the minimum or raise the balance.'); return; }
 
   // D-P0-1 — id-keyed save. Edit path preserves existing id; add path mints a
   // fresh one so future renders + edit/delete remain stable across reorders.
@@ -839,7 +1157,30 @@ _hidePdfProBadgeIfPaid();
 // pfc-storage.js finishes adoptGuestData, re-read from the now-correct
 // namespace and re-render in place. Re-running init() is safe — renderChart
 // destroys+recreates the Chart.js instance.
-function _rehydrateFromStorage() { init(); }
+//
+// D-PERF-12 fix (audit 2026-05-24) — both `onReady` (with the existing diff
+// guard) AND `onAuthChange` (previously unguarded) fire on initial sign-in
+// → double render. Adds a hydration signature so the second call is an
+// early-return when DEBTS+STRATEGY+USER are unchanged. Same pattern as
+// R-PERF-12 on /recurring.
+let _lastHydrationSig = '';
+function _hydrationSignature() {
+  const debtsKey = DEBTS.length + ':' + (DEBTS[0]?.id || '') + ':' + (DEBTS[DEBTS.length-1]?.id || '') + ':' + DEBTS.reduce((s, d) => s + (Number(d.balance) || 0), 0);
+  return debtsKey + '|' + STRATEGY + '|' + ((USER && USER.currency) || '');
+}
+function _rehydrateFromStorage() {
+  // Run init (which re-reads storage and re-renders) ONLY if the resulting
+  // signature differs from the prior render. Otherwise we'd repaint Chart.js
+  // and the DOM grid for identical data.
+  const beforeSig = _hydrationSignature();
+  init();
+  const afterSig = _hydrationSignature();
+  _lastHydrationSig = afterSig;
+  // If init produced the same signature as the last successful render, that
+  // means the storage flip didn't change anything — but init() already ran
+  // and repainted. The guard below short-circuits subsequent dupe fires.
+  void beforeSig; // intentionally unused — guard is on subsequent invocations
+}
 if (typeof PFCAuth !== 'undefined') {
   PFCAuth.onReady(() => {
     let freshUser = {}, freshDebts = [];
@@ -848,7 +1189,20 @@ if (typeof PFCAuth !== 'undefined') {
     if (JSON.stringify(freshUser) !== JSON.stringify(USER) ||
         JSON.stringify(freshDebts) !== JSON.stringify(DEBTS)) {
       _rehydrateFromStorage();
+    } else {
+      // Even when nothing changed, capture the signature so the onAuthChange
+      // duplicate (which fires immediately after on cold sign-in) can detect
+      // "no actual change" and skip.
+      _lastHydrationSig = _hydrationSignature();
     }
   });
-  PFCAuth.onAuthChange(_rehydrateFromStorage);
+  PFCAuth.onAuthChange(() => {
+    // D-PERF-12 — early-return when the namespace flip produces identical
+    // data (the common case after the onReady diff-guard already accepted).
+    let freshDebts = [];
+    try { freshDebts = PFCStorage.getJSON('debts') || []; } catch (_) {}
+    const wouldBeSig = freshDebts.length + ':' + (freshDebts[0]?.id || '') + ':' + (freshDebts[freshDebts.length-1]?.id || '') + ':' + freshDebts.reduce((s, d) => s + (Number(d.balance) || 0), 0) + '|' + STRATEGY + '|' + ((USER && USER.currency) || '');
+    if (wouldBeSig === _lastHydrationSig) return;
+    _rehydrateFromStorage();
+  });
 }
