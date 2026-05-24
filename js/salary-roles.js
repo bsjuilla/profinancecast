@@ -268,7 +268,13 @@ window.PFC_SALARY_ROLES = [
   // ── Creative & Design (10 roles) ───────────────────────────────────────
   { soc: '27-1024', title: 'Graphic Designer', usMedian: 58900, category: 'creative',
     aliases: ['visual designer','brand designer','print designer'] },
-  { soc: '15-1255', title: 'UX Designer', usMedian: 98000, category: 'creative',
+  // SC-FUNC-1 fix (2026-05-25) — SOC code disambiguated from QA Engineer
+  // (which also carries '15-1255'). Per-country wage table at line 578 already
+  // had a '15-1255u' entry that was UNREACHABLE because findRoleMatch returned
+  // the role with the bare SOC, then getCountryWage looked up '15-1255' and
+  // got QA Engineer's numbers (≈25% low for UX in GB/FR/DE). The 'u' suffix
+  // is now the canonical SOC for UX Designer; the wage table key matches.
+  { soc: '15-1255u', title: 'UX Designer', usMedian: 98000, category: 'creative',
     aliases: ['ui designer','product designer','ux researcher','ux/ui designer','user experience designer','interaction designer'] },
   { soc: '27-1011', title: 'Art Director', usMedian: 105000, category: 'creative',
     aliases: ['creative director','design director'] },

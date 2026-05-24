@@ -21,13 +21,35 @@
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Salary calculator — ProFinanceCast">
   <meta name="twitter:description" content="Negotiate your next raise with market-percentile data and a 5-year compounding earnings projection.">
-<!-- Chart.js must execute BEFORE the PFCAuth.onReady chain reaches `new Chart()` —
-     `defer` here would race against the rehydration callback and throw on cold loads. -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js" integrity="sha384-bs/nf9FbdNouRbMiFcrcZfLXYPKiPaGVGplVbv7dLGECccEXDW+S3zjqSKR5ZEaD" crossorigin="anonymous"></script>
+<!-- SC-PERF-1 + SC-PERF-3 fix (audit 2026-05-25) — Chart.js now `defer`ed.
+     Pre-fix this loaded synchronously in head (~80KB render-blocker). The
+     prior comment claimed defer would race PFCAuth.onReady, but salary-
+     calculator-2.js now has a `typeof Chart !== 'undefined'` guard around
+     `new Chart()` (SC-PERF-3), so a late Chart.js load is graceful — the
+     chart simply renders when calc() next fires after Chart is ready (the
+     auth-rehydrate path re-calls calc() AFTER PFCAuth.onReady, by which
+     time defer'd scripts have executed). Same defer-everything pattern
+     landed on dashboard (DASH-P0-6), net-worth (NW-P1-7), recurring
+     (R-P0-11), debt-optimizer. -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js" integrity="sha384-bs/nf9FbdNouRbMiFcrcZfLXYPKiPaGVGplVbv7dLGECccEXDW+S3zjqSKR5ZEaD" crossorigin="anonymous" defer></script>
 <style>
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  /* SC-COMPAT (audit 2026-05-25) — iOS Safari text inflation on landscape +
+     color-scheme so OS form controls (date pickers, spinners) match dark UI. */
+  html{-webkit-text-size-adjust:100%;color-scheme:dark;}
   html,body{height:100%;}
-  body{font-family:var(--font-body);background:var(--bg);color:var(--text);display:flex;overflow:hidden;}
+  /* SC-MOB + SC-COMPAT — dvh fallback for iOS Safari address-bar churn. */
+  body{font-family:var(--font-body);background:var(--bg);color:var(--text);display:flex;overflow:hidden;min-height:100vh;min-height:100dvh;}
+
+  /* SC-A11Y (audit 2026-05-25) — skip-link for keyboard users (was missing).
+     Visually hidden until focused; jumps the user past 25+ sidebar nav links
+     directly to <main id="main">. Same pattern as R-P0-13 / NW-P0-V / DASH-P0-8. */
+  .skip-link{position:absolute;left:-9999px;top:0;background:var(--teal);color:var(--canvas);padding:10px 16px;border-radius:0 0 6px 0;font-weight:600;z-index:300;text-decoration:none;}
+  .skip-link:focus{left:0;}
+
+  /* SC-A11Y — visually-hidden helper for h1 anchor (sidebar already labels
+     primary navigation; main h1 sits inside main and stays visible too). */
+  .visually-hidden{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
 
   /* SIDEBAR */
   .sidebar{width:240px;flex-shrink:0;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;height:100vh;overflow-y:auto;}
@@ -156,6 +178,73 @@
   .pulse{animation:pulse 1.2s ease 1;}
 
   .section-gap{margin-bottom:18px;}
+
+  /* SC-A11Y (audit 2026-05-25) — global :focus-visible ring so keyboard users
+     get a consistent 2px teal outline. Mouse users see nothing (default). */
+  :where(button,a,input,select,textarea,[tabindex]):focus-visible{
+    outline:2px solid var(--teal);
+    outline-offset:2px;
+    border-radius:var(--r-sm);
+  }
+
+  /* SC-MOB (audit 2026-05-25) — Mobile drawer pattern. Pre-fix page had ZERO
+     @media queries and the sidebar ate 67% of a 360px viewport. Below 900px:
+     sidebar slides off-screen by default, hamburger button reveals it, scrim
+     dims the rest, body locks scroll. Matches R-P0-10 / DASH-P0-2 / G-P0-3. */
+  .sidebar-toggle{display:none;}
+  .sidebar-scrim{display:none;}
+  @media (max-width: 899px){
+    body{display:block;overflow:auto;}
+    .sidebar{position:fixed;top:0;left:0;height:100vh;height:100dvh;width:280px;max-width:85vw;transform:translateX(-100%);transition:transform .25s ease;z-index:200;box-shadow:0 0 24px rgba(0,0,0,.4);}
+    .sidebar.is-open{transform:translateX(0);}
+    .sidebar-scrim{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:150;}
+    .sidebar-scrim.is-open{display:block;}
+    .main{height:auto;min-height:100vh;min-height:100dvh;}
+    .sidebar-toggle{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;background:transparent;border:1px solid var(--border2);border-radius:var(--r-sm);color:var(--text);cursor:pointer;margin-right:8px;flex-shrink:0;}
+    .topbar{padding:0 14px;flex-wrap:wrap;height:auto;min-height:64px;padding-top:10px;padding-bottom:10px;}
+    .topbar-right{flex-wrap:wrap;gap:8px;}
+    .content{padding:16px;}
+    /* Card grids stack vertically on mobile */
+    .grid-2,.grid-3{grid-template-columns:1fr;gap:14px;}
+    .metric-strip{grid-template-columns:repeat(2,1fr);gap:10px;}
+    .field-row,.field-row-3{grid-template-columns:1fr;gap:10px;}
+    .raise-grid{grid-template-columns:repeat(3,1fr)!important;gap:6px;}
+    .card-inner{padding:16px 14px;}
+    /* Topbar action button shouldn't span the whole row */
+    .topbar-btn{font-size:12px;padding:6px 10px;}
+  }
+  /* SC-COMPAT — safe-area inset for iOS notched devices (sidebar + bottom-fixed footer). */
+  @supports (padding: env(safe-area-inset-bottom)){
+    .sidebar-footer{padding-bottom:max(16px, env(safe-area-inset-bottom));}
+    @media (max-width: 899px){.content{padding-bottom:max(16px, env(safe-area-inset-bottom));}}
+  }
+
+  /* SC-COMPAT — reduced-motion respect. Vestibular-sensitive users got
+     720ms gauge-needle sweeps, 500ms range-fill, spinner, toastIn, pulse. */
+  @media (prefers-reduced-motion: reduce){
+    *,*::before,*::after{animation-duration:0.01ms!important;animation-iteration-count:1!important;transition-duration:0.01ms!important;scroll-behavior:auto!important;}
+  }
+
+  /* SC-COMPAT — Windows high-contrast / forced-colors mode. Cards and the
+     gauge rely on color-only signals; without explicit borders the UI
+     dissolves into a single foreground colour. */
+  @media (forced-colors: active){
+    .card,.metric-card,.raise-btn,.benefit-input,.field-input,.counter-bar,.script-box,.topbar-btn,.sidebar-toggle{border:1px solid CanvasText;}
+    .metric-accent,.range-bar-fill,.counter-bar-fill,.range-marker{forced-color-adjust:none;}
+  }
+
+  /* SC-COMPAT — print stylesheet. Fixed sidebar + gradients render badly
+     on paper; this strips them and gives the user a clean export. */
+  @media print{
+    body{overflow:visible;display:block;}
+    .sidebar,.sidebar-scrim,.sidebar-toggle,.topbar-btn,.skip-link,.pfc-photo-figure{display:none!important;}
+    .main{height:auto;}
+    .topbar{position:static;border-bottom:1px solid #333;}
+    .card{break-inside:avoid;page-break-inside:avoid;border:1px solid #aaa!important;background:#fff!important;color:#000!important;}
+    .card-title,.metric-val,.counter-val,.tc-total{color:#000!important;}
+    .metric-strip,.grid-2,.grid-3{display:block!important;}
+    .metric-card{margin-bottom:8px;}
+  }
 </style>
   <link rel="stylesheet" href="css/pfc-tokens.css">
   <link rel="stylesheet" href="css/pfc-photos.css?v=3">
@@ -164,23 +253,38 @@
   <link rel="stylesheet" href="css/pfc-anim.css?v=1">
   <link rel="stylesheet" href="css/pfc-footer.css">
   <script src="js/pfc-export.js" defer></script>
-  <!-- Supabase SDK + auth/storage/entitlements (must load before any inline script that uses them) -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/pfc-audit-mode.js"></script>
-  <script src="js/pfc-config.js"></script>
-  <script src="js/pfc-auth.js"></script>
-  <script src="js/pfc-crypto.js"></script>
-  <script src="js/pfc-storage.js"></script>
-  <script src="js/pfc-currency.js"></script>
-  <script src="js/pfc-user.js"></script>
-  <script src="js/pfc-entitlements.js"></script>
+  <!-- SC-SEC-3 fix (audit 2026-05-25) — Supabase CDN now SRI-pinned + version-
+       locked. Pre-fix the `@2` floating tag with no `integrity` left a supply-
+       chain hole: a jsDelivr or @2 tag compromise silently injects code with
+       full DOM/cookie access. Pinned to the exact 2.45.4 version that NW-P1-5
+       audited + integrity-hashed. -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"
+          integrity="sha384-2/8jSciTzcwYQfO+JTKLgu+T+xfmJcgmrZ3qpbLBdT9wzm+rvtJ24fOuFu7L2Veq"
+          crossorigin="anonymous" defer></script>
+  <!-- SC-PERF-1 fix (audit 2026-05-25) — defer all 8 pfc-* head scripts so they
+       no longer block HTML parsing. The auth/storage/entitlements chain still
+       loads in order (defer preserves order), but parses in parallel with the
+       rest of the document instead of stalling at each tag. Same atomic-defer
+       pattern as R-P0-11 / NW-P1-7 / DASH-P0-7. -->
+  <script src="js/pfc-audit-mode.js" defer></script>
+  <script src="js/pfc-config.js" defer></script>
+  <script src="js/pfc-auth.js" defer></script>
+  <script src="js/pfc-crypto.js" defer></script>
+  <script src="js/pfc-storage.js" defer></script>
+  <script src="js/pfc-currency.js" defer></script>
+  <script src="js/pfc-user.js" defer></script>
+  <script src="js/pfc-entitlements.js" defer></script>
+  <!-- pfc-icons.js for the PFCIcons.get() position-box SVGs (SC-DES-2 fix).
+       Must load before salary-calculator-2.js consumes it. defer preserves
+       order so pfc-icons → salary-calculator-2 ordering is guaranteed. -->
+  <script src="js/pfc-icons.js" defer></script>
   <!-- Role taxonomy + BLS OES May 2024 US median wages for ~97 common roles.
        Used by getMarketRange() below: when the Job Title input matches a role
        in this table (either via canonical title or any alias), the market band
        is anchored to the real US median × country/company/experience multipliers
        instead of the generic $50k formula baseline. Falls back to the formula
        when no match is found. -->
-  <script src="js/salary-roles.js"></script>
+  <script src="js/salary-roles.js" defer></script>
   <script src="js/pfc-motion.js" defer></script>
   <script src="js/pfc-anim.js" defer></script>
   <!-- v3 reskin: new fonts + emerald palette overrides -->
@@ -198,13 +302,28 @@
   <script src="js/pfc-sidebar.js" defer></script>
   <!-- Privacy-friendly analytics by Plausible -->
   <script async src="https://plausible.io/js/pa-EvYdfUp4d9vvohwl_Yy2j.js"></script>
-  <script src="./js/inline/salary-calculator-1.js"></script>
+  <!-- Inline page bundle deferred (was sync) so all defer-ordered head modules
+       resolve before this consumer runs. Order: pfc-* helpers → salary-roles
+       → pfc-icons → THIS. Bump suffix on every JS edit (CACHE-BUST CONTRACT). -->
+  <script src="./js/inline/salary-calculator-1.js?v=20260525a" defer></script>
   <link rel="stylesheet" href="css/pfc-fonts.css">
 </head>
 <body data-pfc-surface="working">
 
+<!-- SC-A11Y (audit 2026-05-25) — skip-link + noscript fallback. -->
+<a href="#main" class="skip-link">Skip to main content</a>
+<noscript>
+  <div style="background:rgba(245,166,35,0.12);border:1px solid rgba(245,166,35,0.4);color:#F0EDE2;padding:14px 18px;margin:16px;border-radius:8px;font-family:Georgia,serif;line-height:1.6;">
+    <strong>JavaScript required.</strong> The Salary Negotiation Calculator runs entirely in your browser — your salary numbers never leave your machine, but we need JS to do the math. Please enable JavaScript and refresh.
+  </div>
+</noscript>
+
+<!-- SC-MOB (audit 2026-05-25) — mobile sidebar scrim. Shared by pfc-sidebar.js
+     for the hamburger-tap → toggle pattern (same as other working surfaces). -->
+<div class="sidebar-scrim" id="pfc-sidebar-scrim" aria-hidden="true" data-pfc-on-click="_pfcCloseSidebar"></div>
+
 <!-- SIDEBAR -->
-<nav class="sidebar" aria-label="Primary navigation">
+<nav class="sidebar" id="pfc-sidebar" aria-label="Primary navigation">
   <a href="dashboard.html" class="sidebar-logo">
     <span class="pfc-brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32" width="32" height="32" aria-hidden="true"><text x="16" y="19" text-anchor="middle" font-family="&apos;Fraunces&apos;,&apos;Cormorant Garamond&apos;,Georgia,serif" font-size="14" font-weight="500" letter-spacing="-0.4" fill="#D4AF6A">PFC</text><rect x="14.5" y="23" width="3" height="3" fill="#D4AF6A" transform="rotate(45 16 24.5)"/></svg></span>
     ProFinanceCast
@@ -284,15 +403,25 @@
 </nav>
 
 <!-- MAIN -->
-<div class="main">
+<!-- SC-A11Y (audit 2026-05-25) — proper <main> landmark with #main id for skip-link.
+     Previously the content was wrapped in an unannotated <div class="main">; screen
+     readers had no way to skip the sidebar to reach the page's actual content. -->
+<main class="main" id="main" role="main" aria-labelledby="page-h1">
   <div class="topbar">
+    <!-- SC-MOB hamburger toggle — visible only below 900px breakpoint. -->
+    <button class="sidebar-toggle" type="button" aria-label="Open navigation menu" aria-controls="pfc-sidebar" data-pfc-on-click="_pfcToggleSidebar">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M2 5h14M2 9h14M2 13h14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+    </button>
     <div class="topbar-left">
-      <div class="topbar-title">Salary Negotiation Calculator</div>
+      <!-- SC-A11Y — promote topbar title to a proper <h1>. Previously rendered as
+           a <div>; the page had ZERO h1, breaking screen-reader landmark nav AND
+           the page's SEO heading hierarchy. -->
+      <h1 class="topbar-title" id="page-h1" style="margin:0;">Salary Negotiation Calculator</h1>
       <div class="topbar-sub" id="topbar-sub">Enter your details to see your full negotiation picture</div>
     </div>
     <div class="topbar-right">
-      <button class="topbar-btn"  data-pfc-on-click="generateScript" id="script-btn">
-        <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 3h9M2 6.5h6M2 10h4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="10.5" cy="10" r="2" stroke="currentColor" stroke-width="1.2"/></svg>
+      <button class="topbar-btn"  data-pfc-on-click="generateScript" id="script-btn" type="button">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true"><path d="M2 3h9M2 6.5h6M2 10h4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="10.5" cy="10" r="2" stroke="currentColor" stroke-width="1.2"/></svg>
         Generate negotiation script
       </button>
       <a href="dashboard.html" class="topbar-btn">← Dashboard</a>
@@ -309,11 +438,16 @@
           <div class="card-title" style="margin-bottom:4px;">Your current situation</div>
           <div class="card-sub" style="margin-bottom:18px;">Fill in your details — all calculations update live</div>
 
+          <!-- SC-A11Y (audit 2026-05-25) — label-for pairings, inputmode=decimal
+               on number inputs (mobile keyboard), and flag-emoji-purge on the
+               country dropdown (broken on Windows + most Linux — renders as
+               letter pairs MU / US / GB instead of flag glyphs). The country
+               name carries the same information without the OS-dependent emoji. -->
           <div style="margin-bottom:14px;">
-            <label class="field-label">Job title / Role</label>
+            <label class="field-label" for="i-role">Job title / Role</label>
             <input type="text" class="field-input" id="i-role" list="role-suggestions"
                    placeholder="e.g. Software Engineer, Registered Nurse, Marketing Manager…"
-                   autocomplete="off"  data-pfc-on-input="calc">
+                   autocomplete="off"  data-pfc-on-input="calcDebounced">
             <!-- Populated on init by populateRoleDatalist() from window.PFC_SALARY_ROLES.
                  When a user picks a suggestion, getMarketRange() looks up the real BLS
                  median wage for that role instead of using the generic $50k formula. -->
@@ -322,21 +456,21 @@
 
           <div class="field-row" style="margin-bottom:14px;">
             <div>
-              <label class="field-label">Current annual salary</label>
+              <label class="field-label" for="i-salary">Current annual salary</label>
               <div style="position:relative;">
                 <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:13px;" id="sym-label">$</span>
-                <input type="number" class="field-input" id="i-salary" placeholder="50000" min="1" style="padding-left:26px;"  data-pfc-on-input="calc">
+                <input type="number" inputmode="decimal" class="field-input" id="i-salary" placeholder="50000" min="1" max="10000000" style="padding-left:26px;"  data-pfc-on-input="calcDebounced">
               </div>
             </div>
             <div>
-              <label class="field-label">Years of experience</label>
-              <input type="number" class="field-input" id="i-exp" placeholder="3" min="0" max="50"  data-pfc-on-input="calc">
+              <label class="field-label" for="i-exp">Years of experience</label>
+              <input type="number" inputmode="numeric" class="field-input" id="i-exp" placeholder="3" min="0" max="50"  data-pfc-on-input="calcDebounced">
             </div>
           </div>
 
           <div class="field-row" style="margin-bottom:14px;">
             <div>
-              <label class="field-label">Industry</label>
+              <label class="field-label" for="i-industry">Industry</label>
               <select class="field-input" id="i-industry"  data-pfc-on-change="calc">
                 <option value="tech">Technology / Software</option>
                 <option value="finance">Finance / Banking</option>
@@ -354,30 +488,31 @@
               </select>
             </div>
             <div>
-              <label class="field-label">Country / Region</label>
+              <label class="field-label" for="i-country">Country / Region</label>
               <select class="field-input" id="i-country"  data-pfc-on-change="calc">
-                <option value="MU">🇲🇺 Mauritius</option>
-                <option value="US">🇺🇸 United States</option>
-                <option value="GB">🇬🇧 United Kingdom</option>
-                <option value="FR">🇫🇷 France</option>
-                <option value="DE">🇩🇪 Germany</option>
-                <option value="ZA">🇿🇦 South Africa</option>
-                <option value="IN">🇮🇳 India</option>
-                <option value="AU">🇦🇺 Australia</option>
-                <option value="CA">🇨🇦 Canada</option>
-                <option value="SG">🇸🇬 Singapore</option>
-                <option value="AE">🇦🇪 UAE</option>
-                <option value="NG">🇳🇬 Nigeria</option>
-                <option value="KE">🇰🇪 Kenya</option>
-                <option value="GH">🇬🇭 Ghana</option>
-                <option value="BR">🇧🇷 Brazil</option>
-                <option value="PH">🇵🇭 Philippines</option>
+                <option value="MU">Mauritius</option>
+                <option value="US">United States</option>
+                <option value="GB">United Kingdom</option>
+                <option value="IE">Ireland</option>
+                <option value="FR">France</option>
+                <option value="DE">Germany</option>
+                <option value="ZA">South Africa</option>
+                <option value="IN">India</option>
+                <option value="AU">Australia</option>
+                <option value="CA">Canada</option>
+                <option value="SG">Singapore</option>
+                <option value="AE">UAE</option>
+                <option value="NG">Nigeria</option>
+                <option value="KE">Kenya</option>
+                <option value="GH">Ghana</option>
+                <option value="BR">Brazil</option>
+                <option value="PH">Philippines</option>
               </select>
             </div>
           </div>
 
           <div>
-            <label class="field-label">Company size</label>
+            <label class="field-label" for="i-company">Company size</label>
             <select class="field-input" id="i-company"  data-pfc-on-change="calc">
               <option value="startup">Startup (1–50)</option>
               <option value="small">Small (51–200)</option>
@@ -489,10 +624,10 @@
             <div class="card-sub">Click a raise percentage or enter a custom amount</div>
           </div>
           <div style="display:flex;align-items:center;gap:10px;">
-            <label class="field-label" style="margin:0;white-space:nowrap;">Custom target:</label>
+            <label class="field-label" for="i-target" style="margin:0;white-space:nowrap;">Custom target:</label>
             <div style="position:relative;">
               <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:13px;" id="sym-custom">$</span>
-              <input type="number" class="field-input" id="i-target" placeholder="60000" min="1" style="padding-left:24px;width:130px;"  data-pfc-on-input="setCustomTarget">
+              <input type="number" inputmode="decimal" class="field-input" id="i-target" placeholder="60000" min="1" max="10000000" style="padding-left:24px;width:130px;"  data-pfc-on-input="setCustomTarget">
             </div>
           </div>
         </div>
@@ -555,8 +690,15 @@
         <div class="card-inner">
           <div class="card-title" style="margin-bottom:4px;">Lifetime earnings trajectory</div>
           <div class="card-sub" style="margin-bottom:16px;">The compounding effect of getting this raise now</div>
+          <!-- SC-A11Y (audit 2026-05-25) — canvas a11y. The 5-year table at the
+               left covers years 1-5, but this chart shows full ~40-year career
+               lifetime. role=img + dynamic aria-label updated each render in
+               salary-calculator-2.js renderLifetimeChart() = screen readers
+               hear "Lifetime earnings trajectory over N years. Without raise
+               year N salary $X. With raise year N salary $Y. Widening gap is
+               the raise compounding." Matches NW-P0-5 pattern. -->
           <div class="chart-wrap-tall">
-            <canvas id="lifetimeChart"></canvas>
+            <canvas id="lifetimeChart" role="img" aria-label="Lifetime earnings trajectory chart — enter salary and target above to populate."></canvas>
           </div>
         </div>
       </div>
@@ -572,10 +714,10 @@
           <div class="card-sub" style="margin-bottom:18px;">They offered less than you want — here's your negotiation range</div>
 
           <div style="margin-bottom:16px;">
-            <label class="field-label">Their offer</label>
+            <label class="field-label" for="i-offer">Their offer</label>
             <div style="position:relative;">
               <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:13px;" id="sym-offer">$</span>
-              <input type="number" class="field-input" id="i-offer" placeholder="55000" min="1" style="padding-left:26px;"  data-pfc-on-input="calcCounter">
+              <input type="number" inputmode="decimal" class="field-input" id="i-offer" placeholder="55000" min="1" max="10000000" style="padding-left:26px;"  data-pfc-on-input="calcCounter">
             </div>
           </div>
 
@@ -606,18 +748,11 @@
             </div>
           </div>
 
-          <figure class="pfc-photo-figure">
-            <picture>
-              <source srcset="assets/img/photos/salary-empty-envelope.avif" type="image/avif">
-              <source srcset="assets/img/photos/salary-empty-envelope.webp" type="image/webp">
-              <img class="pfc-photo-card" src="assets/img/photos/salary-empty-envelope.webp"
-                   alt="Unopened pay-packet envelope stamped WAGES with fountain pen across — the negotiation moment, period-correct."
-                   loading="lazy" decoding="async"
-                   width="1448" height="1086">
-            </picture>
-              <figcaption>The unopened envelope — your negotiation moment.</figcaption>
-          </figure>
-          <div id="counter-empty" style="font-size:13px;color:var(--text3);padding:12px 0;">Enter their offer above to see your negotiation range.</div>
+          <!-- SC-DES-4 (audit 2026-05-25) — decorative envelope photo removed.
+               Same convention as DASH-P1-14: working analytic surfaces drop
+               page-level visual junk; the data IS the story. Empty-state copy
+               now does the full "what you'll see" job. -->
+          <div id="counter-empty" style="font-size:13px;color:var(--text3);padding:12px 0;line-height:1.55;">Enter their offer above to see your negotiation range — walkaway, counter, and a "dream" number anchored to the market band you've already computed.</div>
         </div>
       </div>
 
@@ -627,12 +762,16 @@
           <div class="card-title" style="margin-bottom:4px;">Total compensation calculator</div>
           <div class="card-sub" style="margin-bottom:16px;">Benefits have real monetary value — don't negotiate blind</div>
 
+          <!-- SC-A11Y (audit 2026-05-25) — convert sibling <div> field titles to
+               proper <label for=> so screen readers announce "Annual bonus,
+               percent of base salary" when focus lands on the input. Adds
+               inputmode=decimal / numeric so mobile users get a numeric keypad. -->
           <div class="benefit-row">
             <div>
-              <div style="font-size:13px;font-weight:500;">Annual bonus</div>
+              <label for="b-bonus" style="font-size:13px;font-weight:500;cursor:pointer;">Annual bonus</label>
               <div style="font-size:11px;color:var(--text3);">% of base salary (target on-track)</div>
             </div>
-            <input type="number" class="benefit-input" id="b-bonus" value="0" placeholder="10"  data-pfc-on-input="calcBenefits">
+            <input type="number" inputmode="decimal" class="benefit-input" id="b-bonus" value="0" placeholder="10" min="0" max="500"  data-pfc-on-input="calcBenefits">
           </div>
           <!-- Equity / RSU row (added May 2026). Levels.fyi-style total-comp
                breakdown — for a typical 4-year grant with a 1-year cliff,
@@ -640,40 +779,40 @@
                value just sits in the breakdown alongside bonus and benefits. -->
           <div class="benefit-row">
             <div>
-              <div style="font-size:13px;font-weight:500;">Equity / RSU
+              <label for="b-equity" style="font-size:13px;font-weight:500;cursor:pointer;">Equity / RSU
                 <span style="display:inline-block;padding:1px 6px;margin-left:6px;border-radius:var(--r-pill);background:var(--gold-soft);color:var(--gold);font-family:var(--font-mono);font-size:9px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;border:1px solid rgba(212,175,106,0.25);">New</span>
-              </div>
+              </label>
               <div style="font-size:11px;color:var(--text3);">Annualised $ value (4-yr grant ÷ 4)</div>
             </div>
-            <input type="number" class="benefit-input" id="b-equity" value="0" placeholder="25000"  data-pfc-on-input="calcBenefits">
+            <input type="number" inputmode="decimal" class="benefit-input" id="b-equity" value="0" placeholder="25000" min="0" max="10000000"  data-pfc-on-input="calcBenefits">
           </div>
           <div class="benefit-row">
             <div>
-              <div style="font-size:13px;font-weight:500;">Health insurance</div>
+              <label for="b-health" style="font-size:13px;font-weight:500;cursor:pointer;">Health insurance</label>
               <div style="font-size:11px;color:var(--text3);">Annual value (if employer-paid)</div>
             </div>
-            <input type="number" class="benefit-input" id="b-health" value="0" placeholder="3000"  data-pfc-on-input="calcBenefits">
+            <input type="number" inputmode="decimal" class="benefit-input" id="b-health" value="0" placeholder="3000" min="0" max="100000"  data-pfc-on-input="calcBenefits">
           </div>
           <div class="benefit-row">
             <div>
-              <div style="font-size:13px;font-weight:500;">Pension / 401k match</div>
+              <label for="b-pension" style="font-size:13px;font-weight:500;cursor:pointer;">Pension / 401k match</label>
               <div style="font-size:11px;color:var(--text3);">% of salary matched</div>
             </div>
-            <input type="number" class="benefit-input" id="b-pension" value="0" placeholder="5"  data-pfc-on-input="calcBenefits">
+            <input type="number" inputmode="decimal" class="benefit-input" id="b-pension" value="0" placeholder="5" min="0" max="100"  data-pfc-on-input="calcBenefits">
           </div>
           <div class="benefit-row">
             <div>
-              <div style="font-size:13px;font-weight:500;">Remote work / WFH</div>
+              <label for="b-remote" style="font-size:13px;font-weight:500;cursor:pointer;">Remote work / WFH</label>
               <div style="font-size:11px;color:var(--text3);">Commute cost saved annually</div>
             </div>
-            <input type="number" class="benefit-input" id="b-remote" value="0" placeholder="2400"  data-pfc-on-input="calcBenefits">
+            <input type="number" inputmode="decimal" class="benefit-input" id="b-remote" value="0" placeholder="2400" min="0" max="100000"  data-pfc-on-input="calcBenefits">
           </div>
           <div class="benefit-row">
             <div>
-              <div style="font-size:13px;font-weight:500;">Annual leave days</div>
+              <label for="b-leave" style="font-size:13px;font-weight:500;cursor:pointer;">Annual leave days</label>
               <div style="font-size:11px;color:var(--text3);">Days above legal minimum</div>
             </div>
-            <input type="number" class="benefit-input" id="b-leave" value="0" placeholder="5"  data-pfc-on-input="calcBenefits">
+            <input type="number" inputmode="numeric" class="benefit-input" id="b-leave" value="0" placeholder="5" min="0" max="365"  data-pfc-on-input="calcBenefits">
           </div>
 
           <!-- Levels.fyi-style total-comp breakdown. Each component is
@@ -774,12 +913,20 @@
 
   </div><!-- /content -->
 
-<script src="./js/inline/salary-calculator-2.js"></script>
+<!--
+  CACHE-BUST CONTRACT (SC-P0-V 2026-05-25)
+  ─────────────────────────────────────────
+  ANY edit to salary-calculator-2.js, salary-calculator-3.js, salary-roles.js,
+  pfc-icons.js, or any pfc-*.js MUST also bump the ?v= suffix below. Browsers
+  cache JS for 24h (Cache-Control max-age=86400); same-URL re-fetch returns
+  the cached stale file. Naming convention: ?v=YYYYMMDD<letter>[-suffix].
+-->
+<script src="./js/inline/salary-calculator-2.js?v=20260525a-scbatch" defer></script>
   <!-- Salary calculator is now Free (audit B3 / pricing report 07): single-offer
        calculation is the SEO honey-pot. Multi-offer compare and "save scenario"
        Pro hooks land alongside the scenarios.html upsell flow. Auth required so
        the in-app version can sync state, but no Pro plan check. -->
-  <script src="./js/inline/salary-calculator-3.js"></script>
+  <script src="./js/inline/salary-calculator-3.js?v=20260525a" defer></script>
 <footer class="site-footer" role="contentinfo">
   <div class="footer-grid">
     <div class="footer-col">
@@ -829,7 +976,7 @@
     financial adviser before any financial decision.
   </p>
 </footer>
-</div><!-- /main -->
+</main><!-- /main -->
 
 
 <script src="js/pfc-inline-bootstrap.js" defer></script>

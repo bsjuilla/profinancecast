@@ -2,6 +2,80 @@
 let USER = {};
 let activeRaisePct = 10;
 let lifetimeChart = null;
+let _calcRAF = null; // SC-PERF-2 — rAF handle for debounced calc()
+let _initDone = false; // SC-AUTH-RACE — init() runs once, after DOM ready
+
+// ── SHARED HELPERS (SC-P0 batch, 2026-05-25) ──────────────────────────────
+// Inlined from /debt-optimizer + /net-worth + /goals + /recurring conventions
+// so this page can match their XSS/storage/validation discipline without
+// reaching outside the inline bundle. None of these helpers depend on USER
+// or DOM, so they're safe to declare at module top.
+
+// SC-SEC-1/2 — HTML-escape any string before innerHTML interpolation. Prevents
+// reflected XSS via LLM reply (Sage), user-tampered storage (USER.currency),
+// or future user-controlled fields (role aliases, etc.).
+function escHtml(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+// SC-CROSS — prototype-pollution-safe JSON parse. Strips __proto__ /
+// constructor / prototype keys so a tampered localStorage record can't
+// mutate Object.prototype on read.
+function _safeParseJson(raw) {
+  if (typeof raw !== 'string' || !raw) return null;
+  let parsed;
+  try { parsed = JSON.parse(raw); } catch (_) { return null; }
+  const strip = (o) => {
+    if (!o || typeof o !== 'object') return o;
+    if (Array.isArray(o)) return o.map(strip);
+    const out = Object.create(null);
+    for (const k of Object.keys(o)) {
+      if (k === '__proto__' || k === 'constructor' || k === 'prototype') continue;
+      out[k] = strip(o[k]);
+    }
+    return out;
+  };
+  return strip(parsed);
+}
+
+// SC-FUNC strict-finite parser (same contract as /debt-optimizer's). Rejects
+// scientific notation, NaN, Infinity; clamps to [0, maxValue]. Falls back to
+// returning null on any non-numeric input so the caller can handle it.
+function _parseFiniteAmount(raw, maxValue) {
+  const str = String(raw == null ? '' : raw).trim();
+  if (!/^-?\d*\.?\d+$/.test(str)) return null;
+  const n = parseFloat(str);
+  if (!Number.isFinite(n)) return null;
+  if (n < 0) return null;
+  if (typeof maxValue === 'number' && n > maxValue) return null;
+  return n;
+}
+
+// SC-PERF-2 — debounced calc() using requestAnimationFrame. Pre-fix every
+// keystroke fired a full calc + chart destroy/rebuild + raise-grid rebuild;
+// on mobile this jank-stuttered. Coalescing to one calc per animation frame
+// (~16ms) preserves real-time feel while eliminating wasted renders.
+function calcDebounced() {
+  if (_calcRAF != null) return;
+  _calcRAF = requestAnimationFrame(() => {
+    _calcRAF = null;
+    calc();
+  });
+}
+
+// SC-DES-1 — canonical currency-symbol read. Prior bug at line 828 used
+// `(window.USER && USER.currency) || '$'` which always fell back to '$'
+// because `window.USER` is never set (the USER global is module-scoped).
+// Use this helper everywhere instead of inlining the PFCSym/USER.currency
+// branch — single source of truth + auto-currency aware for €/£/etc.
+function _sym() {
+  return window.PFCSym ? PFCSym(USER.currency) : (USER.currency || '$');
+}
 
 // ── MARKET RATE DATABASE ──
 // Multipliers relative to a $50k baseline, adjusted by exp/country/industry/company
@@ -197,12 +271,17 @@ function populateRoleDatalist() {
   const dl = document.getElementById('role-suggestions');
   if (!dl || !window.PFCSalaryRoles || !window.PFCSalaryRoles.getAllTitlesForDatalist) return;
   const titles = window.PFCSalaryRoles.getAllTitlesForDatalist();
-  dl.innerHTML = titles.map(t => '<option value="' + t.replace(/"/g, '&quot;') + '"></option>').join('');
+  // SC-SEC — escHtml full sweep (was: only `"` was escaped). Future-proofs
+  // against title strings containing `<`, `>`, `&`, `'` if the data source
+  // ever loosens from the curated static file.
+  dl.innerHTML = titles.map(t => '<option value="' + escHtml(t) + '"></option>').join('');
 }
 
 function init() {
+  if (_initDone) return; // SC-AUTH-RACE — guard against double-init
+  _initDone = true;
   try { USER = (typeof PFCUser !== 'undefined') ? PFCUser.get() : (PFCStorage.getJSON('user') || {}); } catch(e) { USER = {}; }
-  const sym = window.PFCSym ? PFCSym(USER.currency) : (USER.currency || '$');
+  const sym = _sym();
   ['sym-label','sym-custom','sym-offer'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.textContent = sym;
@@ -221,21 +300,37 @@ function init() {
   }
   // Sidebar user-pill hydrated by js/pfc-sidebar.js;
   // plan badge by PFCPlan.applyBadges().
-  // Pre-fill salary from USER data if available
-  if (USER.income) document.getElementById('i-salary').value = USER.income * 12;
+  // SC-FUNC-3 (audit 2026-05-25, hardened post-verifier) — same magnitude
+  // check the rehydrate path uses. USER.income is contractually monthly;
+  // if any code path ever wrote annual the ×12 would balloon to 12M+. Cap
+  // at 10M matches _parseFiniteAmount's max and prevents a paint of a
+  // 12-million prefill before rehydrate ever fires.
+  if (USER.income > 0) {
+    const annualised = USER.income * 12;
+    if (annualised <= 10000000) {
+      const el = document.getElementById('i-salary');
+      if (el) el.value = annualised;
+    }
+  }
 
   buildRaiseGrid(null, null);
   calc();
 }
 
 // ── RAISE GRID ──
+// SC-SEC-2 fix (audit 2026-05-25) — inline `onclick="selectRaise(${p})"` is
+// CSP-hostile (`script-src-attr 'none'` makes every click a DEAD CLICK at
+// runtime). Migrated to the `data-pfc-on-click` pattern wired by
+// pfc-inline-bootstrap.js — same as R-P0-6+7 / G-P0-5 on adjacent pages.
+// Pct is numeric so no escHtml needed in the data attribute interpolation.
 function buildRaiseGrid(salary, sym) {
   const pcts = [3, 5, 8, 10, 12, 15, 18, 20, 25];
   const grid = document.getElementById('raise-grid');
+  if (!grid) return; // SC-A11Y null-guard (init runs after DOMContentLoaded but defensive)
   grid.style.gridTemplateColumns = `repeat(${pcts.length}, 1fr)`;
   grid.innerHTML = pcts.map(p => {
     const amt = salary ? Math.round(salary * p / 100) : null;
-    return `<div class="raise-btn ${p === activeRaisePct ? 'active' : ''}" onclick="selectRaise(${p})" id="rbtn-${p}">
+    return `<div class="raise-btn ${p === activeRaisePct ? 'active' : ''}" role="button" tabindex="0" data-pfc-on-click="selectRaise" data-pfc-arg="${p}" id="rbtn-${p}" aria-pressed="${p === activeRaisePct ? 'true' : 'false'}">
       <div class="pct">+${p}%</div>
       <div class="amt">${amt ? (sym || '$') + Math.round(amt).toLocaleString() : '—'}</div>
     </div>`;
@@ -259,17 +354,22 @@ function setCustomTarget() {
 }
 
 // ── MAIN CALC ──
+// SC-FUNC-3 (2026-05-25) — clamp salary at 10M (mortgages worldwide). Pre-fix
+// `parseFloat` accepted "1e308" → Infinity → lifetime chart axis broke and
+// metric cards showed "$Infinity". The strict validator returns null on
+// non-numeric / overflow input; we fall back to 0 (same as the prior || 0).
 function calc() {
-  const salary  = parseFloat(document.getElementById('i-salary').value) || 0;
-  const sym     = window.PFCSym ? PFCSym(USER.currency) : (USER.currency || '$');
-  const exp     = parseFloat(document.getElementById('i-exp').value) || 0;
+  const salary  = _parseFiniteAmount(document.getElementById('i-salary').value, 10000000) || 0;
+  const sym     = _sym();
+  const expRaw  = _parseFiniteAmount(document.getElementById('i-exp').value, 50);
+  const exp     = expRaw == null ? 0 : expRaw;
 
   // Rebuild raise grid with amounts
   buildRaiseGrid(salary, sym);
   if (activeRaisePct) document.getElementById('rbtn-' + activeRaisePct)?.classList.add('active');
 
   // Target salary
-  let target = parseFloat(document.getElementById('i-target').value) || 0;
+  let target = _parseFiniteAmount(document.getElementById('i-target').value, 10000000) || 0;
   if (!target && salary && activeRaisePct) {
     target = Math.round(salary * (1 + activeRaisePct / 100));
     document.getElementById('i-target').value = target;
@@ -440,35 +540,85 @@ function updateMarketRange(range, salary, target, sym) {
     else gaugeLabel.textContent = 'Top of market — focus negotiation on total comp.';
   }
 
-  // Position assessment
+  // Position assessment — emoji + malformed border both fixed (SC-VIS-1 + SC-DES-2).
+  // Pre-fix the border read `${color.replace(...) === color ? color + '40' : color}22`
+  // which evaluated to literal `var(--red)22` for every CSS variable color —
+  // browsers ignored it, so the box border never painted. Replaced with a
+  // rgba() with the brand color's RGB hex inline. Emoji ⚠️📊✅🏆 replaced by
+  // status SVGs from PFCIcons (matches G-P2-1 / NW-P2-1 emoji-purge convention).
   const box = document.getElementById('position-box');
-  let msg = '', bg = '', color = '';
+  let msg = '', bg = '', borderRgb = '', iconKey = 'other';
   if (salary < range.low) {
-    msg = `⚠️ You're earning <strong>${sym}${(range.low - salary).toLocaleString()} below</strong> the 25th percentile for your role. You have a strong case for a significant raise — market data strongly supports you.`;
-    bg = 'rgba(224,82,82,0.08)'; color = 'var(--red)';
+    msg = `You're earning <strong>${sym}${(range.low - salary).toLocaleString()} below</strong> the 25th percentile for your role. You have a strong case for a significant raise — market data strongly supports you.`;
+    bg = 'rgba(224,82,82,0.08)'; borderRgb = 'rgba(224,82,82,0.30)'; iconKey = 'health'; // shield-cross subtle alert
   } else if (salary < range.median) {
-    msg = `📊 You're <strong>below the market median</strong> by ${sym}${(range.median - salary).toLocaleString()}. Asking to move to median is a very reasonable and data-backed request.`;
-    bg = 'rgba(245,166,35,0.08)'; color = 'var(--amber)';
+    msg = `You're <strong>below the market median</strong> by ${sym}${(range.median - salary).toLocaleString()}. Asking to move to median is a very reasonable and data-backed request.`;
+    bg = 'rgba(245,166,35,0.08)'; borderRgb = 'rgba(245,166,35,0.30)'; iconKey = 'finance';
   } else if (salary < range.high) {
-    msg = `✅ You're <strong>above median</strong> and in the upper-mid range. To push to the 75th percentile, emphasise specialised skills and impact. This is achievable.`;
-    bg = 'rgba(43,182,125,0.08)'; color = 'var(--teal)';
+    msg = `You're <strong>above median</strong> and in the upper-mid range. To push to the 75th percentile, emphasise specialised skills and impact. This is achievable.`;
+    bg = 'rgba(43,182,125,0.08)'; borderRgb = 'rgba(43,182,125,0.30)'; iconKey = 'finance';
   } else {
-    msg = `🏆 You're <strong>at or above the 75th percentile</strong> for your role. Focus your negotiation on total comp — bonus, equity, benefits, and flexibility rather than base.`;
-    bg = 'rgba(59,130,246,0.08)'; color = 'var(--blue)';
+    msg = `You're <strong>at or above the 75th percentile</strong> for your role. Focus your negotiation on total comp — bonus, equity, benefits, and flexibility rather than base.`;
+    bg = 'rgba(59,130,246,0.08)'; borderRgb = 'rgba(59,130,246,0.30)'; iconKey = 'finance';
   }
-  box.style.display = 'block';
+  box.style.display = 'flex';
+  box.style.alignItems = 'flex-start';
+  box.style.gap = '10px';
   box.style.background = bg;
-  box.style.border = `1px solid ${color.replace('var(--','').replace(')','') === color ? color + '40' : color}22`;
+  box.style.border = '1px solid ' + borderRgb;
   box.style.color = 'var(--text2)';
-  box.innerHTML = msg;
+  // PFCIcons.get returns a hardcoded SVG string (safe to interpolate); msg
+  // contains only static template literals + numbers; no user input reaches
+  // innerHTML here.
+  const iconHtml = (typeof PFCIcons !== 'undefined' && PFCIcons.get) ? PFCIcons.get(iconKey) : '';
+  box.innerHTML = '<span style="flex-shrink:0;display:inline-flex;color:' + borderRgb.replace('0.30', '0.80') + ';">' + iconHtml + '</span><span style="flex:1;">' + msg + '</span>';
 }
 
 // ── LIFETIME CHART ──
+// SC-PERF-3 fix (2026-05-25) — typeof Chart guard. If the Chart.js CDN fails
+// (network/CSP/blocked), without this guard renderLifetimeChart throws and
+// the rest of calc() never completes, so the metric cards + table never
+// update either. Now we silently skip the chart and surface a fallback text
+// in the canvas's aria-label container (canvas itself stays inert for SR).
+//
+// SC-PERF-2 perf — chart.update() vs destroy/recreate. Pre-fix every keystroke
+// destroyed the entire Chart instance + allocated a new one (heavy on mobile).
+// Now we reuse the existing chart, swap labels + dataset data in place, then
+// call .update('none') (no animation) for instant rendering.
 function renderLifetimeChart(curr, newB, sym, years) {
+  if (typeof Chart === 'undefined') {
+    // Surface fallback so SR users still get the trend; remember last data
+    // so the canvas re-render on reconnection has something to draw.
+    const canvas = document.getElementById('lifetimeChart');
+    if (canvas) canvas.setAttribute('aria-label', 'Lifetime earnings chart unavailable — Chart.js failed to load.');
+    return;
+  }
   const canvas = document.getElementById('lifetimeChart');
-  if (lifetimeChart) { lifetimeChart.destroy(); lifetimeChart = null; }
+  if (!canvas) return;
 
   const labels = Array.from({ length: years }, (_, i) => 'Yr ' + (i + 1));
+
+  // SC-A11Y-2 — sync aria-label with the data so screen readers hear the
+  // headline takeaway even though the canvas itself is decorative pixels.
+  const totalCurr = curr[curr.length - 1] || 0;
+  const totalNew = newB[newB.length - 1] || 0;
+  canvas.setAttribute('aria-label',
+    'Lifetime earnings trajectory over ' + years + ' years. Without the raise, year ' + years + ' salary ' +
+    sym + Math.round(totalCurr).toLocaleString() + '. With the raise, year ' + years + ' salary ' +
+    sym + Math.round(totalNew).toLocaleString() + '. The widening gap is the raise compounding.');
+
+  // SC-PERF — reuse existing chart instance when possible
+  if (lifetimeChart) {
+    lifetimeChart.data.labels = labels;
+    lifetimeChart.data.datasets[0].data = curr;
+    lifetimeChart.data.datasets[1].data = newB;
+    // Tooltip callback closes over sym — refresh it each call to track currency changes.
+    lifetimeChart.options.plugins.tooltip.callbacks.label = ctx =>
+      ' ' + ctx.dataset.label + ': ' + sym + ctx.parsed.y.toLocaleString();
+    lifetimeChart.options.scales.y.ticks.callback = v => sym + (v >= 1000 ? (v/1000).toFixed(0)+'k' : v);
+    lifetimeChart.update('none'); // no transition — keystroke-paced updates
+    return;
+  }
 
   lifetimeChart = new Chart(canvas, {
     type: 'line',
@@ -500,6 +650,7 @@ function renderLifetimeChart(curr, newB, sym, years) {
     },
     options: {
       responsive: true, maintainAspectRatio: false,
+      animation: false, // SC-PERF — kill the entrance animation; tooltips still animate
       interaction: { intersect: false, mode: 'index' },
       plugins: {
         legend: { display: false },
@@ -525,10 +676,10 @@ function renderLifetimeChart(curr, newB, sym, years) {
 
 // ── COUNTER OFFER ──
 function calcCounter() {
-  const sym    = window.PFCSym ? PFCSym(USER.currency) : (USER.currency || '$');
-  const offer  = parseFloat(document.getElementById('i-offer').value) || 0;
-  const target = parseFloat(document.getElementById('i-target').value) || 0;
-  const salary = parseFloat(document.getElementById('i-salary').value) || 0;
+  const sym    = _sym();
+  const offer  = _parseFiniteAmount(document.getElementById('i-offer').value, 10000000) || 0;
+  const target = _parseFiniteAmount(document.getElementById('i-target').value, 10000000) || 0;
+  const salary = _parseFiniteAmount(document.getElementById('i-salary').value, 10000000) || 0;
 
   document.getElementById('counter-results').style.display = offer ? 'block' : 'none';
   document.getElementById('counter-empty').style.display   = offer ? 'none' : 'block';
@@ -570,17 +721,18 @@ Your absolute minimum is ${sym}${walkaway.toLocaleString()} — don't accept bel
 
 // ── BENEFITS ──
 function calcBenefits() {
-  const sym    = window.PFCSym ? PFCSym(USER.currency) : (USER.currency || '$');
-  const salary = parseFloat(document.getElementById('i-target').value) || parseFloat(document.getElementById('i-salary').value) || 0;
+  const sym    = _sym();
+  const salary = (_parseFiniteAmount(document.getElementById('i-target').value, 10000000) || _parseFiniteAmount(document.getElementById('i-salary').value, 10000000) || 0);
   if (!salary) return;
 
-  const bonusPctRaw = parseFloat(document.getElementById('b-bonus').value) || 0;
+  // All benefit fields clamped — bonus/pension are %, others are absolute.
+  const bonusPctRaw = _parseFiniteAmount(document.getElementById('b-bonus').value, 500) || 0;
   const bonus   = bonusPctRaw / 100 * salary;
-  const equity  = parseFloat(document.getElementById('b-equity').value)  || 0;
-  const health  = parseFloat(document.getElementById('b-health').value)  || 0;
-  const pension = (parseFloat(document.getElementById('b-pension').value) || 0) / 100 * salary;
-  const remote  = parseFloat(document.getElementById('b-remote').value)  || 0;
-  const leave   = (parseFloat(document.getElementById('b-leave').value)  || 0) * (salary / 260);
+  const equity  = _parseFiniteAmount(document.getElementById('b-equity').value, 10000000) || 0;
+  const health  = _parseFiniteAmount(document.getElementById('b-health').value, 100000) || 0;
+  const pension = (_parseFiniteAmount(document.getElementById('b-pension').value, 100) || 0) / 100 * salary;
+  const remote  = _parseFiniteAmount(document.getElementById('b-remote').value, 100000) || 0;
+  const leave   = (_parseFiniteAmount(document.getElementById('b-leave').value, 365) || 0) * (salary / 260);
 
   // Other benefits = everything that's not base/bonus/equity, lumped for
   // visual brevity in the breakdown card.
@@ -642,12 +794,12 @@ function looksLikeRealRole(s) {
 }
 
 async function generateScript() {
-  const salary  = parseFloat(document.getElementById('i-salary').value) || 0;
-  const target  = parseFloat(document.getElementById('i-target').value) || 0;
+  const salary  = _parseFiniteAmount(document.getElementById('i-salary').value, 10000000) || 0;
+  const target  = _parseFiniteAmount(document.getElementById('i-target').value, 10000000) || 0;
   const roleRaw = document.getElementById('i-role').value.trim();
-  const expNum  = parseFloat(document.getElementById('i-exp').value);
-  const exp     = (Number.isFinite(expNum) && expNum >= 0 && expNum <= 50) ? expNum : 3;
-  const sym     = window.PFCSym ? PFCSym(USER.currency) : (USER.currency || '$');
+  const expNum  = _parseFiniteAmount(document.getElementById('i-exp').value, 50);
+  const exp     = (expNum != null) ? expNum : 3;
+  const sym     = _sym();
 
   if (!salary) { showToast('Enter your current salary first'); return; }
   if (!roleRaw || !looksLikeRealRole(roleRaw)) {
@@ -786,9 +938,21 @@ Write the script now. Just the script — no preamble, no afterword.`;
       body: JSON.stringify({ message: prompt, csvMode: false }),
     });
     const data = await res.json();
-    const text = data.reply || data.error || 'Could not generate script. Try again.';
+    const textRaw = data.reply || data.error || 'Could not generate script. Try again.';
 
-    // Format the script nicely
+    // SC-SEC-1 fix (audit 2026-05-25) — CRITICAL XSS hardening. Pre-fix the
+    // LLM reply went straight into innerHTML through 5 markdown regexes —
+    // any raw `<img src=x onerror=…>` / `<script>` / `<svg onload>` in the
+    // model output rendered as live HTML in the authenticated user's session.
+    // The role field is user-controlled and feeds the prompt, so prompt-
+    // injection that gets the model to echo HTML = reflected XSS.
+    //
+    // Fix: escape FIRST, then apply markdown regexes against the escaped
+    // string. The regex patterns operate on character classes that survive
+    // escaping (** stays **, ## stays ##, digits + dots stay digits + dots,
+    // - stays -, \n stays \n) so the formatting still works — but any raw
+    // HTML is now inert `&lt;img...` text instead of an active img tag.
+    const text = escHtml(textRaw);
     const formatted = text
       .replace(/\*\*(.*?)\*\*/g, '<strong style="color:var(--text)">$1</strong>')
       .replace(/^##\s(.+)$/gm, '<div style="font-size:12px;font-weight:700;color:var(--teal);letter-spacing:.06em;text-transform:uppercase;margin:14px 0 6px;">$1</div>')
@@ -798,7 +962,8 @@ Write the script now. Just the script — no preamble, no afterword.`;
       .replace(/\n/g, '<br>');
 
     scriptBox.innerHTML = formatted;
-    document.getElementById('copy-btn').style.display = 'block';
+    const cb = document.getElementById('copy-btn');
+    if (cb) cb.style.display = 'block';
   } catch(e) {
     scriptBox.innerHTML = '<span style="color:var(--red)">Could not reach Sage. Check your connection and try again.</span>';
   }
@@ -825,9 +990,14 @@ function goToTakeHome() {
 // Update the CTA label + sub-text reactively when the target/salary changes
 // so users know what number is about to get carried over.
 function updateTakeHomeCta() {
-  const sym    = (window.USER && USER.currency) || '$';
-  const target = parseFloat(document.getElementById('i-target').value) || 0;
-  const salary = parseFloat(document.getElementById('i-salary').value) || 0;
+  // SC-DES-1 fix (audit 2026-05-25) — `window.USER` is never set anywhere in
+  // the codebase (USER is module-scoped at the top of this file), so the
+  // prior `(window.USER && USER.currency) || '$'` always fell through to
+  // '$' for €/£/etc. users. The fixed _sym() helper threads through PFCSym
+  // → USER.currency the same way every other render path does.
+  const sym    = _sym();
+  const target = _parseFiniteAmount(document.getElementById('i-target').value, 10000000) || 0;
+  const salary = _parseFiniteAmount(document.getElementById('i-salary').value, 10000000) || 0;
   const amount = target || salary;
   const label  = document.getElementById('takehome-cta-label');
   const sub    = document.getElementById('takehome-cta-sub');
@@ -857,27 +1027,44 @@ function showToast(msg) {
 }
 
 // ── START ──
-init();
+// SC-AUTH-RACE fix (audit 2026-05-25) — defer init until DOMContentLoaded.
+// Pre-fix init() ran synchronously at end-of-script, BEFORE DOMContentLoaded
+// fired. That meant init's getElementById calls could race against late-
+// parsed DOM, AND PFCAuth's adoptGuestData wouldn't have completed so any
+// guest-bucket data prefilled the salary input visually before the
+// rehydrate path arrived. Same root cause as G-P0-6 on /goals.
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}
 
 // ── AUTH-AWARE RE-HYDRATION ──
-// init() ran synchronously before PFCAuth resolved the real userId — so USER
-// may reflect pfc:guest:* (often empty → no prefill). Once auth resolves and
-// pfc-storage.js finishes adoptGuestData, re-read and re-prefill.
+// Once PFCAuth resolves the real userId and pfc-storage.js finishes
+// adoptGuestData, re-read USER and re-prefill any inputs the user hasn't
+// touched. Idempotent — safe to call multiple times across auth state changes.
 function _rehydrateFromStorage() {
   const prevSalaryPrefill = USER.income ? USER.income * 12 : null;
   try { USER = (typeof PFCUser !== 'undefined') ? PFCUser.get() : (PFCStorage.getJSON('user') || {}); } catch(e) { USER = {}; }
-  const sym = window.PFCSym ? PFCSym(USER.currency) : (USER.currency || '$');
+  const sym = _sym();
   ['sym-label','sym-custom','sym-offer'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.textContent = sym;
   });
-  // Only re-prefill salary if the input is empty or still at the previous
-  // (possibly stale) prefill — don't clobber a value the user has typed.
+  // SC-FUNC-3 (2026-05-25) — defensive sanity on income×12. USER.income is
+  // SUPPOSED to be monthly (per the onboarding contract documented elsewhere)
+  // but if any code path ever wrote annual, the ×12 prefill would show
+  // 12-million when the user makes 1M/yr. Clamp the prefill below 10M.
   const salaryInput = document.getElementById('i-salary');
-  if (salaryInput && USER.income) {
-    const curr = salaryInput.value.trim();
-    if (curr === '' || (prevSalaryPrefill !== null && Number(curr) === prevSalaryPrefill)) {
-      salaryInput.value = USER.income * 12;
+  if (salaryInput && USER.income > 0) {
+    const annualised = USER.income * 12;
+    // Sanity: cap at 10M to catch any monthly-vs-annual confusion silently
+    // (this is the same magnitude cap _parseFiniteAmount enforces on save).
+    if (annualised <= 10000000) {
+      const curr = salaryInput.value.trim();
+      if (curr === '' || (prevSalaryPrefill !== null && Number(curr) === prevSalaryPrefill)) {
+        salaryInput.value = annualised;
+      }
     }
   }
   calc();
