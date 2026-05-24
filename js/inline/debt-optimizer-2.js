@@ -356,10 +356,19 @@ function calcPayoff(debts, strategy, extra) {
   let month = 0;
   const maxMonths = 600; // 50 years cap
 
+  // D-PERF-9 fix (audit 2026-05-24) — hoist the base Date outside the loop.
+  // Pre-fix every iteration did `new Date()` + `setMonth(getMonth() + month)`
+  // + `toLocaleDateString()`. With 600-month cap × 3 calls per render ×
+  // debounced settle, this is thousands of Date allocations and locale-
+  // format calls per slider settle. Now we hold ONE base Date (today) and
+  // produce per-iteration dates via the 3-arg Date constructor — same
+  // accuracy, dramatically less GC pressure.
+  const baseYear = new Date().getFullYear();
+  const baseMonth = new Date().getMonth();
+
   while (pool.some(d => d.remaining > 0.01) && month < maxMonths) {
     month++;
-    const date = new Date();
-    date.setMonth(date.getMonth() + month);
+    const date = new Date(baseYear, baseMonth + month, 1);
     const dateStr = date.toLocaleDateString('en-GB', { month:'short', year:'numeric' });
 
     let monthlyExtra = extra;
@@ -473,6 +482,15 @@ function renderAll() {
 
   SCHEDULE_DATA = opt.schedule;
 
+  // D-CRO-12 fix (CEO call 2026-05-24) — DTI (debt-to-income) micro-banner.
+  // Reads USER.income (already loaded for slider max). Renders ONLY when
+  // income > 0 — silent skip on zero/missing so guests/users who skipped
+  // income onboarding don't see a "?%" pill. Single-line conversion-grade
+  // anchor that turns this from a tactical tool into a strategic dashboard
+  // moment. Heavy-version (breakdown card + national average) deferred per
+  // CEO scope.
+  _renderDtiBanner(totalMin, sym);
+
   // D-P0-5 fix (audit 2026-05-24) — negative-amortisation banner. If any
   // debt's monthly interest exceeds its minimum payment, the projection at
   // the current minimums never converges (was silently capped at 600 mo).
@@ -492,7 +510,9 @@ function renderAll() {
   document.getElementById('m-months').textContent = opt.months + ' mo';
   document.getElementById('m-months-hint').textContent = 'Debt-free by ' + dfStr;
 
-  const interestSaved = Math.max(0, base.totalInterest - (EXTRA > 0 ? opt.totalInterest : base.totalInterest));
+  // D-BUG-14 fix (audit 2026-05-24) — `interestSaved` was declared but never
+  // read; `saved` is the value used downstream. Pre-fix it sat as dead code
+  // computing the same thing with extra branching. Removed.
   const saved = base.totalInterest - opt.totalInterest;
   document.getElementById('m-saved').textContent = sym + Math.max(0, Math.round(saved)).toLocaleString();
   document.getElementById('m-payment').textContent = sym + (totalMin + EXTRA).toLocaleString();
@@ -579,6 +599,41 @@ function _renderNegAmortBanner(opt, sym) {
   const nameEl = banner.querySelector('.neg-amort-names');
   if (nameEl) nameEl.textContent = ' ' + names + ' ';
   wrap.parentNode.insertBefore(banner, wrap);
+}
+
+// D-CRO-12 helper (CEO call 2026-05-24) — DTI banner. Single-line micro-stat
+// anchoring "total minimums / monthly income" against the canonical 36%
+// comfort threshold. Silent skip when income missing/zero/non-finite so
+// guests or users who skipped onboarding don't see a "?% of ?" line. dtiPct
+// capped at 999 for display (a paste-bomb balance shouldn't crash the line).
+function _renderDtiBanner(totalMin, sym) {
+  const wrap = document.getElementById('dti-banner-wrap');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  const income = Number(USER && USER.income) || 0;
+  if (!Number.isFinite(income) || income <= 0) return;
+  if (!Number.isFinite(totalMin) || totalMin <= 0) return;
+  const dtiPct = Math.min(999, Math.round((totalMin / income) * 100));
+  let tone, msg;
+  if (dtiPct <= 28) {
+    tone = 'good';
+    msg = `<strong>Healthy DTI</strong> — well under the 36% comfort threshold. Keep the extras coming and you'll stay there.`;
+  } else if (dtiPct <= 36) {
+    tone = 'warn';
+    msg = `<strong>Approaching the 36% comfort threshold.</strong> Extra payments on the highest-rate debt are the cheapest way back into safe territory.`;
+  } else {
+    tone = 'bad';
+    msg = `<strong>Above the 36% comfort threshold.</strong> Refinancing the highest-rate debt or adding to monthly payments could ease this fast.`;
+  }
+  const banner = document.createElement('div');
+  banner.className = 'dti-banner dti-banner--' + tone;
+  banner.setAttribute('role', 'status');
+  // sym is pre-escaped at init (D-P0-8); dtiPct + totalMin are numeric;
+  // msg is a static template literal (no user data). HTML interpolation
+  // is safe here — defence-in-depth: msg is built from hardcoded strings,
+  // and the only dynamic bits are numbers.
+  banner.innerHTML = `<span style="font-size:18px;line-height:1;">📊</span><div style="flex:1;">Your <span class="dti-pct">${dtiPct}%</span> debt-to-income (${sym}${Math.round(totalMin).toLocaleString()}/mo of ${sym}${Math.round(income).toLocaleString()}/mo income). ${msg}</div>`;
+  wrap.appendChild(banner);
 }
 
 // D-A11Y-9 helper — announce a transient message to the SR live region.
@@ -771,19 +826,39 @@ function renderChart(opt, base) {
     return;
   }
 
-  // Build data points — sample every 3 months for readability
-  const step = Math.max(1, Math.floor(opt.months / 24));
+  // D-BUG-17/18 fix (audit 2026-05-24) — chart sampling edge cases.
+  // Pre-fix:
+  //   1. `optData.push(0)` forced the optimised line to zero at the SAME
+  //      x-tick as base's final non-zero point. When base.months >> opt.months
+  //      (e.g. opt 24mo / base 180mo), the dashed line was truncated and the
+  //      labels were biased to opt's shorter timeline.
+  //   2. `opt.schedule[opt.schedule.length-1]?.date || ''` could push an
+  //      empty string label.
+  // Fix: use the LONGER schedule as the timeline axis. Both series carry
+  // their last known value past their own endpoint (opt holds 0, base holds
+  // its terminal balance) so the visual comparison stays honest. Fallback
+  // label uses the longer schedule's last date.
+  const longest = (base.schedule.length >= opt.schedule.length) ? base.schedule : opt.schedule;
+  const longestLen = longest.length;
+  const step = Math.max(1, Math.floor(longestLen / 24));
   const labels = [], optData = [], baseData = [];
 
-  for (let i = 0; i < Math.max(opt.schedule.length, base.schedule.length); i += step) {
-    labels.push(opt.schedule[i]?.date || base.schedule[i]?.date || '');
+  for (let i = 0; i < longestLen; i += step) {
+    labels.push(longest[i]?.date || '');
+    // After opt's schedule ends, opt has paid off → carry 0 forward.
     optData.push(opt.schedule[i]?.balance ?? 0);
-    baseData.push(base.schedule[i]?.balance ?? opt.schedule[i]?.balance ?? 0);
+    // After base's schedule ends (only possible if opt is longer, rare), carry
+    // base's final balance forward (could be 0 if it also converged, or its
+    // terminal balance if not).
+    baseData.push(base.schedule[i]?.balance ?? (base.schedule[base.schedule.length-1]?.balance ?? 0));
   }
-  // Always include endpoint
-  labels.push(opt.schedule[opt.schedule.length-1]?.date || '');
-  optData.push(0);
-  baseData.push(base.schedule[base.schedule.length-1]?.balance ?? 0);
+  // Always include the longest endpoint so the line reaches its final tick.
+  const lastDate = longest[longestLen - 1]?.date;
+  if (lastDate) {
+    labels.push(lastDate);
+    optData.push(opt.schedule[opt.schedule.length-1]?.balance ?? 0);
+    baseData.push(base.schedule[base.schedule.length-1]?.balance ?? 0);
+  }
 
   // D-A11Y-8 fix (audit 2026-05-24) — chart canvas now exposes a meaningful
   // role=img + aria-label that names the optimised vs minimum-only outcome.

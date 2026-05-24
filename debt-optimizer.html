@@ -102,9 +102,21 @@
   /* EXTRA PAYMENT SLIDER */
   .extra-wrap{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:18px 22px;margin-bottom:20px;}
   .extra-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
-  .slider-track{width:100%;appearance:none;height:5px;border-radius:3px;background:var(--bg3);outline:none;cursor:pointer;}
+  .slider-track{width:100%;appearance:none;-moz-appearance:none;height:5px;border-radius:3px;background:var(--bg3);outline:none;cursor:pointer;}
   .slider-track::-webkit-slider-thumb{appearance:none;width:18px;height:18px;border-radius:50%;background:var(--teal);cursor:pointer;border:2px solid var(--bg2);transition:transform .15s;}
   .slider-track::-webkit-slider-thumb:hover{transform:scale(1.2);}
+  /* D-COMPAT-5 fix (audit 2026-05-24) — Firefox slider thumb. Pre-fix only
+     the -webkit- pseudo-element was styled, so Firefox showed a native OS
+     thumb that ignored the brand teal. */
+  .slider-track::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:var(--teal);cursor:pointer;border:2px solid var(--bg2);transition:transform .15s;}
+  .slider-track::-moz-range-thumb:hover{transform:scale(1.2);}
+  .slider-track::-moz-range-track{background:var(--bg3);height:5px;border-radius:3px;border:none;}
+  /* D-DES-9 fix — slider tick rail under the input. Renders 5 anchor marks
+     keyed to the <datalist id="extra-ticks"> stops so users can eyeball
+     $0/$250/$500/$750/$1000 quickly. */
+  .slider-ticks{display:flex;justify-content:space-between;padding:4px 8px 0;font-size:10px;color:var(--text3);font-family:var(--font-body);}
+  .slider-tick{position:relative;}
+  .slider-tick::before{content:"";position:absolute;top:-6px;left:50%;width:1px;height:4px;background:var(--border2);transform:translateX(-50%);}
   .extra-impact{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px;}
   .impact-box{background:var(--bg3);border-radius:var(--r-sm);padding:10px 14px;text-align:center;}
   .impact-val{font-family:var(--font-display);font-size:16px;font-weight:700;margin-bottom:2px;}
@@ -162,6 +174,39 @@
   ::-webkit-scrollbar{width:4px;}
   ::-webkit-scrollbar-track{background:transparent;}
   ::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:2px;}
+  /* D-COMPAT-6 fix (audit 2026-05-24) — Firefox scrollbar styling. Pre-fix
+     only the -webkit- pseudo-elements were set; Firefox showed the chunky
+     OS default next to the styled thin scrollbar in Chromium. */
+  html{scrollbar-width:thin;scrollbar-color:var(--bg3) transparent;}
+  /* D-DES-3 fix (audit 2026-05-24) — KPI hierarchy. Pre-fix all four metric
+     cards rendered identically — eye had no anchor. Promote the first card
+     (Total debt) with a stronger accent + larger val so the dominant
+     number reads first. Same pattern as R-DES-5/8 on /recurring. */
+  .summary-strip .metric-card:first-child{background:linear-gradient(135deg,rgba(224,82,82,0.05),transparent 60%);border-color:rgba(224,82,82,0.25);}
+  .summary-strip .metric-card:first-child .metric-val{font-size:32px;}
+  .summary-strip .metric-card:first-child .metric-label{color:var(--red);font-weight:600;}
+  /* D-DES-4 fix (audit 2026-05-24) — non-color affordance for debt bar and
+     payoff badge. Pre-fix color-only signal collapsed in forced-colors
+     mode and was illegible for protanopia/deuteranopia. Add subtle
+     diagonal stripe via gradient overlay so the bar carries pattern + colour. */
+  .debt-bar-fill{background-image:linear-gradient(135deg,rgba(255,255,255,0.18) 25%,transparent 25%,transparent 50%,rgba(255,255,255,0.18) 50%,rgba(255,255,255,0.18) 75%,transparent 75%);background-size:6px 6px;}
+  /* D-DES-8 fix (audit 2026-05-24) — `.winner` was color-only. Prepend a ✓
+     glyph so color-blind / forced-colors users can read which strategy wins
+     without relying on the teal tint alone. */
+  .compare-table td.winner::before{content:"✓ ";font-weight:700;}
+  /* D-DES-11 fix (audit 2026-05-24) — schedule sticky-header scroll
+     affordance. Without a shadow, users couldn't tell rows scrolled UNDER
+     the sticky <th> row. Subtle drop-shadow signals the layering. */
+  .sched-table th{box-shadow:0 4px 6px -4px rgba(0,0,0,0.4);}
+  /* D-CRO-12 (CEO call 2026-05-24) — DTI banner thresholds. */
+  .dti-banner{grid-column:1/-1;border-radius:var(--r);padding:12px 18px;margin-bottom:14px;display:flex;align-items:center;gap:12px;font-size:13px;line-height:1.5;font-family:var(--font-body);}
+  .dti-banner--good{background:rgba(43,182,125,0.08);border:1px solid rgba(43,182,125,0.25);color:var(--text);}
+  .dti-banner--warn{background:rgba(245,166,35,0.08);border:1px solid rgba(245,166,35,0.25);color:var(--text);}
+  .dti-banner--bad {background:rgba(224,82,82,0.08);border:1px solid rgba(224,82,82,0.25);color:var(--text);}
+  .dti-banner .dti-pct{font-family:var(--font-display);font-weight:700;font-size:18px;}
+  .dti-banner--good .dti-pct{color:var(--teal);}
+  .dti-banner--warn .dti-pct{color:var(--amber);}
+  .dti-banner--bad  .dti-pct{color:var(--red);}
 
   /* TOAST */
   .toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:var(--card);border:1px solid rgba(43,182,125,0.3);border-radius:10px;padding:12px 20px;font-size:13.5px;color:var(--text);z-index:200;white-space:nowrap;animation:toastIn .25s ease;pointer-events:none;}
@@ -414,6 +459,13 @@
   <!-- D-P0-10 — main landmark target for the skip-link. -->
   <div class="content" id="main-content" tabindex="-1">
 
+    <!-- D-CRO-12 (CEO call 2026-05-24) — DTI banner slot. Populated by
+         _renderDtiBanner() ONLY when USER.income > 0; silently empty
+         otherwise so guests / users who skipped income onboarding don't
+         see a blank "?% of ?". Lives above the summary strip so it
+         anchors strategic context before tactical metrics. -->
+    <div id="dti-banner-wrap"></div>
+
     <!-- SUMMARY STRIP -->
     <div class="summary-strip">
       <div class="metric-card">
@@ -469,7 +521,13 @@
           <button type="button" class="strat-btn" id="strat-snowball" role="radio" aria-checked="false" data-pfc-on-click="setStrategy" data-pfc-arg='"snowball"'>
             <div class="strat-badge" style="background:rgba(43,182,125,0.12);color:var(--teal);font-family:var(--font-mono,'JetBrains Mono',monospace);font-size:10.5px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;">Proven</div>
             <div class="strat-title">Snowball</div>
-            <div class="strat-desc">Pay smallest balance first. Quick wins build momentum. Proven to improve completion rates.</div>
+            <!-- D-CRO-15 (audit 2026-05-24) — citation footnote so the
+                 "Proven to improve completion rates" claim is grounded
+                 in published research, not vibes. Kellogg study (Gal &
+                 McShane 2016, "Beyond the Mean") found small-balance-
+                 first ordering correlated with higher debt-elimination
+                 follow-through. Anchors credibility. -->
+            <div class="strat-desc">Pay smallest balance first. Quick wins build momentum. Proven to improve completion rates.<sup style="font-size:9.5px;color:var(--text3);margin-left:2px;"><a href="https://journals.sagepub.com/doi/10.1509/jmr.14.0245" target="_blank" rel="noopener" style="color:var(--text3);text-decoration:underline;text-decoration-style:dotted;" title="Gal &amp; McShane 2016 — Journal of Marketing Research">¹</a></sup></div>
           </button>
         </div>
       </div>
@@ -490,7 +548,14 @@
         <input class="slider-track" type="range" id="extra-slider" min="0" max="1000" step="25" value="0"
            aria-label="Extra monthly payment beyond the minimums"
            aria-valuetext="+$0 per month"
+           list="extra-ticks"
            data-pfc-on-input="updateExtra" data-pfc-arg-this-value>
+        <!-- D-DES-9 (audit 2026-05-24) — datalist anchors browser-native
+             snap markers under the slider thumb; visible rail below
+             reinforces the stops for sighted users. updateExtra in JS
+             keeps the slider's `max` in sync with USER surplus on init. -->
+        <datalist id="extra-ticks"><option value="0"></option><option value="250"></option><option value="500"></option><option value="750"></option><option value="1000"></option></datalist>
+        <div class="slider-ticks" aria-hidden="true"><span class="slider-tick">$0</span><span class="slider-tick">$250</span><span class="slider-tick">$500</span><span class="slider-tick">$750</span><span class="slider-tick">$1000</span></div>
         <div class="extra-impact">
           <div class="impact-box">
             <div class="impact-val" id="imp-months" style="color:var(--teal);">—</div>
@@ -736,12 +801,25 @@
      SR users hear changes without losing focus. Updated by _srAnnounce(). -->
 <div id="sr-announce" class="visually-hidden" role="status" aria-live="polite" aria-atomic="true"></div>
 
-<script src="./js/inline/debt-optimizer-2.js?v=20260524e"></script>
+<script src="./js/inline/debt-optimizer-2.js?v=20260524f"></script>
   <!-- Route guard: redirect unauthed users to sign-in -->
   <script src="./js/inline/debt-optimizer-3.js?v=20260524d"></script>
   <!-- D-P0-8 — scrim element for mobile drawer; shared sidebar JS toggles. -->
   <div class="pfc-sidebar-scrim" id="pfc-sidebar-scrim" aria-hidden="true"></div>
   <script src="js/pfc-mobile-sidebar.js?v=20260524d" defer></script>
+
+<!-- D-COMPAT-7 fix (audit 2026-05-24) — noscript fallback. Page is 100%
+     JS-rendered (debt list + chart + comparison + schedule all populate
+     via JS). Visitors with JS disabled previously saw a blank dark page
+     with no explanation. Same pattern as R-P0-15. -->
+<noscript>
+  <div style="position:fixed;inset:0;background:#0B1410;color:#F0EDE2;padding:32px;display:flex;align-items:center;justify-content:center;text-align:center;font-family:system-ui,sans-serif;z-index:9999;">
+    <div style="max-width:480px;">
+      <h2 style="font-size:20px;margin-bottom:12px;">JavaScript is required</h2>
+      <p style="line-height:1.6;">ProFinanceCast's debt optimizer runs entirely in your browser — your balances never leave this device. That requires JavaScript. Please enable it for this site, then reload.</p>
+    </div>
+  </div>
+</noscript>
 <footer class="site-footer" role="contentinfo">
   <div class="footer-grid">
     <div class="footer-col">
