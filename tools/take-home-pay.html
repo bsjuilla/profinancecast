@@ -27,8 +27,16 @@
 <script src="../js/pfc-fonts.js" defer></script>
 <style>
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  /* THP-COMPAT (audit 2026-05-25) — iOS Safari text inflation + dark color-scheme. */
+  html{-webkit-text-size-adjust:100%;color-scheme:dark;}
   html,body{height:100%;}
-  body{font-family:var(--font-body);background:var(--bg);color:var(--text);display:flex;overflow:hidden;}
+  /* THP-MOB + COMPAT — dvh fallback for iOS Safari address-bar churn. */
+  body{font-family:var(--font-body);background:var(--bg);color:var(--text);display:flex;overflow:hidden;min-height:100vh;min-height:100dvh;}
+
+  /* THP-A11Y (audit 2026-05-25) — skip-link for keyboard users. */
+  .skip-link{position:absolute;left:-9999px;top:0;background:var(--teal);color:var(--canvas);padding:10px 16px;border-radius:0 0 6px 0;font-weight:600;z-index:300;text-decoration:none;}
+  .skip-link:focus{left:0;}
+  .visually-hidden{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
 
   /* SIDEBAR (mirrors recurring.html) */
   .sidebar{width:240px;flex-shrink:0;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;height:100vh;overflow-y:auto;}
@@ -130,6 +138,70 @@
   ::-webkit-scrollbar{width:4px;}
   ::-webkit-scrollbar-track{background:transparent;}
   ::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:2px;}
+
+  /* THP-A11Y — global :focus-visible ring. */
+  :where(button,a,input,select,textarea,[tabindex]):focus-visible{
+    outline:2px solid var(--teal);
+    outline-offset:2px;
+    border-radius:var(--r-sm);
+  }
+
+  /* THP-MOB (audit 2026-05-25) — Mobile drawer pattern. Pre-fix page had ONE
+     @media query (980px tool-grid collapse) and ZERO sidebar behaviour at
+     mobile sizes; sidebar ate 67% of a 360px viewport. Below 900px:
+     sidebar slides off-screen by default, hamburger reveals it, scrim
+     dims the rest. Mirrors R-P0-10 / DASH-P0-2 / G-P0-3 / SC-P0-D. */
+  .sidebar-toggle{display:none;}
+  .sidebar-scrim{display:none;}
+  @media (max-width: 899px){
+    body{display:block;overflow:auto;}
+    .sidebar{position:fixed;top:0;left:0;height:100vh;height:100dvh;width:280px;max-width:85vw;transform:translateX(-100%);transition:transform .25s ease;z-index:200;box-shadow:0 0 24px rgba(0,0,0,.4);}
+    .sidebar.is-open{transform:translateX(0);}
+    .sidebar-scrim{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:150;}
+    .sidebar-scrim.is-open{display:block;}
+    .main{height:auto;min-height:100vh;min-height:100dvh;}
+    .sidebar-toggle{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;background:transparent;border:1px solid var(--border2);border-radius:var(--r-sm);color:var(--text);cursor:pointer;margin-right:8px;flex-shrink:0;}
+    .topbar{padding:0 14px;flex-wrap:wrap;height:auto;min-height:64px;padding-top:10px;padding-bottom:10px;}
+    .content{padding:16px;}
+    .tool-grid{grid-template-columns:1fr;gap:16px;}
+    .card{padding:18px 14px;}
+    .result-hero{font-size:34px;}
+    .gauge svg{width:160px;height:96px;}
+    .result-sub{gap:14px;}
+    table.breakdown th,table.breakdown td{font-size:12.5px;padding:8px 0;}
+  }
+
+  /* THP-COMPAT — safe-area insets for iOS notched devices. */
+  @supports (padding: env(safe-area-inset-bottom)){
+    .sidebar-footer{padding-bottom:max(16px, env(safe-area-inset-bottom));}
+    @media (max-width: 899px){.content{padding-bottom:max(16px, env(safe-area-inset-bottom));}}
+  }
+
+  /* THP-COMPAT — reduced-motion respect (gauge animation, transitions). */
+  @media (prefers-reduced-motion: reduce){
+    *,*::before,*::after{animation-duration:0.01ms!important;animation-iteration-count:1!important;transition-duration:0.01ms!important;scroll-behavior:auto!important;}
+  }
+
+  /* THP-COMPAT — Windows high-contrast / forced-colors mode. */
+  @media (forced-colors: active){
+    .card,.field input,.field select,.sidebar-toggle{border:1px solid CanvasText;}
+    .gauge-fill,#gauge-fill{forced-color-adjust:none;}
+  }
+
+  /* THP-COMPAT — print stylesheet. */
+  @media print{
+    body{overflow:visible;display:block;}
+    .sidebar,.sidebar-scrim,.sidebar-toggle,.skip-link,.pfc-photo-figure{display:none!important;}
+    .main{height:auto;}
+    .topbar{position:static;border-bottom:1px solid #333;}
+    .card{break-inside:avoid;page-break-inside:avoid;border:1px solid #aaa!important;background:#fff!important;color:#000!important;}
+    .result-hero{color:#000!important;}
+    table.breakdown th,table.breakdown td{color:#000!important;}
+  }
+
+  /* THP-P0-DES — empty-state hero (was hardcoded "$0" which flashed wrong
+     currency for non-US visitors before JS hydrated). */
+  .result-hero-empty{color:var(--text3);}
 </style>
   <link rel="stylesheet" href="../css/pfc-tokens.css">
   <link rel="stylesheet" href="../css/pfc-photos.css?v=3">
@@ -138,13 +210,26 @@
   <link rel="stylesheet" href="../css/pfc-anim.css?v=1">
   <link rel="stylesheet" href="../css/pfc-app.css">
   <link rel="stylesheet" href="../css/pfc-footer.css">
-  <!-- Supabase SDK + auth/storage/entitlements (must load before any inline script that uses them) -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="../js/pfc-config.js"></script>
-  <script src="../js/pfc-auth.js"></script>
-  <script src="../js/pfc-crypto.js"></script>
-  <script src="../js/pfc-storage.js"></script>
-  <script src="../js/pfc-entitlements.js"></script>
+  <!-- THP-P0-SEC fix (audit 2026-05-25) — Supabase CDN now version-pinned +
+       SRI-locked. Pre-fix the `@2` floating tag with no integrity hash left
+       a supply-chain hole. Pinned to the EXACT version + hash already running
+       on /net-worth (NW-P1-5), /debt-optimizer, /goals, /recurring,
+       /salary-calculator (SC-HOTFIX). Computing a new hash from scratch
+       would risk the same fabricated-placeholder bug that hit SC-P0 — copy
+       the proven working hash. -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.105.4"
+          integrity="sha384-4eCDoMN/7A46qQ5Tj0rZ/D2VEolFGNIINDTLAcWZcvhkRSsvTfqNfaBMlRRoGEZ5"
+          crossorigin="anonymous" defer></script>
+  <!-- THP-P0-PERF fix (audit 2026-05-25) — defer all 5 head pfc-* scripts so
+       they no longer block HTML parsing. defer preserves order: config -> auth
+       -> crypto -> storage -> entitlements all still run in dependency order
+       before the body-loaded tools-take-home-pay-3.js consumer. Same atomic-
+       defer pattern as R-P0-11 / NW-P1-7 / DASH-P0-7 / SC-P0-F. -->
+  <script src="../js/pfc-config.js" defer></script>
+  <script src="../js/pfc-auth.js" defer></script>
+  <script src="../js/pfc-crypto.js" defer></script>
+  <script src="../js/pfc-storage.js" defer></script>
+  <script src="../js/pfc-entitlements.js" defer></script>
   <script src="../js/pfc-motion.js" defer></script>
   <script src="../js/pfc-anim.js" defer></script>
   <link rel="stylesheet" href="../css/pfc-reskin.css">
@@ -156,12 +241,12 @@
   <script src="../js/pfc-analytics.js" defer></script>
   <script src="../js/pfc-funnel.js" defer></script>
   <script src="../js/pfc-sidebar.js" defer></script>
-  <script src="../js/pfc-tax-engine.js" defer></script>
+  <script src="../js/pfc-tax-engine.js?v=20260525a" defer></script>
   <!-- Global tax library: data files MUST load before the API so it closes over a populated countries map. -->
-  <script src="../js/tax-library/europe.js" defer></script>
-  <script src="../js/tax-library/americas.js" defer></script>
-  <script src="../js/tax-library/asia-pacific-mea.js" defer></script>
-  <script src="../js/pfc-tax-library.js" defer></script>
+  <script src="../js/tax-library/europe.js?v=20260525a" defer></script>
+  <script src="../js/tax-library/americas.js?v=20260525a" defer></script>
+  <script src="../js/tax-library/asia-pacific-mea.js?v=20260525a" defer></script>
+  <script src="../js/pfc-tax-library.js?v=20260525a-mathfix" defer></script>
 
   <script type="application/ld+json">
   {
@@ -198,13 +283,26 @@
   </script>
   <!-- Privacy-friendly analytics by Plausible -->
   <script async src="https://plausible.io/js/pa-EvYdfUp4d9vvohwl_Yy2j.js"></script>
-  <script src="../js/inline/tools-take-home-pay-1.js"></script>
+  <!-- Deferred so defer-ordered head modules (pfc-* helpers + tax engine + library)
+       resolve before this consumer runs. -->
+  <script src="../js/inline/tools-take-home-pay-1.js?v=20260525a" defer></script>
   <link rel="stylesheet" href="../css/pfc-fonts.css">
 </head>
 <body data-pfc-surface="working">
 
+<!-- THP-P0-A11Y (audit 2026-05-25) — skip-link + noscript fallback. -->
+<a href="#main" class="skip-link">Skip to main content</a>
+<noscript>
+  <div style="background:rgba(245,166,35,0.12);border:1px solid rgba(245,166,35,0.4);color:#F0EDE2;padding:14px 18px;margin:16px;border-radius:8px;font-family:Georgia,serif;line-height:1.6;">
+    <strong>JavaScript required.</strong> The take-home pay calculator runs entirely in your browser — your salary numbers never leave your machine, but we need JS to do the tax math. Please enable JavaScript and refresh.
+  </div>
+</noscript>
+
+<!-- THP-MOB — mobile sidebar scrim. Shared by pfc-sidebar.js hamburger handler. -->
+<div class="sidebar-scrim" id="pfc-sidebar-scrim" aria-hidden="true" data-pfc-on-click="_pfcCloseSidebar"></div>
+
 <!-- SIDEBAR -->
-<nav class="sidebar" aria-label="Primary navigation">
+<nav class="sidebar" id="pfc-sidebar" aria-label="Primary navigation">
   <a href="../dashboard.html" class="sidebar-logo">
     <span class="pfc-brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32" width="32" height="32" aria-hidden="true"><text x="16" y="19" text-anchor="middle" font-family="&apos;Fraunces&apos;,&apos;Cormorant Garamond&apos;,Georgia,serif" font-size="14" font-weight="500" letter-spacing="-0.4" fill="#D4AF6A">PFC</text><rect x="14.5" y="23" width="3" height="3" fill="#D4AF6A" transform="rotate(45 16 24.5)"/></svg></span>
     ProFinanceCast
@@ -279,17 +377,24 @@
 </nav>
 
 <!-- MAIN -->
-<div class="main">
+<!-- THP-P0-A11Y (audit 2026-05-25) — proper <main> landmark with #main id. -->
+<main class="main" id="main" role="main" aria-labelledby="page-h1">
   <div class="topbar">
+    <!-- THP-MOB hamburger toggle — visible below 900px. -->
+    <button class="sidebar-toggle" type="button" aria-label="Open navigation menu" aria-controls="pfc-sidebar" data-pfc-on-click="_pfcToggleSidebar">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M2 5h14M2 9h14M2 13h14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+    </button>
     <div class="topbar-left">
-      <div class="topbar-title">Take-home pay calculator</div>
+      <!-- THP-P0-A11Y — promote topbar title to a proper <h1>. Pre-fix the
+           page had ZERO h1 — calc-heading was a visually-hidden h2. -->
+      <h1 class="topbar-title" id="page-h1" style="margin:0;">Take-home pay calculator</h1>
       <div class="topbar-sub">What you actually keep after income tax, social contributions and regional tax — global coverage, 2026 brackets.</div>
     </div>
   </div>
 
   <div class="content">
-    <section class="tool-grid" aria-labelledby="calc-heading">
-      <h2 id="calc-heading" style="position:absolute;left:-9999px;">Calculator</h2>
+    <section class="tool-grid" aria-labelledby="page-h1">
+      <h2 class="visually-hidden">Inputs and result</h2>
 
       <div class="card">
         <div class="field">
@@ -301,7 +406,10 @@
         </div>
         <div class="field">
           <label for="gross" id="gross-label">Gross annual salary</label>
-          <input class="num-input" type="number" id="gross" inputmode="decimal" min="0" step="1000" value="85000">
+          <!-- THP-P0-A11Y (audit 2026-05-25) — max attribute prevents the
+               1e308 / Infinity overflow path the audit flagged on direct
+               input (URL params were already clamped). -->
+          <input class="num-input" type="number" id="gross" inputmode="decimal" min="0" max="10000000" step="1000" value="85000">
         </div>
         <div class="field" id="region-row" hidden>
           <label for="region" id="region-label">Region</label>
@@ -310,23 +418,19 @@
         </div>
       </div>
 
-      <div class="card" aria-live="polite">
+      <!-- THP-P0-DES (audit 2026-05-25) — decorative banknote photo removed
+           (DASH-P1-14 convention — analytic tools drop page-level visual junk).
+           Result hero, sub-stats, and gauge ALL start with "—" not "$0" so a
+           UK/EUR/etc. visitor never sees a wrong-currency $0 flash before JS
+           hydrates. data-thp-result-card hook lets the URL-param currency-
+           mismatch warning insert itself above this card. -->
+      <div class="card" aria-live="polite" data-thp-result-card>
         <span class="result-meta">Annual take-home</span>
-        <figure class="pfc-photo-figure">
-          <picture>
-            <source srcset="../assets/img/photos/takehome-result-coronation.avif" type="image/avif">
-            <source srcset="../assets/img/photos/takehome-result-coronation.webp" type="image/webp">
-            <img class="pfc-photo-square" src="../assets/img/photos/takehome-result-coronation.webp"
-                 alt="Banded stack of period banknotes on cream paper with brass paperclip — the actual money that lands."
-                 loading="lazy" decoding="async"
-                 width="1254" height="1254">
-          </picture>
-        </figure>
-        <div class="result-hero" id="r-takehome">$0</div>
+        <div class="result-hero result-hero-empty" id="r-takehome">—</div>
         <div class="result-sub">
-          <div><span class="result-meta">Per month</span><span class="num" id="r-monthly">$0</span></div>
-          <div><span class="result-meta">Per hour (2080 h)</span><span class="num" id="r-hourly">$0</span></div>
-          <div><span class="result-meta">Effective rate</span><span class="num" id="r-effective">0%</span></div>
+          <div><span class="result-meta">Per month</span><span class="num" id="r-monthly">—</span></div>
+          <div><span class="result-meta">Per hour (2080 h)</span><span class="num" id="r-hourly">—</span></div>
+          <div><span class="result-meta">Effective rate</span><span class="num" id="r-effective">—</span></div>
         </div>
 
         <div class="gauge">
@@ -336,18 +440,25 @@
             <line id="gauge-needle" x1="100" y1="110" x2="100" y2="40" stroke="#D4AF6A" stroke-width="2" stroke-linecap="round" transform="rotate(-90 100 110)"/>
             <circle cx="100" cy="110" r="4" fill="#D4AF6A"/>
           </svg>
-          <p class="gauge-label" id="r-gauge-label">You keep 0% of every dollar earned.</p>
+          <p class="gauge-label" id="r-gauge-label">Enter your salary above to see what you keep.</p>
         </div>
 
-        <p class="pull" id="r-pull">After tax, you keep $0 for every $0 earned.</p>
+        <p class="pull" id="r-pull">After tax, you keep the result of pure-browser math — your salary never leaves your machine.</p>
 
+        <!-- THP-P0-A11Y — table head <th scope="col">, body rows use <th scope="row"> for the label cell. -->
         <table class="breakdown">
-          <thead><tr><th>Line</th><th style="text-align:right">Annual</th></tr></thead>
+          <thead><tr><th scope="col">Line</th><th scope="col" style="text-align:right">Annual</th></tr></thead>
           <tbody id="breakdown-body">
             <!-- Rows are rendered by the script from PFCTaxLibrary.calculate(...).breakdown -->
           </tbody>
         </table>
-        <p class="disclaimer">All math runs in your browser. Numbers are estimates for planning, not tax advice. Where a country uses a flat-rate approximation, exact figures vary by deductions, locality, credits and filing status — consult a qualified accountant for filing.</p>
+        <!-- THP-P0-DES — engineSource attribution. populated by the inline
+             script with "PFCTaxEngine.calculateUS (IRS Rev. Proc. 2024-40 + FICA 2026)"
+             for US, "HMRC 2026/27" for UK, or "PFCTaxLibrary.calculate" + the
+             country's source field for other countries. Trust signal so the
+             user knows WHICH dataset produced the number. -->
+        <p class="disclaimer" id="r-engine-source" data-thp-engine-source>All math runs in your browser. Numbers are estimates for planning, not tax advice.</p>
+        <p class="disclaimer">Where a country uses a flat-rate approximation, exact figures vary by deductions, locality, credits and filing status — consult a qualified accountant for filing.</p>
       </div>
     </section>
 
@@ -377,7 +488,7 @@
   </div>
 
   <!-- Route guard: redirect unauthed users to sign-in -->
-  <script src="../js/inline/tools-take-home-pay-2.js"></script>
+  <script src="../js/inline/tools-take-home-pay-2.js?v=20260525a" defer></script>
 
   <footer class="site-footer" role="contentinfo">
     <div class="footer-grid">
@@ -428,9 +539,17 @@
     financial adviser before any financial decision.
   </p>
 </footer>
-</div><!-- /main -->
+</main><!-- /main -->
 
-<script src="../js/inline/tools-take-home-pay-3.js"></script>
+<!--
+  CACHE-BUST CONTRACT (THP-P0-V 2026-05-25)
+  ─────────────────────────────────────────
+  ANY edit to tools-take-home-pay-*.js, pfc-tax-engine.js, pfc-tax-library.js,
+  or any tax-library/*.js MUST also bump the ?v= suffix below. Browsers cache
+  JS for 24h (Cache-Control max-age=86400); same-URL re-fetch returns the
+  cached stale file. Naming: ?v=YYYYMMDD<letter>[-suffix].
+-->
+<script src="../js/inline/tools-take-home-pay-3.js?v=20260525a-thpbatch" defer></script>
 
 </body>
 </html>

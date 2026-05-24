@@ -45,25 +45,131 @@
     return owed;
   }
 
+  // THP-P0-MATH (audit 2026-05-25) — extract the flat-rate read so all three
+  // schema shapes the tax-library data uses are honoured:
+  //   `flatRate`     — primary field name (Luxembourg, Czechia)
+  //   `effectiveRate` — Luxembourg/Czechia variant
+  //   `rate`         — Argentina, Venezuela, Bolivia, others mis-keyed
+  // Pre-fix the `flat` and `flat-approx` paths only checked the first two
+  // names; AR/VE/BO had `rate` and silently returned 0 income tax, making
+  // every Argentinian/Venezuelan/Bolivian visitor see "you keep 100% of
+  // your gross" alongside their social contributions. Falls through to
+  // `brackets` so HU/RO/BG (which carry `kind:'flat'` with only `brackets:[]`)
+  // also produce correct tax instead of 0.
+  function _resolveFlatRate(country) {
+    if (typeof country.flatRate === 'number') return country.flatRate;
+    if (typeof country.effectiveRate === 'number') return country.effectiveRate;
+    if (typeof country.rate === 'number') return country.rate;
+    return null;
+  }
+
   /**
-   * calculate({ countryCode, regionCode, salary }) → {
+   * calculate({ countryCode, regionCode, salary, filingStatus }) → {
    *   incomeTax, social, regionTax, total, takeHome,
    *   effectiveRate, currency, symbol, breakdown: [{label, amount, kind}, ...]
    * }
+   *
+   * THP-P0-MATH (audit 2026-05-25) — US + UK now DELEGATE to the
+   * separately-maintained PFCTaxEngine (pfc-tax-engine.js) which already had
+   * the correct math:
+   *   - US federal applies the $15,750 single / $31,500 MFJ standard deduction
+   *     BEFORE the progressive brackets. The library's own US table omitted it,
+   *     overstating US tax by $3,465 at $85k.
+   *   - US FICA correctly caps SS at the $176,100 wage base while applying
+   *     uncapped 1.45% Medicare AND the 0.9% additional Medicare above $200k.
+   *     The library's flat 7.65% × min(salary, socialCap) under-charged
+   *     Medicare on high earners by ~$1,521 at $250k and missed the Addl-
+   *     Medicare entirely.
+   *   - UK NIC two-tier: 8% only WITHIN the £12,570-£50,270 band, plus 2%
+   *     above £50,270. The library applied a flat 8% to the whole £0-£50,270
+   *     band, over-stating NIC at £85k by £311 and under-stating at £200k by
+   *     £1,989 (because the 2%-above-cap tier was missing entirely).
+   *   - UK personal allowance taper: PA reduces by £1 for every £2 over
+   *     £100,000 income. The library applied the full £12,570 PA at every
+   *     income, under-stating UK income tax by ~£11k at £150k.
+   * For all other ~60 countries the library's progressive/flat code paths
+   * remain authoritative.
    */
-  function calculate({ countryCode, regionCode, salary }) {
+  function calculate({ countryCode, regionCode, salary, filingStatus }) {
     const country = ROOT.countries[countryCode];
     if (!country) throw new Error('Unknown country: ' + countryCode);
     salary = Math.max(0, Number(salary) || 0);
 
+    // ── Engine delegation for US + UK (correct math) ────────────────────
+    if (countryCode === 'US' && typeof window.PFCTaxEngine !== 'undefined' &&
+        typeof window.PFCTaxEngine.calculateUS === 'function') {
+      const eng = window.PFCTaxEngine.calculateUS({
+        grossAnnual: salary,
+        state: regionCode || 'CA',
+        filingStatus: filingStatus === 'mfj' ? 'mfj' : 'single'
+      });
+      const fed = eng.federal.tax;
+      const fica = eng.fica.total;
+      const state = eng.state.tax;
+      const breakdown = [
+        { label: 'Gross income',                 amount: salary,  kind: 'gross' },
+        { label: 'Federal income tax',           amount: -fed,    kind: 'tax' },
+        { label: 'FICA (Social Security + Medicare)', amount: -fica, kind: 'tax' },
+        { label: regionCode ? (eng.state.note ? 'State tax (' + regionCode + ')' : 'State tax') : 'State tax',
+                                                 amount: -state,  kind: 'tax' },
+        { label: 'Take-home',                    amount: eng.takeHome, kind: 'net' }
+      ].filter(r => r.kind === 'gross' || r.kind === 'net' || (r.label && r.amount !== 0));
+      return {
+        incomeTax: fed,
+        social: fica,
+        regionTax: state,
+        total: eng.totalTax,
+        takeHome: eng.takeHome,
+        effectiveRate: eng.effectiveRate,
+        currency: country.currency,
+        symbol: country.symbol,
+        breakdown,
+        engineSource: 'PFCTaxEngine.calculateUS (IRS Rev. Proc. 2024-40 + FICA 2026)'
+      };
+    }
+    if (countryCode === 'GB' && typeof window.PFCTaxEngine !== 'undefined' &&
+        typeof window.PFCTaxEngine.calculateUK === 'function') {
+      const eng = window.PFCTaxEngine.calculateUK({
+        grossAnnual: salary,
+        region: regionCode || 'ENG'
+      });
+      const inc = eng.incomeTax.tax;
+      const ni = eng.ni.ni;
+      const breakdown = [
+        { label: 'Gross income',          amount: salary,  kind: 'gross' },
+        { label: 'Income tax',            amount: -inc,    kind: 'tax' },
+        { label: 'National Insurance',    amount: -ni,     kind: 'tax' },
+        { label: 'Take-home',             amount: eng.takeHome, kind: 'net' }
+      ].filter(r => r.kind === 'gross' || r.kind === 'net' || (r.label && r.amount !== 0));
+      return {
+        incomeTax: inc,
+        social: ni,
+        regionTax: 0,
+        total: eng.totalTax,
+        takeHome: eng.takeHome,
+        effectiveRate: eng.effectiveRate,
+        currency: country.currency,
+        symbol: country.symbol,
+        breakdown,
+        engineSource: 'PFCTaxEngine.calculateUK (HMRC 2026/27)'
+      };
+    }
+
+    // ── Library calculation for the other ~60 countries ─────────────────
     let incomeTax = 0;
     if (country.kind === 'progressive' && Array.isArray(country.brackets)) {
       incomeTax = applyBrackets(salary, country.brackets);
     } else if (country.kind === 'flat' || country.kind === 'flat-approx') {
-      const r = (country.flatRate != null ? country.flatRate
-                : country.effectiveRate != null ? country.effectiveRate
-                : 0);
-      incomeTax = salary * r;
+      // THP-P0-MATH-2/3 fix (audit 2026-05-25) — multi-schema flat-rate read.
+      // If neither flatRate/effectiveRate/rate is present, fall through to
+      // brackets (covers HU/RO/BG which mis-typed as `kind:'flat'` with only
+      // brackets[]). Pre-fix all five of those paths returned 0 income tax.
+      const r = _resolveFlatRate(country);
+      if (r != null) {
+        incomeTax = salary * r;
+      } else if (Array.isArray(country.brackets)) {
+        incomeTax = applyBrackets(salary, country.brackets);
+      }
     }
 
     let social = 0;
@@ -85,9 +191,14 @@
         // Flat-effective regions — US states, Swiss cantons, Italian regional surcharge.
         regionTax = salary * region.rate;
       } else if (typeof region.rateDelta === 'number') {
-        // Signed adjustment to the federal scale — Spanish autonomous communities, Belgian regions.
-        // Can be negative (e.g. Madrid -1.5%); represents a discount/surcharge applied on top of country brackets.
-        regionTax = salary * region.rateDelta;
+        // THP-P0-MATH-4 fix (audit 2026-05-25) — bound regional rateDelta.
+        // Pre-fix `salary * rateDelta` was unbounded: Madrid -1.5% at €1M
+        // gave a -€15,000 "credit" line which looks broken to users. Cap the
+        // signed adjustment at ±2pp of effective rate (matches what the
+        // regional surcharge/discount actually represents in policy).
+        const raw = salary * region.rateDelta;
+        const cap = salary * 0.02; // ±2pp ceiling
+        regionTax = Math.max(-cap, Math.min(cap, raw));
       }
     }
 
@@ -109,7 +220,8 @@
       effectiveRate,
       currency: country.currency,
       symbol: country.symbol,
-      breakdown
+      breakdown,
+      engineSource: 'PFCTaxLibrary.calculate (' + (country.source || country.kind) + ')'
     };
   }
 

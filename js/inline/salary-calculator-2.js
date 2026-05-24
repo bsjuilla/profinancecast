@@ -980,9 +980,16 @@ function goToTakeHome() {
   const current = parseFloat(document.getElementById('i-salary').value) || 0;
   const salary  = target || current;
   const country = document.getElementById('i-country').value || 'US';
+  // THP-P0-CROSS (audit 2026-05-25) — send the user's CURRENT currency so the
+  // destination /take-home-pay page can warn on mismatch. Pre-fix the handoff
+  // sent only salary + country, so USD $80k handed to country=DE silently
+  // became €80k. With this param the take-home page renders a one-line
+  // amber warning when destCountry.currency !== sentCurrency.
+  const currency = (USER && USER.currency) ? String(USER.currency).toUpperCase() : '';
   const params = [];
   if (salary > 0) params.push('salary=' + Math.round(salary));
   if (country)    params.push('country=' + encodeURIComponent(country));
+  if (currency)   params.push('currency=' + encodeURIComponent(currency));
   const qs = params.length ? '?' + params.join('&') : '';
   window.location.href = '/tools/take-home-pay' + qs;
 }
