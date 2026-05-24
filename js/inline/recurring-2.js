@@ -1,19 +1,141 @@
-// Local copy of escHtml — identical to goals-2.js + debt-optimizer-2.js.
-// CISO Wave-12 plan: this should be promoted to a shared js/lib/pfc-escape.js
-// module to eliminate drift risk. For now ships the bugfix on line 458
-// (the r.name interpolation that was unescaped) without churning load order.
+// R-P0-8 fix (audit 2026-05-24) — HTML/CSS/numeric escape helpers.
+// Promoted from local-only to documented invariant: every interpolation
+// into innerHTML on this page MUST pass through one of:
+//   - escHtml(r.name)              — user-typed/CSV-parsed strings
+//   - _cssColor(meta.color)        — color values flowing into style="background:"
+//   - Number(r.x) || 0             — numeric attribute values
+//   - sym (escaped at assignment site, line ~340 USER.sym = ...)
 function escHtml(s) {
   return String(s == null ? '' : s)
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
+// R-P0-8 fix — CSS-context whitelist (same pattern as goals-2 _cssColor).
+// Allows: var(--name), #hex, rgb()/rgba(), hsl()/hsla(), named CSS colors.
+// Anything else → fallback to brand teal. Prevents CSS-context breakout
+// (e.g. tampered color `red"><img src=x onerror=alert(1)>`).
+function _cssColor(v) {
+  const s = String(v == null ? '' : v).trim();
+  if (/^var\(--[a-z0-9-]+\)$/i.test(s)) return s;
+  if (/^#[0-9a-f]{3,8}$/i.test(s)) return s;
+  if (/^rgba?\(\s*\d+%?\s*,\s*\d+%?\s*,\s*\d+%?(\s*,\s*[\d.]+)?\s*\)$/i.test(s)) return s;
+  if (/^hsla?\(\s*\d+\s*,\s*\d+%\s*,\s*\d+%(\s*,\s*[\d.]+)?\s*\)$/i.test(s)) return s;
+  if (/^(red|blue|green|orange|purple|gold|teal|cyan|magenta|yellow|black|white|gray|grey)$/i.test(s)) return s;
+  return 'var(--teal)';
+}
+
+// R-P0-9 fix — custom confirm/alert modals replacing native confirm()/alert().
+// Native dialogs are blocked/invisible in iOS PWA standalone mode. Promise-
+// based modals work everywhere. Reuses #pfc-confirm-modal markup added in
+// recurring.html (mirrors NW-P1-6 / G-P1-D pattern).
+let _pfcModalActive = false;
+function _pfcConfirm(message, okLabel) {
+  return new Promise(function (resolve) {
+    if (_pfcModalActive) { resolve(false); return; }
+    _pfcModalActive = true;
+    const modal = document.getElementById('rec-confirm-modal');
+    const msgEl = document.getElementById('rec-confirm-msg');
+    const okBtn = document.getElementById('rec-confirm-ok');
+    const cancelBtn = document.getElementById('rec-confirm-cancel');
+    if (!modal || !msgEl || !okBtn || !cancelBtn) {
+      _pfcModalActive = false;
+      resolve(window.confirm(message));
+      return;
+    }
+    const previousFocus = document.activeElement;
+    msgEl.textContent = message;
+    okBtn.textContent = okLabel || 'Confirm';
+    cancelBtn.style.display = '';
+    modal.classList.add('open');
+    okBtn.focus();
+    function cleanup(result) {
+      modal.classList.remove('open');
+      okBtn.removeEventListener('click', onOk);
+      cancelBtn.removeEventListener('click', onCancel);
+      document.removeEventListener('keydown', onKey);
+      _pfcModalActive = false;
+      try { if (previousFocus && previousFocus.focus) previousFocus.focus(); } catch (_) {}
+      resolve(result);
+    }
+    function onOk() { cleanup(true); }
+    function onCancel() { cleanup(false); }
+    function onKey(e) {
+      if (e.key === 'Escape') cleanup(false);
+      if (e.key === 'Enter') cleanup(true);
+    }
+    okBtn.addEventListener('click', onOk);
+    cancelBtn.addEventListener('click', onCancel);
+    document.addEventListener('keydown', onKey);
+  });
+}
+function _pfcAlert(message) {
+  // Variant of _pfcConfirm with only an OK button (no Cancel).
+  return new Promise(function (resolve) {
+    if (_pfcModalActive) { resolve(); return; }
+    _pfcModalActive = true;
+    const modal = document.getElementById('rec-confirm-modal');
+    const msgEl = document.getElementById('rec-confirm-msg');
+    const okBtn = document.getElementById('rec-confirm-ok');
+    const cancelBtn = document.getElementById('rec-confirm-cancel');
+    if (!modal || !msgEl || !okBtn) {
+      _pfcModalActive = false;
+      resolve(window.alert(message));
+      return;
+    }
+    const previousFocus = document.activeElement;
+    msgEl.textContent = message;
+    okBtn.textContent = 'OK';
+    if (cancelBtn) cancelBtn.style.display = 'none';
+    modal.classList.add('open');
+    okBtn.focus();
+    function cleanup() {
+      modal.classList.remove('open');
+      if (cancelBtn) cancelBtn.style.display = '';
+      okBtn.removeEventListener('click', onOk);
+      document.removeEventListener('keydown', onKey);
+      _pfcModalActive = false;
+      try { if (previousFocus && previousFocus.focus) previousFocus.focus(); } catch (_) {}
+      resolve();
+    }
+    function onOk() { cleanup(); }
+    function onKey(e) { if (e.key === 'Escape' || e.key === 'Enter') cleanup(); }
+    okBtn.addEventListener('click', onOk);
+    document.addEventListener('keydown', onKey);
+  });
+}
+
+// R-P0-1 helper — stable id minting (same pattern as goals G-P0-1).
+function _mintId() {
+  return 'r_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
+}
+
 // ── STATE ──
 let USER = {};
 let RECURRINGS = [];   // detected recurring items
-let CANCELLED = new Set(); // indices of cancelled items
+// R-P0-1 fix: CANCELLED is now a Set of stable r.id strings (not array
+// indices), persisted to localStorage. Pre-fix, sort + reload + manual-add
+// silently de-synced cancellations.
+let CANCELLED = new Set();
 let currentFilter = 'all';
 let catChart = null, trendChart = null;
+
+function _loadCancelled() {
+  try { return new Set(PFCStorage.getJSON('recurrings_cancelled') || []); }
+  catch (_) { return new Set(); }
+}
+function _saveCancelled() {
+  try { PFCStorage.setJSON('recurrings_cancelled', Array.from(CANCELLED)); }
+  catch (_) {}
+}
+// R-P0-1: backfill stable id for any pre-rollout recurring entry.
+function _backfillIds() {
+  let needsSave = false;
+  RECURRINGS.forEach(r => {
+    if (!r.id) { r.id = _mintId(); needsSave = true; }
+  });
+  if (needsSave) { try { PFCStorage.setJSON('recurrings', RECURRINGS); } catch (_) {} }
+}
 
 const CAT_META = {
   streaming: { icon: '🎬', color: '#E05252', label: 'Streaming' },
@@ -54,14 +176,24 @@ const BRAND_DB = {
 };
 
 // ── INIT ──
+// R-P0-3 fix — wrap in DOMContentLoaded so getElementById calls in
+// showResults/renderCards don't return null on cold-load. Pre-fix the
+// script ran in <head> sync before body parsed → crash on cold-load
+// with cached data. Also defer ensures PFCStorage/PFCAuth are loaded.
+// R-P0-1 + R-P0-8 — load CANCELLED from persistence + escape sym at
+// the single assignment site.
 function init() {
   try { USER = (typeof PFCUser !== 'undefined') ? PFCUser.get() : (PFCStorage.getJSON('user') || {}); } catch(e) {}
+  USER.sym = escHtml(window.PFCSym ? PFCSym(USER.currency) : (USER.currency || '$'));
+  CANCELLED = _loadCancelled();
   try {
     const saved = PFCStorage.get('recurrings');
-    if (saved) { RECURRINGS = JSON.parse(saved); showResults(); }
+    if (saved) {
+      RECURRINGS = JSON.parse(saved);
+      _backfillIds();
+      showResults();
+    }
   } catch(e) {}
-  // Sidebar user-pill hydrated by js/pfc-sidebar.js;
-  // plan badge by PFCPlan.applyBadges().
 }
 
 // ── FILE HANDLING ──
@@ -82,18 +214,40 @@ async function startProcess(file) {
 
   let text;
   try { text = await file.text(); }
-  catch(e) { setState('upload'); alert('Could not read file.'); return; }
+  catch(e) { setState('upload'); await _pfcAlert('Could not read file. Try a different CSV.'); return; }
 
   setProc('Detecting recurring patterns…', 'Grouping transactions by merchant', 40);
   await sleep(300);
 
   const txns = parseCSV(text);
-  if (!txns.length) { setState('upload'); alert('No transactions found. Check your CSV format.'); return; }
+  if (!txns.length) { setState('upload'); await _pfcAlert('No transactions found. Check your CSV format.'); return; }
 
   setProc('Analysing frequency…', 'Identifying subscriptions and bills', 65);
   await sleep(300);
 
-  RECURRINGS = detectRecurrings(txns);
+  // R-P0-2 fix — spread-merge with existing manual entries instead of
+  // wholesale replace. Pre-fix every CSV upload destroyed any manually-
+  // added gym/insurance/etc. Behaviour: detected items merge with
+  // existing by name match (preserving manual entries' ids + boost +
+  // any user-set fields); brand-new detected items get fresh ids.
+  const detected = detectRecurrings(txns);
+  const existing = RECURRINGS.slice();
+  const merged = [];
+  const seenNames = new Set();
+  detected.forEach(d => {
+    const match = existing.find(e => e.name === d.name && e.cat === d.cat);
+    if (match) {
+      merged.push({ ...match, ...d, id: match.id }); // preserve id + spread-merge
+    } else {
+      merged.push({ ...d, id: _mintId() });
+    }
+    seenNames.add(d.name);
+  });
+  // Preserve manual entries that weren't re-detected (still active subs).
+  existing.forEach(e => {
+    if (!seenNames.has(e.name)) merged.push(e);
+  });
+  RECURRINGS = merged;
 
   setProc('Checking for price changes…', 'Comparing charge amounts over time', 85);
   await sleep(300);
@@ -209,6 +363,7 @@ function detectRecurrings(txns) {
     const amounts = occ.map(o => o.amount);
 
     recurring.push({
+      id:            _mintId(),  // R-P0-1: stable id at every entry creation
       name:          cleanName(g.name),
       rawDesc:       g.raw,
       cat,
@@ -290,12 +445,16 @@ function showResults() {
 }
 
 function updateMetrics() {
-  const sym = window.PFCSym ? PFCSym(USER.currency) : (USER.currency || '$');
-  const active = RECURRINGS.filter((_,i) => !CANCELLED.has(i));
-  const totalMonthly = active.reduce((s,r) => s + r.monthlyAmount, 0);
-  const totalAnnual  = active.reduce((s,r) => s + r.annualAmount, 0);
+  // R-P0-8: USER.sym is escaped at the single assignment site in init();
+  // every downstream interpolation is safe via textContent (auto-safe) or
+  // through escHtml() in innerHTML paths.
+  const sym = USER.sym || '$';
+  // R-P0-1: CANCELLED is now keyed by stable r.id, not array index.
+  const active = RECURRINGS.filter(r => !CANCELLED.has(r.id));
+  const totalMonthly = Number(active.reduce((s,r) => s + (Number(r.monthlyAmount)||0), 0)) || 0;
+  const totalAnnual  = Number(active.reduce((s,r) => s + (Number(r.annualAmount)||0), 0)) || 0;
   const flagged      = active.filter(r => r.priceIncreased);
-  const savings      = flagged.reduce((s,r) => s + r.annualAmount, 0);
+  const savings      = flagged.reduce((s,r) => s + (Number(r.annualAmount)||0), 0);
 
   document.getElementById('m-monthly').textContent = sym + totalMonthly.toFixed(2);
   document.getElementById('m-monthly-hint').textContent = `across ${active.length} active subscriptions`;
@@ -310,24 +469,28 @@ function updateMetrics() {
 }
 
 function renderAlerts() {
-  const sym  = window.PFCSym ? PFCSym(USER.currency) : (USER.currency || '$');
+  // R-P0-8 + R-P0-1: sym pre-escaped at init; CANCELLED keyed by id; r.name
+  // wrapped in escHtml. Pre-fix `<strong>${r.name}</strong>` was raw → CSV
+  // merchant name `<img src=x onerror=alert(1)>` fired XSS on every render.
+  const sym  = USER.sym || '$';
   const wrap = document.getElementById('alerts-wrap');
   wrap.innerHTML = '';
 
-  const increased = RECURRINGS.filter((r,i)=>!CANCELLED.has(i)&&r.priceIncreased);
+  const increased = RECURRINGS.filter(r => !CANCELLED.has(r.id) && r.priceIncreased);
   if (increased.length) {
-    const names = increased.slice(0,3).map(r=>`<strong>${r.name}</strong>`).join(', ');
-    const extra = increased.reduce((s,r)=>s+r.priceDiff*12,0);
+    const names = increased.slice(0,3).map(r=>`<strong>${escHtml(r.name)}</strong>`).join(', ');
+    const extra = increased.reduce((s,r)=>s+(Number(r.priceDiff)||0)*12,0);
     wrap.innerHTML += `<div class="alert-banner red">
       <div class="alert-icon">⚠️</div>
-      <div class="alert-text">${increased.length} subscription${increased.length>1?'s have':' has'} quietly raised prices: ${names}${increased.length>3?' and more':''}. 
+      <div class="alert-text">${increased.length} subscription${increased.length>1?'s have':' has'} quietly raised prices: ${names}${increased.length>3?' and more':''}.
       You're paying <strong>${sym}${Math.round(extra).toLocaleString()} more per year</strong> than when you first subscribed.</div>
     </div>`;
   }
 
-  // Check for potential duplicates (same category, close amounts)
-  const bycat = {};
-  RECURRINGS.filter((_,i)=>!CANCELLED.has(i)).forEach(r=>{ if(!bycat[r.cat]) bycat[r.cat]=[]; bycat[r.cat].push(r); });
+  // R-P0-8 hardening: use Object.create(null) so a malicious r.cat value
+  // like '__proto__' or 'constructor' can't mutate Object.prototype.
+  const bycat = Object.create(null);
+  RECURRINGS.filter(r => !CANCELLED.has(r.id)).forEach(r=>{ if(!bycat[r.cat]) bycat[r.cat]=[]; bycat[r.cat].push(r); });
   const dupes = Object.entries(bycat).filter(([,v])=>v.length>=3 && v[0].cat==='streaming');
   if (dupes.length) {
     const streamTotal = (bycat['streaming']||[]).reduce((s,r)=>s+r.monthlyAmount,0);
@@ -340,12 +503,25 @@ function renderAlerts() {
 }
 
 function renderCharts() {
-  const sym = window.PFCSym ? PFCSym(USER.currency) : (USER.currency || '$');
-  const active = RECURRINGS.filter((_,i)=>!CANCELLED.has(i));
+  // R-P0-12 fix: guard against Chart.js CDN failure. Pre-fix `new Chart(...)`
+  // threw "Chart is not defined" → renderCharts aborted → rest of results
+  // state (sankey, cards) broken because renderCharts is called inside
+  // showResults. Now: degrade gracefully and let the rest of the page render.
+  if (typeof window.Chart === 'undefined') {
+    const catCv = document.getElementById('catChart');
+    const trCv = document.getElementById('trendChart');
+    if (catCv) catCv.style.display = 'none';
+    if (trCv) trCv.style.display = 'none';
+    return;
+  }
+  const sym = USER.sym || '$';
+  // R-P0-1 fix: filter by stable id, not array index.
+  const active = RECURRINGS.filter(r => !CANCELLED.has(r.id));
 
   // Category donut
-  const catTotals = {};
-  active.forEach(r=>{ catTotals[r.cat]=(catTotals[r.cat]||0)+r.monthlyAmount; });
+  // R-P0-8 hardening: Object.create(null) — prototype pollution defence.
+  const catTotals = Object.create(null);
+  active.forEach(r=>{ catTotals[r.cat]=(catTotals[r.cat]||0)+(Number(r.monthlyAmount)||0); });
   const catEntries = Object.entries(catTotals).sort((a,b)=>b[1]-a[1]);
 
   // Money-flow sankey — animates ribbons from total → top categories
@@ -426,8 +602,10 @@ function renderCards() {
   const sym  = window.PFCSym ? PFCSym(USER.currency) : (USER.currency || '$');
   const grid = document.getElementById('rec-grid');
   const filtered = RECURRINGS.filter((r,i)=>{
-    if (currentFilter==='cancelled') return CANCELLED.has(i);
-    if (CANCELLED.has(i)) return false;
+    // R-P0-1: filter by stable r.id, not array index. Sort-in-place no
+    // longer desyncs cancellations.
+    if (currentFilter==='cancelled') return CANCELLED.has(r.id);
+    if (CANCELLED.has(r.id)) return false;
     if (currentFilter==='all') return true;
     if (currentFilter==='flagged') return r.priceIncreased;
     return r.cat===currentFilter;
@@ -438,64 +616,92 @@ function renderCards() {
     return;
   }
 
-  grid.innerHTML = filtered.map((r,fi)=>{
-    const gi = RECURRINGS.indexOf(r); // global index
-    const isCancelled = CANCELLED.has(gi);
+  // R-P0-6+7 + R-P0-8: build innerHTML with escape gates, then attach
+  // listeners via addEventListener post-paint (CSP-clean — no inline
+  // onclick, same pattern as G-P0-5 / commit e9aa091).
+  grid.innerHTML = filtered.map(r=>{
+    const isCancelled = CANCELLED.has(r.id);
     const meta = CAT_META[r.cat]||CAT_META.other;
+    // R-P0-8: _cssColor whitelist on every color flowing into style="...".
+    const colorSafe = _cssColor(meta.color);
 
     // Mini bar chart — amounts over time (last 6)
-    const recent = r.amounts.slice(-6);
-    const maxA   = Math.max(...recent);
+    const recent = (r.amounts || []).slice(-6);
+    const maxA   = recent.length ? Math.max.apply(null, recent) : 0;
     const bars   = recent.map(a=>{
-      const h = Math.max(4, Math.round(a/maxA*28));
-      const col = r.priceIncreased && a===r.maxAmount ? 'var(--red)' : meta.color+'99';
-      return `<div class="rec-tick" style="height:${h}px;background:${col};"></div>`;
+      const h = maxA > 0 ? Math.max(4, Math.round(a/maxA*28)) : 4;
+      const col = r.priceIncreased && a===r.maxAmount ? 'var(--red)' : colorSafe;
+      return `<div class="rec-tick" style="height:${Number(h)||4}px;background:${col};opacity:0.6;"></div>`;
     }).join('');
 
     const lastFmt = r.lastCharge ? new Date(r.lastCharge).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : '—';
     const firstFmt= r.firstCharge? new Date(r.firstCharge).toLocaleDateString('en-GB',{month:'short',year:'numeric'}) : '—';
 
     const badges = [];
-    if (r.priceIncreased) badges.push(`<span class="badge badge-red">↑ +${sym}${r.priceDiff.toFixed(2)}/mo price increase</span>`);
+    // R-P0-8: priceDiff coerced via Number; sym already escaped at source.
+    if (r.priceIncreased) badges.push(`<span class="badge badge-red">↑ +${sym}${(Number(r.priceDiff)||0).toFixed(2)}/mo price increase</span>`);
     if (isCancelled)       badges.push(`<span class="badge badge-grey">✕ Marked cancelled</span>`);
-    badges.push(`<span class="badge" style="background:${meta.color}18;color:${meta.color};">${r.icon} ${meta.label}</span>`);
-    if (r.freqLabel!=='Monthly') badges.push(`<span class="badge badge-blue">${r.freqLabel}</span>`);
+    badges.push(`<span class="badge" style="background:${colorSafe};opacity:0.85;color:#fff;">${escHtml(r.icon||'')} ${escHtml(meta.label||'')}</span>`);
+    if (r.freqLabel!=='Monthly') badges.push(`<span class="badge badge-blue">${escHtml(r.freqLabel||'')}</span>`);
 
-    return `<div class="rec-card ${r.priceIncreased&&!isCancelled?'price-up':''} ${isCancelled?'cancelled':''}" style="animation-delay:${fi*0.04}s;">
+    // R-P0-6+7: data-action attrs replace inline onclick — wired below.
+    // r.id is escaped + used as data attribute (only-base36 from _mintId).
+    const safeId = escHtml(r.id || '');
+    return `<div class="rec-card ${r.priceIncreased&&!isCancelled?'price-up':''} ${isCancelled?'cancelled':''}" data-rec-id="${safeId}">
       <div class="rec-top">
-        <div class="rec-icon" style="background:${meta.color}18;">${r.icon}</div>
+        <div class="rec-icon" style="background:${colorSafe};opacity:0.5;">${escHtml(r.icon||'')}</div>
         <div class="rec-info">
           <div class="rec-name">${escHtml(r.name)}</div>
-          <div class="rec-meta">Since ${firstFmt} · ${r.occurrences.length} charges · last ${lastFmt}</div>
+          <div class="rec-meta">Since ${firstFmt} · ${(r.occurrences||[]).length} charges · last ${lastFmt}</div>
         </div>
         <div class="rec-amount">
-          <div class="rec-monthly" style="color:${meta.color};">${sym}${r.monthlyAmount.toFixed(2)}<span style="font-size:11px;color:var(--text3);font-family:var(--font-body);">/mo</span></div>
-          <div class="rec-annual">${sym}${Math.round(r.annualAmount).toLocaleString()}/yr</div>
+          <div class="rec-monthly" style="color:${colorSafe};">${sym}${(Number(r.monthlyAmount)||0).toFixed(2)}<span style="font-size:11px;color:var(--text3);font-family:var(--font-body);">/mo</span></div>
+          <div class="rec-annual">${sym}${Math.round(Number(r.annualAmount)||0).toLocaleString()}/yr</div>
         </div>
       </div>
       <div class="rec-body">
         <div class="rec-badges">${badges.join('')}</div>
         ${recent.length>1?`<div class="rec-timeline">${bars}</div><div class="rec-dates"><span>${firstFmt}</span><span>Last 6 charges</span><span>${lastFmt}</span></div>`:''}
         <div class="rec-actions">
-          ${!isCancelled?`<button class="rec-action-btn cancel-btn" onclick="toggleCancel(${gi})">Mark as cancelled</button>`
-                        :`<button class="rec-action-btn" onclick="toggleCancel(${gi})" style="color:var(--teal);border-color:rgba(43,182,125,0.2);">Restore</button>`}
-          ${!isCancelled?`<button class="rec-action-btn" onclick="askSage(${gi})">Ask Sage</button>`:''}
+          ${!isCancelled?`<button class="rec-action-btn cancel-btn" data-action="toggleCancel" data-id="${safeId}">Mark as cancelled</button>`
+                        :`<button class="rec-action-btn" data-action="toggleCancel" data-id="${safeId}" style="color:var(--teal);border-color:rgba(43,182,125,0.2);">Restore</button>`}
+          ${!isCancelled?`<button class="rec-action-btn" data-action="askSage" data-id="${safeId}">Ask Sage</button>`:''}
         </div>
       </div>
     </div>`;
   }).join('');
+
+  // R-P0-6+7: wire post-render listeners (no inline onclick = CSP clean).
+  grid.querySelectorAll('[data-action]').forEach(btn => {
+    const action = btn.getAttribute('data-action');
+    const id = btn.getAttribute('data-id');
+    if (action === 'toggleCancel') {
+      btn.addEventListener('click', () => toggleCancelById(id));
+    } else if (action === 'askSage') {
+      btn.addEventListener('click', () => askSageById(id));
+    }
+  });
 }
 
 // ── ACTIONS ──
-function toggleCancel(idx) {
-  if (CANCELLED.has(idx)) CANCELLED.delete(idx);
-  else CANCELLED.add(idx);
+// R-P0-1: id-keyed toggleCancel. Persists CANCELLED to localStorage so
+// reload preserves the marks (pre-fix every reload wiped them).
+function toggleCancelById(id) {
+  if (!id) return;
+  if (CANCELLED.has(id)) CANCELLED.delete(id);
+  else CANCELLED.add(id);
+  _saveCancelled();
   updateMetrics();
   renderAlerts();
   renderCharts();
   renderCards();
-  const r = RECURRINGS[idx];
-  showToast(CANCELLED.has(idx) ? `${r.name} marked as cancelled` : `${r.name} restored`);
+  const r = RECURRINGS.find(x => x.id === id);
+  if (r) showToast(CANCELLED.has(id) ? `${r.name} marked as cancelled` : `${r.name} restored`);
+}
+// Legacy alias for any external caller (kept for safety; new code uses ById).
+function toggleCancel(arg) {
+  if (typeof arg === 'string') return toggleCancelById(arg);
+  if (typeof arg === 'number' && RECURRINGS[arg]) return toggleCancelById(RECURRINGS[arg].id);
 }
 
 function setFilter(f, el) {
@@ -513,34 +719,51 @@ function sortCards(val) {
   renderCards();
 }
 
-async function askSage(idx) {
-  const r   = RECURRINGS[idx];
-  const sym = window.PFCSym ? PFCSym(USER.currency) : (USER.currency || '$');
-  const prompt = `I'm paying ${sym}${r.monthlyAmount.toFixed(2)}/month (${sym}${Math.round(r.annualAmount)}/year) for ${r.name} (${CAT_META[r.cat]?.label} category).${r.priceIncreased?` The price has increased by ${sym}${r.priceDiff.toFixed(2)}/mo recently.`:''} Should I keep it, negotiate, or cancel? Give me a direct recommendation in 3-4 sentences.`;
+// R-P0-1 + R-P0-9: id-keyed Sage call + custom modal replaces native alert.
+async function askSageById(id) {
+  if (!id) return;
+  const r = RECURRINGS.find(x => x.id === id);
+  if (!r) return;
+  const sym = USER.sym || '$';
+  // R-P0-8: name interpolation in prompt is server-side concern (Sage may
+  // be prompt-injected, but that's the LLM's input-sanitisation job — we
+  // can't escape into a free-text prompt). Caller log uses textContent below.
+  const prompt = `I'm paying ${sym}${(Number(r.monthlyAmount)||0).toFixed(2)}/month (${sym}${Math.round(Number(r.annualAmount)||0)}/year) for ${r.name} (${CAT_META[r.cat]?.label} category).${r.priceIncreased?` The price has increased by ${sym}${(Number(r.priceDiff)||0).toFixed(2)}/mo recently.`:''} Should I keep it, negotiate, or cancel? Give me a direct recommendation in 3-4 sentences.`;
   showToast(`Asking Sage about ${r.name}…`);
   try {
     const res = await fetch('/api/sage', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({message:prompt, csvMode:true}) });
     const data = await res.json();
-    alert(`Sage says about ${r.name}:\n\n${data.reply||'No response.'}`);
-  } catch(e) { alert('Could not reach Sage. Try again.'); }
+    await _pfcAlert(`Sage on ${r.name}:\n\n${data.reply||'No response.'}`);
+  } catch(e) { await _pfcAlert('Could not reach Sage. Try again.'); }
+}
+// Legacy alias for any external caller.
+function askSage(arg) {
+  if (typeof arg === 'string') return askSageById(arg);
+  if (typeof arg === 'number' && RECURRINGS[arg]) return askSageById(RECURRINGS[arg].id);
 }
 
 // ── MANUAL ADD ──
 function openManualAdd() { document.getElementById('manual-modal').classList.add('open'); }
 function closeManual()   { document.getElementById('manual-modal').classList.remove('open'); }
 
-function saveManual() {
+async function saveManual() {
   const name   = document.getElementById('mm-name').value.trim();
   const amount = parseFloat(document.getElementById('mm-amount').value)||0;
   const freq   = document.getElementById('mm-freq').value;
   const cat    = document.getElementById('mm-cat').value;
-  if (!name||!amount) { alert('Enter name and amount.'); return; }
+  // R-P0-9: custom modal replaces alert(). R-P0-8: validation hardened.
+  if (!name) { await _pfcAlert('Enter a subscription name.'); return; }
+  if (!amount || !Number.isFinite(amount) || amount <= 0) { await _pfcAlert('Enter a positive amount.'); return; }
+  if (amount > 999999) { await _pfcAlert('Amount too large (max 999,999).'); return; }
+  if (name.length > 80) { await _pfcAlert('Name too long (max 80 characters).'); return; }
 
   let monthly = amount;
   if (freq==='weekly') monthly = amount * 4.33;
   if (freq==='annual') monthly = amount / 12;
 
+  // R-P0-1: mint stable id on every new entry.
   RECURRINGS.unshift({
+    id: _mintId(),
     name, rawDesc:name, cat, icon: CAT_META[cat]?.icon||'📄',
     freq, freqLabel: freq.charAt(0).toUpperCase()+freq.slice(1),
     monthlyAmount: Math.round(monthly*100)/100,
@@ -551,7 +774,10 @@ function saveManual() {
     priceIncreased:false, priceDiff:0,
   });
   PFCStorage.setJSON('recurrings', RECURRINGS);
-  updateMetrics(); renderCards(); closeManual();
+  // R-P0-2 fix-followup: saveManual now ALSO re-renders alerts + charts
+  // so the metric strip + trend stay in sync with the manual add.
+  updateMetrics(); renderAlerts(); renderCharts(); renderCards();
+  closeManual();
   showToast(`Added ${name}`);
 }
 
@@ -569,6 +795,10 @@ function loadDemo() {
     { name:'Adobe Creative', rawDesc:'ADOBE CREATIVE CLOUD', cat:'software', icon:'🎨', freq:'monthly', freqLabel:'Monthly', monthlyAmount:59.99, annualAmount:719.88, occurrences:[{date:'2024-01-22',amount:54.99},{date:'2024-02-22',amount:54.99},{date:'2024-03-22',amount:59.99},{date:'2024-04-22',amount:59.99},{date:'2024-05-22',amount:59.99},{date:'2024-06-22',amount:59.99}], amounts:[54.99,54.99,59.99,59.99,59.99,59.99], minAmount:54.99, maxAmount:59.99, lastCharge:'2024-06-22', firstCharge:'2024-01-22', priceIncreased:true, priceDiff:5.00, pricePct:9 },
     { name:'Disney Plus', rawDesc:'DISNEY+', cat:'streaming', icon:'🎬', freq:'monthly', freqLabel:'Monthly', monthlyAmount:7.99, annualAmount:95.88, occurrences:[{date:'2024-01-08',amount:7.99},{date:'2024-02-08',amount:7.99},{date:'2024-03-08',amount:7.99},{date:'2024-04-08',amount:7.99},{date:'2024-05-08',amount:7.99},{date:'2024-06-08',amount:7.99}], amounts:[7.99,7.99,7.99,7.99,7.99,7.99], minAmount:7.99, maxAmount:7.99, lastCharge:'2024-06-08', firstCharge:'2024-01-08', priceIncreased:false, priceDiff:0 },
   ];
+  // R-P0-1: stable id on every demo entry so cancellations persist across
+  // reload and survive sort-in-place. Without this, loadDemo entries had
+  // r.id === undefined and CANCELLED.has(undefined) collisions broke filter.
+  RECURRINGS.forEach(r => { r.id = _mintId(); });
   PFCStorage.setJSON('recurrings', RECURRINGS);
   showResults();
   showToast('Demo data loaded — 10 recurring items');
@@ -585,10 +815,14 @@ function setProc(title,sub,pct) {
   document.getElementById('proc-sub').textContent=sub;
   document.getElementById('proc-bar').style.width=pct+'%';
 }
-function clearAll() {
-  if (!confirm('Clear all recurring data and re-upload?')) return;
+async function clearAll() {
+  // R-P0-9: custom modal replaces native confirm (iOS PWA reliable).
+  const ok = await _pfcConfirm('Clear all recurring data and re-upload? This cannot be undone.', 'Clear all');
+  if (!ok) return;
   RECURRINGS=[]; CANCELLED=new Set();
   PFCStorage.remove('recurrings');
+  // R-P0-1: clear CANCELLED persistence too (was orphaned key after wipe).
+  PFCStorage.remove('recurrings_cancelled');
   document.getElementById('btn-add-manual').style.display='none';
   document.getElementById('btn-clear').style.display='none';
   setState('upload');
@@ -611,10 +845,16 @@ init();
 // storage.js finishes adoptGuestData, re-read from the now-correct namespace.
 function _rehydrateFromStorage() {
   try { USER = (typeof PFCUser !== 'undefined') ? PFCUser.get() : (PFCStorage.getJSON('user') || {}); } catch(e) {}
+  USER.sym = escHtml(window.PFCSym ? PFCSym(USER.currency) : (USER.currency || '$'));
+  // R-P0-1: reload CANCELLED from the *new* namespace after auth resolves
+  // (pre-fix CANCELLED stayed empty because the guest-namespace read in init()
+  // returned nothing; once we flip to pfc:{uid}:* we need to re-read).
+  CANCELLED = _loadCancelled();
   try {
     const saved = PFCStorage.get('recurrings');
     if (saved) {
       RECURRINGS = JSON.parse(saved);
+      _backfillIds();
       // Don't yank the user out of an in-progress upload flow.
       const processing = document.getElementById('state-processing');
       if (!processing || processing.style.display !== 'block') showResults();
