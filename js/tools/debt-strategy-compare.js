@@ -2,6 +2,21 @@
 // Reads country params from window.PFC_TOOLS_COUNTRY (set via <body data-pfc-country="…">).
 // Debounce: 250ms (heavier compute than compound-interest).
 // Chart lives under window._pfcCharts.ds.
+//
+// ─────────────────────────────────────────────────────────────────────────────
+// CROSS-TOOL DRIFT WARNING (D-WORTH-2 CEO call 2026-05-24)
+// ─────────────────────────────────────────────────────────────────────────────
+// `js/inline/debt-optimizer-2.js` hosts a PARALLEL engine for the same
+// problem with DIFFERENT field names:
+//   - This file (/tools page): `apr`, `minimum`
+//   - debt-optimizer-2.js (logged-in page): `rate`, `minPay`
+// This is INTENTIONAL: this /tools page is the unauth SEO funnel (no save,
+// no Pro features, lighter scope); the logged-in /debt-optimizer is the
+// deep persistent tool. Do NOT consolidate without explicit operator
+// approval — this surface is Google-indexed and any URL or field rename
+// hits search rankings. Mirror block lives at the top of
+// `js/inline/debt-optimizer-2.js`.
+// ─────────────────────────────────────────────────────────────────────────────
 
 (function () {
   var T = window.PFCTools;
