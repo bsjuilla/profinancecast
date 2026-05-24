@@ -38,6 +38,53 @@ function saveUser(u) {
 
 let USER = loadUser();
 
+// DASH-PROD-FIX (upgrade-banner flash on Pro users) — same race class
+// as the portfolio.html bug fixed in commit 3038ce1. PFCPlan._plan
+// defaults to 'free' at module init. pfc-entitlements.js's applyBadges
+// then sets `[data-free-only]` elements to display:'' (visible) on
+// auth.onReady — which fires BEFORE PFCPlan.refresh() resolves. Pro
+// users with an expired 30s plan-cache see the upgrade banner flash
+// until refresh resolves and applyBadges re-runs to hide it.
+//
+// Fix: pin the banner with display:none !important until PFCPlan.refresh
+// actually resolves with a confirmed plan. Then remove the override so
+// applyBadges (and any future toggle) take over. Belt-and-braces: call
+// applyBadges explicitly after refresh in case the entitlements module
+// missed the onChange edge.
+(function _blockUpgradeBannerFlash() {
+  function _go() {
+    const banners = document.querySelectorAll('.upgrade-banner[data-free-only]');
+    if (!banners.length) return;
+    // Force hidden until we have a confirmed plan from the server.
+    banners.forEach(b => b.style.setProperty('display', 'none', 'important'));
+    function _settle() {
+      if (!window.PFCPlan || typeof PFCPlan.get !== 'function') return;
+      const plan = PFCPlan.get();
+      banners.forEach(b => {
+        b.style.removeProperty('display');
+        b.style.display = (plan === 'free') ? '' : 'none';
+      });
+      if (typeof PFCPlan.applyBadges === 'function') {
+        try { PFCPlan.applyBadges(); } catch (_) {}
+      }
+    }
+    if (window.PFCPlan && typeof PFCPlan.refresh === 'function') {
+      // Promise.resolve to handle both sync and async return.
+      Promise.resolve(PFCPlan.refresh()).catch(() => null).finally(_settle);
+    } else {
+      // PFCPlan not loaded — try again in a moment; if still not loaded
+      // by then, settle with whatever we have (banner stays hidden as
+      // the safer fail-mode for a paying user).
+      setTimeout(_settle, 800);
+    }
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', _go, { once: true });
+  } else {
+    _go();
+  }
+})();
+
 // ── DASH-P0-1 fix — toast shim + unread-counter state ──
 // Both `showDashToast(msg)` and `unreadCount` were called from 8+ handlers
 // (Save / Reset / Goal edit-delete-add / CSV apply / inflation refresh /

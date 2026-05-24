@@ -1738,14 +1738,22 @@
 </div>
 
 
-<!-- NOTE: do NOT add `defer` here. The inline initChart() / new Chart()
-     calls further down the page run during parsing and depend on Chart
-     being defined synchronously. W3.2 attempted `defer` but it left the
-     forecast chart blank because Chart was undefined at init time. -->
+<!-- DASH-PROD-FIX: Chart.js stays sync (runs during parse). dashboard-2.js
+     and dashboard-3.js are now `defer` because the P0-7 batch deferred
+     the entire pfc-* dependency stack in <head> — leaving dashboard-2.js
+     as a sync mid-body script caused it to run BEFORE pfc-user / pfc-
+     storage / pfc-entitlements finished loading, so loadUser() returned
+     DEFAULT_USER zeros and updateAllCards() painted "$0 / Debt free!"
+     for every refresh. Defer here makes dashboard-2.js wait until ALL
+     head defers complete (defer scripts execute in document order before
+     DOMContentLoaded), at which point PFCUser/PFCStorage/PFCPlan all
+     exist and loadUser() returns real data. Chart.js stays sync so the
+     `Chart` global is defined before dashboard-2.js's deferred init
+     calls `new Chart()`. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js" integrity="sha384-dug+JxfBvklEQdJ4AYuBBAIScUz0bVN73xpy273gcAwHjb3qI0fXmuYNaNfdyYJG" crossorigin="anonymous"></script>
-<script src="./js/inline/dashboard-2.js"></script>
+<script src="./js/inline/dashboard-2.js" defer></script>
   <!-- Route guard: redirect unauthed users to sign-in -->
-  <script src="./js/inline/dashboard-3.js"></script>
+  <script src="./js/inline/dashboard-3.js" defer></script>
 <footer class="site-footer" role="contentinfo">
   <div class="footer-grid">
     <div class="footer-col">
