@@ -80,7 +80,8 @@
     background: var(--bg2);
     border-right: 1px solid var(--border);
     display: flex; flex-direction: column;
-    height: 100vh; overflow-y: auto;
+    /* DASH-P1-11: 100vh + 100dvh fallback. */
+    height: 100vh; height: 100dvh; overflow-y: auto;
   }
   .sidebar-logo {
     display: flex; align-items: center; gap: 10px;
@@ -135,7 +136,8 @@
 
   /* ── MAIN ── */
   .main {
-    flex: 1; height: 100vh; overflow-y: auto;
+    /* DASH-P1-11: 100vh + 100dvh fallback for iOS Safari URL-bar resize. */
+    flex: 1; height: 100vh; height: 100dvh; overflow-y: auto;
     display: flex; flex-direction: column;
   }
 
@@ -585,7 +587,10 @@
       <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M3 6h14M3 10h14M3 14h14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
     </button>
     <div class="topbar-left">
-      <div class="topbar-title">My Dashboard <span id="masthead-month" style="display:inline-block;font-family:var(--font-display);font-style:italic;font-weight:500;color:var(--gold);margin-left:8px;font-size:15px;">—</span></div>
+      <!-- DASH-P1-7: voice/tone — "My Dashboard" was generic SaaS; brand voice
+           on the landing is "Your forecast in 2036". Pair with the masthead-
+           month span that already says the month. -->
+      <div class="topbar-title">Your forecast, <span id="masthead-month" style="display:inline-block;font-family:var(--font-display);font-style:italic;font-weight:500;color:var(--gold);margin-left:4px;font-size:17px;">—</span></div>
       <div class="topbar-sub" id="topbar-date">Last updated · just now · <span id="today-date"></span><span id="topbar-fx" style="margin-left:10px;color:var(--text3);"></span></div>
     </div>
     <div class="topbar-right">
@@ -626,7 +631,8 @@
   <!-- ═══════════════════════════════════════════ -->
   <!-- CSV IMPORT MODAL — full 3-stage engine     -->
   <!-- ═══════════════════════════════════════════ -->
-  <div id="csv-overlay" style="display:none;position:fixed;inset:0;background:rgba(4,6,10,0.88);backdrop-filter:blur(8px);z-index:100;align-items:flex-start;justify-content:center;overflow-y:auto;padding:20px;">
+  <!-- DASH-P1-11: -webkit-backdrop-filter alongside backdrop-filter for iOS Safari 16.x. -->
+  <div id="csv-overlay" style="display:none;position:fixed;inset:0;background:rgba(4,6,10,0.88);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);z-index:100;align-items:flex-start;justify-content:center;overflow-y:auto;padding:20px;">
 
     <!-- ── STAGE 1: UPLOAD ── -->
     <div id="csv-stage-upload" style="background:var(--bg2);border:1px solid var(--border2);border-radius:16px;width:100%;max-width:500px;margin:auto;overflow:hidden;">
@@ -796,17 +802,11 @@
          data-free-only is the standard convention used elsewhere in the
          app for Free-only UI elements. -->
     <div class="upgrade-banner" data-free-only style="display:none;">
-      <figure class="pfc-photo-figure">
-        <picture>
-          <source srcset="assets/img/photos/dashboard-upgrade-banner-flourish.avif" type="image/avif">
-          <source srcset="assets/img/photos/dashboard-upgrade-banner-flourish.webp" type="image/webp">
-          <img class="pfc-photo-square" src="assets/img/photos/dashboard-upgrade-banner-flourish.webp"
-               alt="A single antique gilded brass key on deep emerald velvet — what Pro unlocks."
-               loading="lazy" decoding="async"
-               width="1254" height="1254">
-        </picture>
-      </figure>
-            
+      <!-- DASH-P1-14 / DPERF-3 (audit DES-6): decorative photo removed.
+           The team's own pfc-app.css comment at line 815 already documented
+           "working surface — no decoration" for the FX panel; that rule
+           applies here too. Bloomberg / Monarch / Copilot / Linear: zero
+           decorative photos on dashboard. -->
       <div class="upgrade-text">
         <strong>You're on the Free plan — unlock your full financial picture</strong>
         Pro gives you 200 Sage messages/month, multi-scenario planning, CSV import, and a completely ad-free experience.
@@ -815,23 +815,22 @@
     </div>
 
     <!-- TABS -->
-    <figure class="pfc-photo-figure">
-      <picture>
-        <source srcset="assets/img/photos/dashboard-masthead-band.avif" type="image/avif">
-        <source srcset="assets/img/photos/dashboard-masthead-band.webp" type="image/webp">
-        <img class="pfc-photo-eyebrow" src="assets/img/photos/dashboard-masthead-band.webp"
-             alt="Leather-bound ledger spine in profile on walnut desk, gilt-embossed roman numerals MCMLXII — the front page register for your dashboard."
-             loading="lazy" decoding="async"
-             width="2243" height="701">
-      </picture>
-    </figure>
-        
+    <!-- DASH-P1-14: dashboard-masthead-band photo removed for the same
+         "working surface — no decoration" reason. Was the LCP element on
+         mobile (108KB WebP / 65KB AVIF) and was marked loading="lazy"
+         despite being above the fold. Removing it both reclaims ~108KB of
+         first-paint weight AND closes audit DPERF-3 entirely. -->
+
     <div class="tabs">
-      <button class="tab active"  data-pfc-on-click="setTab" data-pfc-arg-this data-pfc-arg='"overview"'>Overview</button>
-      <button class="tab"  data-pfc-on-click="setTab" data-pfc-arg-this data-pfc-arg='"forecast"'>Forecast</button>
-      <button class="tab"  data-pfc-on-click="setTab" data-pfc-arg-this data-pfc-arg='"debts"'>Debts</button>
-      <button class="tab"  data-pfc-on-click="setTab" data-pfc-arg-this data-pfc-arg='"goals"'>Goals</button>
-      <button class="tab"  data-pfc-on-click="setTab" data-pfc-arg-this data-pfc-arg='"networth"'>Net Worth</button>
+      <!-- DASH-P1-7: voice/tone — tabs rename to noun-led editorial language
+           ("Today / Twelve months / Owed / Targets / Wealth"). data-pfc-arg
+           values UNCHANGED — JS callers + URL state keys stay the same; only
+           the visible button label changes. -->
+      <button class="tab pfc-tap active"  data-pfc-on-click="setTab" data-pfc-arg-this data-pfc-arg='"overview"'>Today</button>
+      <button class="tab pfc-tap"  data-pfc-on-click="setTab" data-pfc-arg-this data-pfc-arg='"forecast"'>Twelve months</button>
+      <button class="tab pfc-tap"  data-pfc-on-click="setTab" data-pfc-arg-this data-pfc-arg='"debts"'>Owed</button>
+      <button class="tab pfc-tap"  data-pfc-on-click="setTab" data-pfc-arg-this data-pfc-arg='"goals"'>Targets</button>
+      <button class="tab pfc-tap"  data-pfc-on-click="setTab" data-pfc-arg-this data-pfc-arg='"networth"'>Wealth</button>
     </div>
 
     <!-- ═══ OVERVIEW PANEL ═══ -->
@@ -846,12 +845,17 @@
          (Monarch/Copilot benchmark: user's numbers are the hero).
          Initial '—' placeholders; recalcForecast() hydrates from real
          USER data after auth. -->
-    <div class="metrics">
-      <div class="metric pfc-card--elev">
-        <div class="metric-label">Projected net worth (12mo)</div>
-        <div class="metric-val num" style="color:var(--teal);" id="m-networth">—</div>
+    <!-- DASH-P1-5 (audit DCRO-5): 1+3 hero layout. Net worth promoted to
+         hero card (spans 2 cols, larger metric-val font). Three secondary
+         KPIs hold their slot. Without this all four cards are equal-weight
+         and the page has no visual hero — Monarch/Copilot/YNAB all promote
+         one number. The inline style overrides only target the hero card. -->
+    <div class="metrics" style="grid-template-columns:2fr 1fr 1fr 1fr;">
+      <div class="metric metric--hero pfc-card--elev" style="padding:24px 28px;">
+        <div class="metric-label" style="font-size:13px;letter-spacing:0.04em;">Projected net worth · 12 months</div>
+        <div class="metric-val num" style="color:var(--teal);font-size:48px;line-height:1.1;font-family:var(--font-display);font-weight:700;letter-spacing:-0.02em;" id="m-networth">—</div>
         <div class="metric-change up" id="m-networth-change">—</div>
-        <div class="metric-bar"><div class="metric-bar-fill" style="width:0%;background:var(--teal);"></div></div>
+        <div class="metric-bar"><div class="metric-bar-fill" style="width:0%;background:var(--teal);height:4px;"></div></div>
       </div>
       <div class="metric pfc-card--elev">
         <div class="metric-label">Monthly savings</div>
@@ -1027,16 +1031,9 @@
           </div>
           <span class="card-badge badge-teal">AI</span>
         </div>
-        <figure class="pfc-photo-figure">
-          <picture>
-            <source srcset="assets/img/photos/dashboard-savings-rate-vignette.avif" type="image/avif">
-            <source srcset="assets/img/photos/dashboard-savings-rate-vignette.webp" type="image/webp">
-            <img class="pfc-photo-square" src="assets/img/photos/dashboard-savings-rate-vignette.webp"
-                 alt="An antique brass-and-glass laboratory beaker half-filled with bronze and gold coins on emerald velvet — savings rate as a measured pour."
-                 loading="lazy" decoding="async"
-                 width="1254" height="1254">
-          </picture>
-        </figure>
+        <!-- DASH-P1-14: decorative photo removed (audit DES-6, "working
+             surface — no decoration"). -->
+
         <div id="insights-list">
           <div class="insight-item">
             <div class="insight-dot" style="background:var(--teal);"></div>
@@ -1183,9 +1180,17 @@
         <div class="sage-mini-chat" id="sage-chat">
           <div class="sage-bubble ai">Sage is your in-app advisor — it answers questions grounded in your real numbers: "Can I afford a holiday?", "When will I be debt-free?", "How does a raise affect my forecast?"</div>
         </div>
-        <div class="sage-input-row" style="margin-top:12px;">
-          <a href="sage.html" class="sage-send-btn" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:10px 16px;text-decoration:none;flex:1;font-family:var(--font-body);font-weight:600;font-size:13px;color:#0B1410;border-radius:8px;">Open Sage →</a>
-        </div>
+        <!-- DASH-P1-6 (audit DCRO-6): inline Sage. Was a static <a> bouncing
+             to sage.html — Pro users paid largely for this; "you paid for the
+             link to the thing" was the audit verdict. Now a real input +
+             send hitting /api/sage with the user's JWT, rendering reply in
+             #dash-sage-reply below. Wired by the IIFE at end of body. -->
+        <form class="sage-input-row" id="dash-sage-form" style="margin-top:12px;display:flex;gap:8px;" autocomplete="off">
+          <label for="dash-sage-input" style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;">Ask Sage a question</label>
+          <input id="dash-sage-input" type="text" class="sage-input-field pfc-tap" placeholder="Ask Sage about your numbers…" maxlength="500" style="flex:1;background:rgba(255,255,255,0.04);border:1px solid var(--border2,rgba(255,255,255,0.10));color:var(--text);padding:10px 14px;border-radius:8px;font-family:var(--font-body);font-size:14px;outline:none;">
+          <button type="submit" id="dash-sage-send" class="sage-send-btn pfc-tap" style="display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 18px;background:var(--teal);font-family:var(--font-body);font-weight:600;font-size:13px;color:#0B1410;border:none;border-radius:8px;cursor:pointer;min-height:44px;">Ask</button>
+        </form>
+        <div id="dash-sage-reply" role="status" aria-live="polite" style="display:none;margin-top:12px;padding:12px 14px;background:rgba(43,182,125,0.05);border:1px solid rgba(43,182,125,0.15);border-radius:8px;font-size:13.5px;line-height:1.55;color:var(--text);"></div>
         <div class="sage-limit">Available on Pro · 200 messages a month</div>
       </div>
 
@@ -1433,16 +1438,8 @@
 
       <!-- Milestones row -->
       <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:20px 22px;">
-        <figure class="pfc-photo-figure">
-          <picture>
-            <source srcset="assets/img/photos/dashboard-networth-pullquote.avif" type="image/avif">
-            <source srcset="assets/img/photos/dashboard-networth-pullquote.webp" type="image/webp">
-            <img class="pfc-photo-portrait" src="assets/img/photos/dashboard-networth-pullquote.webp"
-                 alt="A hand-drawn graphite line chart on cream ledger paper ascending lower-left to upper-right, sharpened pencil with brass ferrule laid below — the trend, in ink."
-                 loading="lazy" decoding="async"
-                 width="1122" height="1402">
-          </picture>
-        </figure>
+        <!-- DASH-P1-14: decorative photo removed (audit DES-6). -->
+
         <div style="font-family:var(--font-display);font-size:14px;font-weight:700;margin-bottom:14px;">Net worth milestones</div>
         <div id="nw-tab-milestones" style="display:flex;flex-wrap:wrap;gap:10px;"></div>
       </div>
@@ -1451,7 +1448,8 @@
 
   </div><!-- /content -->
 <!-- ═══════════ ADD GOAL MODAL ═══════════ -->
-<div id="goal-overlay" style="display:none;position:fixed;inset:0;background:rgba(4,6,10,0.85);backdrop-filter:blur(6px);z-index:100;align-items:center;justify-content:center;padding:20px;">
+<!-- DASH-P1-11: -webkit-backdrop-filter alongside backdrop-filter for iOS Safari 16.x. -->
+<div id="goal-overlay" style="display:none;position:fixed;inset:0;background:rgba(4,6,10,0.85);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);z-index:100;align-items:center;justify-content:center;padding:20px;">
   <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:16px;width:100%;max-width:420px;overflow:hidden;">
     <div style="padding:18px 22px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
       <div style="font-family:var(--font-display);font-size:16px;font-weight:700;" id="goal-modal-title">Add new goal</div>
@@ -1465,11 +1463,11 @@
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
         <div>
           <label for="goal-current" style="font-size:12px;color:var(--text2);display:block;margin-bottom:5px;">Current amount</label>
-          <input type="number" id="goal-current" placeholder="0" min="0" style="width:100%;padding:10px 13px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:var(--font-body);outline:none;"  data-pfc-on-input="goalCalcPreview">
+          <input type="number" inputmode="decimal" pattern="[0-9]*\.?[0-9]*" id="goal-current" placeholder="0" min="0" style="width:100%;padding:10px 13px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:var(--font-body);outline:none;"  data-pfc-on-input="goalCalcPreview">
         </div>
         <div>
           <label for="goal-target" style="font-size:12px;color:var(--text2);display:block;margin-bottom:5px;">Target amount</label>
-          <input type="number" id="goal-target" placeholder="10000" min="1" style="width:100%;padding:10px 13px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:var(--font-body);outline:none;"  data-pfc-on-input="goalCalcPreview">
+          <input type="number" inputmode="decimal" pattern="[0-9]*\.?[0-9]*" id="goal-target" placeholder="10000" min="1" style="width:100%;padding:10px 13px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:var(--font-body);outline:none;"  data-pfc-on-input="goalCalcPreview">
         </div>
       </div>
       <div style="margin-bottom:18px;">
@@ -1502,7 +1500,8 @@
 </div>
 
 <!-- ════════════════════════════ -->
-<div id="ef-overlay" style="display:none;position:fixed;inset:0;background:rgba(4,6,10,0.85);backdrop-filter:blur(6px);z-index:100;align-items:flex-start;justify-content:center;overflow-y:auto;padding:20px;">
+<!-- DASH-P1-11: -webkit-backdrop-filter alongside backdrop-filter for iOS Safari 16.x. -->
+<div id="ef-overlay" style="display:none;position:fixed;inset:0;background:rgba(4,6,10,0.85);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);z-index:100;align-items:flex-start;justify-content:center;overflow-y:auto;padding:20px;">
   <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:16px;width:100%;max-width:600px;margin:auto;overflow:hidden;">
 
     <!-- Header -->
@@ -1539,14 +1538,14 @@
           <label for="ef-income" style="font-size:12px;color:var(--text2);display:block;margin-bottom:5px;">Monthly take-home pay</label>
           <div style="position:relative;">
             <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:14px;" id="ef-sym1">$</span>
-            <input type="number" id="ef-income" style="width:100%;padding:9px 12px 9px 26px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:var(--font-body);outline:none;"  data-pfc-on-input="efCalc">
+            <input type="number" inputmode="decimal" pattern="[0-9]*\.?[0-9]*" id="ef-income" style="width:100%;padding:9px 12px 9px 26px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:var(--font-body);outline:none;"  data-pfc-on-input="efCalc">
           </div>
         </div>
         <div>
           <label for="ef-other-income" style="font-size:12px;color:var(--text2);display:block;margin-bottom:5px;">Other income (optional)</label>
           <div style="position:relative;">
             <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:14px;" id="ef-sym2">$</span>
-            <input type="number" id="ef-other-income" style="width:100%;padding:9px 12px 9px 26px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:var(--font-body);outline:none;"  data-pfc-on-input="efCalc">
+            <input type="number" inputmode="decimal" pattern="[0-9]*\.?[0-9]*" id="ef-other-income" style="width:100%;padding:9px 12px 9px 26px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:var(--font-body);outline:none;"  data-pfc-on-input="efCalc">
           </div>
         </div>
       </div>
@@ -1556,19 +1555,19 @@
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px;">
         <div>
           <label for="ef-housing" style="font-size:12px;color:var(--text2);display:block;margin-bottom:5px;">Housing (rent/mortgage)</label>
-          <input type="number" id="ef-housing" style="width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:var(--font-body);outline:none;"  data-pfc-on-input="efCalc">
+          <input type="number" inputmode="decimal" pattern="[0-9]*\.?[0-9]*" id="ef-housing" style="width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:var(--font-body);outline:none;"  data-pfc-on-input="efCalc">
         </div>
         <div>
           <label for="ef-food" style="font-size:12px;color:var(--text2);display:block;margin-bottom:5px;">Food & groceries</label>
-          <input type="number" id="ef-food" style="width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:var(--font-body);outline:none;"  data-pfc-on-input="efCalc">
+          <input type="number" inputmode="decimal" pattern="[0-9]*\.?[0-9]*" id="ef-food" style="width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:var(--font-body);outline:none;"  data-pfc-on-input="efCalc">
         </div>
         <div>
           <label for="ef-transport" style="font-size:12px;color:var(--text2);display:block;margin-bottom:5px;">Transport</label>
-          <input type="number" id="ef-transport" style="width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:var(--font-body);outline:none;"  data-pfc-on-input="efCalc">
+          <input type="number" inputmode="decimal" pattern="[0-9]*\.?[0-9]*" id="ef-transport" style="width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:var(--font-body);outline:none;"  data-pfc-on-input="efCalc">
         </div>
         <div>
           <label for="ef-other-exp" style="font-size:12px;color:var(--text2);display:block;margin-bottom:5px;">Other expenses</label>
-          <input type="number" id="ef-other-exp" style="width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:var(--font-body);outline:none;"  data-pfc-on-input="efCalc">
+          <input type="number" inputmode="decimal" pattern="[0-9]*\.?[0-9]*" id="ef-other-exp" style="width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:var(--font-body);outline:none;"  data-pfc-on-input="efCalc">
         </div>
       </div>
 
@@ -1577,19 +1576,19 @@
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:22px;">
         <div>
           <label for="ef-savings" style="font-size:12px;color:var(--text2);display:block;margin-bottom:5px;">Current savings / cash</label>
-          <input type="number" id="ef-savings" style="width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:var(--font-body);outline:none;"  data-pfc-on-input="efCalc">
+          <input type="number" inputmode="decimal" pattern="[0-9]*\.?[0-9]*" id="ef-savings" style="width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:var(--font-body);outline:none;"  data-pfc-on-input="efCalc">
         </div>
         <div>
           <label for="ef-investments" style="font-size:12px;color:var(--text2);display:block;margin-bottom:5px;">Investments (optional)</label>
-          <input type="number" id="ef-investments" style="width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:var(--font-body);outline:none;"  data-pfc-on-input="efCalc">
+          <input type="number" inputmode="decimal" pattern="[0-9]*\.?[0-9]*" id="ef-investments" style="width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:var(--font-body);outline:none;"  data-pfc-on-input="efCalc">
         </div>
         <div>
           <label for="ef-debt" style="font-size:12px;color:var(--text2);display:block;margin-bottom:5px;">Total debt</label>
-          <input type="number" id="ef-debt" style="width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:var(--font-body);outline:none;"  data-pfc-on-input="efCalc">
+          <input type="number" inputmode="decimal" pattern="[0-9]*\.?[0-9]*" id="ef-debt" style="width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:var(--font-body);outline:none;"  data-pfc-on-input="efCalc">
         </div>
         <div>
           <label for="ef-debtpay" style="font-size:12px;color:var(--text2);display:block;margin-bottom:5px;">Monthly debt payment</label>
-          <input type="number" id="ef-debtpay" style="width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:var(--font-body);outline:none;"  data-pfc-on-input="efCalc">
+          <input type="number" inputmode="decimal" pattern="[0-9]*\.?[0-9]*" id="ef-debtpay" style="width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:14px;color:var(--text);font-family:var(--font-body);outline:none;"  data-pfc-on-input="efCalc">
         </div>
       </div>
 
@@ -1687,6 +1686,88 @@
 
 
 <script src="js/pfc-inline-bootstrap.js" defer></script>
+
+<!-- DASH-P1-9 (audit DA11Y-6): :focus-visible global rule. Many of the
+     inputs and selects on this page strip the browser default outline
+     (outline:none) without a replacement, so keyboard-only users have
+     no visible focus indicator. This single rule restores focus for
+     every interactive element on the page.
+     Scoped to dashboard.html via inline <style> so the change can't
+     accidentally leak into other pages until a global pfc-app.css
+     migration lands. -->
+<style>
+  :where(input, select, textarea, button, [tabindex], a):focus-visible {
+    outline: 2px solid var(--money, #2BB67D) !important;
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+</style>
+
+<!-- DASH-P1-6 (audit DCRO-6): inline Sage wiring. Reuses the same
+     Authorization-header pattern as the DASH-P0-9 fix on the CSV→Sage
+     call. Renders the reply inline below the form rather than bouncing
+     to /sage.html. -->
+<script>
+(function wireInlineSage(){
+  var form = document.getElementById('dash-sage-form');
+  var inp  = document.getElementById('dash-sage-input');
+  var btn  = document.getElementById('dash-sage-send');
+  var out  = document.getElementById('dash-sage-reply');
+  if (!form || !inp || !btn || !out) return;
+  var inflight = false;
+  async function send(e){
+    if (e) e.preventDefault();
+    var msg = (inp.value || '').trim();
+    if (!msg || inflight) return;
+    inflight = true;
+    btn.disabled = true;
+    var origLabel = btn.textContent;
+    btn.textContent = 'Thinking…';
+    out.style.display = 'block';
+    out.textContent = '…';
+    try {
+      var headers = { 'Content-Type': 'application/json' };
+      try {
+        var s = (typeof PFCAuth !== 'undefined') ? PFCAuth.getSession() : null;
+        if (s && s.access_token) headers['Authorization'] = 'Bearer ' + s.access_token;
+      } catch(_){}
+      var body = { message: msg };
+      try {
+        if (typeof PFCUser !== 'undefined' && PFCUser.get) {
+          var u = PFCUser.get() || {};
+          body.userContext = {
+            monthlyIncome:   Number(u.income) || 0,
+            monthlyExpenses: Number(u.housing||0) + Number(u.food||0) + Number(u.transport||0) + Number(u.otherExp||0),
+            totalDebt:       Number(u.debt) || 0,
+            totalSavings:    Number(u.savings) || 0,
+          };
+        }
+      } catch(_){}
+      var r = await fetch('/api/sage', { method:'POST', headers: headers, body: JSON.stringify(body) });
+      if (!r.ok) {
+        if (r.status === 401) {
+          out.textContent = 'Sage requires a signed-in Pro account — sign in to ask a question.';
+        } else if (r.status === 429) {
+          out.textContent = 'You have hit your Sage monthly quota — see billing for usage details.';
+        } else {
+          out.textContent = 'Sage is unavailable right now (error ' + r.status + '). Please try again in a moment.';
+        }
+        return;
+      }
+      var data = await r.json();
+      var reply = data.reply || data.content || data.text || '';
+      out.textContent = reply || '(no response)';
+    } catch (err) {
+      out.textContent = 'Sage is unavailable right now — try again in a moment.';
+    } finally {
+      inflight = false;
+      btn.disabled = false;
+      btn.textContent = origLabel;
+    }
+  }
+  form.addEventListener('submit', send);
+})();
+</script>
 
 <!-- DASH-P0-2: mobile sidebar toggle. Standalone, CSP-friendly (no inline
      handler attributes), no dependency on the dashboard module init. -->

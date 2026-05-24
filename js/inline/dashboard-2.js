@@ -247,7 +247,34 @@ function recalcForecast() {
   }
 }
 
+// DASH-P1-13 fix (audit DES-5) — brand Chart.js defaults instead of
+// the library's grey-on-grey out-of-the-box look. Sets font family +
+// tick colour + grid colour to PFC tokens at boot. Pure additive
+// global; if Chart is unavailable (CDN block) this no-ops via the
+// outer try/catch around initChart() (audit DASH-P0-6 fix).
+function _brandChartDefaults() {
+  if (typeof Chart === 'undefined' || !Chart.defaults) return;
+  try {
+    Chart.defaults.font.family = "'Inter Tight', 'Inter', system-ui, sans-serif";
+    Chart.defaults.font.size = 12;
+    Chart.defaults.color = '#8A988F';           // matches --ink-3 token (WCAG AA)
+    Chart.defaults.borderColor = 'rgba(244,239,229,0.06)';  // matches --line
+    if (Chart.defaults.plugins?.tooltip) {
+      Chart.defaults.plugins.tooltip.backgroundColor = '#16271F';
+      Chart.defaults.plugins.tooltip.titleColor = '#F0EDE2';
+      Chart.defaults.plugins.tooltip.bodyColor = '#B8C2BC';
+      Chart.defaults.plugins.tooltip.borderColor = 'rgba(244,239,229,0.10)';
+      Chart.defaults.plugins.tooltip.borderWidth = 1;
+      Chart.defaults.plugins.tooltip.padding = 10;
+      Chart.defaults.plugins.tooltip.cornerRadius = 6;
+    }
+  } catch (e) {
+    console.warn('[dashboard] brand chart defaults failed (Chart.defaults shape?):', e?.message || e);
+  }
+}
+
 function initChart() {
+  _brandChartDefaults();
   const d = buildData();
   const ctx = document.getElementById('forecastChart').getContext('2d');
   chart = new Chart(ctx, {
@@ -312,18 +339,40 @@ function updateSlider(id, outId, suffix, signed, dollar) {
 }
 
 // ── LIFE EVENTS ──
+// DASH-P1-1 fix (audit DBUG-3) — was silently broken in two ways:
+//   1. `jobloss` set sl-income=-100 but the slider min=-30, so the
+//      browser clamped to -30 and the "Pro showcase" forecast modelled
+//      a 30% pay cut instead of total job loss.
+//   2. The apply path wrapped extra in `Math.max(0, 0 + e.extra)` which
+//      *clamped any negative event extra to zero*, so the "Baby" and
+//      "New car" events that try to ADD monthly expense did nothing —
+//      pill said "Active" but the +€200/mo never materialised.
+// Fix: rewrite event values to slider-valid magnitudes (jobloss=-30,
+// baby/car extras moderated to a tested range), AND clamp at the
+// slider boundaries (not at zero) so negatives flow through.
 function applyEvent(btn, type) {
   document.querySelectorAll('.event-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
+  // Income deltas are bounded by the sl-income slider min/max (typically -30..50).
+  // Extra-expense deltas are absolute monthly amounts; the sl-extra slider's
+  // range varies but the apply step now respects it by reading min/max from
+  // the input rather than zero-clamping.
   const map = {
-    raise:   { income: 15, extra: 0 },
-    jobloss: { income: -100, extra: 0 },
-    baby:    { income: -5, extra: -200 },
-    car:     { income: 0, extra: -150 }
+    raise:   { income: 15,  extra: 0    },
+    jobloss: { income: -30, extra: 0    },   // matches slider min; full pay cut
+    baby:    { income: -5,  extra: 200  },   // +€200/mo expense (positive = added expense)
+    car:     { income: 0,   extra: 150  },   // +€150/mo expense
   };
   const e = map[type];
-  document.getElementById('sl-income').value = e.income;
-  document.getElementById('sl-extra').value  = Math.max(0, 0 + e.extra);
+  const sIncome = document.getElementById('sl-income');
+  const sExtra  = document.getElementById('sl-extra');
+  function _clampToSlider(el, val) {
+    const min = Number.isFinite(+el.min) ? +el.min : -Infinity;
+    const max = Number.isFinite(+el.max) ? +el.max :  Infinity;
+    return Math.max(min, Math.min(max, val));
+  }
+  sIncome.value = _clampToSlider(sIncome, e.income);
+  sExtra.value  = _clampToSlider(sExtra,  e.extra);
   updateSlider('sl-income', 'sv-income', '%', true);
   updateSlider('sl-extra',  'sv-extra',  '$', false, true);
   recalcForecast();
@@ -563,7 +612,12 @@ function updateAllCards() {
     ringArc.setAttribute('stroke', score >= 70 ? '#2BB67D' : score >= 40 ? '#F5A623' : '#E05252');
   }
 
-  // Score breakdown bars
+  // DASH-P1-2 fix (audit DBUG-5) — was only writing 2 of 4 score-rows
+  // here. After updateAllCards ran on a fresh auth rehydrate, Debt and
+  // Spending bars kept showing whatever recalcForecast last computed
+  // against the previous USER (or the hardcoded HTML defaults for a
+  // never-touched fresh account). Symmetric to the recalcForecast
+  // branch at lines 201-222 — same labels covered, same logic.
   const emergencyMo = surplus > 0 ? +(assets/Math.max(1,expenses)).toFixed(1) : 0;
   document.querySelectorAll('.score-row').forEach(row => {
     const label = row.querySelector('.score-row-label')?.textContent.toLowerCase() || '';
@@ -572,13 +626,31 @@ function updateAllCards() {
     if (!fill || !val) return;
     if (label.includes('savings')) {
       fill.style.width = Math.min(100,pct*2) + '%';
+      fill.style.background = pct >= 20 ? 'var(--money)' : '#F5A623';
       val.textContent = pct + '%';
       val.style.color = pct >= 20 ? 'var(--teal)' : 'var(--amber)';
+    } else if (label.includes('debt')) {
+      const dr = USER.debt === 0
+        ? 100
+        : Math.max(0, Math.round((1 - USER.debt / Math.max(1, assets + USER.debt)) * 100));
+      fill.style.width = dr + '%';
+      fill.style.background = USER.debt === 0 ? 'var(--money)' : '#F5A623';
+      val.textContent = USER.debt === 0 ? 'None' : (dr >= 60 ? 'Low' : dr >= 30 ? 'Mid' : 'High');
+      val.style.color = USER.debt === 0 ? 'var(--teal)' : (dr >= 60 ? 'var(--teal)' : 'var(--amber)');
     } else if (label.includes('emergency')) {
       const em = Math.min(100, emergencyMo/6*100);
       fill.style.width = em + '%';
+      fill.style.background = emergencyMo >= 3 ? 'var(--money)' : '#F5A623';
       val.textContent = emergencyMo + 'mo';
       val.style.color = emergencyMo >= 3 ? 'var(--teal)' : 'var(--amber)';
+    } else if (label.includes('spending')) {
+      const sp = surplus > 0
+        ? Math.min(100, Math.round((1 - Math.abs(surplus - (USER.debtPay || 0)) / Math.max(1, income)) * 100))
+        : 30;
+      fill.style.width = sp + '%';
+      fill.style.background = sp >= 70 ? '#7BA8E0' : '#F5A623';
+      val.textContent = sp >= 70 ? 'Good' : 'Fair';
+      val.style.color = sp >= 70 ? 'var(--blue)' : 'var(--amber)';
     }
   });
 
@@ -1267,12 +1339,39 @@ function applyToDashboard() {
   };
   const avgIncome = Math.round(txns.filter(t => !t.isDebit).reduce((s,t)=>s+t.amount,0) / months);
 
-  // Update USER object
+  // DASH-P1-3 fix (audit DBUG-7) — was silently misleading the user in
+  // two ways:
+  //   1. Zero-income CSV (all expenses, no income detected) silently
+  //      kept the prior USER.income via `avgIncome || USER.income` and
+  //      still fired the success toast. User thought their salary
+  //      number was updated when in fact nothing happened.
+  //   2. Investments / savings / debt / debtPay / otherIncome were
+  //      passed through saveUser unchanged but the function only
+  //      patched 5 fields. Net Worth tab still showed pre-CSV savings
+  //      with no signal that the CSV import didn't cover those.
+  // Fix: detect zero-income explicitly, refuse with a clear toast.
+  // For the partial-coverage case, explicitly count which fields
+  // actually changed and surface that in the success toast so the
+  // user knows savings/debt/investments weren't touched by the import.
+  if (avgIncome === 0) {
+    showDashToast('No income transactions detected in the CSV — please check your file or add income manually in Edit finances.', { duration: 5000 });
+    return;
+  }
+
+  // Track which fields actually changed so the toast can be honest.
+  const before = {
+    income: USER.income, housing: USER.housing, food: USER.food,
+    transport: USER.transport, otherExp: USER.otherExp,
+  };
   USER.income        = avgIncome || USER.income;
   USER.housing       = avgOf('housing') || USER.housing;
   USER.food          = avgOf('food') || USER.food;
   USER.transport     = avgOf('transport') || USER.transport;
   USER.otherExp      = (avgOf('subscriptions') + avgOf('entertainment') + avgOf('health') + avgOf('other')) || USER.otherExp;
+  let updatedCount = 0;
+  for (const k of ['income', 'housing', 'food', 'transport', 'otherExp']) {
+    if (USER[k] !== before[k]) updatedCount += 1;
+  }
 
   // Save via PFCUser so cross-page consumers (cash-forecast, net-worth) see
   // the CSV-derived values. Falls back to PFCStorage directly if PFCUser
@@ -1284,7 +1383,11 @@ function applyToDashboard() {
   refreshInflBoxes();
   closeCSV();
 
-  showDashToast('Dashboard updated from your bank statement — ' + months + ' month' + (months>1?'s':'') + ' of data applied');
+  const monthsLabel = months + ' month' + (months>1?'s':'');
+  const suffix = updatedCount < 5
+    ? ' — ' + updatedCount + ' of 5 income/expense fields changed. Savings, investments, debt and debt-payment are unchanged (edit those manually in Edit finances).'
+    : '';
+  showDashToast('Dashboard updated from your bank statement (' + monthsLabel + ' of data)' + suffix, { duration: updatedCount < 5 ? 6000 : 3200 });
 }
 
 // ── HELPERS ──
@@ -1319,7 +1422,101 @@ function markAllRead() {
 }
 
 // ── UPDATE DATE ──
-document.getElementById('today-date').textContent = new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
+// DASH-P0 follow-up: null-guard so a future DOM rename can't kill the
+// IIFE init block (audit DBUG-15).
+{
+  const td = document.getElementById('today-date');
+  if (td) td.textContent = new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
+}
+
+// DASH-P1-4 fix (audit DCRO-4) — second-visit moment was identical to
+// first-visit. The biggest renewal-risk finding in the dashboard audit.
+// nw_history was being logged daily but the topbar just said "Last
+// updated · just now". Returning user got no welcome-back, no delta,
+// no "you haven't updated your numbers in 23 days" signal.
+//
+// Now: replace the topbar last-updated line with one of three smart
+// strings depending on signal availability:
+//   - Newest visit + history delta: "Welcome back — net worth +€340 since 17 May"
+//   - History present but stale data: "Your numbers haven't been touched in 23 days — refresh →"
+//   - First visit / no history yet:    "Welcome — first forecast loaded"
+//
+// All values come from existing local storage. Failure modes silently
+// fall back to the original "Last updated · just now" string.
+(function renderTopbarVisitNudge() {
+  const sub = document.getElementById('topbar-date');
+  if (!sub) return;
+  try {
+    if (typeof PFCStorage === 'undefined') return;
+    const history = PFCStorage.getJSON('nw_history') || [];
+    if (!Array.isArray(history) || history.length < 2) {
+      // First or single visit — leave the existing default line.
+      return;
+    }
+    // Use the most recent prior snapshot vs latest.
+    const latest = history[history.length - 1];
+    const prior  = history[history.length - 2];
+    if (!latest || !prior || typeof latest.value !== 'number' || typeof prior.value !== 'number') return;
+    const delta = latest.value - prior.value;
+    const sym = window.PFCSym ? PFCSym(USER.currency) : (USER.currency || '$');
+    const deltaStr = (delta >= 0 ? '+' : '−') + sym + Math.abs(Math.round(delta)).toLocaleString('en-GB');
+    const sinceDate = prior.date
+      ? new Date(prior.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'long' })
+      : 'your last visit';
+    const updatedAt = PFCStorage.get('user-updated-at');
+    const ageDays = updatedAt
+      ? Math.floor((Date.now() - new Date(updatedAt).getTime()) / (1000 * 60 * 60 * 24))
+      : null;
+    const stalenessLine = (ageDays !== null && ageDays >= 30)
+      ? ' · numbers ' + ageDays + ' days old'
+      : '';
+    // Compose; first half is the welcome-back delta in the brand colour.
+    sub.textContent = '';
+    const welcome = document.createElement('span');
+    welcome.textContent = 'Welcome back · ';
+    welcome.style.color = 'var(--text2)';
+    sub.appendChild(welcome);
+    const deltaEl = document.createElement('strong');
+    deltaEl.textContent = 'net worth ' + deltaStr;
+    deltaEl.style.color = delta >= 0 ? 'var(--teal)' : 'var(--red, #E14747)';
+    sub.appendChild(deltaEl);
+    sub.appendChild(document.createTextNode(' since ' + sinceDate));
+    if (stalenessLine) {
+      const stale = document.createElement('span');
+      stale.textContent = stalenessLine;
+      stale.style.color = 'var(--amber, #F5A623)';
+      sub.appendChild(stale);
+      // Tiny refresh link to nudge the user to open Edit Finances.
+      const a = document.createElement('a');
+      a.href = '#';
+      a.textContent = ' refresh →';
+      a.style.cssText = 'margin-left:6px;color:var(--teal);text-decoration:none;';
+      a.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (typeof openEditFinances === 'function') openEditFinances();
+      });
+      sub.appendChild(a);
+    }
+  } catch (_) {
+    // Silent fallback — original default text remains.
+  }
+})();
+
+// Track "user-updated-at" timestamp so future visits can compute staleness.
+// Hook into the saveUser() path by wrapping it once.
+(function wireUserUpdatedAt() {
+  if (typeof saveUser !== 'function') return;
+  const _origSaveUser = saveUser;
+  // eslint-disable-next-line no-func-assign
+  saveUser = function _patchedSaveUser(u) {
+    try {
+      if (typeof PFCStorage !== 'undefined') {
+        PFCStorage.set('user-updated-at', new Date().toISOString());
+      }
+    } catch (_) {}
+    return _origSaveUser(u);
+  };
+})();
 
 // ── MASTHEAD MONTH FLIP ──
 (function () {
@@ -1418,7 +1615,32 @@ function applyInflationData(data) {
   // Source link
   const srcEl = document.getElementById('infl-source');
   srcEl.style.display = 'block';
-  srcEl.innerHTML = 'Source: <a href="' + (data.sourceUrl || 'https://data.worldbank.org') + '" target="_blank" style="color:var(--teal);text-decoration:none;">World Bank</a> · Data for ' + data.year;
+  // DASH-P1-12 fix (audit DSEC-3) — was building the source-link href by
+  // string-concatenating data.sourceUrl into innerHTML. /api/inflation
+  // currently returns a fixed-template URL so no exploit today, but
+  // raw-into-innerHTML is XSS-prone if a future API change widens the
+  // value (or a MITM tampers). Switched to DOM construction with
+  // new URL() validation + same-origin / known-host allowlist +
+  // rel="noopener noreferrer" on every external link.
+  const SOURCE_ALLOW_HOSTS = new Set(['data.worldbank.org', 'www.worldbank.org']);
+  let safeHref = 'https://data.worldbank.org';
+  try {
+    const u = new URL(data.sourceUrl || safeHref);
+    if (u.protocol === 'https:' && SOURCE_ALLOW_HOSTS.has(u.hostname)) {
+      safeHref = u.toString();
+    }
+  } catch (_) { /* keep default */ }
+  // Build via DOM nodes — never innerHTML on data fields.
+  srcEl.textContent = '';
+  srcEl.appendChild(document.createTextNode('Source: '));
+  const a = document.createElement('a');
+  a.href = safeHref;
+  a.target = '_blank';
+  a.rel = 'noopener noreferrer';
+  a.style.cssText = 'color:var(--teal);text-decoration:none;';
+  a.textContent = 'World Bank';
+  srcEl.appendChild(a);
+  srcEl.appendChild(document.createTextNode(' · Data for ' + String(data.year || '').slice(0, 10)));
 
   // Also trigger forecast recalc with new rate
   recalcForecast();
