@@ -253,13 +253,15 @@
   <link rel="stylesheet" href="css/pfc-anim.css?v=1">
   <link rel="stylesheet" href="css/pfc-footer.css">
   <script src="js/pfc-export.js" defer></script>
-  <!-- SC-SEC-3 fix (audit 2026-05-25) — Supabase CDN now SRI-pinned + version-
-       locked. Pre-fix the `@2` floating tag with no `integrity` left a supply-
-       chain hole: a jsDelivr or @2 tag compromise silently injects code with
-       full DOM/cookie access. Pinned to the exact 2.45.4 version that NW-P1-5
-       audited + integrity-hashed. -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"
-          integrity="sha384-2/8jSciTzcwYQfO+JTKLgu+T+xfmJcgmrZ3qpbLBdT9wzm+rvtJ24fOuFu7L2Veq"
+  <!-- SC-SEC-3 fix (audit 2026-05-25; SRI hash corrected SC-HOTFIX 2026-05-25):
+       Supabase CDN SRI-pinned + version-locked. Initial SC-P0 commit shipped
+       a fabricated SRI hash + wrong version (@2.45.4) — browser rejected the
+       integrity check, blocked the SDK from loading, window.supabase stayed
+       undefined, and pfc-auth.js painted the "Service unavailable" banner.
+       The real hash + version are the same ones already running in
+       /net-worth (NW-P1-5), /debt-optimizer, /goals, /recurring. -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.105.4"
+          integrity="sha384-4eCDoMN/7A46qQ5Tj0rZ/D2VEolFGNIINDTLAcWZcvhkRSsvTfqNfaBMlRRoGEZ5"
           crossorigin="anonymous" defer></script>
   <!-- SC-PERF-1 fix (audit 2026-05-25) — defer all 8 pfc-* head scripts so they
        no longer block HTML parsing. The auth/storage/entitlements chain still
@@ -921,7 +923,7 @@
   cache JS for 24h (Cache-Control max-age=86400); same-URL re-fetch returns
   the cached stale file. Naming convention: ?v=YYYYMMDD<letter>[-suffix].
 -->
-<script src="./js/inline/salary-calculator-2.js?v=20260525a-scbatch" defer></script>
+<script src="./js/inline/salary-calculator-2.js?v=20260525b-srifix" defer></script>
   <!-- Salary calculator is now Free (audit B3 / pricing report 07): single-offer
        calculation is the SEO honey-pot. Multi-offer compare and "save scenario"
        Pro hooks land alongside the scenarios.html upsell flow. Auth required so
