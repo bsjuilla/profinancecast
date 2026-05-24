@@ -38,6 +38,58 @@ function saveUser(u) {
 
 let USER = loadUser();
 
+// ── DASH-P0-1 fix — toast shim + unread-counter state ──
+// Both `showDashToast(msg)` and `unreadCount` were called from 8+ handlers
+// (Save / Reset / Goal edit-delete-add / CSV apply / inflation refresh /
+// notification mark-read) but never defined. Each call threw silently
+// AFTER persistence had already succeeded, so user actions worked but
+// gave no UI confirmation. markRead() aborted mid-function so the
+// unread dot never cleared. Audit DBUG-1.
+//
+// The shim renders a brief floating toast at the bottom of the viewport.
+// It uses pure DOM APIs (no innerHTML on user-controlled data) and obeys
+// prefers-reduced-motion via the `transition` token from pfc-tokens.css.
+let unreadCount = 0;
+function showDashToast(msg, opts) {
+  try {
+    const text = String(msg || '');
+    if (!text) return;
+    let host = document.getElementById('pfc-toast-host');
+    if (!host) {
+      host = document.createElement('div');
+      host.id = 'pfc-toast-host';
+      host.setAttribute('role', 'status');
+      host.setAttribute('aria-live', 'polite');
+      host.style.cssText =
+        'position:fixed;left:50%;bottom:24px;transform:translateX(-50%);' +
+        'display:flex;flex-direction:column;gap:8px;align-items:center;' +
+        'z-index:9999;pointer-events:none;';
+      document.body.appendChild(host);
+    }
+    const toast = document.createElement('div');
+    toast.style.cssText =
+      'background:rgba(11,20,16,0.94);color:var(--ink,#F0EDE2);' +
+      'border:1px solid var(--line-2,rgba(240,237,226,0.10));' +
+      'border-radius:8px;padding:10px 16px;font-family:var(--font-body);' +
+      'font-size:13.5px;max-width:min(90vw,420px);text-align:center;' +
+      'box-shadow:0 8px 28px rgba(0,0,0,0.35);' +
+      'opacity:0;transform:translateY(8px);' +
+      'transition:opacity 180ms ease-out, transform 180ms ease-out;';
+    toast.textContent = text;
+    host.appendChild(toast);
+    // Force layout, then animate in.
+    void toast.offsetHeight;
+    toast.style.opacity = '1';
+    toast.style.transform = 'translateY(0)';
+    const stayMs = (opts && Number.isFinite(opts.duration)) ? opts.duration : 2800;
+    setTimeout(() => {
+      toast.style.opacity = '0';
+      toast.style.transform = 'translateY(8px)';
+      setTimeout(() => toast.remove(), 220);
+    }, stayMs);
+  } catch (_) { /* toast is best-effort; never block the caller */ }
+}
+
 function fmt(v) {
   const c = window.PFCSym ? PFCSym(USER.currency) : (USER.currency || '$');
   return c + Math.abs(Math.round(v)).toLocaleString();
@@ -1041,9 +1093,22 @@ Rules:
 Respond ONLY with a JSON array of objects like: [{"i":0,"cat":"food"},{"i":1,"cat":"transport"}]
 No explanation, no markdown, just the JSON array.`;
 
+  // DASH-P0-9 fix — was missing Authorization header. /api/sage requires
+  // a Supabase JWT for both rate-limiting + per-user quota. Pre-fix the
+  // request silently 401'd, the catch block fell back to category:'other'
+  // for every transaction, but the success toast still fired — so the
+  // user thought Sage had categorised their import when nothing happened.
+  const _sageAuthHeaders = (() => {
+    const h = { 'Content-Type': 'application/json' };
+    try {
+      const session = (typeof PFCAuth !== 'undefined') ? PFCAuth.getSession() : null;
+      if (session?.access_token) h['Authorization'] = `Bearer ${session.access_token}`;
+    } catch (_) { /* no auth → unauthenticated request, server will 401 */ }
+    return h;
+  })();
   const response = await fetch('/api/sage', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: _sageAuthHeaders,
     body: JSON.stringify({ message: prompt, csvMode: true }),
   });
 
@@ -1384,7 +1449,25 @@ function refreshInflBoxes() {
 }
 
 // ── INIT ──
-initChart();
+// DASH-P0-6 fix — wrap Chart.js init so a CDN outage (blocked /
+// rate-limited / corp-proxy stripping the UMD bundle) kills only the
+// chart, not the whole dashboard. Pre-fix: Chart undefined → initChart
+// throws on the first line → entire module aborts → user sees frozen
+// "—" cards forever.
+try { initChart(); }
+catch (e) {
+  console.warn('[dashboard] initChart failed (Chart.js unavailable?):', e?.message || e);
+  const c = document.getElementById('chart');
+  if (c && c.parentElement) {
+    const placeholder = document.createElement('div');
+    placeholder.style.cssText =
+      'display:flex;align-items:center;justify-content:center;height:100%;' +
+      'min-height:200px;color:var(--text3);font-size:13px;font-family:var(--font-body);' +
+      'text-align:center;padding:24px;';
+    placeholder.textContent = 'Chart temporarily unavailable. Refresh to retry.';
+    c.parentElement.replaceChild(placeholder, c);
+  }
+}
 updateAllCards();
 loadGoals();
 refreshInflBoxes();
