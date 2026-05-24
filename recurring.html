@@ -140,6 +140,8 @@
   .alert-banner{display:flex;align-items:flex-start;gap:12px;padding:14px 18px;border-radius:var(--r);margin-bottom:18px;animation:cardIn .3s ease;}
   .alert-banner.red{background:rgba(224,82,82,0.08);border:1px solid rgba(224,82,82,0.2);}
   .alert-banner.amber{background:rgba(245,166,35,0.08);border:1px solid rgba(245,166,35,0.2);}
+  /* R-CRO-4 — cross-tool blue nudge banner (finance → debt strategy). */
+  .alert-banner.blue{background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);}
   .alert-icon{font-size:16px;flex-shrink:0;margin-top:1px;}
   .alert-text{flex:1;font-size:13px;color:var(--text2);line-height:1.55;}
   .alert-text strong{color:var(--text);}
@@ -205,10 +207,17 @@
     .metric-strip{grid-template-columns:1fr !important;gap:10px !important;}
     .topbar{padding:0 12px;height:56px;}
     .topbar-title{font-size:14px !important;}
-    .filter-tab{min-height:40px;padding:8px 14px;}
-    .rec-action-btn{min-height:36px;padding:8px 12px;}
-    .sort-select{min-height:36px;padding:8px 12px;}
-    .modal-close{width:40px;height:40px;}
+    /* R-MOB-5 fix — bump tap targets to the WCAG-recommended 44×44px so
+       phone users (especially with finger-width-larger thumbs) don't miss
+       the filter chips, action buttons, sort dropdown, or modal close. */
+    .filter-tab{min-height:44px;padding:10px 16px;}
+    .rec-action-btn{min-height:44px;padding:10px 14px;}
+    .sort-select,select.sort-select{min-height:44px;padding:10px 14px;}
+    .modal-close{width:44px;height:44px;}
+    /* R-MOB-4 fix — let the 4 topbar action buttons wrap onto a second row
+       on phones under 420px so they stop overflowing the topbar. */
+    .topbar-actions{flex-wrap:wrap;gap:6px;justify-content:flex-end;}
+    .topbar-btn{padding:8px 10px;font-size:12px;}
   }
   /* iOS notch + home-bar safe areas */
   .topbar{padding-top:env(safe-area-inset-top,0);}
@@ -244,6 +253,15 @@
   .topbar,.modal-overlay{-webkit-backdrop-filter:blur(12px);}
   /* Global focus-visible — keyboard users get a visible ring */
   :focus-visible{outline:2px solid var(--gold,#D4AF6A) !important;outline-offset:2px !important;border-radius:4px;}
+  /* R-COMPAT-8 fix — color-scheme:dark on the root so native scrollbars,
+     focus rings, and form controls inherit the dark theme (Firefox + Edge
+     light scrollbars were leaking through pre-fix because the rule lived
+     only on individual <select> elements). */
+  :root { color-scheme: dark; }
+  /* R-A11Y-10 helper — sr-only utility used for chart canvas + sankey fallback
+     text. The standard "clip + 1px" pattern reaches screen readers but is
+     visually invisible. */
+  .visually-hidden{position:absolute !important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
   /* Date/month picker theming (matches PROD-FIX-3 from net-worth/goals) */
   input[type="date"], input[type="month"] {
     color-scheme: dark;
@@ -505,14 +523,14 @@
           <div class="card-inner">
             <div class="card-title" style="margin-bottom:3px;">Spend by category</div>
             <div class="card-sub" style="margin-bottom:14px;">Monthly breakdown across subscription types</div>
-            <div class="chart-wrap"><canvas id="catChart"></canvas></div>
+            <div class="chart-wrap"><canvas id="catChart" role="img" aria-label="Doughnut chart of monthly recurring spend grouped by category"></canvas><span class="visually-hidden" id="catChart-fallback">Spend-by-category breakdown is rendered as an interactive doughnut chart above. The data is also summarised in the alert banners and in the Where-the-money-flows ribbon below.</span></div>
           </div>
         </div>
         <div class="card">
           <div class="card-inner">
             <div class="card-title" style="margin-bottom:3px;">Monthly trend</div>
             <div class="card-sub" style="margin-bottom:14px;">Total recurring spend over the statement period</div>
-            <div class="chart-wrap"><canvas id="trendChart"></canvas></div>
+            <div class="chart-wrap"><canvas id="trendChart" role="img" aria-label="Bar chart of total recurring spend per month over the statement period"></canvas><span class="visually-hidden" id="trendChart-fallback">Monthly recurring-spend trend rendered as bars above. The total monthly spend is also shown in the metric strip.</span></div>
           </div>
         </div>
       </div>
@@ -522,26 +540,32 @@
         <div class="card-inner">
           <div class="card-title" style="margin-bottom:3px;">Where the money flows</div>
           <div class="card-sub" style="margin-bottom:14px;">Each ribbon's height shows that category's share of total recurring spend</div>
-          <svg id="recurring-sankey" width="100%" height="240" viewBox="0 0 600 240" preserveAspectRatio="xMidYMid meet" style="display:block;"></svg>
+          <svg id="recurring-sankey" width="100%" height="240" viewBox="0 0 600 240" preserveAspectRatio="xMidYMid meet" style="display:block;" role="img" aria-label="Ribbon diagram showing each category's share of total recurring spend"><title>Recurring spend by category</title></svg>
         </div>
       </div>
 
       <!-- Filters + sort -->
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:10px;">
-        <div class="filter-tabs" id="filter-tabs" style="margin-bottom:0;">
-          <button class="filter-tab active" data-filter="all"  data-pfc-on-click="setFilter" data-pfc-arg='"all"' data-pfc-arg-this-trailing>All</button>
-          <button class="filter-tab" data-filter="streaming"  data-pfc-on-click="setFilter" data-pfc-arg='"streaming"' data-pfc-arg-this-trailing>🎬 Streaming</button>
-          <button class="filter-tab" data-filter="software"  data-pfc-on-click="setFilter" data-pfc-arg='"software"' data-pfc-arg-this-trailing>💻 Software</button>
-          <button class="filter-tab" data-filter="utilities"  data-pfc-on-click="setFilter" data-pfc-arg='"utilities"' data-pfc-arg-this-trailing>⚡ Utilities</button>
-          <button class="filter-tab" data-filter="insurance"  data-pfc-on-click="setFilter" data-pfc-arg='"insurance"' data-pfc-arg-this-trailing>🛡️ Insurance</button>
-          <button class="filter-tab" data-filter="finance"  data-pfc-on-click="setFilter" data-pfc-arg='"finance"' data-pfc-arg-this-trailing>🏦 Finance</button>
-          <button class="filter-tab" data-filter="health"  data-pfc-on-click="setFilter" data-pfc-arg='"health"' data-pfc-arg-this-trailing>❤️ Health</button>
-          <button class="filter-tab danger-tab" data-filter="flagged"  data-pfc-on-click="setFilter" data-pfc-arg='"flagged"' data-pfc-arg-this-trailing>⚠️ Price increased</button>
-          <button class="filter-tab amber-tab" data-filter="cancelled"  data-pfc-on-click="setFilter" data-pfc-arg='"cancelled"' data-pfc-arg-this-trailing>✕ Cancelled</button>
+        <!-- R-A11Y-8 fix — role=tablist on the wrapper + aria-pressed on each
+             button so screen readers announce which filter is currently active.
+             setFilter() in recurring-2.js flips aria-pressed on click. -->
+        <div class="filter-tabs" id="filter-tabs" style="margin-bottom:0;" role="tablist" aria-label="Filter recurring subscriptions by category">
+          <button class="filter-tab active" data-filter="all"  data-pfc-on-click="setFilter" data-pfc-arg='"all"' data-pfc-arg-this-trailing aria-pressed="true">All</button>
+          <button class="filter-tab" data-filter="streaming"  data-pfc-on-click="setFilter" data-pfc-arg='"streaming"' data-pfc-arg-this-trailing aria-pressed="false">🎬 Streaming</button>
+          <button class="filter-tab" data-filter="software"  data-pfc-on-click="setFilter" data-pfc-arg='"software"' data-pfc-arg-this-trailing aria-pressed="false">💻 Software</button>
+          <button class="filter-tab" data-filter="utilities"  data-pfc-on-click="setFilter" data-pfc-arg='"utilities"' data-pfc-arg-this-trailing aria-pressed="false">⚡ Utilities</button>
+          <button class="filter-tab" data-filter="insurance"  data-pfc-on-click="setFilter" data-pfc-arg='"insurance"' data-pfc-arg-this-trailing aria-pressed="false">🛡️ Insurance</button>
+          <button class="filter-tab" data-filter="finance"  data-pfc-on-click="setFilter" data-pfc-arg='"finance"' data-pfc-arg-this-trailing aria-pressed="false">🏦 Finance</button>
+          <button class="filter-tab" data-filter="health"  data-pfc-on-click="setFilter" data-pfc-arg='"health"' data-pfc-arg-this-trailing aria-pressed="false">❤️ Health</button>
+          <button class="filter-tab danger-tab" data-filter="flagged"  data-pfc-on-click="setFilter" data-pfc-arg='"flagged"' data-pfc-arg-this-trailing aria-pressed="false">⚠️ Price increased</button>
+          <button class="filter-tab amber-tab" data-filter="cancelled"  data-pfc-on-click="setFilter" data-pfc-arg='"cancelled"' data-pfc-arg-this-trailing aria-pressed="false">✕ Cancelled</button>
         </div>
         <div class="sort-bar" style="margin-bottom:0;">
-          <span class="sort-label">Sort:</span>
-          <select class="sort-select"  data-pfc-on-change="sortCards" data-pfc-arg-this-value>
+          <!-- R-A11Y-9 fix — proper <label for=> on the sort select so screen
+               readers announce "Sort recurring subscriptions, combobox" rather
+               than just "combobox". -->
+          <label class="sort-label" for="sort-recurrings">Sort:</label>
+          <select id="sort-recurrings" class="sort-select"  data-pfc-on-change="sortCards" data-pfc-arg-this-value>
             <option value="amount-desc">Highest cost</option>
             <option value="amount-asc">Lowest cost</option>
             <option value="name">Name A–Z</option>
