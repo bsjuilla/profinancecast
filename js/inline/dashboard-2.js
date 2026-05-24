@@ -1931,18 +1931,42 @@ function hideUpgradeBannerIfPro() {
   });
 }
 
+// PROD-FIX-4 (2026-05-24) — _whenPlanReady await pattern. Pre-fix
+// hideUpgradeBannerIfPro ran with PFCPlan.get() = 'free' (default cache)
+// BEFORE PFCPlan.refresh() resolved. Result: banner SHOWED briefly for
+// Pro users, then hid when refresh resolved. Net effect: visible flash.
+// Fix: await PFCPlan.refresh() before the FIRST call. Mirrors the
+// portfolio.html Bug B fix (commit 3038ce1 _whenPlanReady pattern).
+function _whenPlanReadyDash() {
+  try {
+    if (window.PFCPlan && typeof PFCPlan.onChange === 'function') {
+      PFCPlan.onChange(hideUpgradeBannerIfPro);
+    }
+  } catch (_) {}
+  // Force a plan-fetch before first banner-resolution so we don't flash
+  // the Pro-upsell to a paying user whose 30s cache TTL has expired.
+  // .finally() so banner still resolves even if plan-fetch rejects.
+  if (window.PFCPlan && typeof PFCPlan.refresh === 'function') {
+    Promise.resolve(PFCPlan.refresh()).catch(() => null).finally(() => hideUpgradeBannerIfPro());
+    return;
+  }
+  hideUpgradeBannerIfPro();
+}
+
 if (typeof PFCAuth !== 'undefined') {
   PFCAuth.onReady(() => {
     const fresh = loadUser();
     // Avoid a guest-mode flicker: only re-render if storage actually differs
     if (JSON.stringify(fresh) !== JSON.stringify(USER)) _rehydrateUserFromStorage();
-    hideUpgradeBannerIfPro();
+    // PROD-FIX-4: was bare hideUpgradeBannerIfPro() — caused the flash.
+    _whenPlanReadyDash();
     _maybeFireActivation('dashboard');
   });
   // Sign-in / sign-out / account-switch after page load
   PFCAuth.onAuthChange(() => {
     _rehydrateUserFromStorage();
-    hideUpgradeBannerIfPro();
+    // PROD-FIX-4: same await-refresh pattern on auth-change too.
+    _whenPlanReadyDash();
   });
 }
 // Cross-page sync via PFCUser — when settings.html (or any other page) writes
@@ -1954,17 +1978,11 @@ if (typeof PFCUser !== 'undefined' && typeof PFCUser.onChange === 'function') {
   });
 }
 // Also re-check on any plan change events the rest of the app might dispatch.
-// PFCPlan emits a custom event on its own state changes via PFCPlan.onChange.
-try {
-  if (window.PFCPlan && typeof PFCPlan.onChange === 'function') {
-    PFCPlan.onChange(hideUpgradeBannerIfPro);
-  }
-} catch (_) {}
 document.addEventListener('pfc:plan-changed', hideUpgradeBannerIfPro);
-// Belt-and-braces: re-check shortly after load in case PFCPlan resolves
-// asynchronously without firing PFCAuth.onReady (e.g. cached session).
-setTimeout(hideUpgradeBannerIfPro, 800);
-setTimeout(hideUpgradeBannerIfPro, 2500);
+// PROD-FIX-4: removed setTimeout(hideUpgradeBannerIfPro, 800/2500) fallbacks
+// — they fired BEFORE PFCPlan.refresh() resolved on slow networks, causing
+// the same flash race. PFCPlan.onChange subscription in _whenPlanReadyDash
+// covers async resolutions cleanly.
 
 // ── ACTIVATION EVENT ──
 // Canonical product metric: fires once per user when they (a) are signed in,

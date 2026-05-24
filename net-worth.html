@@ -181,6 +181,36 @@
   input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;}
   input[type=number]{-moz-appearance:textfield;appearance:textfield;}
 
+  /* PROD-FIX-3 (2026-05-24) — date picker theming. Native <input type="date">
+     popup calendar is browser-controlled and can't be fully restyled. What
+     we CAN do: (a) make the indicator readable on dark backgrounds via
+     filter invert, (b) apply `color-scheme:dark` so the popup respects
+     dark mode in Chromium/Edge/Safari, (c) style the input itself to
+     match the rest of the form. The native popup on Edge/Win11 will now
+     render as a dark calendar instead of the bright white default.
+     Firefox: respects color-scheme; popup matches OS theme. */
+  input[type="date"], input[type="month"] {
+    color-scheme: dark;
+    background: var(--bg3, #16271F);
+    color: var(--text, #F0EDE2);
+    border: 1px solid var(--border2, rgba(244,239,229,0.12));
+    border-radius: var(--r-sm, 8px);
+    padding: 10px 13px;
+    font-family: var(--font-body);
+    font-size: 14px;
+  }
+  input[type="date"]::-webkit-calendar-picker-indicator,
+  input[type="month"]::-webkit-calendar-picker-indicator {
+    filter: invert(0.85) brightness(1.1);
+    cursor: pointer;
+    opacity: 0.7;
+    transition: opacity .15s;
+  }
+  input[type="date"]::-webkit-calendar-picker-indicator:hover,
+  input[type="month"]::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
+  }
+
   /* NW-P0-5 fix (audit 2026-05-24) — sr-only helper for chart canvas
      fallback table. Visually hidden but accessible to screen readers and
      assistive tech, satisfying WCAG 1.1.1 for the canvas-only chart. */
@@ -718,9 +748,9 @@
 </div>
 
 <!-- NW-P1-7: deferred to match the head-script defer (PROD-FIX class). -->
-<script src="./js/inline/net-worth-2.js" defer></script>
+<script src="./js/inline/net-worth-2.js?v=20260524b" defer></script>
   <!-- Route guard: redirect unauthed users to sign-in -->
-  <script src="./js/inline/net-worth-3.js" defer></script>
+  <script src="./js/inline/net-worth-3.js?v=20260524b" defer></script>
 <footer class="site-footer" role="contentinfo">
   <div class="footer-grid">
     <div class="footer-col">

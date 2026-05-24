@@ -528,6 +528,26 @@
   /* -webkit-backdrop-filter prefix for older iOS Safari */
   .topbar,.modal-overlay{-webkit-backdrop-filter:blur(12px);}
 
+  /* PROD-FIX-3 (2026-05-24) — date/month picker theming. Same pattern as
+     net-worth.html. color-scheme:dark forces the native popup to render
+     in dark mode; webkit indicator inverted for visibility. */
+  input[type="date"], input[type="month"] {
+    color-scheme: dark;
+    background: var(--bg3, #16271F);
+    color: var(--text, #F0EDE2);
+  }
+  input[type="date"]::-webkit-calendar-picker-indicator,
+  input[type="month"]::-webkit-calendar-picker-indicator {
+    filter: invert(0.85) brightness(1.1);
+    cursor: pointer;
+    opacity: 0.7;
+    transition: opacity .15s;
+  }
+  input[type="date"]::-webkit-calendar-picker-indicator:hover,
+  input[type="month"]::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
+  }
+
   /* G-P2-3 fix (audit 2026-05-24) — extract highest-frequency inline-style
      patterns to named classes (mirror NW-P2-3 scope: extract repeats only,
      not one-offs). Pre-fix goals.html had 47 inline style="" attrs;
@@ -924,9 +944,9 @@
   </div>
 </div>
 
-<script src="./js/inline/goals-2.js"></script>
+<script src="./js/inline/goals-2.js?v=20260524b"></script>
   <!-- Route guard: redirect unauthed users to sign-in -->
-  <script src="./js/inline/goals-3.js"></script>
+  <script src="./js/inline/goals-3.js?v=20260524b"></script>
 <footer class="site-footer" role="contentinfo">
   <div class="footer-grid">
     <div class="footer-col">

@@ -288,11 +288,20 @@ function renderAll() {
   const prev    = HISTORY.length > 1 ? HISTORY[HISTORY.length - 2] : null;
   const first   = HISTORY.length ? HISTORY[0] : null;
 
-  // Summary strip
+  // Summary strip — PROD-FIX-1 (2026-05-24): wrap if-latest in try/catch
+  // so any single field render error (e.g. stale-cache JS referencing a
+  // removed DOM ID) degrades gracefully instead of halting renderAll
+  // before renderChart / renderHistory are reached. The bug class:
+  // OLD cached JS hits `document.getElementById('m-assets').textContent`
+  // where new HTML has no m-assets → null.textContent → TypeError → all
+  // subsequent renders skipped. Screenshot from prod showed m-current
+  // populated but everything after blank — this catch preserves the
+  // chart + history rendering even if one KPI block fails.
   if (latest) {
+    try {
     const nw = latest.netWorth;
-    document.getElementById('m-current').textContent = fmt(nw);
-    document.getElementById('m-current').style.color = nw >= 0 ? 'var(--teal)' : 'var(--red)';
+    const cur = document.getElementById('m-current');
+    if (cur) { cur.textContent = fmt(nw); cur.style.color = nw >= 0 ? 'var(--teal)' : 'var(--red)'; }
 
     // NW-P2-8: Days tracked — engagement metric (replaces total assets).
     // Total assets/liabilities are still rendered in the breakdown card below.
@@ -347,6 +356,12 @@ function renderAll() {
 
     // Breakdown
     renderBreakdown(latest, sym, fmt, prev);
+    } catch (e) {
+      // PROD-FIX-1: log but don't halt — chart/history/projections below
+      // must still render even if a single KPI block crashed (e.g. stale
+      // cached JS hitting a removed DOM ID).
+      try { console.error('[net-worth] summary render failed:', e && e.message); } catch (_) {}
+    }
   } else {
     document.getElementById('topbar-sub').textContent = 'No entries yet';
     // NW-P2-8 cleanup: m-assets + m-liabilities were replaced by m-days +
