@@ -180,6 +180,85 @@
 
   input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;}
   input[type=number]{-moz-appearance:textfield;appearance:textfield;}
+
+  /* NW-P0-5 fix (audit 2026-05-24) — sr-only helper for chart canvas
+     fallback table. Visually hidden but accessible to screen readers and
+     assistive tech, satisfying WCAG 1.1.1 for the canvas-only chart. */
+  .nw-sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
+
+  /* NW-P0-4 fix (audit 2026-05-24) — mobile sidebar drawer. Pre-fix the
+     page had ZERO breakpoints; the 240px sidebar covered half the viewport
+     on phones with no way to dismiss it. Pattern lifted verbatim from
+     dashboard.html (DASH-P0-2 + DASH-P2-C) so both pages behave identically. */
+  .pfc-mobile-menu-btn{display:none;align-items:center;justify-content:center;width:44px;height:44px;border:1px solid var(--border);background:transparent;color:var(--text2);border-radius:var(--r-sm);cursor:pointer;padding:0;flex-shrink:0;}
+  .pfc-mobile-menu-btn:hover{color:var(--text);border-color:rgba(255,255,255,0.2);}
+  .pfc-sidebar-scrim{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:90;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);}
+  .pfc-sidebar-scrim.is-open{display:block;}
+  @media (max-width:800px){
+    .pfc-mobile-menu-btn{display:inline-flex;}
+    .sidebar{position:fixed;top:0;left:0;height:100vh;height:100dvh;width:min(280px,86vw);transform:translateX(-100%);transition:transform 200ms ease-out;z-index:100;box-shadow:12px 0 32px rgba(0,0,0,0.45);}
+    .sidebar.is-open{transform:translateX(0);}
+    .strip{grid-template-columns:repeat(2,1fr);}
+    .breakdown-grid{grid-template-columns:1fr;}
+    #nw-history-grid{grid-template-columns:1fr !important;}
+    .content{padding:20px 16px;}
+  }
+  @media (max-width:540px){
+    .strip{grid-template-columns:1fr;gap:10px;}
+    .topbar{padding:0 14px;height:56px;}
+    .topbar-title{font-size:12px !important;}
+    .period-tabs{gap:4px;overflow-x:auto;-webkit-overflow-scrolling:touch;}
+    .period-tab{white-space:nowrap;padding:8px 14px;font-size:13px;min-height:36px;}
+    .nw-hero-headline{font-size:26px;}
+    .topbar-right .btn:not(.primary){padding:9px 12px;}
+  }
+  /* iOS notch + home-bar safe areas */
+  .topbar{padding-top:env(safe-area-inset-top,0);}
+  body{padding-bottom:env(safe-area-inset-bottom,0);}
+  /* iOS keyboard avoidance for the modal on small screens */
+  @media (max-width:540px){
+    .modal-overlay{align-items:flex-start !important;padding-top:8vh !important;}
+  }
+  /* Windows High Contrast Mode backstop */
+  @media (forced-colors:active){
+    .metric-card,.card,.chart-card,.nav-item,.btn,.period-tab,.modal-box,.milestone-item,.archive-empty,.methodology-note{border:1px solid CanvasText !important;}
+    .pfc-brand-mark svg{forced-color-adjust:none;}
+  }
+  /* Print stylesheet — clean dossier of archive without chrome */
+  @media print{
+    .sidebar,.topbar,.pfc-skip-link,.pfc-mobile-menu-btn,.pfc-sidebar-scrim,.modal-overlay,.archive-cta{display:none !important;}
+    .main{height:auto;overflow:visible;}
+    .content{padding:0;}
+    body{display:block;overflow:visible;background:#fff;color:#000;}
+    .metric-card,.card,.chart-card{break-inside:avoid;border:1px solid #999 !important;background:#fff !important;}
+    .metric-val,.card-title,.chart-title{color:#000 !important;}
+  }
+  /* Reduce motion accommodation */
+  @media (prefers-reduced-motion:reduce){
+    .sidebar,.bar-fill,.milestone-progress-fill,.toast,.archive-cta{transition:none !important;animation:none !important;}
+  }
+
+  /* NW-P2-3 fix (audit 2026-05-24) — extract highest-frequency inline-style
+     patterns to named classes. Pre-fix net-worth.html had 87 inline style=""
+     attrs (high maintenance + CSP friction). This pass extracts the patterns
+     that repeated 3+ times. One-off styles are intentionally left alone to
+     scope the change. */
+  .nw-cell{padding:10px 20px;}                        /* data-table th/td repeats (8×) */
+  .nw-row-cell{padding:9px 20px;}                     /* data-table td body repeats */
+  .nw-preview-tile{padding:14px 12px;background:var(--surface-2,rgba(244,239,229,0.03));border:1px solid var(--line-2,rgba(244,239,229,0.06));border-radius:var(--r-sm);}
+  .nw-preview-eyebrow{font-family:var(--font-display);font-style:italic;font-size:15px;color:var(--ink,#F4EFE5);margin-bottom:6px;}
+  .nw-preview-body{font-size:12px;line-height:1.55;color:var(--text3);}
+  .nw-preview-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;text-align:left;}
+  .nw-eyebrow-gold{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);font-weight:600;margin-bottom:14px;}
+  .nw-preview-rule{margin-top:36px;padding-top:28px;border-top:1px solid var(--border);max-width:560px;margin-inline:auto;}
+  .nw-clear-btn{font-size:11px;color:var(--red);background:transparent;border:1px solid rgba(224,82,82,0.2);border-radius:var(--r-sm);padding:4px 10px;cursor:pointer;font-family:var(--font-body);}
+  .nw-card-header{padding:18px 22px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+  .nw-table-scroll{max-height:380px;overflow-y:auto;} /* NW-P2-7: bumped 300→380 when history went full-width */
+  .nw-confirm-cancel{padding:10px 18px;background:transparent;border:1px solid var(--border2);border-radius:var(--r-sm);font-size:13px;color:var(--text2);font-family:var(--font-body);cursor:pointer;}
+  .nw-confirm-ok{padding:10px 18px;background:var(--red);border:none;border-radius:var(--r-sm);font-size:13px;font-weight:600;color:#fff;font-family:var(--font-body);cursor:pointer;}
+  @media (max-width:540px){
+    .nw-preview-grid{grid-template-columns:1fr;}
+  }
 </style>
   <link rel="stylesheet" href="css/pfc-tokens.css">
   <link rel="stylesheet" href="css/pfc-photos.css?v=3">
@@ -189,15 +268,23 @@
   <link rel="stylesheet" href="css/pfc-footer.css">
   <script src="js/pfc-export.js" defer></script>
   <!-- Supabase SDK + auth/storage/entitlements (must load before any inline script that uses them) -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/pfc-audit-mode.js"></script>
-  <script src="js/pfc-config.js"></script>
-  <script src="js/pfc-auth.js"></script>
-  <script src="js/pfc-crypto.js"></script>
-  <script src="js/pfc-storage.js"></script>
-  <script src="js/pfc-currency.js"></script>
-  <script src="js/pfc-user.js"></script>
-  <script src="js/pfc-entitlements.js"></script>
+  <!-- NW-P1-5 fix (audit 2026-05-24) — pinned + SRI. Pre-fix the `@2`
+       version selector let jsdelivr serve any 2.x release; if the CDN
+       were compromised, every PFC page would execute attacker JS in the
+       browser context that holds session tokens. Hash from CISO audit. -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.105.4" integrity="sha384-4eCDoMN/7A46qQ5Tj0rZ/D2VEolFGNIINDTLAcWZcvhkRSsvTfqNfaBMlRRoGEZ5" crossorigin="anonymous"></script>
+  <!-- NW-P1-7 (audit 2026-05-24) — deferred. Atomically paired with the
+       defer on net-worth-2.js + net-worth-3.js below. If only the head
+       scripts were deferred, the body scripts would run mid-parse and see
+       PFCStorage/PFCUser undefined (same regression class as DASH-PROD-FIX). -->
+  <script src="js/pfc-audit-mode.js" defer></script>
+  <script src="js/pfc-config.js" defer></script>
+  <script src="js/pfc-auth.js" defer></script>
+  <script src="js/pfc-crypto.js" defer></script>
+  <script src="js/pfc-storage.js" defer></script>
+  <script src="js/pfc-currency.js" defer></script>
+  <script src="js/pfc-user.js" defer></script>
+  <script src="js/pfc-entitlements.js" defer></script>
   <!-- v3 reskin: new fonts + emerald palette overrides -->
 <script src="js/pfc-fonts.js" defer></script>
   <link rel="stylesheet" href="css/pfc-reskin.css">
@@ -219,8 +306,12 @@
 </head>
 <body data-pfc-surface="working">
 
+<!-- NW-P1-8: skip link — first focusable element, lets keyboard/AT users
+     jump past the sidebar nav. Matches dashboard.html DASH-P0-8 pattern. -->
+<a href="#nw-main-content" class="pfc-skip-link" style="position:absolute;top:-40px;left:8px;z-index:1000;background:var(--gold,#D4AF6A);color:var(--canvas,#0B1410);padding:8px 14px;border-radius:4px;font-family:var(--font-body);font-size:13px;font-weight:600;text-decoration:none;transition:top 150ms ease-out;" onfocus="this.style.top='8px'" onblur="this.style.top='-40px'">Skip to net worth content</a>
+
 <!-- SIDEBAR -->
-<nav class="sidebar" aria-label="Primary navigation">
+<nav class="sidebar" id="primary-sidebar" aria-label="Primary navigation">
   <a href="dashboard.html" class="sidebar-logo">
     <span class="pfc-brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32" width="32" height="32" aria-hidden="true"><text x="16" y="19" text-anchor="middle" font-family="&apos;Fraunces&apos;,&apos;Cormorant Garamond&apos;,Georgia,serif" font-size="14" font-weight="500" letter-spacing="-0.4" fill="#D4AF6A">PFC</text><rect x="14.5" y="23" width="3" height="3" fill="#D4AF6A" transform="rotate(45 16 24.5)"/></svg></span>
     ProFinanceCast
@@ -302,6 +393,9 @@
 <!-- MAIN -->
 <div class="main">
   <div class="topbar">
+    <button class="pfc-mobile-menu-btn" id="pfc-mobile-menu-btn" aria-label="Open menu" aria-expanded="false" aria-controls="primary-sidebar" type="button">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M3 6h14M3 10h14M3 14h14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+    </button>
     <div class="topbar-left">
       <div class="topbar-title" style="font-size:13px;font-weight:500;color:var(--text2);letter-spacing:.04em;text-transform:uppercase;">The Archive</div>
       <div class="topbar-sub" id="topbar-sub">Your wealth, recorded</div>
@@ -319,7 +413,7 @@
     </div>
   </div>
 
-  <div class="content">
+  <div class="content" id="nw-main-content" tabindex="-1">
 
     <!-- EDITORIAL HERO -->
     <section class="nw-hero" aria-labelledby="nw-hero-headline">
@@ -360,9 +454,38 @@
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
       <div class="archive-empty-meta">Auto-logging activates after your first entry.</div>
+
+      <!-- NW-P1-11 (audit 2026-05-24) — "what you'll see" preview. Pre-fix
+           the empty state offered no concrete vision of the value-prop,
+           just a CTA. Three text-only previews of what month 1 / 3 / 12
+           gives the user, anchored in editorial voice.
+           NW-P2-3 (2026-05-24) — extracted to .nw-preview-* classes. -->
+      <div class="nw-preview-rule">
+        <div class="nw-eyebrow-gold">What your archive becomes</div>
+        <div class="nw-preview-grid">
+          <div class="nw-preview-tile">
+            <div class="nw-preview-eyebrow">Week 1</div>
+            <div class="nw-preview-body">Your first data point — a single dot waiting for company.</div>
+          </div>
+          <div class="nw-preview-tile">
+            <div class="nw-preview-eyebrow">Month 3</div>
+            <div class="nw-preview-body">A trend line you can read. Direction, momentum, two milestones in view.</div>
+          </div>
+          <div class="nw-preview-tile">
+            <div class="nw-preview-eyebrow">Year 1</div>
+            <div class="nw-preview-body">A year of evidence. The compounding you only believe once you've seen it.</div>
+          </div>
+        </div>
+      </div>
     </section>
 
-    <!-- SUMMARY STRIP -->
+    <!-- NW-P2-8 fix (audit 2026-05-24) — KPI strip reshuffle. Pre-fix
+         3 of 4 cards restated chart data (assets/liabilities/growth are
+         all visible on the chart legend + breakdown card below). Now:
+         Current NW (kept), Days tracked (engagement), ATH (peak — the
+         single most retention-driving metric on a wealth tracker), and
+         All-time growth (kept). Total assets and liabilities still live
+         in the breakdown card just below the chart, so info is preserved. -->
     <div class="strip" id="nw-strip">
       <div class="metric-card">
         <div class="metric-accent" style="background:var(--teal);"></div>
@@ -372,15 +495,15 @@
       </div>
       <div class="metric-card">
         <div class="metric-accent" style="background:var(--blue);"></div>
-        <div class="metric-label">Total assets</div>
-        <div class="metric-val" id="m-assets" style="color:var(--blue);">—</div>
-        <div class="metric-delta"><span style="font-size:12px;color:var(--text3);">savings + investments</span></div>
+        <div class="metric-label">Days tracked</div>
+        <div class="metric-val" id="m-days" style="color:var(--blue);">—</div>
+        <div class="metric-delta" id="m-days-sub"><span style="font-size:12px;color:var(--text3);">since first entry</span></div>
       </div>
       <div class="metric-card">
-        <div class="metric-accent" style="background:var(--red);"></div>
-        <div class="metric-label">Total liabilities</div>
-        <div class="metric-val" id="m-liabilities" style="color:var(--red);">—</div>
-        <div class="metric-delta"><span style="font-size:12px;color:var(--text3);">all debts combined</span></div>
+        <div class="metric-accent" style="background:var(--gold,#D4AF6A);"></div>
+        <div class="metric-label">All-time high</div>
+        <div class="metric-val" id="m-ath" style="color:var(--gold,#D4AF6A);">—</div>
+        <div class="metric-delta" id="m-ath-sub"><span style="font-size:12px;color:var(--text3);">your peak so far</span></div>
       </div>
       <div class="metric-card">
         <div class="metric-accent" style="background:var(--amber);"></div>
@@ -398,11 +521,12 @@
           <div class="chart-sub" id="chart-sub">Automatically logged each time you visit the dashboard</div>
         </div>
         <div style="display:flex;align-items:center;gap:12px;">
-          <div class="period-tabs">
-            <button class="period-tab"  data-pfc-on-click="setPeriod" data-pfc-arg='"1m"' data-pfc-arg-this-trailing>1M</button>
-            <button class="period-tab"  data-pfc-on-click="setPeriod" data-pfc-arg='"3m"' data-pfc-arg-this-trailing>3M</button>
-            <button class="period-tab"  data-pfc-on-click="setPeriod" data-pfc-arg='"6m"' data-pfc-arg-this-trailing>6M</button>
-            <button class="period-tab active"  data-pfc-on-click="setPeriod" data-pfc-arg='"all"' data-pfc-arg-this-trailing>All</button>
+          <!-- NW-P1-8: aria-pressed on period toggle group; aria-label on group -->
+          <div class="period-tabs" role="group" aria-label="Time period filter">
+            <button class="period-tab"  data-pfc-on-click="setPeriod" data-pfc-arg='"1m"' data-pfc-arg-this-trailing type="button" aria-pressed="false">1M</button>
+            <button class="period-tab"  data-pfc-on-click="setPeriod" data-pfc-arg='"3m"' data-pfc-arg-this-trailing type="button" aria-pressed="false">3M</button>
+            <button class="period-tab"  data-pfc-on-click="setPeriod" data-pfc-arg='"6m"' data-pfc-arg-this-trailing type="button" aria-pressed="false">6M</button>
+            <button class="period-tab active"  data-pfc-on-click="setPeriod" data-pfc-arg='"all"' data-pfc-arg-this-trailing type="button" aria-pressed="true">All</button>
           </div>
           <div style="display:flex;gap:8px;font-size:11px;">
             <span style="display:flex;align-items:center;gap:4px;color:var(--text3);">
@@ -418,7 +542,17 @@
         </div>
       </div>
       <div class="chart-wrap" id="chart-wrap">
-        <canvas id="nwChart"></canvas>
+        <!-- NW-P0-5: role="img" + aria-label populated by renderChart() so
+             screen-reader users get a one-sentence summary; sr-only table
+             below has the full data table for AT users who want detail. -->
+        <canvas id="nwChart" role="img" aria-label="Net worth chart loading"></canvas>
+        <table id="nwChart-sr-table" class="nw-sr-only" aria-label="Net worth history data table">
+          <caption>Net worth, assets and debt over time</caption>
+          <thead>
+            <tr><th scope="col">Date</th><th scope="col">Net worth</th><th scope="col">Assets</th><th scope="col">Debt</th></tr>
+          </thead>
+          <tbody id="nwChart-sr-body"></tbody>
+        </table>
       </div>
 
       <!-- Empty chart state -->
@@ -491,34 +625,39 @@
       </div>
     </div>
 
-    <!-- MONTHLY CHANGE TABLE + PROJECTED GROWTH -->
-    <div id="nw-history-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+    <!-- NW-P2-7 fix (audit 2026-05-24) — "The Archive" page; entry history
+         is the page anchor and gets full-width. Projected growth becomes
+         a smaller secondary card BELOW. Pre-fix both shared 50/50 grid
+         which gave projection equal weight on a retrospective page. -->
+    <div id="nw-history-grid" style="margin-bottom:20px;">
 
-      <!-- History table -->
+      <!-- History table (full-width — the archive itself) -->
       <div class="card" style="padding:0;overflow:hidden;">
-        <div style="padding:18px 22px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+        <div class="nw-card-header">
           <div>
             <div class="card-title">Entry history</div>
             <div class="card-sub">All logged data points</div>
           </div>
-          <button  data-pfc-on-click="clearHistory" style="font-size:11px;color:var(--red);background:transparent;border:1px solid rgba(224,82,82,0.2);border-radius:var(--r-sm);padding:4px 10px;cursor:pointer;font-family:var(--font-body);">Clear all</button>
+          <button class="nw-clear-btn" data-pfc-on-click="clearHistory">Clear all</button>
         </div>
-        <div style="max-height:300px;overflow-y:auto;">
+        <div class="nw-table-scroll">
           <table class="data-table" style="padding:0;">
             <thead style="position:sticky;top:0;background:var(--card);z-index:1;">
               <tr>
-                <th style="padding:10px 20px;">Date</th>
-                <th style="padding:10px 20px;">Net worth</th>
-                <th style="padding:10px 20px;">Change</th>
-                <th style="padding:10px 20px;">Source</th>
+                <th class="nw-cell">Date</th>
+                <th class="nw-cell">Net worth</th>
+                <th class="nw-cell">Change</th>
+                <th class="nw-cell">Source</th>
               </tr>
             </thead>
             <tbody id="history-body"></tbody>
           </table>
         </div>
       </div>
+    </div>
 
-      <!-- Projected growth -->
+    <!-- Projected growth (secondary card, below the archive) -->
+    <div id="nw-projection-card" style="margin-bottom:20px;">
       <div class="card">
         <div class="card-title" style="margin-bottom:4px;">Projected growth</div>
         <div class="card-sub" style="margin-bottom:16px;">Based on your current monthly surplus</div>
@@ -533,34 +672,35 @@
 
   </div><!-- /content -->
 
-<!-- MANUAL ENTRY MODAL -->
-<div class="modal-overlay" id="manual-modal">
+<!-- MANUAL ENTRY MODAL — NW-P1-8: role=dialog + aria-modal + aria-labelledby -->
+<div class="modal-overlay" id="manual-modal" role="dialog" aria-modal="true" aria-labelledby="manual-modal-title">
   <div class="modal-box">
     <div class="modal-head">
-      <div class="modal-title-el">Add manual entry</div>
-      <div class="modal-close"  data-pfc-on-click="closeModal">✕</div>
+      <div class="modal-title-el" id="manual-modal-title">Add manual entry</div>
+      <button class="modal-close" type="button" aria-label="Close modal" data-pfc-on-click="closeModal">✕</button>
     </div>
     <div class="modal-body">
       <p style="font-size:13px;color:var(--text3);margin-bottom:16px;line-height:1.6;">
         Enter your financial snapshot for a specific date. This is useful for adding historical data or recording an exact balance sheet.
       </p>
+      <!-- NW-P1-8: label for= on every input; inputmode=decimal for numeric on mobile -->
       <div style="margin-bottom:14px;">
-        <label class="field-label">Date</label>
+        <label class="field-label" for="m-date">Date</label>
         <input type="date" class="field-input" id="m-date" style="color-scheme:dark;">
       </div>
       <div class="field-row">
         <div>
-          <label class="field-label">Cash & savings</label>
-          <input type="number" class="field-input" id="m-savings" placeholder="0" min="0"  data-pfc-on-input="modalCalcNW">
+          <label class="field-label" for="m-savings">Cash &amp; savings</label>
+          <input type="number" inputmode="decimal" class="field-input" id="m-savings" placeholder="0" min="0"  data-pfc-on-input="modalCalcNW">
         </div>
         <div>
-          <label class="field-label">Investments</label>
-          <input type="number" class="field-input" id="m-invest" placeholder="0" min="0"  data-pfc-on-input="modalCalcNW">
+          <label class="field-label" for="m-invest">Investments</label>
+          <input type="number" inputmode="decimal" class="field-input" id="m-invest" placeholder="0" min="0"  data-pfc-on-input="modalCalcNW">
         </div>
       </div>
       <div style="margin-bottom:14px;">
-        <label class="field-label">Total debt</label>
-        <input type="number" class="field-input" id="m-debt" placeholder="0" min="0"  data-pfc-on-input="modalCalcNW">
+        <label class="field-label" for="m-debt">Total debt</label>
+        <input type="number" inputmode="decimal" class="field-input" id="m-debt" placeholder="0" min="0"  data-pfc-on-input="modalCalcNW">
       </div>
 
       <!-- Live NW preview -->
@@ -577,9 +717,10 @@
   </div>
 </div>
 
-<script src="./js/inline/net-worth-2.js"></script>
+<!-- NW-P1-7: deferred to match the head-script defer (PROD-FIX class). -->
+<script src="./js/inline/net-worth-2.js" defer></script>
   <!-- Route guard: redirect unauthed users to sign-in -->
-  <script src="./js/inline/net-worth-3.js"></script>
+  <script src="./js/inline/net-worth-3.js" defer></script>
 <footer class="site-footer" role="contentinfo">
   <div class="footer-grid">
     <div class="footer-col">
@@ -631,6 +772,67 @@
 </footer>
 </div><!-- /main -->
 
+<!-- NW-P1-6: confirm modal — replaces window.confirm() which is unreliable
+     in iOS PWA standalone mode (prompt invisible on some versions). Same
+     dialog API: returns promise that resolves true/false. -->
+<div class="modal-overlay" id="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+  <div class="modal-box" style="max-width:400px;">
+    <div class="modal-head">
+      <div class="modal-title-el" id="confirm-title">Confirm</div>
+    </div>
+    <div class="modal-body">
+      <p id="confirm-msg" style="font-size:13.5px;color:var(--text2);margin-bottom:18px;line-height:1.5;"></p>
+      <div style="display:flex;gap:10px;justify-content:flex-end;">
+        <button id="confirm-cancel" type="button" class="nw-confirm-cancel">Cancel</button>
+        <button id="confirm-ok" type="button" class="nw-confirm-ok">Confirm</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- NW-P0-4: sidebar scrim (sits behind drawer; tap-to-close) -->
+<div class="pfc-sidebar-scrim" id="pfc-sidebar-scrim" aria-hidden="true"></div>
+
+<!-- NW-P0-4: mobile sidebar toggle. Standalone, CSP-friendly (no inline
+     handler attrs). Mirrors dashboard.html DASH-P0-2 behaviour. -->
+<script>
+(function(){
+  var btn   = document.getElementById('pfc-mobile-menu-btn');
+  var nav   = document.getElementById('primary-sidebar');
+  var scrim = document.getElementById('pfc-sidebar-scrim');
+  if (!btn || !nav || !scrim) return;
+  function open(){
+    nav.classList.add('is-open');
+    scrim.classList.add('is-open');
+    btn.setAttribute('aria-expanded','true');
+    scrim.setAttribute('aria-hidden','false');
+    document.body.style.overflow = 'hidden';
+  }
+  function close(){
+    nav.classList.remove('is-open');
+    scrim.classList.remove('is-open');
+    btn.setAttribute('aria-expanded','false');
+    scrim.setAttribute('aria-hidden','true');
+    document.body.style.overflow = '';
+  }
+  function toggle(){
+    if (nav.classList.contains('is-open')) close(); else open();
+  }
+  btn.addEventListener('click', toggle);
+  scrim.addEventListener('click', close);
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && nav.classList.contains('is-open')) close();
+  });
+  nav.querySelectorAll('.nav-item').forEach(function(a){
+    a.addEventListener('click', function(){
+      if (window.matchMedia('(max-width: 800px)').matches) close();
+    });
+  });
+  window.addEventListener('resize', function(){
+    if (!window.matchMedia('(max-width: 800px)').matches) close();
+  });
+})();
+</script>
 
 <script src="js/pfc-inline-bootstrap.js" defer></script>
 </body>
