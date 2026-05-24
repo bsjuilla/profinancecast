@@ -668,17 +668,30 @@ function renderAlerts() {
   // like '__proto__' or 'constructor' can't mutate Object.prototype.
   const bycat = Object.create(null);
   RECURRINGS.filter(r => !CANCELLED.has(r.id)).forEach(r=>{ if(!bycat[r.cat]) bycat[r.cat]=[]; bycat[r.cat].push(r); });
-  const dupes = Object.entries(bycat).filter(([,v])=>v.length>=3 && v[0].cat==='streaming');
-  if (dupes.length) {
-    const streamTotal = (bycat['streaming']||[]).reduce((s,r)=>s+r.monthlyAmount,0);
-    // R-CRO-4: surface the cross-tool link so the user can route the
-    // would-be-saved cash to a real goal instead of just seeing the number.
+  // R-CRO-12 fix — generalize the duplicate-service detector beyond streaming.
+  // Pre-fix only fired on streaming; users with 4 software seats or 3 insurance
+  // policies got no nudge. Now any category with ≥3 active entries triggers a
+  // category-aware banner with a tailored line and a cross-tool link.
+  const CAT_CTA = {
+    streaming: { copy: 'streaming services', tool: 'goals.html', toolLabel: 'Allocate the savings to a goal' },
+    software:  { copy: 'software subscriptions', tool: 'goals.html', toolLabel: 'Redirect overlap into a goal' },
+    insurance: { copy: 'insurance policies', tool: 'goals.html', toolLabel: 'Consolidate and bank the difference' },
+    utilities: { copy: 'utility bills', tool: 'goals.html', toolLabel: 'Channel the savings into a goal' },
+    finance:   { copy: 'finance line items', tool: 'tools/debt-strategy.html', toolLabel: 'See the payoff math' },
+    health:    { copy: 'health-related subs', tool: 'goals.html', toolLabel: 'Move the overlap to a goal' },
+    other:     { copy: 'recurring items', tool: 'goals.html', toolLabel: 'Allocate the savings to a goal' },
+  };
+  Object.entries(bycat).forEach(([cat, list]) => {
+    if (list.length < 3) return;
+    if (cat === 'finance') return; // finance gets its own dedicated banner below
+    const meta = CAT_CTA[cat] || CAT_CTA.other;
+    const total = list.reduce((s, r) => s + (Number(r.monthlyAmount) || 0), 0);
     wrap.innerHTML += `<div class="alert-banner amber">
       <div class="alert-icon">💡</div>
-      <div class="alert-text">You have <strong>${bycat['streaming']?.length||0} streaming services</strong> costing <strong>${sym}${streamTotal.toFixed(2)}/mo</strong>.
-      Consider whether you need all of them — cancelling even one could save ${sym}${Math.round(streamTotal/2*12).toLocaleString()}/yr. <a href="goals.html" style="color:var(--teal);text-decoration:underline;">Allocate the savings to a goal →</a></div>
+      <div class="alert-text">You have <strong>${list.length} ${escHtml(meta.copy)}</strong> costing <strong>${sym}${total.toFixed(2)}/mo</strong>.
+      Worth asking which ones overlap — cancelling even one would save ${sym}${Math.round(total/list.length*12).toLocaleString()}/yr. <a href="${escHtml(meta.tool)}" style="color:var(--teal);text-decoration:underline;">${escHtml(meta.toolLabel)} →</a></div>
     </div>`;
-  }
+  });
   // R-CRO-4 fix — finance-category nudge to /debt-strategy when the user
   // has any recurring loan/mortgage/credit charge. Helps them route the
   // recurring-spend insight into the higher-leverage debt-payoff page.
@@ -712,6 +725,26 @@ function renderCharts() {
   const catTotals = Object.create(null);
   active.forEach(r=>{ catTotals[r.cat]=(catTotals[r.cat]||0)+(Number(r.monthlyAmount)||0); });
   const catEntries = Object.entries(catTotals).sort((a,b)=>b[1]-a[1]);
+
+  // R-CRO-9 fix — plain-English prose summary of the dominant category so the
+  // chart insight is legible even before the eye decodes the slices. Falls
+  // back gracefully when the chart container isn't on the page.
+  const proseEl = document.getElementById('catChart-prose');
+  if (proseEl) {
+    if (catEntries.length === 0) {
+      proseEl.textContent = '';
+    } else {
+      const totalMo = catEntries.reduce((s, [, v]) => s + v, 0);
+      const [topCat, topVal] = catEntries[0];
+      const topLabel = CAT_META[topCat]?.label || topCat;
+      const pct = totalMo > 0 ? Math.round((topVal / totalMo) * 100) : 0;
+      proseEl.textContent =
+        `${topLabel} dominates at ${sym}${topVal.toFixed(2)}/mo — ${pct}% of your recurring spend. ` +
+        (catEntries.length > 1
+          ? `${catEntries.length} categories in total; the rest are split across ${catEntries.slice(1).map(([c]) => CAT_META[c]?.label || c).join(', ')}.`
+          : 'No other categories detected yet.');
+    }
+  }
 
   // Money-flow sankey — animates ribbons from total → top categories
   const sankeySvg = document.getElementById('recurring-sankey');
@@ -857,8 +890,11 @@ function renderCards() {
           <div class="rec-meta">Since ${firstFmt} · ${(r.occurrences||[]).length} charges · last ${lastFmt}</div>
         </div>
         <div class="rec-amount">
-          <div class="rec-monthly" style="color:${colorSafe};">${sym}${(Number(r.monthlyAmount)||0).toFixed(2)}<span style="font-size:11px;color:var(--text3);font-family:var(--font-body);">/mo</span></div>
-          <div class="rec-annual">${sym}${Math.round(Number(r.annualAmount)||0).toLocaleString()}/yr</div>
+          <!-- R-CRO-8: annual is now the headline number (loss-aversion anchor);
+               monthly drops to supporting role beneath it. CSS swap in
+               recurring.html lines 134-135. -->
+          <div class="rec-annual" style="color:${colorSafe};">${sym}${Math.round(Number(r.annualAmount)||0).toLocaleString()}<span style="font-size:11px;color:var(--text3);font-family:var(--font-body);font-weight:500;">/yr</span></div>
+          <div class="rec-monthly">${sym}${(Number(r.monthlyAmount)||0).toFixed(2)}/mo</div>
         </div>
       </div>
       <div class="rec-body">
@@ -898,7 +934,20 @@ function toggleCancelById(id) {
   renderCharts();
   renderCards();
   const r = RECURRINGS.find(x => x.id === id);
-  if (r) showToast(CANCELLED.has(id) ? `${r.name} marked as cancelled` : `${r.name} restored`);
+  if (r) {
+    if (CANCELLED.has(id)) {
+      // R-CRO-10 fix — celebratory toast variant when a sub is cancelled.
+      // Shows the annualised reward number so the action feels weighed,
+      // not just dismissed (same behavioural pattern as a streak reward).
+      const yearSaved = Math.round(Number(r.annualAmount) || 0);
+      const reward = yearSaved > 0
+        ? `🎉 ${r.name} cancelled — you just freed up ${USER.sym || '$'}${yearSaved.toLocaleString()}/yr`
+        : `🎉 ${r.name} cancelled`;
+      showToast(reward, 'success');
+    } else {
+      showToast(`${r.name} restored`);
+    }
+  }
 }
 // Legacy alias for any external caller (kept for safety; new code uses ById).
 function toggleCancel(arg) {
@@ -921,12 +970,19 @@ function setFilter(f, el) {
   renderCards();
 }
 
+// R-PERF-9 fix — debounce sortCards so a user rapidly cycling the dropdown
+// doesn't trigger a full grid rebuild on every change event. 80ms is
+// imperceptible to humans but coalesces every modern <select> auto-fire.
+let _sortDebounce = null;
 function sortCards(val) {
-  if (val==='amount-desc') RECURRINGS.sort((a,b)=>b.monthlyAmount-a.monthlyAmount);
-  else if (val==='amount-asc') RECURRINGS.sort((a,b)=>a.monthlyAmount-b.monthlyAmount);
-  else if (val==='name') RECURRINGS.sort((a,b)=>a.name.localeCompare(b.name));
-  else if (val==='flagged') RECURRINGS.sort((a,b)=>(b.priceIncreased?1:0)-(a.priceIncreased?1:0));
-  renderCards();
+  if (_sortDebounce) clearTimeout(_sortDebounce);
+  _sortDebounce = setTimeout(() => {
+    if (val==='amount-desc') RECURRINGS.sort((a,b)=>b.monthlyAmount-a.monthlyAmount);
+    else if (val==='amount-asc') RECURRINGS.sort((a,b)=>a.monthlyAmount-b.monthlyAmount);
+    else if (val==='name') RECURRINGS.sort((a,b)=>a.name.localeCompare(b.name));
+    else if (val==='flagged') RECURRINGS.sort((a,b)=>(b.priceIncreased?1:0)-(a.priceIncreased?1:0));
+    renderCards();
+  }, 80);
 }
 
 // R-P0-1 + R-P0-9: id-keyed Sage call + custom modal replaces native alert.
@@ -1054,12 +1110,35 @@ async function clearAll() {
   setState('upload');
 }
 function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
-function showToast(msg){
-  const t=document.createElement('div');
-  t.className='toast'; t.textContent=msg;
-  document.body.appendChild(t);
-  setTimeout(()=>{t.style.opacity='0';t.style.transition='opacity .3s';},2800);
-  setTimeout(()=>t.remove(),3200);
+// R-A11Y-24 fix + G-P2-12 pattern — toast is now a single ARIA live region.
+// Pre-fix every toast spawned a new <div> with no role/aria, so SR users
+// heard nothing and rapid successive toasts piled up off-screen. Now we
+// reuse one node with role=status + aria-live=polite, and the variant
+// argument tints the bar so success/failure are distinguishable beyond
+// just colour (R-CRO-10 celebratory toast hooks into the 'success' variant).
+let _toastTimer = null;
+function showToast(msg, variant){
+  let t = document.getElementById('pfc-toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'pfc-toast';
+    t.className = 'toast';
+    t.setAttribute('role', 'status');
+    t.setAttribute('aria-live', 'polite');
+    t.setAttribute('aria-atomic', 'true');
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.classList.remove('toast--success', 'toast--error');
+  if (variant === 'success') t.classList.add('toast--success');
+  else if (variant === 'error') t.classList.add('toast--error');
+  t.style.opacity = '1';
+  t.style.transition = '';
+  if (_toastTimer) clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => {
+    t.style.transition = 'opacity .3s';
+    t.style.opacity = '0';
+  }, 2800);
 }
 
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeManual();});
@@ -1069,6 +1148,14 @@ init();
 // init() ran synchronously before PFCAuth resolved the real userId — so USER/
 // RECURRINGS may reflect pfc:guest:* (often empty). Once auth resolves and pfc-
 // storage.js finishes adoptGuestData, re-read from the now-correct namespace.
+// R-PERF-12 fix — onReady + onAuthChange BOTH fire on initial load, and the
+// rehydrate path could call showResults twice for unchanged data. Track a
+// storage signature so we early-exit when nothing actually changed.
+let _lastHydrationSig = '';
+function _hydrationSignature(arr) {
+  if (!Array.isArray(arr) || !arr.length) return 'empty';
+  return arr.length + ':' + (arr[0] && arr[0].id ? arr[0].id : '') + ':' + (arr[arr.length-1] && arr[arr.length-1].id ? arr[arr.length-1].id : '');
+}
 function _rehydrateFromStorage() {
   try { USER = (typeof PFCUser !== 'undefined') ? PFCUser.get() : (PFCStorage.getJSON('user') || {}); } catch(e) {}
   USER.sym = escHtml(window.PFCSym ? PFCSym(USER.currency) : (USER.currency || '$'));
@@ -1083,6 +1170,12 @@ function _rehydrateFromStorage() {
       const parsed = _safeParseJson(saved);
       RECURRINGS = Array.isArray(parsed) ? parsed : [];
       _backfillIds();
+      // R-PERF-12: skip re-render if the same data is already on screen
+      // (onReady + onAuthChange both fire on cold load; without this guard
+      // showResults runs twice, double-painting Chart.js + grid).
+      const sig = _hydrationSignature(RECURRINGS);
+      if (sig === _lastHydrationSig) return;
+      _lastHydrationSig = sig;
       // Don't yank the user out of an in-progress upload flow.
       const processing = document.getElementById('state-processing');
       if (!processing || processing.style.display !== 'block') showResults();

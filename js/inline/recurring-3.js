@@ -10,16 +10,33 @@ window.addEventListener('DOMContentLoaded', () => {
   // recurring-2.js as a global function.
   const drop = document.getElementById('drop-area');
   if (drop) {
+    // R-A11Y-26 fix — create a polite ARIA live region inside the drop area
+    // so screen-reader users hear when the drag-over state changes (visual
+    // .drag class is silent for them). Region is sr-only via .visually-hidden.
+    let liveRegion = document.getElementById('drop-area-live');
+    if (!liveRegion) {
+      liveRegion = document.createElement('span');
+      liveRegion.id = 'drop-area-live';
+      liveRegion.className = 'visually-hidden';
+      liveRegion.setAttribute('aria-live', 'polite');
+      liveRegion.setAttribute('aria-atomic', 'true');
+      drop.appendChild(liveRegion);
+    }
     drop.addEventListener('dragover', (e) => {
       e.preventDefault();
-      drop.classList.add('drag');
+      if (!drop.classList.contains('drag')) {
+        drop.classList.add('drag');
+        liveRegion.textContent = 'File ready to drop. Release to upload.';
+      }
     });
     drop.addEventListener('dragleave', () => {
       drop.classList.remove('drag');
+      liveRegion.textContent = '';
     });
     drop.addEventListener('drop', (e) => {
       e.preventDefault();
       drop.classList.remove('drag');
+      liveRegion.textContent = 'Uploading your statement.';
       if (typeof handleDrop === 'function') handleDrop(e);
     });
     // R-P0-14: keyboard accessibility — Enter/Space triggers file picker

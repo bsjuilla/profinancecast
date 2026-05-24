@@ -26,6 +26,18 @@
      With `defer`, the inline script can fire before the deferred external
      resolves on fast connections, throwing "Chart is not defined" and
      leaving the subscription trend chart blank. -->
+<!-- R-PERF-14 fix — preconnect to the 5 third-party origins this page hits so
+     the TCP+TLS handshake overlaps with HTML parse instead of blocking the
+     first resource fetch. dns-prefetch is a safer fallback for browsers that
+     ignore preconnect. Saves ~150-300ms on cold loads from outside Europe. -->
+<link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="preconnect" href="https://js.sentry-cdn.com" crossorigin>
+<link rel="preconnect" href="https://plausible.io">
+<link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
+<link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+<link rel="dns-prefetch" href="https://js.sentry-cdn.com">
+<link rel="dns-prefetch" href="https://plausible.io">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js" integrity="sha384-bs/nf9FbdNouRbMiFcrcZfLXYPKiPaGVGplVbv7dLGECccEXDW+S3zjqSKR5ZEaD" crossorigin="anonymous"></script>
 <style>
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
@@ -97,8 +109,31 @@
   .rec-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;transition:border-color .2s,transform .15s;animation:cardIn .3s ease both;}
   .rec-card:hover{border-color:var(--border2);transform:translateY(-1px);}
   .rec-card.flagged{border-color:rgba(224,82,82,0.3);}
-  .rec-card.price-up{border-color:rgba(245,166,35,0.3);}
-  .rec-card.cancelled{opacity:.5;}
+  /* R-DES-6 fix — non-color affordance. Pre-fix the only state signal was
+     a border tint (price-up) or opacity (cancelled). Color-blind users
+     and forced-colors mode saw nothing distinctive. Add a dashed pattern
+     and a corner badge so the state is visible without colour. */
+  .rec-card.price-up{border-color:rgba(245,166,35,0.3);border-style:dashed;}
+  .rec-card.price-up::before{content:"↑";position:absolute;top:6px;right:8px;font-size:14px;font-weight:700;color:var(--amber);line-height:1;}
+  .rec-card.cancelled{opacity:.55;}
+  .rec-card.cancelled::after{content:"✕ cancelled";position:absolute;top:6px;right:8px;font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;}
+  .rec-card{position:relative;}
+  /* R-DES-8 fix — KPI hierarchy. Pre-fix all four metric cards were
+     visually identical, so the user's eye had no anchor. Promote the
+     first card (Total monthly) by giving it a larger font and the brand
+     teal accent so the most-important number reads first. */
+  .metric-strip .metric-card:first-child{background:linear-gradient(135deg,rgba(43,182,125,0.05),transparent 60%);border-color:rgba(43,182,125,0.25);}
+  .metric-strip .metric-card:first-child .metric-val{font-size:34px;}
+  .metric-strip .metric-card:first-child .metric-label{color:var(--teal);font-weight:600;}
+  /* R-DES-7 / R-CRO-1 fix — preview tile component used in the empty
+     upload state to show what the user will see post-detection (matches
+     the pattern shipped in G-P1-H and NW-P1-11 preview-tiles). */
+  .pfc-preview-tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:18px auto 0;max-width:560px;}
+  .pfc-preview-tile{background:var(--card);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px 12px;text-align:left;}
+  .pfc-preview-tile .pt-icon{font-size:20px;line-height:1;margin-bottom:8px;}
+  .pfc-preview-tile .pt-title{font-family:var(--font-display);font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px;}
+  .pfc-preview-tile .pt-body{font-size:11.5px;color:var(--text3);line-height:1.5;}
+  @media (max-width:540px){.pfc-preview-tiles{grid-template-columns:1fr;}}
 
   @keyframes cardIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
 
@@ -108,8 +143,12 @@
   .rec-name{font-size:14px;font-weight:600;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .rec-meta{font-size:11.5px;color:var(--text3);}
   .rec-amount{text-align:right;flex-shrink:0;}
-  .rec-monthly{font-family:var(--font-display);font-size:17px;font-weight:700;}
-  .rec-annual{font-size:11px;color:var(--text3);margin-top:1px;}
+  /* R-CRO-8 fix — flip the anchor. Pre-fix monthly was big (17px) and annual
+     was small (11px); persuasion-wise the annual figure is the better
+     loss-aversion anchor ($108/yr lands harder than $9/mo). Flip them so
+     annual is the headline number on each card. */
+  .rec-monthly{font-size:12px;color:var(--text3);margin-top:2px;font-family:var(--font-body);font-weight:500;}
+  .rec-annual{font-family:var(--font-display);font-size:18px;font-weight:700;color:var(--text);}
 
   .rec-body{padding:0 16px 14px;border-top:1px solid var(--border);padding-top:12px;}
   .rec-timeline{display:flex;gap:4px;margin-bottom:10px;align-items:flex-end;height:32px;}
@@ -161,6 +200,11 @@
 
   /* TOAST */
   .toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:var(--card);border:1px solid rgba(43,182,125,0.3);border-radius:10px;padding:12px 20px;font-size:13.5px;color:var(--text);z-index:200;white-space:nowrap;animation:toastIn .25s ease;pointer-events:none;}
+  /* R-CRO-10 + G-P2-12 — toast variants. The success variant tints teal
+     and adds a subtle glow so cancel-celebration reads differently than
+     a neutral confirmation. The error variant tints red for failures. */
+  .toast.toast--success{border-color:rgba(43,182,125,0.6);background:linear-gradient(135deg,rgba(43,182,125,0.12),var(--card));box-shadow:0 4px 20px rgba(43,182,125,0.2);}
+  .toast.toast--error{border-color:rgba(224,82,82,0.6);background:linear-gradient(135deg,rgba(224,82,82,0.1),var(--card));}
   @keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(8px);}to{opacity:1;transform:translateX(-50%) translateY(0);}}
 
   /* SORT */
@@ -420,8 +464,11 @@
       <div class="topbar-sub" id="topbar-sub">Every recurring debit, surfaced from the statement.</div>
     </div>
     <div class="topbar-right">
-      <button class="topbar-btn" id="btn-add-manual"  data-pfc-on-click="openManualAdd" style="display:none;">+ Add manually</button>
-      <button class="topbar-btn danger" id="btn-clear"  data-pfc-on-click="clearAll" style="display:none;">Clear & re-upload</button>
+      <!-- R-DES-2 fix — tone shift to match the "Standing Charges" voice
+           already set in the topbar title. Was "+ Add manually" / "Clear
+           & re-upload" — now reads like a ledger entry, not a SaaS chip. -->
+      <button class="topbar-btn" id="btn-add-manual"  data-pfc-on-click="openManualAdd" style="display:none;">+ Note one by hand</button>
+      <button class="topbar-btn danger" id="btn-clear"  data-pfc-on-click="clearAll" style="display:none;">Start the ledger over</button>
       <button class="topbar-btn primary"  data-pfc-on-click="_pfc_trigger_click" data-pfc-target="csv-file">
         <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1v8M3 6l3.5 3.5L10 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M1 11h11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
         Upload CSV
@@ -461,6 +508,25 @@
           The detector automatically finds <strong style="color:var(--text)">every recurring charge</strong> in your statement —
           subscriptions, loan payments, insurance, utilities — and groups them by merchant.
           It then flags any that have <strong style="color:var(--amber)">increased in price</strong> so you always know when a company quietly raised your rate.
+        </div>
+        <!-- R-DES-7 / R-CRO-1 fix — preview tiles so first-time visitors know
+             what they'll see after upload (mirrors G-P1-H and NW-P1-11). -->
+        <div class="pfc-preview-tiles" aria-label="What you'll see after upload">
+          <div class="pfc-preview-tile">
+            <div class="pt-icon">📊</div>
+            <div class="pt-title">Total monthly</div>
+            <div class="pt-body">One headline number for what leaves your account every month — no more guessing.</div>
+          </div>
+          <div class="pfc-preview-tile">
+            <div class="pt-icon">⚠️</div>
+            <div class="pt-title">Price-hike flags</div>
+            <div class="pt-body">Any subscription whose charge has crept up gets a dashed border + arrow.</div>
+          </div>
+          <div class="pfc-preview-tile">
+            <div class="pt-icon">💤</div>
+            <div class="pt-title">Zombie detection</div>
+            <div class="pt-body">Anything not charged in over 60 days is flagged so you can cancel forgotten subs.</div>
+          </div>
         </div>
       </div>
 
@@ -524,6 +590,10 @@
             <div class="card-title" style="margin-bottom:3px;">Spend by category</div>
             <div class="card-sub" style="margin-bottom:14px;">Monthly breakdown across subscription types</div>
             <div class="chart-wrap"><canvas id="catChart" role="img" aria-label="Doughnut chart of monthly recurring spend grouped by category"></canvas><span class="visually-hidden" id="catChart-fallback">Spend-by-category breakdown is rendered as an interactive doughnut chart above. The data is also summarised in the alert banners and in the Where-the-money-flows ribbon below.</span></div>
+            <!-- R-CRO-9 fix — plain-English prose summary below the chart so
+                 the insight is legible even before the eye decodes the slices.
+                 Populated by renderCharts() with the dominant category. -->
+            <p id="catChart-prose" class="rec-prose-summary" style="margin:14px 0 0;font-size:12.5px;color:var(--text2);line-height:1.55;font-family:var(--font-body);"></p>
           </div>
         </div>
         <div class="card">
