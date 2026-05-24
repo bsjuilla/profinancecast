@@ -130,8 +130,15 @@
   .content { padding: 28px; flex: 1; }
 
   /* ── SUMMARY BAR ── */
+  /* G-P2-9 fix (audit 2026-05-24) — hero progress card spans 2 cols.
+     Pre-fix the 4-col equal-weight strip gave equal visual weight to a
+     summary stat (total) and the only outcome metric (overall progress).
+     Now: progress is the hero (2-col span, bigger type), surplus/needed
+     stack as smaller secondary cards on the right. Mirrors NW-P2-8 KPI
+     hierarchy reshuffle. */
   .summary-bar {
-    display: grid; grid-template-columns: repeat(4, 1fr);
+    display: grid; grid-template-columns: 2fr 1fr 1fr;
+    grid-template-rows: auto auto;
     gap: 14px; margin-bottom: 24px;
   }
   .summary-card {
@@ -139,6 +146,15 @@
     border-radius: var(--r); padding: 16px 20px;
     position: relative; overflow: hidden;
   }
+  /* Hero progress card spans the full left column (both rows). */
+  .summary-card.s-hero {
+    grid-row: 1 / span 2;
+    padding: 24px 26px;
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  .summary-card.s-hero .summary-val { font-size: 44px; line-height: 1.1; }
+  .summary-card.s-hero .summary-label { font-size: 12px; letter-spacing: .06em; }
+  .summary-card.s-hero .summary-hint { font-size: 13px; margin-top: 8px; }
   .summary-card::after {
     content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 2px;
   }
@@ -146,6 +162,7 @@
   .summary-card.s-blue::after { background: var(--blue); }
   .summary-card.s-amber::after { background: var(--amber); }
   .summary-card.s-purple::after { background: var(--purple); }
+  .summary-card.s-hero::after { height: 3px; background: var(--gold,#D4AF6A); }
   .summary-label { font-size: 11px; color: var(--text3); margin-bottom: 5px; font-weight: 500; letter-spacing: .03em; }
   .summary-val { font-family: var(--font-display); font-size: 22px; font-weight: 700; margin-bottom: 2px; }
   .summary-hint { font-size: 11.5px; color: var(--text3); }
@@ -188,14 +205,8 @@
   .conflict-icon { flex-shrink: 0; color: var(--red); }
   .conflict-text { flex: 1; font-size: 13px; color: var(--text2); line-height: 1.5; }
   .conflict-text strong { color: var(--red); }
-  .conflict-pro-btn {
-    flex-shrink: 0; padding: 7px 14px; background: rgba(224,82,82,0.15);
-    border: 1px solid rgba(224,82,82,0.3); border-radius: var(--r-sm);
-    font-size: 12px; color: var(--red); cursor: pointer;
-    font-family: var(--font-body); font-weight: 600;
-    text-decoration: none; transition: all .15s;
-  }
-  .conflict-pro-btn:hover { background: rgba(224,82,82,0.25); }
+  /* G-P0-V cleanup — `.conflict-pro-btn` rules removed; element deleted in
+     G-P0-8 (operator chose option 1 — Pro gate dropped on conflict resolver). */
 
   /* ── GOALS GRID ── */
   .goals-grid {
@@ -448,6 +459,92 @@
   @keyframes toastIn { from { opacity:0; transform:translateX(-50%) translateY(8px); } to { opacity:1; transform:translateX(-50%) translateY(0); } }
 
   @keyframes slideUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+  /* G-P0-3 fix (audit 2026-05-24) — mobile sidebar drawer. Pre-fix
+     goals.html had ZERO mobile breakpoint; the 240px sidebar consumed
+     64% of a 375px viewport with no way to dismiss. Pattern lifted
+     verbatim from net-worth.html (NW-P0-4) which lifted from dashboard
+     (DASH-P0-2). Keeps all 3 page sidebars in lockstep. */
+  .pfc-mobile-menu-btn{display:none;align-items:center;justify-content:center;width:44px;height:44px;border:1px solid var(--border);background:transparent;color:var(--text2);border-radius:var(--r-sm);cursor:pointer;padding:0;flex-shrink:0;}
+  .pfc-mobile-menu-btn:hover{color:var(--text);border-color:rgba(255,255,255,0.2);}
+  .pfc-sidebar-scrim{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:90;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);}
+  .pfc-sidebar-scrim.is-open{display:block;}
+  @media (max-width:800px){
+    .pfc-mobile-menu-btn{display:inline-flex;}
+    .sidebar{position:fixed;top:0;left:0;height:100vh;height:100dvh;width:min(280px,86vw);transform:translateX(-100%);transition:transform 200ms ease-out;z-index:100;box-shadow:12px 0 32px rgba(0,0,0,0.45);}
+    .sidebar.is-open{transform:translateX(0);}
+    /* G-P2-V verifier fix — was targeting non-existent .summary-strip;
+       actual class is .summary-bar. G-P2-9 added s-hero grid-row span +
+       s-amber grid-column span; collapse both on mobile so the new
+       hero layout doesn't overflow 360px viewports. */
+    .summary-bar{grid-template-columns:1fr 1fr !important;}
+    .summary-card.s-hero{grid-row:auto !important;}
+    .summary-card.s-amber{grid-column:auto !important;}
+    .content{padding:20px 16px;}
+  }
+  @media (max-width:540px){
+    .summary-bar{grid-template-columns:1fr !important;gap:10px !important;}
+    .summary-card.s-hero{grid-row:auto !important;}
+    .summary-card.s-amber{grid-column:auto !important;}
+    .topbar{padding:0 14px;height:56px;}
+    .goal-actions{flex-wrap:wrap;}
+    .goal-action-btn{min-height:40px;padding:8px 12px;}
+    .topbar-right .btn{padding:9px 12px;min-height:40px;}
+  }
+  /* iOS notch + home-bar safe areas */
+  .topbar{padding-top:env(safe-area-inset-top,0);}
+  body{padding-bottom:env(safe-area-inset-bottom,0);}
+  /* iOS keyboard avoidance for modals on small screens */
+  @media (max-width:540px){
+    .modal-overlay{align-items:flex-start !important;padding-top:8vh !important;}
+  }
+  /* Windows High Contrast backstop.
+     G-P2-4 fix (audit 2026-05-24) — pre-fix this listed status-atrisk /
+     status-shortfall / status-future which DO NOT EXIST in the code. The
+     actual classes minted in goals-2.js renderGoal are status-done,
+     status-funded, status-ontrack, status-starved. Replaced with the real
+     class names so forced-colors borders actually fire. Plus the badges
+     already prefix with semantically-meaningful Unicode symbols
+     (✓ ● ◗ ⚠ ◎) so color isn't the only signal even outside HC mode. */
+  @media (forced-colors:active){
+    .summary-card,.card,.alloc-segment,.goal-card,.nav-item,.btn,.modal-box,
+    .goal-status-badge,.status-done,.status-funded,.status-ontrack,.status-starved
+      {border:1px solid CanvasText !important;}
+    .pfc-brand-mark svg{forced-color-adjust:none;}
+  }
+  /* Print stylesheet — single-page "my plan" */
+  @media print{
+    .sidebar,.topbar,.pfc-skip-link,.pfc-mobile-menu-btn,.pfc-sidebar-scrim,.modal-overlay{display:none !important;}
+    .main{height:auto;overflow:visible;}
+    .content{padding:0;}
+    body{display:block;overflow:visible;background:#fff;color:#000;}
+    .summary-card,.card,.goal-card{break-inside:avoid;border:1px solid #999 !important;background:#fff !important;}
+    .goal-title,.card-title{color:#000 !important;}
+  }
+  /* Reduce motion accommodation */
+  @media (prefers-reduced-motion:reduce){
+    .sidebar,.alloc-segment,.progress-fill,.toast,.goal-card,.modal-overlay{transition:none !important;animation:none !important;}
+  }
+  /* -webkit-backdrop-filter prefix for older iOS Safari */
+  .topbar,.modal-overlay{-webkit-backdrop-filter:blur(12px);}
+
+  /* G-P2-3 fix (audit 2026-05-24) — extract highest-frequency inline-style
+     patterns to named classes (mirror NW-P2-3 scope: extract repeats only,
+     not one-offs). Pre-fix goals.html had 47 inline style="" attrs;
+     this pass moves the repeated patterns (preview tiles, confirm modal
+     buttons) into reusable classes. */
+  .gl-preview-rule{margin-top:36px;padding-top:28px;border-top:1px solid var(--border);max-width:560px;margin-inline:auto;}
+  .gl-eyebrow-gold{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);font-weight:600;margin-bottom:14px;}
+  .gl-preview-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;text-align:left;}
+  .gl-preview-tile{padding:14px 12px;background:var(--surface-2,rgba(244,239,229,0.03));border:1px solid var(--line-2,rgba(244,239,229,0.06));border-radius:var(--r-sm);}
+  .gl-preview-eyebrow{font-family:var(--font-display);font-style:italic;font-size:15px;color:var(--ink,#F4EFE5);margin-bottom:6px;}
+  .gl-preview-body{font-size:12px;line-height:1.55;color:var(--text3);}
+  .gl-confirm-cancel{padding:10px 18px;background:transparent;border:1px solid var(--border2);border-radius:var(--r-sm);font-size:13px;color:var(--text2);font-family:var(--font-body);cursor:pointer;}
+  .gl-confirm-ok{padding:10px 18px;background:var(--red);border:none;border-radius:var(--r-sm);font-size:13px;font-weight:600;color:#fff;font-family:var(--font-body);cursor:pointer;}
+  .gl-confirm-msg{font-size:13.5px;color:var(--text2);margin-bottom:18px;line-height:1.5;}
+  @media (max-width:540px){
+    .gl-preview-grid{grid-template-columns:1fr;}
+  }
 </style>
   <link rel="stylesheet" href="css/pfc-tokens.css">
   <link rel="stylesheet" href="css/pfc-photos.css?v=3">
@@ -457,7 +554,11 @@
   <link rel="stylesheet" href="css/pfc-footer.css">
   <script src="js/pfc-export.js" defer></script>
   <!-- Supabase SDK + auth/storage/entitlements (must load before any inline script that uses them) -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- G-P1-E fix (audit 2026-05-24) — pinned + SRI. Pre-fix the floating
+       @2 selector let jsdelivr serve any 2.x build; a CDN compromise
+       would execute attacker JS in the same context as the session JWT.
+       Hash mirrors NW-P1-5 from CISO audit. -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.105.4" integrity="sha384-4eCDoMN/7A46qQ5Tj0rZ/D2VEolFGNIINDTLAcWZcvhkRSsvTfqNfaBMlRRoGEZ5" crossorigin="anonymous"></script>
   <script src="js/pfc-audit-mode.js"></script>
   <script src="js/pfc-config.js"></script>
   <script src="js/pfc-auth.js"></script>
@@ -488,8 +589,14 @@
 </head>
 <body data-pfc-surface="working">
 
+<!-- G-P1-C: skip link — first focusable element for keyboard/AT users -->
+<a href="#goals-main" class="pfc-skip-link" style="position:absolute;top:-40px;left:8px;z-index:1000;background:var(--gold,#D4AF6A);color:var(--canvas,#0B1410);padding:8px 14px;border-radius:4px;font-family:var(--font-body);font-size:13px;font-weight:600;text-decoration:none;transition:top 150ms ease-out;" onfocus="this.style.top='8px'" onblur="this.style.top='-40px'">Skip to goals content</a>
+
+<!-- G-P1-C: visually-hidden h1 — landmark navigation for screen readers -->
+<h1 style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;">My financial goals</h1>
+
 <!-- ── SIDEBAR ── -->
-<nav class="sidebar" aria-label="Primary navigation">
+<nav class="sidebar" id="primary-sidebar" aria-label="Primary navigation">
   <a href="dashboard.html" class="sidebar-logo">
     <span class="pfc-brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32" width="32" height="32" aria-hidden="true"><text x="16" y="19" text-anchor="middle" font-family="&apos;Fraunces&apos;,&apos;Cormorant Garamond&apos;,Georgia,serif" font-size="14" font-weight="500" letter-spacing="-0.4" fill="#D4AF6A">PFC</text><rect x="14.5" y="23" width="3" height="3" fill="#D4AF6A" transform="rotate(45 16 24.5)"/></svg></span>
     ProFinanceCast
@@ -573,8 +680,14 @@
 
   <!-- TOPBAR -->
   <div class="topbar">
+    <button class="pfc-mobile-menu-btn" id="pfc-mobile-menu-btn" aria-label="Open menu" aria-expanded="false" aria-controls="primary-sidebar" type="button">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M3 6h14M3 10h14M3 14h14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+    </button>
     <div class="topbar-left">
-      <div class="topbar-title">My Goals</div>
+      <!-- G-P2-10 fix (audit 2026-05-24) — editorial voice match. Pre-fix
+           "My Goals" was generic SaaS; topbar-sub "drawn in ink" set an
+           editorial register that the title didn't honour. -->
+      <div class="topbar-title">The Plan</div>
       <div class="topbar-sub" id="topbar-sub">Your objectives, drawn in ink.</div>
     </div>
     <div class="topbar-right">
@@ -582,37 +695,39 @@
         <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><rect x="1.5" y="1.5" width="4" height="4" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="7.5" y="1.5" width="4" height="4" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="1.5" y="7.5" width="4" height="4" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="7.5" y="7.5" width="4" height="4" rx="1" stroke="currentColor" stroke-width="1.3"/></svg>
         Dashboard
       </a>
+      <!-- G-P2-10: editorial CTA — "Name a new one" matches "drawn in ink" voice -->
       <button class="topbar-btn primary"  data-pfc-on-click="openAddGoal">
         <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1v11M1 6.5h11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-        Add goal
+        Name a new one
       </button>
     </div>
   </div>
 
   <!-- CONTENT -->
-  <div class="content">
+  <div class="content" id="goals-main" tabindex="-1">
 
-    <!-- SUMMARY BAR -->
+    <!-- SUMMARY BAR — G-P2-9: hero progress + 3 smaller secondary cards -->
     <div class="summary-bar" id="summary-bar">
+      <!-- Hero: overall progress (the only outcome metric) -->
+      <div class="summary-card s-hero">
+        <div class="summary-label">Overall progress</div>
+        <div class="summary-val" id="s-progress" style="color:var(--gold,#D4AF6A);">0%</div>
+        <div class="summary-hint" id="s-progress-hint">funded towards all goals</div>
+      </div>
       <div class="summary-card s-teal">
         <div class="summary-label">Total goal amount</div>
         <div class="summary-val" id="s-total" style="color:var(--teal);">$0</div>
         <div class="summary-hint" id="s-total-hint">across 0 goals</div>
       </div>
       <div class="summary-card s-blue">
-        <div class="summary-label">Monthly surplus available</div>
+        <div class="summary-label">Monthly surplus</div>
         <div class="summary-val" id="s-surplus" style="color:var(--blue);">$0</div>
-        <div class="summary-hint">after all expenses & debt</div>
+        <div class="summary-hint">after all expenses</div>
       </div>
-      <div class="summary-card s-amber">
+      <div class="summary-card s-amber" style="grid-column: 2 / span 2;">
         <div class="summary-label">Monthly needed (all goals)</div>
         <div class="summary-val" id="s-needed" style="color:var(--amber);">$0</div>
         <div class="summary-hint" id="s-needed-hint">to hit all targets on time</div>
-      </div>
-      <div class="summary-card s-purple">
-        <div class="summary-label">Overall progress</div>
-        <div class="summary-val" id="s-progress" style="color:var(--purple);">0%</div>
-        <div class="summary-hint" id="s-progress-hint">funded towards all goals</div>
       </div>
     </div>
 
@@ -626,25 +741,35 @@
       <div class="alloc-legend" id="alloc-legend"></div>
     </div>
 
-    <!-- CONFLICT BANNER (Pro) -->
+    <!-- CONFLICT BANNER — G-WORTH-1 / G-P0-8 fix (audit 2026-05-24, operator
+         chose option 1). Pro gate removed; conflict resolver is now available
+         to all tiers per pricing.md "full goals" Free promise. The actual
+         resolver content (which goals + shortfall amount) is populated by
+         goals-2.js renderConflict() and rendered into #conflict-text. Real
+         Pro/Premium differentiators on goals (shared, AI templates, Sage
+         what-if, report-card integration) are tracked as future product work. -->
     <div class="conflict-banner" id="conflict-banner">
       <div class="conflict-icon">
         <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 2L1.5 17.5h17L10 2z" stroke="#E05252" stroke-width="1.5" stroke-linejoin="round"/><path d="M10 8v4" stroke="#E05252" stroke-width="1.5" stroke-linecap="round"/><circle cx="10" cy="14.5" r="0.8" fill="#E05252"/></svg>
       </div>
       <div class="conflict-text" id="conflict-text">
-        <strong>Goal conflict detected</strong> — upgrade to Pro to see which goals to reprioritise and how much to reallocate.
+        <strong>Goal conflict detected</strong> — your goals need more monthly surplus than you currently have. Reallocation suggestions below.
       </div>
-      <a href="billing.html" class="conflict-pro-btn">Fix with Pro →</a>
     </div>
 
-    <!-- EMPTY STATE -->
-    <figure class="pfc-photo-figure">
+    <!-- EMPTY STATE — G-P0-4 fix (audit 2026-05-24): lighthouse photo only
+         shows when GOALS.length === 0 (gated by render() in goals-2.js via
+         id="lighthouse-photo"). Pre-fix it rendered unconditionally above
+         the goals grid, occupying ~30% of viewport even when user had 5
+         goals. Also removed loading="lazy" so when shown (empty-state)
+         it's the LCP candidate and paints immediately. -->
+    <figure class="pfc-photo-figure" id="lighthouse-photo" style="display:none;">
       <picture>
         <source srcset="assets/img/photos/goals-empty-horizon.avif" type="image/avif">
         <source srcset="assets/img/photos/goals-empty-horizon.webp" type="image/webp">
         <img class="pfc-photo-card" src="assets/img/photos/goals-empty-horizon.webp"
              alt="Distant lighthouse seen through an arched Mediterranean window at dusk — what you walk toward."
-             loading="lazy" decoding="async"
+             decoding="async"
              width="1536" height="1024">
       </picture>
         <figcaption>A horizon, named.</figcaption>
@@ -653,12 +778,35 @@
       <div class="empty-icon">
         <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="12" stroke="#2BB67D" stroke-width="1.5"/><circle cx="16" cy="16" r="5" stroke="#2BB67D" stroke-width="1.5"/><path d="M16 4v4M16 24v4M4 16h4M24 16h4" stroke="#2BB67D" stroke-width="1.5" stroke-linecap="round"/></svg>
       </div>
-      <div class="empty-title">Set your first goal</div>
-      <div class="empty-sub">Goals turn your financial data into a real plan. Add your first goal and see exactly when you'll reach it — and how much you need each month.</div>
+      <!-- G-P2-10 fix — editorial voice. "Set your first goal" was the
+           generic onboarding line every SaaS uses. "Name the first one"
+           keeps "name" + "ink" + "plan" as the voice anchors. -->
+      <div class="empty-title">Name the first one</div>
+      <div class="empty-sub">A named goal turns a vague intention into a date on the calendar. Tell us what you're working toward — we'll do the maths.</div>
       <button class="topbar-btn primary"  data-pfc-on-click="openAddGoal" style="padding:10px 24px;font-size:14px;">
         <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1v11M1 6.5h11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-        Add your first goal
+        Name your first goal
       </button>
+
+      <!-- G-P1-H fix (audit 2026-05-24) — "what you'll see" preview tiles.
+           G-P2-3 (2026-05-24) — extracted to .gl-preview-* classes. -->
+      <div class="gl-preview-rule">
+        <div class="gl-eyebrow-gold">What goals unlock</div>
+        <div class="gl-preview-grid">
+          <div class="gl-preview-tile">
+            <div class="gl-preview-eyebrow">Allocation</div>
+            <div class="gl-preview-body">Your monthly surplus split across goals by priority, with shortfall called out.</div>
+          </div>
+          <div class="gl-preview-tile">
+            <div class="gl-preview-eyebrow">Timeline</div>
+            <div class="gl-preview-body">"~14 months to reach this goal" — recalculated as your numbers change.</div>
+          </div>
+          <div class="gl-preview-tile">
+            <div class="gl-preview-eyebrow">Milestones</div>
+            <div class="gl-preview-body">A celebration at 50%, 75%, and 100% — the moments most trackers miss.</div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- GOALS GRID -->
@@ -666,53 +814,62 @@
 
   </div>
 
-<!-- ── ADD / EDIT GOAL MODAL ── -->
-<div class="modal-overlay" id="goal-modal">
+<!-- ── ADD / EDIT GOAL MODAL ──
+     G-P1-C fix (audit 2026-05-24) — a11y baseline: role=dialog, aria-modal,
+     aria-labelledby, label for= on every input, category cells get
+     role="radio" + aria-checked + tabindex + keyboard handler (wired in
+     goals-2.js selectCat / kbd handler). Focus trap + Escape + backdrop
+     close wired in goals-2.js openAddGoal + new _trapModal helper. -->
+<div class="modal-overlay" id="goal-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
   <div class="modal-box">
     <div class="modal-head">
       <div class="modal-title" id="modal-title">Add new goal</div>
-      <div class="modal-close"  data-pfc-on-click="closeModal">✕</div>
+      <button type="button" class="modal-close"  data-pfc-on-click="closeModal" aria-label="Close dialog">✕</button>
     </div>
     <div class="modal-body">
 
-      <!-- Category picker -->
-      <label class="field-label" style="margin-bottom:10px;">Category</label>
-      <div class="cat-grid" id="cat-grid">
-        <div class="cat-opt selected" data-cat="emergency"  data-pfc-on-click="selectCat" data-pfc-arg-this><div class="cat-opt-icon">🛡️</div>Emergency</div>
-        <div class="cat-opt" data-cat="home"  data-pfc-on-click="selectCat" data-pfc-arg-this><div class="cat-opt-icon">🏠</div>Home</div>
-        <div class="cat-opt" data-cat="car"  data-pfc-on-click="selectCat" data-pfc-arg-this><div class="cat-opt-icon">🚗</div>Car</div>
-        <div class="cat-opt" data-cat="travel"  data-pfc-on-click="selectCat" data-pfc-arg-this><div class="cat-opt-icon">✈️</div>Travel</div>
-        <div class="cat-opt" data-cat="invest"  data-pfc-on-click="selectCat" data-pfc-arg-this><div class="cat-opt-icon">📈</div>Invest</div>
-        <div class="cat-opt" data-cat="retire"  data-pfc-on-click="selectCat" data-pfc-arg-this><div class="cat-opt-icon">🌅</div>Retire</div>
-        <div class="cat-opt" data-cat="education"  data-pfc-on-click="selectCat" data-pfc-arg-this><div class="cat-opt-icon">🎓</div>Education</div>
-        <div class="cat-opt" data-cat="wedding"  data-pfc-on-click="selectCat" data-pfc-arg-this><div class="cat-opt-icon">💍</div>Wedding</div>
-        <div class="cat-opt" data-cat="custom"  data-pfc-on-click="selectCat" data-pfc-arg-this><div class="cat-opt-icon">⭐</div>Custom</div>
+      <!-- Category picker — G-P1-C: role=radiogroup + role=radio on each cell + tabindex -->
+      <div class="field-label" id="cat-label" style="margin-bottom:10px;">Category</div>
+      <!-- G-P2-1 fix (audit 2026-05-24) — emoji category icons replaced
+           with brand-aligned line SVGs. Pre-fix the cross-OS emoji rendering
+           (Apple vs Windows vs Android) made the visual hierarchy
+           inconsistent + clashed with the rest of the dark editorial UI. -->
+      <div class="cat-grid" id="cat-grid" role="radiogroup" aria-labelledby="cat-label">
+        <div class="cat-opt selected" data-cat="emergency"  data-pfc-on-click="selectCat" data-pfc-arg-this role="radio" tabindex="0" aria-checked="true"><div class="cat-opt-icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M9 1.5l6 2.5v5c0 3.5-2.5 6.5-6 7.5-3.5-1-6-4-6-7.5v-5l6-2.5z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg></div>Emergency</div>
+        <div class="cat-opt" data-cat="home"  data-pfc-on-click="selectCat" data-pfc-arg-this role="radio" tabindex="-1" aria-checked="false"><div class="cat-opt-icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M2 8l7-5.5L16 8v8H2V8z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><path d="M7 16v-4h4v4" stroke="currentColor" stroke-width="1.3"/></svg></div>Home</div>
+        <div class="cat-opt" data-cat="car"  data-pfc-on-click="selectCat" data-pfc-arg-this role="radio" tabindex="-1" aria-checked="false"><div class="cat-opt-icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M2 10l1.5-4.5h11L16 10v4H2v-4z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><circle cx="5.5" cy="13.5" r="1.2" stroke="currentColor" stroke-width="1.3"/><circle cx="12.5" cy="13.5" r="1.2" stroke="currentColor" stroke-width="1.3"/></svg></div>Car</div>
+        <div class="cat-opt" data-cat="travel"  data-pfc-on-click="selectCat" data-pfc-arg-this role="radio" tabindex="-1" aria-checked="false"><div class="cat-opt-icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M2 11l14-8-3 14-4-5-7-1z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg></div>Travel</div>
+        <div class="cat-opt" data-cat="invest"  data-pfc-on-click="selectCat" data-pfc-arg-this role="radio" tabindex="-1" aria-checked="false"><div class="cat-opt-icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M2 14l4-5 3 2 4-7 3 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></div>Invest</div>
+        <div class="cat-opt" data-cat="retire"  data-pfc-on-click="selectCat" data-pfc-arg-this role="radio" tabindex="-1" aria-checked="false"><div class="cat-opt-icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="3.5" stroke="currentColor" stroke-width="1.3"/><path d="M9 1.5v2M9 14.5v2M1.5 9h2M14.5 9h2M3.5 3.5l1.4 1.4M13.1 13.1l1.4 1.4M3.5 14.5l1.4-1.4M13.1 4.9l1.4-1.4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></div>Retire</div>
+        <div class="cat-opt" data-cat="education"  data-pfc-on-click="selectCat" data-pfc-arg-this role="radio" tabindex="-1" aria-checked="false"><div class="cat-opt-icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M9 2L1.5 6 9 10l7.5-4L9 2z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><path d="M4 8v4c0 1.5 2.5 2.5 5 2.5s5-1 5-2.5V8" stroke="currentColor" stroke-width="1.3"/></svg></div>Education</div>
+        <div class="cat-opt" data-cat="wedding"  data-pfc-on-click="selectCat" data-pfc-arg-this role="radio" tabindex="-1" aria-checked="false"><div class="cat-opt-icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="11" r="4.5" stroke="currentColor" stroke-width="1.3"/><path d="M6 6.5L9 2l3 4.5" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg></div>Wedding</div>
+        <div class="cat-opt" data-cat="custom"  data-pfc-on-click="selectCat" data-pfc-arg-this role="radio" tabindex="-1" aria-checked="false"><div class="cat-opt-icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M9 1.5l2.4 4.9 5.4.8-3.9 3.8.9 5.4L9 13.8l-4.8 2.6.9-5.4L1.2 7.2l5.4-.8L9 1.5z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg></div>Custom</div>
       </div>
 
       <!-- Smart target hint -->
-      <div id="smart-hint" style="font-size:12px;color:var(--teal);background:var(--teal-dim);border-radius:var(--r-sm);padding:8px 12px;margin-bottom:14px;display:none;"></div>
+      <div id="smart-hint" role="status" aria-live="polite" style="font-size:12px;color:var(--teal);background:var(--teal-dim);border-radius:var(--r-sm);padding:8px 12px;margin-bottom:14px;display:none;"></div>
 
       <!-- Name -->
       <div style="margin-bottom:14px;">
-        <label class="field-label">Goal name</label>
-        <input type="text" class="field-input" id="m-name" placeholder="e.g. Emergency fund, Dream holiday…"  data-pfc-on-input="modalCalc">
+        <label class="field-label" for="m-name">Goal name</label>
+        <input type="text" class="field-input" id="m-name" maxlength="80" placeholder="e.g. Emergency fund, Dream holiday…"  data-pfc-on-input="modalCalc">
       </div>
 
       <!-- Amounts -->
       <div class="field-row" style="margin-bottom:14px;">
         <div>
-          <label class="field-label">Already saved</label>
-          <input type="number" class="field-input" id="m-current" placeholder="0" min="0"  data-pfc-on-input="modalCalc">
+          <label class="field-label" for="m-current">Already saved</label>
+          <input type="number" inputmode="decimal" class="field-input" id="m-current" placeholder="0" min="0"  data-pfc-on-input="modalCalc">
         </div>
         <div>
-          <label class="field-label">Target amount</label>
-          <input type="number" class="field-input" id="m-target" placeholder="10000" min="1"  data-pfc-on-input="modalCalc">
+          <label class="field-label" for="m-target">Target amount</label>
+          <input type="number" inputmode="decimal" class="field-input" id="m-target" placeholder="10000" min="1"  data-pfc-on-input="modalCalc">
         </div>
       </div>
 
       <!-- Target date (optional) -->
       <div style="margin-bottom:14px;">
-        <label class="field-label">Target date <span style="color:var(--text3);">(optional)</span></label>
+        <label class="field-label" for="m-date">Target date <span style="color:var(--text3);">(optional)</span></label>
         <input type="month" class="field-input" id="m-date"  data-pfc-on-input="modalCalc" style="color-scheme:dark;">
       </div>
 
@@ -820,6 +977,66 @@
   </p>
 </footer>
 </div><!-- /main -->
+
+<!-- G-P0-3: sidebar scrim -->
+<!-- G-P1-D: confirm modal (replaces window.confirm for iOS PWA reliability) -->
+<div class="modal-overlay" id="gl-confirm-modal" role="dialog" aria-modal="true" aria-labelledby="gl-confirm-title">
+  <div class="modal-box" style="max-width:400px;">
+    <div class="modal-head">
+      <div class="modal-title" id="gl-confirm-title">Confirm</div>
+    </div>
+    <div class="modal-body">
+      <p id="gl-confirm-msg" class="gl-confirm-msg"></p>
+      <div style="display:flex;gap:10px;justify-content:flex-end;">
+        <button id="gl-confirm-cancel" type="button" class="gl-confirm-cancel">Cancel</button>
+        <button id="gl-confirm-ok" type="button" class="gl-confirm-ok">Confirm</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="pfc-sidebar-scrim" id="pfc-sidebar-scrim" aria-hidden="true"></div>
+
+<!-- G-P0-3: mobile sidebar toggle. CSP-friendly addEventListener pattern.
+     Mirrors net-worth.html / dashboard.html for cross-page consistency. -->
+<script>
+(function(){
+  var btn   = document.getElementById('pfc-mobile-menu-btn');
+  var nav   = document.getElementById('primary-sidebar');
+  var scrim = document.getElementById('pfc-sidebar-scrim');
+  if (!btn || !nav || !scrim) return;
+  function open(){
+    nav.classList.add('is-open');
+    scrim.classList.add('is-open');
+    btn.setAttribute('aria-expanded','true');
+    scrim.setAttribute('aria-hidden','false');
+    document.body.style.overflow = 'hidden';
+  }
+  function close(){
+    nav.classList.remove('is-open');
+    scrim.classList.remove('is-open');
+    btn.setAttribute('aria-expanded','false');
+    scrim.setAttribute('aria-hidden','true');
+    document.body.style.overflow = '';
+  }
+  function toggle(){
+    if (nav.classList.contains('is-open')) close(); else open();
+  }
+  btn.addEventListener('click', toggle);
+  scrim.addEventListener('click', close);
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && nav.classList.contains('is-open')) close();
+  });
+  nav.querySelectorAll('.nav-item').forEach(function(a){
+    a.addEventListener('click', function(){
+      if (window.matchMedia('(max-width: 800px)').matches) close();
+    });
+  });
+  window.addEventListener('resize', function(){
+    if (!window.matchMedia('(max-width: 800px)').matches) close();
+  });
+})();
+</script>
 
 <script src="js/pfc-inline-bootstrap.js" defer></script>
 </body>
