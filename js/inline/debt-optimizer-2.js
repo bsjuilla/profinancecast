@@ -640,6 +640,10 @@ function renderAll() {
   // shipped piece that turns the banner into a per-debt next-step nudge.
   _renderDtiBanner(totalMin, sym);
   _renderDtiActionableCallout(totalMin, Number(USER && USER.income) || 0, sym);
+  // D-CRO-12-FOLLOWUP-HEAVY (CEO call 2026-05-24) — per-debt-type stacked-bar
+  // visualization INSIDE the existing .dti-banner. Reverses the prior defer
+  // for the visualization piece while keeping the CEO's "no new card" stance.
+  _renderDtiStackedBar(totalMin, Number(USER && USER.income) || 0, sym);
 
   // D-CRO-7-FOLLOWUP (CEO call 2026-05-24) — month-over-month interest
   // delta. Sits right after the DTI banner so the user sees the trend
@@ -943,6 +947,7 @@ function _renderScenariosMenu() {
           <div style="font-size:11px;color:var(--text3);">${debtCount} debt${debtCount !== 1 ? 's' : ''} · ${sym}${tot.toLocaleString()} · ${escHtml(s.strategy || 'avalanche')}</div>
         </div>
         <div class="scenarios-menu-actions">
+          <button type="button" data-scenarios-action="compare" data-scenario-id="${safeId}" title="Compare against current state without replacing">Compare</button>
           <button type="button" data-scenarios-action="load" data-scenario-id="${safeId}">Load</button>
           <button type="button" data-scenarios-action="delete" data-scenario-id="${safeId}" style="color:var(--red);border-color:rgba(224,82,82,0.3);">×</button>
         </div>
@@ -957,6 +962,7 @@ function _renderScenariosMenu() {
     if (action === 'save') btn.addEventListener('click', _saveCurrentAsScenario);
     else if (action === 'load') btn.addEventListener('click', () => _loadScenarioById(sid));
     else if (action === 'delete') btn.addEventListener('click', () => _deleteScenarioById(sid));
+    else if (action === 'compare') btn.addEventListener('click', () => { _scenariosMenuOpen = false; _renderScenariosMenu(); _openScenarioCompare(sid); });
   });
 }
 async function _saveCurrentAsScenario() {
@@ -1014,6 +1020,140 @@ async function _loadScenarioById(id) {
   showToast(`Loaded scenario: ${sc.name}`);
   _srAnnounce(`Scenario loaded. ${sc.name}. ${DEBTS.length} debts.`);
 }
+// D-WORTH-1d (CEO call 2026-05-24) — open the compare modal for a saved
+// scenario vs the CURRENT in-memory state. NEVER mutates either side.
+// Pro-gated UI (toggleScenariosMenu already gates entry to the menu),
+// so this function is only reachable from the Pro-gated dropdown.
+//
+// CONTRACT: this function reads scenario from storage + reads DEBTS in-
+// memory. It calls calcPayoff for BOTH sides independently. It writes
+// NOTHING to storage and DOES NOT mutate the global DEBTS/STRATEGY/EXTRA.
+// The only state change is the modal's display class. "Load this scenario"
+// in the modal footer delegates to _loadScenarioById which has its own
+// _pfcConfirm warning before replacing state.
+function _openScenarioCompare(scenarioId) {
+  if (!scenarioId) return;
+  const arr = _loadDebtScenarios();
+  const sc = arr.find(s => s.id === scenarioId);
+  if (!sc) return;
+  const sym = USER.sym || (window.PFCSym ? PFCSym(USER.currency) : (USER.currency || '$'));
+
+  // Validate scenario debts have all required fields (defence against
+  // tampered storage). If any debt lacks id/balance/rate/minPay, skip
+  // computation for that side and surface a warning row.
+  const scenarioDebts = (sc.debts || []).filter(d =>
+    d && typeof d === 'object' &&
+    Number.isFinite(Number(d.balance)) &&
+    Number.isFinite(Number(d.rate)) &&
+    Number.isFinite(Number(d.minPay))
+  );
+  const scenarioStrategy = sc.strategy === 'snowball' ? 'snowball' : 'avalanche';
+  const scenarioExtra = Math.max(0, Number(sc.extra) || 0);
+
+  // Run BOTH sims independently. Pure-read; no mutation.
+  const currentResult = calcPayoff(DEBTS, STRATEGY, EXTRA);
+  const scenarioResult = scenarioDebts.length ? calcPayoff(scenarioDebts, scenarioStrategy, scenarioExtra) : null;
+
+  // Build per-side metric summary.
+  function _summarize(debts, strategy, extra, result, label) {
+    const totalDebt = debts.reduce((s, d) => s + (Number(d.balance) || 0), 0);
+    const totalMin  = debts.reduce((s, d) => s + (Number(d.minPay)  || 0), 0);
+    if (!result) {
+      return `<div class="compare-col">
+        <div class="compare-col-title">${escHtml(label)}</div>
+        <div class="compare-col-meta">${debts.length} debt${debts.length !== 1 ? 's' : ''}</div>
+        <div class="compare-row" style="color:var(--text3);font-style:italic;">No projection available (scenario data invalid).</div>
+      </div>`;
+    }
+    const debtFreeDate = new Date();
+    debtFreeDate.setMonth(debtFreeDate.getMonth() + result.months);
+    const dfStr = debtFreeDate.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' });
+    return `<div class="compare-col">
+      <div class="compare-col-title">${escHtml(label)}</div>
+      <div class="compare-col-meta">${debts.length} debt${debts.length !== 1 ? 's' : ''} · ${sym}${Math.round(totalDebt).toLocaleString()}</div>
+      <div class="compare-row"><span class="compare-row-label">Strategy</span><span class="compare-row-value">${escHtml(strategy === 'avalanche' ? 'Avalanche' : 'Snowball')}</span></div>
+      <div class="compare-row"><span class="compare-row-label">Extra/mo</span><span class="compare-row-value">${sym}${extra.toLocaleString()}</span></div>
+      <div class="compare-row"><span class="compare-row-label">Monthly payment</span><span class="compare-row-value">${sym}${(Math.round(totalMin) + extra).toLocaleString()}</span></div>
+      <div class="compare-row"><span class="compare-row-label">Debt-free in</span><span class="compare-row-value">${result.months} mo</span></div>
+      <div class="compare-row"><span class="compare-row-label">Debt-free by</span><span class="compare-row-value">${escHtml(dfStr)}</span></div>
+      <div class="compare-row"><span class="compare-row-label">Total interest</span><span class="compare-row-value">${sym}${result.totalInterest.toLocaleString()}</span></div>
+    </div>`;
+  }
+  const currentSummary  = _summarize(DEBTS, STRATEGY, EXTRA, currentResult, 'Current state');
+  const scenarioSummary = _summarize(scenarioDebts, scenarioStrategy, scenarioExtra, scenarioResult, sc.name || 'Saved scenario');
+
+  // Delta row: scenario vs current. Tinted by who's better.
+  let deltaRow = '';
+  if (currentResult && scenarioResult) {
+    const monthsDelta = currentResult.months - scenarioResult.months; // positive = scenario faster
+    const interestDelta = currentResult.totalInterest - scenarioResult.totalInterest; // positive = scenario cheaper
+    let tone, text;
+    if (monthsDelta > 0 && interestDelta > 0) {
+      tone = 'win';
+      text = `<strong>${escHtml(sc.name)}</strong> beats current: <strong>${monthsDelta} month${monthsDelta !== 1 ? 's' : ''} sooner</strong> and <strong>${sym}${Math.abs(interestDelta).toLocaleString()}</strong> less interest.`;
+    } else if (monthsDelta < 0 && interestDelta < 0) {
+      tone = 'loss';
+      text = `Current beats <strong>${escHtml(sc.name)}</strong>: ${Math.abs(monthsDelta)} month${Math.abs(monthsDelta) !== 1 ? 's' : ''} sooner and ${sym}${Math.abs(interestDelta).toLocaleString()} less interest.`;
+    } else if (monthsDelta === 0 && interestDelta === 0) {
+      tone = 'even';
+      text = `Both scenarios reach debt-free at the same time with identical interest. Pick based on monthly payment fit.`;
+    } else {
+      // Mixed: one faster, one cheaper. Spell out both.
+      tone = 'even';
+      const monthsPart = monthsDelta > 0
+        ? `<strong>${escHtml(sc.name)}</strong> finishes ${monthsDelta} mo sooner`
+        : monthsDelta < 0
+          ? `Current finishes ${Math.abs(monthsDelta)} mo sooner`
+          : 'Tied on time';
+      const interestPart = interestDelta > 0
+        ? `<strong>${escHtml(sc.name)}</strong> saves ${sym}${interestDelta.toLocaleString()}`
+        : interestDelta < 0
+          ? `Current saves ${sym}${Math.abs(interestDelta).toLocaleString()}`
+          : 'Tied on interest';
+      text = `${monthsPart}; ${interestPart}.`;
+    }
+    deltaRow = `<div class="compare-delta-row compare-delta-row--${tone}">${text}</div>`;
+  }
+
+  // Assemble modal body. Footer "Load" button uses _loadScenarioById which
+  // has its OWN _pfcConfirm warning + state-replace; this modal stays
+  // non-destructive. data-action wired below.
+  const safeScId = escHtml(scenarioId);
+  const body = document.getElementById('compare-modal-body');
+  if (!body) return;
+  body.innerHTML = deltaRow + `<div class="compare-grid">${currentSummary}${scenarioSummary}</div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;">
+      <button type="button" class="topbar-btn" data-compare-action="close">Close</button>
+      <button type="button" class="topbar-btn primary" data-compare-action="load" data-compare-scenario-id="${safeScId}">Load this scenario instead</button>
+    </div>`;
+  // Wire CSP-clean handlers post-render.
+  body.querySelectorAll('[data-compare-action]').forEach(btn => {
+    const a = btn.getAttribute('data-compare-action');
+    if (a === 'close') btn.addEventListener('click', _closeScenarioCompare);
+    else if (a === 'load') {
+      const sid = btn.getAttribute('data-compare-scenario-id');
+      btn.addEventListener('click', () => {
+        _closeScenarioCompare();
+        // Delegate to existing _loadScenarioById (already has _pfcConfirm).
+        _loadScenarioById(sid);
+      });
+    }
+  });
+  // Open + focus management.
+  const modal = document.getElementById('scenarios-compare-modal');
+  if (modal) {
+    modal.classList.add('open');
+    // Focus the Close button so Escape/Enter have a clean target.
+    const closeBtn = modal.querySelector('.modal-close');
+    if (closeBtn) closeBtn.focus();
+  }
+  _srAnnounce('Scenario comparison opened.');
+}
+function _closeScenarioCompare() {
+  const modal = document.getElementById('scenarios-compare-modal');
+  if (modal) modal.classList.remove('open');
+}
+
 async function _deleteScenarioById(id) {
   const arr = _loadDebtScenarios();
   const sc = arr.find(s => s.id === id);
@@ -1072,6 +1212,94 @@ function _renderInterestDelta(totalMonthlyInterest, sym) {
   // (locale-safe, no user data). absDelta is numeric.
   banner.innerHTML = `<span style="font-size:16px;line-height:1;">${arrow}</span><div style="flex:1;">Your monthly interest is <strong>${sym}${Math.round(absDelta).toLocaleString()} ${direction}</strong> than ${escHtml(priorMonthLabel)} — ${delta < 0 ? "you're paying down faster" : 'balances rose slightly. Drag the slider above or log a payment to recover.'}</div>`;
   wrap.appendChild(banner);
+}
+
+// D-CRO-12-FOLLOWUP-HEAVY (CEO call 2026-05-24) — stacked-bar visualization
+// of per-debt-type DTI contribution, rendered INSIDE the existing
+// `.dti-banner` element (no new card — that was rejected as page bloat).
+// Each segment = (sum of that type's minPay) / income, capped collectively
+// at 100% with overflow notation. Threshold marker at 36% (vertical line
+// overlay). Hover/focus title on each segment surfaces the type label +
+// percentage. Idempotent re-renders (removes any prior .dti-bar block first).
+function _renderDtiStackedBar(totalMin, income, sym) {
+  const banner = document.querySelector('.dti-banner');
+  if (!banner) return;
+  // Idempotent: remove any prior bar so re-renders don't stack duplicates.
+  const existing = banner.querySelector('.dti-bar');
+  if (existing) existing.remove();
+  if (!DEBTS || DEBTS.length < 1) return;
+  if (!Number.isFinite(income) || income <= 0) return;
+
+  // Aggregate per-type minPay totals. Object.create(null) defends against
+  // prototype pollution if a debt's `type` field were tampered to
+  // '__proto__' or 'constructor' (same defence as elsewhere on this page).
+  const byType = Object.create(null);
+  let totalShown = 0;
+  DEBTS.forEach(d => {
+    const t = d.type || 'other';
+    const mp = Number(d.minPay) || 0;
+    if (mp <= 0) return;
+    if (!byType[t]) byType[t] = 0;
+    byType[t] += mp;
+    totalShown += mp;
+  });
+  if (totalShown <= 0) return;
+
+  // Cap each segment width at the type's share OF INCOME (not of total
+  // shown). If summed shares exceed 100% we display them up to the cap
+  // and surface an overflow indicator below.
+  const totalPct = (totalShown / income) * 100;
+  const overCap = totalPct > 100;
+  const scale = overCap ? (100 / totalPct) : 1; // squish only if overflow
+
+  // Build segments sorted by size descending so the dominant type shows first
+  // on the left. Minimum 0.5% (~2px on a 400px-wide bar) visual width per
+  // segment so sub-pixel types stay perceivable on mobile; in the legend
+  // below the bar, the full breakdown with exact percentages is always
+  // shown regardless of segment width, so no information is hidden.
+  const entries = Object.entries(byType).sort((a, b) => b[1] - a[1]);
+
+  // Build SVG (a flexible-width <svg> with proportional <rect> segments and
+  // a vertical line at the 36% threshold). 100×12 viewBox = 1px per percent.
+  let x = 0;
+  let segs = '';
+  let legendRows = '';
+  for (const [type, mp] of entries) {
+    const pctOfIncome = (mp / income) * 100;
+    const visualWidth = Math.max(0.5, pctOfIncome * scale);
+    const tc = TYPE_COLORS[type] || TYPE_COLORS.other;
+    const safeLabel = (tc.label || type);
+    const titleText = escHtml(safeLabel + ' — ' + pctOfIncome.toFixed(1) + '% of income');
+    // Each segment is a <rect> with currentColor-via-fill (since SVG fills
+    // need explicit color, not currentColor for our tinted hex palette).
+    segs += `<rect x="${x.toFixed(2)}" y="0" width="${visualWidth.toFixed(2)}" height="12" fill="${tc.color}"><title>${titleText}</title></rect>`;
+    // Legend item: small color swatch + label + percentage. Keeps the
+    // visualization readable for users on colorblind / forced-colors mode
+    // and SR users (the bar segments are decorative; the legend is data).
+    legendRows += `<span class="dti-bar-legend-item"><span class="dti-bar-legend-swatch" style="background:${tc.color};" aria-hidden="true"></span>${escHtml(safeLabel)} <span style="color:var(--text3);">${pctOfIncome.toFixed(1)}%</span></span>`;
+    x += visualWidth;
+  }
+  // Threshold marker at 36% (or scaled position if overflow squished).
+  const thresholdX = Math.min(100, 36 * scale);
+  // SR-only summary text for users with the bar collapsed visually.
+  const srSummary = 'Per-debt-type debt-to-income breakdown: ' +
+    entries.map(([t, mp]) => (TYPE_COLORS[t] || TYPE_COLORS.other).label + ' ' + ((mp / income) * 100).toFixed(1) + '%').join(', ') +
+    '. Comfort threshold is 36% of income.';
+
+  const wrap = document.createElement('div');
+  wrap.className = 'dti-bar';
+  wrap.innerHTML = `<div class="dti-bar-track" role="img" aria-label="${escHtml(srSummary)}">
+    <svg viewBox="0 0 100 12" preserveAspectRatio="none" width="100%" height="12" aria-hidden="true">
+      ${segs}
+      <line x1="${thresholdX.toFixed(2)}" y1="-1" x2="${thresholdX.toFixed(2)}" y2="13" stroke="#0B1410" stroke-width="0.8" stroke-dasharray="1,1"/>
+      <line x1="${thresholdX.toFixed(2)}" y1="-1" x2="${thresholdX.toFixed(2)}" y2="13" stroke="#F0EDE2" stroke-width="0.4"/>
+    </svg>
+    <div class="dti-bar-threshold-label" style="left:${thresholdX.toFixed(2)}%;">36% comfort</div>
+  </div>
+  <div class="dti-bar-legend">${legendRows}</div>
+  ${overCap ? '<div class="dti-bar-overflow">Total debts exceed 100% of income — the bar is scaled to fit.</div>' : ''}`;
+
+  banner.appendChild(wrap);
 }
 
 // D-CRO-12-FOLLOWUP (CEO call 2026-05-24) — actionable per-debt callout
@@ -1772,7 +2000,26 @@ function showToast(msg) {
 }
 
 // ── KEYBOARD ──
-document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+// D-WORTH-1d — Escape closes the compare modal too (in addition to the
+// add/edit modal). Both modals coexist; whichever is open absorbs the key.
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  const compareModal = document.getElementById('scenarios-compare-modal');
+  if (compareModal && compareModal.classList.contains('open')) {
+    _closeScenarioCompare();
+    return;
+  }
+  closeModal();
+});
+// D-WORTH-1d — click-outside-overlay closes the compare modal (consistent
+// with native dialog behaviour; the existing add/edit modal doesn't have
+// this and we don't want to change that behaviour here).
+document.addEventListener('click', e => {
+  const modal = document.getElementById('scenarios-compare-modal');
+  if (!modal || !modal.classList.contains('open')) return;
+  // Only close when click is on the overlay itself, NOT a child.
+  if (e.target === modal) _closeScenarioCompare();
+});
 
 // ── START ──
 init();

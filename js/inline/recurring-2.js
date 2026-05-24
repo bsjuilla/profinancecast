@@ -276,6 +276,19 @@ function _backfillIds() {
         needsSave = true;
       }
     }
+    // D-DES-2-NEXT backfill — for entries that have NO brand-specific icon
+    // (heuristic: r.icon equals the CAT_META default for their category),
+    // promote them to the new iconKey path so they render with SVGs going
+    // forward. Brand-matched entries (Netflix/Spotify/etc.) keep their
+    // distinctive emoji — no iconKey assigned, so render falls back to
+    // the legacy emoji path.
+    if (!r.iconKey && r.cat && CAT_META[r.cat]) {
+      const catDefault = CAT_META[r.cat].icon;
+      if (r.icon === catDefault) {
+        r.iconKey = CAT_META[r.cat].iconKey;
+        needsSave = true;
+      }
+    }
   });
   if (needsSave) { try { PFCStorage.setJSON('recurrings', RECURRINGS); } catch (_) {} }
 }
@@ -291,15 +304,40 @@ function _daysUntil(iso) {
   return Math.round((target.getTime() - nowNoon.getTime()) / 86400000);
 }
 
+// D-DES-2-NEXT (CEO call 2026-05-24) — category meta now carries `iconKey`
+// pointing at the central `js/pfc-icons.js` module. `icon` (emoji) is kept
+// as a legacy / fallback string so existing stored entries still render if
+// PFCIcons fails to load. Detection path sets `r.iconKey = CAT_META[cat].iconKey`
+// ONLY when no BRAND_DB match — brand-specific emojis stay (Netflix 🎬,
+// Spotify 🎵, etc. are brand identifiers, not category decorations).
 const CAT_META = {
-  streaming: { icon: '🎬', color: '#E05252', label: 'Streaming' },
-  software:  { icon: '💻', color: '#3B82F6', label: 'Software' },
-  utilities: { icon: '⚡', color: '#F5A623', label: 'Utilities' },
-  insurance: { icon: '🛡️', color: '#A78BFA', label: 'Insurance' },
-  finance:   { icon: '🏦', color: '#22C55E', label: 'Finance' },
-  health:    { icon: '❤️', color: '#F97316', label: 'Health' },
-  other:     { icon: '📄', color: '#B8C2BC', label: 'Other' },
+  streaming: { icon: '🎬', color: '#E05252', label: 'Streaming', iconKey: 'streaming' },
+  software:  { icon: '💻', color: '#3B82F6', label: 'Software',  iconKey: 'software'  },
+  utilities: { icon: '⚡', color: '#F5A623', label: 'Utilities', iconKey: 'utilities' },
+  insurance: { icon: '🛡️', color: '#A78BFA', label: 'Insurance', iconKey: 'insurance' },
+  finance:   { icon: '🏦', color: '#22C55E', label: 'Finance',   iconKey: 'finance'   },
+  health:    { icon: '❤️', color: '#F97316', label: 'Health',    iconKey: 'health'    },
+  other:     { icon: '📄', color: '#B8C2BC', label: 'Other',     iconKey: 'other'     },
 };
+
+// D-DES-2-NEXT helper — icon render precedence (documented intentionally):
+//   1. If `r.iconKey` is set AND PFCIcons module is loaded, render the SVG.
+//      (NEW entries that fell back to CAT_META during detect get this path.)
+//   2. Else if `r.icon` is set, render it as escaped text (the brand emoji
+//      OR the legacy CAT_META emoji from pre-migration entries).
+//   3. Else fall back to CAT_META[r.cat].icon (default emoji), escaped.
+// This precedence is the CONTRACT for /recurring renders. Any change to it
+// breaks visual consistency across mixed legacy + new entries.
+function _renderRecurringIcon(r) {
+  if (r && r.iconKey && typeof PFCIcons !== 'undefined' && typeof PFCIcons.get === 'function') {
+    // PFCIcons.get returns a trusted hardcoded SVG string; safe to interpolate.
+    return PFCIcons.get(r.iconKey);
+  }
+  if (r && r.icon) return escHtml(r.icon);
+  const cat = r && r.cat;
+  const fallback = (CAT_META[cat] && CAT_META[cat].icon) || '📄';
+  return escHtml(fallback);
+}
 
 // ── BRAND RECOGNITION ──
 const BRAND_DB = {
@@ -583,6 +621,10 @@ function detectRecurrings(txns) {
     const brand = lookupBrand(g.raw);
     const cat   = brand?.cat || guessCategory(g.raw);
     const icon  = brand?.icon || CAT_META[cat]?.icon || '📄';
+    // D-DES-2-NEXT — only set iconKey when there's NO brand match. Brand
+    // emoji wins (it's the brand identifier); iconKey is the SVG fallback
+    // for generic category entries.
+    const iconKey = brand ? null : (CAT_META[cat]?.iconKey || 'other');
 
     // All amounts seen
     const amounts = occ.map(o => o.amount);
@@ -603,6 +645,7 @@ function detectRecurrings(txns) {
       rawDesc:       g.raw,
       cat,
       icon,
+      iconKey,                       // D-DES-2-NEXT: null when brand match, key when category fallback
       freq,
       freqLabel,
       monthlyAmount: Math.round(monthlyAmount * 100) / 100,
@@ -1011,7 +1054,7 @@ function renderCards() {
         }
       }
     }
-    badges.push(`<span class="badge" style="background:${colorSafe};opacity:0.85;color:#fff;">${escHtml(r.icon||'')} ${escHtml(meta.label||'')}</span>`);
+    badges.push(`<span class="badge" style="background:${colorSafe};opacity:0.85;color:#fff;display:inline-flex;align-items:center;gap:4px;">${_renderRecurringIcon(r)} ${escHtml(meta.label||'')}</span>`);
     if (r.freqLabel!=='Monthly') badges.push(`<span class="badge badge-blue">${escHtml(r.freqLabel||'')}</span>`);
     // R-WORTH-1 fix (CEO call) — per-card "Renews in N days" badge so the
     // user sees the renewal clock on every card, not just the banner.
@@ -1033,7 +1076,7 @@ function renderCards() {
     const isSnoozedNow = _isSnoozed(r.id);
     return `<div class="rec-card ${r.priceIncreased&&!isCancelled?'price-up':''} ${isCancelled?'cancelled':''}" data-rec-id="${safeId}">
       <div class="rec-top">
-        <div class="rec-icon" style="background:${colorSafe};opacity:0.5;">${escHtml(r.icon||'')}</div>
+        <div class="rec-icon" style="background:${colorSafe};opacity:0.5;color:#fff;">${_renderRecurringIcon(r)}</div>
         <div class="rec-info">
           <div class="rec-name">${escHtml(r.name)}</div>
           <div class="rec-meta">Since ${firstFmt} · ${(r.occurrences||[]).length} charges · last ${lastFmt}</div>
@@ -1260,7 +1303,9 @@ async function saveManual() {
     .toISOString().slice(0, 10);
   RECURRINGS.unshift({
     id: _mintId(),
-    name, rawDesc:name, cat, icon: CAT_META[cat]?.icon||'📄',
+    // D-DES-2-NEXT — manual entry always uses CAT_META iconKey (no brand match
+    // for manual; the user picks a category and gets the SVG fallback).
+    name, rawDesc:name, cat, icon: CAT_META[cat]?.icon||'📄', iconKey: CAT_META[cat]?.iconKey || 'other',
     freq, freqLabel: freq.charAt(0).toUpperCase()+freq.slice(1),
     monthlyAmount: Math.round(monthly*100)/100,
     annualAmount:  Math.round(monthly*12*100)/100,

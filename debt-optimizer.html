@@ -209,6 +209,31 @@
   .dti-banner--bad  .dti-pct{color:var(--red);}
   /* D-CRO-12-FOLLOWUP — actionable per-debt callout appended inside .dti-banner. */
   .dti-callout{font-family:var(--font-body);}
+  /* D-CRO-12-FOLLOWUP-HEAVY — stacked-bar viz INSIDE .dti-banner (NOT a new card).
+     Lives below the actionable callout. SVG fills 100% width; legend wraps. */
+  .dti-bar{margin-top:10px;padding-top:10px;border-top:1px dashed rgba(255,255,255,0.08);}
+  .dti-bar-track{position:relative;width:100%;}
+  .dti-bar-track svg{display:block;border-radius:4px;overflow:hidden;}
+  .dti-bar-threshold-label{position:absolute;top:-14px;transform:translateX(-50%);font-size:9px;color:var(--text3);white-space:nowrap;font-family:var(--font-body);}
+  .dti-bar-legend{display:flex;flex-wrap:wrap;gap:8px 14px;margin-top:8px;font-size:11px;color:var(--text2);font-family:var(--font-body);}
+  .dti-bar-legend-item{display:inline-flex;align-items:center;gap:5px;}
+  .dti-bar-legend-swatch{display:inline-block;width:10px;height:10px;border-radius:2px;flex-shrink:0;}
+  .dti-bar-overflow{margin-top:6px;font-size:11px;color:var(--amber);font-family:var(--font-body);font-style:italic;}
+  /* D-WORTH-1d — scenarios compare modal. Reuses existing .modal-overlay
+     class (defined elsewhere in this stylesheet, role=dialog, escape-close
+     handled by the shared keydown listener at debt-optimizer-2.js:593). */
+  .compare-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px;}
+  .compare-col{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px 16px;}
+  .compare-col-title{font-family:var(--font-display);font-size:13px;font-weight:700;margin-bottom:10px;color:var(--text);}
+  .compare-col-meta{font-size:11px;color:var(--text3);margin-bottom:12px;}
+  .compare-row{display:flex;justify-content:space-between;font-size:12px;color:var(--text2);padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.04);}
+  .compare-row:last-child{border-bottom:none;}
+  .compare-row-label{color:var(--text3);}
+  .compare-row-value{font-family:var(--font-display);font-weight:600;color:var(--text);}
+  .compare-delta-row{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-radius:var(--r-sm);margin-bottom:14px;font-size:13px;font-family:var(--font-body);}
+  .compare-delta-row--win{background:rgba(43,182,125,0.1);border:1px solid rgba(43,182,125,0.3);color:var(--text);}
+  .compare-delta-row--loss{background:rgba(224,82,82,0.08);border:1px solid rgba(224,82,82,0.25);color:var(--text);}
+  .compare-delta-row--even{background:rgba(138,155,176,0.08);border:1px solid rgba(138,155,176,0.2);color:var(--text2);}
   /* D-CRO-7-FOLLOWUP — month-over-month interest delta banner. Tinted like
      the DTI banner but with smaller padding (it's a complement, not a replacement). */
   .interest-delta{border-radius:var(--r-sm);padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;gap:10px;font-size:12.5px;line-height:1.5;font-family:var(--font-body);}
@@ -832,6 +857,24 @@
   </div>
 </div>
 
+<!-- D-WORTH-1d (CEO call 2026-05-24) — scenarios compare modal. Opened by
+     _openScenarioCompare, closed by _closeScenarioCompare or Escape. Pure
+     visualization — NEVER mutates current state or the saved scenario.
+     "Load this scenario" button routes through the existing _loadScenarioById
+     flow (which has its own _pfcConfirm warning). Reuses .modal-overlay
+     styles (z-index 100, blur backdrop, focus-trappable). -->
+<div class="modal-overlay" id="scenarios-compare-modal" role="dialog" aria-modal="true" aria-labelledby="compare-modal-title">
+  <div class="modal-box" style="max-width:640px;">
+    <div class="modal-head">
+      <div class="modal-title" id="compare-modal-title">Compare scenarios</div>
+      <button type="button" class="modal-close" data-pfc-on-click="_closeScenarioCompare" aria-label="Close compare dialog">✕</button>
+    </div>
+    <div class="modal-body" id="compare-modal-body">
+      <!-- Populated by _openScenarioCompare(scenarioId) at render time. -->
+    </div>
+  </div>
+</div>
+
 <!-- D-BUG-10 + D-SEC-15 (audit 2026-05-24) — confirm modal markup so
      _pfcConfirm / _pfcAlert in debt-optimizer-2.js can find their targets.
      Without this, the modal helpers fall back to native confirm/alert (which
@@ -856,7 +899,7 @@
      SR users hear changes without losing focus. Updated by _srAnnounce(). -->
 <div id="sr-announce" class="visually-hidden" role="status" aria-live="polite" aria-atomic="true"></div>
 
-<script src="./js/inline/debt-optimizer-2.js?v=20260524g"></script>
+<script src="./js/inline/debt-optimizer-2.js?v=20260524h"></script>
   <!-- Route guard: redirect unauthed users to sign-in -->
   <script src="./js/inline/debt-optimizer-3.js?v=20260524d"></script>
   <!-- D-P0-8 — scrim element for mobile drawer; shared sidebar JS toggles. -->

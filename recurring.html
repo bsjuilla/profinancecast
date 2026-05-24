@@ -346,6 +346,12 @@
   <script src="js/pfc-currency.js" defer></script>
   <script src="js/pfc-user.js" defer></script>
   <script src="js/pfc-entitlements.js" defer></script>
+  <!-- D-DES-2-NEXT (CEO call 2026-05-24) — central SVG icon module shared
+       with /debt-optimizer. Inline SVGs replace category emoji fallbacks
+       in CAT_META; BRAND_DB per-brand emojis (Netflix/Spotify/etc.) stay
+       as brand identifiers. Render precedence documented in
+       js/inline/recurring-2.js _renderRecurringIcon. -->
+  <script src="js/pfc-icons.js?v=20260524d" defer></script>
   <script src="js/pfc-motion.js" defer></script>
   <script src="js/pfc-anim.js" defer></script>
   <!-- v3 reskin: new fonts + emerald palette overrides -->
@@ -744,7 +750,7 @@
      deferred together to avoid the DASH-PROD-FIX race (sync body script
      running before deferred head scripts → ReferenceError on PFCStorage).
      Defer also fixes R-P0-3 (init() ran before DOM ready → cold-load crash). -->
-<script src="./js/inline/recurring-2.js?v=20260524d" defer></script>
+<script src="./js/inline/recurring-2.js?v=20260524e" defer></script>
   <!-- Route guard: redirect unauthed users to sign-in -->
   <script src="./js/inline/recurring-3.js?v=20260524d" defer></script>
 <footer class="site-footer" role="contentinfo">
