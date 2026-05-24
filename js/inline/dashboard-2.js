@@ -162,7 +162,18 @@ function recalcForecast() {
   const debtPay = USER.debtPay;
   const dMonths = debtPay > 0 && USER.debt > 0 ? Math.ceil(USER.debt / Math.max(1, debtPay)) : 0;
   const dbEl = document.getElementById('m-debt');
-  if (dbEl) dbEl.textContent = dMonths > 0 ? dMonths + ' mo' : 'Debt free!';
+  // DASH-P2-A DBUG-11 fix — tri-state label. `dMonths = 0` previously
+  // always rendered "Debt free!" even when USER.debt was > 0 (just no
+  // monthly payment set — extremely common mid-onboarding). Now three
+  // distinct states:
+  //   - dMonths > 0 → "12 mo" (clear payoff timeline)
+  //   - debt > 0 && dMonths === 0 → "Add payment" (call to action)
+  //   - debt === 0 → "Debt free!" (genuine win)
+  if (dbEl) {
+    dbEl.textContent = dMonths > 0
+      ? (dMonths + ' mo')
+      : ((USER.debt || 0) > 0 ? 'Add payment' : 'Debt free!');
+  }
 
   // ── HEALTH SCORE recalc ──
   const savePct = income > 0 ? surplus / income : 0;
@@ -170,7 +181,11 @@ function recalcForecast() {
   if (savePct >= 0.2) score += 30; else if (savePct >= 0.1) score += 20; else if (savePct > 0) score += 10;
   if (surplus > 0) score += 20;
   if (USER.debt === 0) score += 25; else if (USER.debt < assets) score += 12;
-  if (assets >= surplus * 3) score += 15; else if (assets > 0) score += 8;
+  // DASH-P2-A DBUG-10 fix — was `assets >= surplus * 3`. With surplus<=0
+  // (expenses > income) the threshold collapses to <=0 → any positive
+  // assets awarded the bonus. Emergency-fund benchmark is monthly EXPENSES
+  // not monthly surplus. Three months of expenses is the canonical floor.
+  if (assets >= expenses * 3) score += 15; else if (assets > 0) score += 8;
   if (d.base[12] > d.base[0]) score += 10;
   score = Math.min(99, Math.max(5, score));
 
@@ -589,7 +604,11 @@ function updateAllCards() {
   if (savePct >= 0.2) score += 30; else if (savePct >= 0.1) score += 20; else if (savePct > 0) score += 10;
   if (surplus > 0) score += 20;
   if (USER.debt === 0) score += 25; else if (USER.debt < assets) score += 12;
-  if (assets >= surplus * 3) score += 15; else if (assets > 0) score += 8;
+  // DASH-P2-A DBUG-10 fix — was `assets >= surplus * 3`. With surplus<=0
+  // (expenses > income) the threshold collapses to <=0 → any positive
+  // assets awarded the bonus. Emergency-fund benchmark is monthly EXPENSES
+  // not monthly surplus. Three months of expenses is the canonical floor.
+  if (assets >= expenses * 3) score += 15; else if (assets > 0) score += 8;
   score = Math.min(99, Math.max(5, score));
 
   // Update metric cards
@@ -598,7 +617,18 @@ function updateAllCards() {
   const svEl = document.getElementById('m-savings');
   if (svEl) svEl.textContent = sym + Math.round(Math.max(0,surplus)).toLocaleString();
   const dbEl = document.getElementById('m-debt');
-  if (dbEl) dbEl.textContent = dMonths > 0 ? dMonths + ' mo' : 'Debt free!';
+  // DASH-P2-A DBUG-11 fix — tri-state label. `dMonths = 0` previously
+  // always rendered "Debt free!" even when USER.debt was > 0 (just no
+  // monthly payment set — extremely common mid-onboarding). Now three
+  // distinct states:
+  //   - dMonths > 0 → "12 mo" (clear payoff timeline)
+  //   - debt > 0 && dMonths === 0 → "Add payment" (call to action)
+  //   - debt === 0 → "Debt free!" (genuine win)
+  if (dbEl) {
+    dbEl.textContent = dMonths > 0
+      ? (dMonths + ' mo')
+      : ((USER.debt || 0) > 0 ? 'Add payment' : 'Debt free!');
+  }
   const scEl = document.getElementById('m-score');
   if (scEl) { scEl.textContent = score; scEl.style.color = score >= 70 ? 'var(--teal)' : score >= 40 ? 'var(--amber)' : 'var(--red)'; }
 
@@ -688,6 +718,18 @@ function loadGoals() {
   } catch(e) {
     GOALS = [];
   }
+  // DASH-P2-A DBUG-14 fix — backfill stable `id` field on any goal that
+  // pre-dates the id rollout. editGoal/deleteGoal now look up by id
+  // instead of array index, so the "edit clicked wrong row" race after
+  // an out-of-band rehydrate that re-orders the array is gone.
+  let needsSave = false;
+  GOALS.forEach(g => {
+    if (!g.id) {
+      g.id = 'g_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
+      needsSave = true;
+    }
+  });
+  if (needsSave) saveGoals();
   renderGoals();
 }
 
@@ -708,33 +750,54 @@ function renderGoals() {
     return;
   }
 
-  list.innerHTML = GOALS.map((g, i) => {
-    const pct      = Math.min(100, Math.round((g.current / Math.max(1, g.target)) * 100));
-    const remaining = Math.max(0, g.target - g.current);
-    const months   = surplus > 0 ? Math.ceil(remaining / surplus) : null;
-    const barColor = g.color || 'var(--teal)';
-    const pctColor = pct >= 100 ? 'var(--teal)' : barColor;
+  list.innerHTML = GOALS.map((g) => {
+    // DASH-P2-A DBUG-13 fix — target=0 previously caused
+    // `Math.round((current / 1) * 100)` to compute a huge number capped
+    // to 100% — goal with zero target showed "100% Done". Now show "—"
+    // explicitly when target is invalid; users see they need to set a target.
+    const hasTarget = g.target > 0;
+    const pct       = hasTarget ? Math.min(100, Math.round((g.current / g.target) * 100)) : 0;
+    const remaining = hasTarget ? Math.max(0, g.target - g.current) : 0;
+    const months    = (hasTarget && surplus > 0) ? Math.ceil(remaining / surplus) : null;
+    const barColor  = g.color || 'var(--teal)';
+    const pctColor  = pct >= 100 ? 'var(--teal)' : barColor;
+    const pctText   = hasTarget ? (pct + '%') : '—';
+    // DASH-P2-A DBUG-14: use stable id (not array index) so out-of-band
+    // re-renders can't cause the edit click to land on the wrong goal.
     return `
-      <div style="position:relative;">
+      <div style="position:relative;" data-goal-id="${g.id}">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
           <div>
             <div style="font-size:13.5px;font-weight:500;">${g.name}</div>
             <div style="font-size:11px;color:var(--text3);">${sym}${Math.round(g.current).toLocaleString()} of ${sym}${Math.round(g.target).toLocaleString()}</div>
           </div>
           <div style="display:flex;align-items:center;gap:8px;">
-            <div style="font-size:13px;font-weight:600;color:${pctColor};">${pct}%</div>
+            <div style="font-size:13px;font-weight:600;color:${pctColor};">${pctText}</div>
             <div style="display:flex;gap:4px;">
-              <button onclick="editGoal(${i})" style="width:22px;height:22px;border-radius:5px;background:var(--bg3);border:1px solid var(--border);cursor:pointer;font-size:11px;color:var(--text3);display:flex;align-items:center;justify-content:center;" title="Edit">✏</button>
-              <button onclick="deleteGoal(${i})" style="width:22px;height:22px;border-radius:5px;background:var(--bg3);border:1px solid var(--border);cursor:pointer;font-size:11px;color:var(--red);display:flex;align-items:center;justify-content:center;" title="Delete">✕</button>
+              <button onclick="editGoalById('${g.id}')" style="width:22px;height:22px;border-radius:5px;background:var(--bg3);border:1px solid var(--border);cursor:pointer;font-size:11px;color:var(--text3);display:flex;align-items:center;justify-content:center;" title="Edit">✏</button>
+              <button onclick="deleteGoalById('${g.id}')" style="width:22px;height:22px;border-radius:5px;background:var(--bg3);border:1px solid var(--border);cursor:pointer;font-size:11px;color:var(--red);display:flex;align-items:center;justify-content:center;" title="Delete">✕</button>
             </div>
           </div>
         </div>
         <div class="progress-bar"><div class="progress-fill" style="width:${pct}%;background:${barColor};"></div></div>
         <div style="font-size:11px;color:var(--text3);margin-top:4px;">
-          ${pct >= 100 ? 'Goal reached.' : months ? `~${months} month${months===1?'':'s'} to reach goal` : 'Increase your surplus to reach this goal'}
+          ${!hasTarget ? 'Set a target amount.' : pct >= 100 ? 'Goal reached.' : months ? `~${months} month${months===1?'':'s'} to reach goal` : 'Increase your surplus to reach this goal'}
         </div>
       </div>`;
   }).join('');
+
+  // DASH-P2-A DBUG-14: wrapper helpers that translate id → array index
+  // before delegating to the existing editGoal / deleteGoal. Idempotent.
+  if (typeof window.editGoalById !== 'function') {
+    window.editGoalById = function(id) {
+      const idx = GOALS.findIndex(g => g.id === id);
+      if (idx >= 0 && typeof editGoal === 'function') editGoal(idx);
+    };
+    window.deleteGoalById = function(id) {
+      const idx = GOALS.findIndex(g => g.id === id);
+      if (idx >= 0 && typeof deleteGoal === 'function') deleteGoal(idx);
+    };
+  }
 
   const badge = document.querySelector('.badge-blue');
   if (badge) badge.textContent = GOALS.length + ' active goal' + (GOALS.length===1?'':'s');
@@ -788,8 +851,8 @@ function renderGoalsPanel() {
             <div style="font-size:11px;color:var(--text3);">${pct>=100?'✓ Done':months?'~'+months+'mo':'-'}</div>
           </div>
           <div style="display:flex;gap:4px;">
-            <button onclick="editGoal(${i})" style="width:24px;height:24px;border-radius:5px;background:var(--bg3);border:1px solid var(--border);cursor:pointer;font-size:11px;color:var(--text3);display:flex;align-items:center;justify-content:center;" title="Edit">✏</button>
-            <button onclick="deleteGoal(${i})" style="width:24px;height:24px;border-radius:5px;background:var(--bg3);border:1px solid var(--border);cursor:pointer;font-size:11px;color:var(--red);display:flex;align-items:center;justify-content:center;" title="Delete">✕</button>
+            <button onclick="editGoalById('${g.id}')" style="width:24px;height:24px;border-radius:5px;background:var(--bg3);border:1px solid var(--border);cursor:pointer;font-size:11px;color:var(--text3);display:flex;align-items:center;justify-content:center;" title="Edit">✏</button>
+            <button onclick="deleteGoalById('${g.id}')" style="width:24px;height:24px;border-radius:5px;background:var(--bg3);border:1px solid var(--border);cursor:pointer;font-size:11px;color:var(--red);display:flex;align-items:center;justify-content:center;" title="Delete">✕</button>
           </div>
         </div>
       </div>
@@ -872,11 +935,16 @@ function saveGoal() {
   if (!name)    { document.getElementById('goal-name').style.borderColor = 'rgba(224,82,82,.6)'; setTimeout(()=>document.getElementById('goal-name').style.borderColor='',1500); return; }
   if (!target || target <= 0) { document.getElementById('goal-target').style.borderColor = 'rgba(224,82,82,.6)'; setTimeout(()=>document.getElementById('goal-target').style.borderColor='',1500); return; }
 
+  // DASH-P2-A DBUG-14: stable id per goal (see loadGoals backfill above).
   const goal = { name, current, target, color: selectedGoalColor };
   if (editingGoalIdx >= 0) {
+    // Preserve the existing id when editing so render order can never
+    // cause an edit to land on the wrong goal.
+    goal.id = (GOALS[editingGoalIdx] && GOALS[editingGoalIdx].id) || ('g_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8));
     GOALS[editingGoalIdx] = goal;
     showDashToast('Goal updated');
   } else {
+    goal.id = 'g_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
     GOALS.push(goal);
     showDashToast('Goal added — ' + name);
   }
@@ -940,8 +1008,33 @@ const COL_SYNONYMS = {
   amount: ['amount','net amount','transaction amount','value','montant'],
 };
 
+// DASH-P2-D DWORTH-3 fix — CSV data was evaporating on modal close.
+// User imported → applied → closed → next visit lost the transaction
+// detail (only the aggregates landed on USER). Now: persist the most
+// recent parsed CSV as a "snapshot" so the user can revisit + adjust
+// categorisations between sessions. Saved on apply, restored on open.
+const CSV_SNAPSHOT_KEY = 'csv_last_snapshot';
 let CSV_TRANSACTIONS = [];
 let CSV_FILTERED = [];
+function _loadCsvSnapshot() {
+  try {
+    const s = PFCStorage.getJSON(CSV_SNAPSHOT_KEY);
+    if (s && Array.isArray(s.txns) && s.txns.length > 0) {
+      return s;
+    }
+  } catch (_) {}
+  return null;
+}
+function _saveCsvSnapshot(txns) {
+  try {
+    if (!Array.isArray(txns) || txns.length === 0) return;
+    PFCStorage.setJSON(CSV_SNAPSHOT_KEY, {
+      txns,
+      savedAt: new Date().toISOString(),
+      count: txns.length,
+    });
+  } catch (_) {}
+}
 
 // ── Stage switcher ──
 function csvStage(name) {
@@ -953,7 +1046,17 @@ function csvStage(name) {
 
 function openCSV() {
   document.getElementById('csv-overlay').style.display = 'flex';
-  csvStage('upload');
+  // DASH-P2-D: if a previous snapshot exists, jump straight to the
+  // report stage so the user can keep working where they left off.
+  const snap = _loadCsvSnapshot();
+  if (snap && snap.txns && snap.txns.length > 0) {
+    CSV_TRANSACTIONS = snap.txns;
+    CSV_FILTERED = snap.txns.slice();
+    try { renderReport(CSV_TRANSACTIONS); } catch (_) {}
+    csvStage('report');
+  } else {
+    csvStage('upload');
+  }
   document.addEventListener('keydown', csvEscHandler);
 }
 function closeCSV() {
@@ -1377,6 +1480,11 @@ function applyToDashboard() {
   // the CSV-derived values. Falls back to PFCStorage directly if PFCUser
   // failed to load.
   saveUser(USER);
+
+  // DASH-P2-D DWORTH-3: persist the parsed transactions so the user can
+  // re-open the CSV modal and continue adjusting categorisation between
+  // sessions (instead of having to re-upload the same statement).
+  _saveCsvSnapshot(CSV_TRANSACTIONS);
 
   // Update dashboard
   updateAllCards();
@@ -1843,8 +1951,17 @@ function renderNWTab() {
   const proj12 = nw + (surplus * 12);
   const projEl = document.getElementById('nw-tab-proj');
   if (projEl) {
-    projEl.textContent = sym + Math.round(Math.max(0, proj12)).toLocaleString();
-    projEl.style.color = proj12 >= nw ? 'var(--teal)' : 'var(--amber)';
+    // DASH-P2-A DBUG-8 fix — was Math.max(0, proj12) which clamped
+    // negative projections to "$0" for users with debt > assets. A user
+    // whose net worth was −€30k saving €500/mo would see proj12 = −€24k
+    // displayed as "$0" — misleading. Also the colour test was inverted
+    // for negative-net-worth users (proj12 less negative than nw IS
+    // improvement). Now show signed value honestly + colour by direction
+    // of CHANGE (delta), not absolute value.
+    const projDelta = proj12 - nw;
+    const sign = proj12 < 0 ? '−' : '';
+    projEl.textContent = sign + sym + Math.abs(Math.round(proj12)).toLocaleString();
+    projEl.style.color = projDelta >= 0 ? 'var(--teal)' : 'var(--red)';
   }
 
   // Monthly change
@@ -1999,6 +2116,11 @@ function renderNWTab() {
     else history.push(entry);
 
     history.sort((a, b) => a.date.localeCompare(b.date));
+    // DASH-P2-A DBUG-12 fix — was unbounded growth. After 3 years (1095
+    // daily entries) the encrypted blob bloats and every PFCUser.update
+    // re-encrypts the full payload. Cap to most recent 365 entries —
+    // one year of history covers every chart range the dashboard renders.
+    if (history.length > 365) history = history.slice(-365);
     PFCStorage.setJSON('nw_history', history);
   } catch(e) {}
 })();

@@ -74,6 +74,110 @@
     .sidebar.is-open { transform: translateX(0); }
   }
 
+  /* DASH-P2-C DES-9: explicit sub-540px breakpoint. Pre-fix the dashboard
+     CSS had nothing below max-width:800; metric strip + tab strip wrapped
+     awkwardly on iPhone SE. Stacks the 4-up to 1 col, tightens the topbar
+     padding, and lets the tab row scroll horizontally without clipping. */
+  @media (max-width: 540px) {
+    .metrics { grid-template-columns: 1fr !important; gap: 10px; }
+    .metric--hero { padding: 18px 20px !important; }
+    .metric--hero .metric-val { font-size: 34px !important; }
+    .topbar { padding: 0 14px; height: 56px; }
+    .topbar-title { font-size: 15px !important; }
+    .tabs { gap: 4px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .tab { white-space: nowrap; padding: 8px 12px; font-size: 13px; }
+    .grid-2-equal { grid-template-columns: 1fr !important; }
+  }
+
+  /* DASH-P2-C DMOB-7: respect iOS notch + home-bar. Topbar pads into the
+     safe area on devices with a Dynamic Island; modals pad their bottom
+     so the close/save buttons clear the home indicator. */
+  .topbar { padding-top: env(safe-area-inset-top, 0); }
+  body { padding-bottom: env(safe-area-inset-bottom, 0); }
+
+  /* DASH-P2-C DMOB-5: iOS keyboard hides modal inputs. The visualViewport
+     API isn't supported on older iOS; the workaround is to allow modals
+     to scroll their inner body so the focused input stays visible even
+     when the keyboard occludes the bottom half. Achieved via flex-end
+     anchor instead of center on small screens + scroll on inner. */
+  @media (max-width: 540px) {
+    #ef-overlay, #goal-overlay, #csv-overlay {
+      align-items: flex-start !important;
+      padding-top: 8vh !important;
+    }
+  }
+
+  /* DASH-P2-C DMOB-9: notif-panel overflows on ≤360px viewports. Full-width
+     position with margin gutter on very small viewports. */
+  @media (max-width: 360px) {
+    #notif-panel {
+      right: 8px !important; left: 8px !important; width: auto !important;
+      max-width: none !important;
+    }
+  }
+
+  /* DASH-P2-B DES-12: notif-panel z-index collision with KPI hero card.
+     Bump above the metric region (z:auto) and below modals (z:100). */
+  #notif-panel { z-index: 80; }
+
+  /* DASH-P2-C DCOMPAT-4: Windows High Contrast Mode would render the cards
+     as invisible buttons because they rely on background-only contrast.
+     Pin explicit borders + neutralise the brand SVG for the brand-mark. */
+  @media (forced-colors: active) {
+    .metric, .card, .tab, .nav-item, .btn, .topbar-btn, .upgrade-banner,
+    #notif-panel, .pfc-card--elev {
+      border: 1px solid CanvasText !important;
+    }
+    .pfc-brand-mark svg { forced-color-adjust: none; }
+  }
+
+  /* DASH-P2-C DCOMPAT-5: print stylesheet. Pre-fix the dashboard printed
+     with the sidebar, topbar, mesh blur, animations, and notification
+     panel all visible — useless ~6-page paper output. Now: print the
+     metric strip + Chart + score + insights as a clean dossier. */
+  @media print {
+    .sidebar, .topbar, .pfc-skip-link, .pfc-mobile-menu-btn,
+    .pfc-sidebar-scrim, #notif-panel, .pfc-sticky-cta-wrap,
+    #ef-overlay, #goal-overlay, #csv-overlay { display: none !important; }
+    body, .main { display: block !important; height: auto !important; overflow: visible !important; background: #fff !important; color: #000 !important; }
+    .metric, .card, .pfc-card--elev { box-shadow: none !important; border: 1px solid #ccc !important; background: #fff !important; color: #000 !important; }
+    canvas { max-height: 320px !important; }
+  }
+
+  /* DASH-P2-B DA11Y-9: respect reduced-motion globally on this page.
+     Many inline transitions (toast, modal scrim, mobile sidebar slide,
+     score-ring stroke-dashoffset) ignore the system preference because
+     they're inline-styled with transition: properties. Force all
+     transitions + animations to 0 duration under the preference. */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  /* DASH-P2-C DMOB-8: hover-only affordances. The Save/Reset hover-style
+     effects in pfc-anim.js fire mousemove handlers that never trigger
+     on touch. Replace with :active states for touch. Gated to only
+     apply where (hover: none) - touch-primary devices. */
+  @media (hover: none) {
+    .btn:active, .topbar-btn:active, .tab:active, .upgrade-btn:active,
+    .sage-send-btn:active, .add-btn:active {
+      transform: scale(0.97);
+      transition: transform 80ms ease-out;
+    }
+  }
+
+  /* DASH-P2-B DA11Y-11: amber "Mid" / "Fair" label contrast. The default
+     --amber on --bg2 came in around 3.7:1 — below WCAG AA 4.5:1 for body
+     text. Bump the on-card amber to a darker shade that still reads as
+     warning without losing legibility. Defined locally; doesn't change
+     --amber globally so other pages stay untouched. */
+  .score-row-val { font-weight: 600; }
+  .score-row-val[style*="--amber"] { color: #C68618 !important; }
+
   /* ── SIDEBAR ── */
   .sidebar {
     width: 240px; flex-shrink: 0;
@@ -605,7 +709,11 @@
       <button class="topbar-btn"  data-pfc-on-click="toggleNotifications" data-pfc-arg-this aria-label="Notifications">
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.4"/><path d="M7 4v3.5l2 1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
         Notifications
-        <span role="status" aria-live="polite" aria-label="Unread notifications" class="notif-dot" id="notif-dot"></span>
+        <!-- DASH-P2-B DA11Y-8: role="status" on a decorative empty span was
+           misapplied — the dot itself communicates nothing to AT. The
+           parent button already has an aria-label that screen-readers
+           announce. Dot becomes pure visual; aria-hidden for clarity. -->
+      <span aria-hidden="true" class="notif-dot" id="notif-dot"></span>
       </button>
       <button class="topbar-btn primary" data-free-only style="display:none;"  data-pfc-on-click="_pfc_nav" data-pfc-href="billing.html">
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1l1.5 3.5L13 5.5l-3 3 .7 4-3.7-2-3.7 2 .7-4-3-3 4.5-.9z" fill="currentColor"/></svg>
@@ -624,7 +732,9 @@
       <div class="notif-empty" style="padding:32px 18px;text-align:center;color:var(--text3);font-size:13px;">No notifications</div>
     </div>
     <div data-free-only style="display:none;padding:12px 18px;border-top:1px solid var(--border);text-align:center;">
-      <span style="font-size:12px;color:var(--text3);">Upgrade to Pro for weekly email digests</span>
+      <!-- DASH-P2-B DES-11: duplicate upgrade CTA removed — the topbar
+           "See Pro plans" button + the upgrade banner already cover this. -->
+      <span style="font-size:12px;color:var(--text3);" data-free-only>Weekly email digests are on the Pro plan.</span>
     </div>
   </div>
 
@@ -850,7 +960,10 @@
          KPIs hold their slot. Without this all four cards are equal-weight
          and the page has no visual hero — Monarch/Copilot/YNAB all promote
          one number. The inline style overrides only target the hero card. -->
-    <div class="metrics" style="grid-template-columns:2fr 1fr 1fr 1fr;">
+    <!-- DASH-P2-B DA11Y-7: aria-live=polite on the metric region so KPI
+         value updates are announced by AT without disrupting reading flow.
+         aria-atomic so the full label+value pair is read together. -->
+    <div class="metrics" style="grid-template-columns:2fr 1fr 1fr 1fr;" role="region" aria-label="Key financial metrics" aria-live="polite" aria-atomic="true">
       <div class="metric metric--hero pfc-card--elev" style="padding:24px 28px;">
         <div class="metric-label" style="font-size:13px;letter-spacing:0.04em;">Projected net worth · 12 months</div>
         <div class="metric-val num" style="color:var(--teal);font-size:48px;line-height:1.1;font-family:var(--font-display);font-weight:700;letter-spacing:-0.02em;" id="m-networth">—</div>
@@ -1474,10 +1587,11 @@
         <label for="goal-colors" style="font-size:12px;color:var(--text2);display:block;margin-bottom:5px;">Colour</label>
         <div style="display:flex;gap:8px;" id="goal-colors" role="radiogroup" aria-label="Goal colour">
           <div class="goal-color-opt selected" data-color="var(--teal)" style="width:24px;height:24px;border-radius:50%;background:var(--money);cursor:pointer;border:2px solid white;"></div>
-          <div class="goal-color-opt" data-color="var(--blue)" style="width:24px;height:24px;border-radius:50%;background:#3B82F6;cursor:pointer;border:2px solid transparent;"></div>
-          <div class="goal-color-opt" data-color="var(--amber)" style="width:24px;height:24px;border-radius:50%;background:#F5A623;cursor:pointer;border:2px solid transparent;"></div>
-          <div class="goal-color-opt" data-color="var(--purple)" style="width:24px;height:24px;border-radius:50%;background:#A78BFA;cursor:pointer;border:2px solid transparent;"></div>
-          <div class="goal-color-opt" data-color="var(--red)" style="width:24px;height:24px;border-radius:50%;background:#E05252;cursor:pointer;border:2px solid transparent;"></div>
+          <!-- DASH-P2-B DES-10: hex literals migrated to tokens. -->
+          <div class="goal-color-opt" data-color="var(--blue)" style="width:24px;height:24px;border-radius:50%;background:var(--blue);cursor:pointer;border:2px solid transparent;"></div>
+          <div class="goal-color-opt" data-color="var(--amber)" style="width:24px;height:24px;border-radius:50%;background:var(--amber);cursor:pointer;border:2px solid transparent;"></div>
+          <div class="goal-color-opt" data-color="var(--purple)" style="width:24px;height:24px;border-radius:50%;background:var(--purple);cursor:pointer;border:2px solid transparent;"></div>
+          <div class="goal-color-opt" data-color="var(--red)" style="width:24px;height:24px;border-radius:50%;background:var(--red);cursor:pointer;border:2px solid transparent;"></div>
         </div>
       </div>
       <!-- Preview -->

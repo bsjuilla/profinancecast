@@ -32,7 +32,28 @@
             if (!d || !el) return;
             const cpi = d.cpiYoY;
             const cpiPopulated = cpi && typeof cpi.value === 'number' && Number.isFinite(cpi.value);
-            if (!cpiPopulated) { el.style.display = 'none'; return; }
+            if (!cpiPopulated) {
+              // DASH-P2-A DBUG-16 fix — was hidden forever on first-load API
+              // miss. Pro user paid for live macro context and got dead
+              // air. Now show a small "unavailable" line so the user
+              // knows the panel exists + can refresh to retry.
+              // Built via DOM APIs (no inline onclick — CSP forbids).
+              el.textContent = '';
+              const wrap = document.createElement('div');
+              wrap.style.cssText = 'display:flex;align-items:center;justify-content:space-between;color:var(--text3,#8a9189);font-size:12px;';
+              const lbl = document.createElement('span');
+              lbl.textContent = 'Macro context temporarily unavailable.';
+              wrap.appendChild(lbl);
+              const a = document.createElement('a');
+              a.href = '#';
+              a.textContent = 'Refresh →';
+              a.style.cssText = 'color:var(--teal,#2BB67D);text-decoration:none;';
+              a.addEventListener('click', function(ev){ ev.preventDefault(); location.reload(); });
+              wrap.appendChild(a);
+              el.appendChild(wrap);
+              el.style.display = 'block';
+              return;
+            }
             const label = cpi.countryName
               ? 'Inflation in ' + _esc(cpi.countryName)
               : 'Inflation (CPI YoY)';
@@ -144,6 +165,25 @@
       } else if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', _go, { once: true });
       } else { _go(); }
+      // DASH-P2-A DBUG-17 fix — re-render the FX panel when the user
+      // changes their preferred currency mid-session (Edit Finances →
+      // change currency → Save). Pre-fix, the FX panel kept its
+      // first-load base currency forever, showing stale comparisons.
+      try {
+        if (typeof PFCUser !== 'undefined' && typeof PFCUser.onChange === 'function') {
+          let _lastBase = null;
+          PFCUser.onChange(() => {
+            try {
+              const u = PFCUser.get();
+              const code = u && (u.currencyCode || (typeof PFCCurrency !== 'undefined' ? PFCCurrency.toISO(u.currency) : null));
+              if (code && code !== _lastBase) {
+                _lastBase = code;
+                _go();
+              }
+            } catch (_) {}
+          });
+        }
+      } catch (_) {}
     })();
 
     // FX widget — show today's rate from USD to the user's currency in the
