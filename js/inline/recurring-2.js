@@ -210,6 +210,47 @@ function _saveCancelled() {
   try { PFCStorage.setJSON('recurrings_cancelled', Array.from(CANCELLED)); }
   catch (_) {}
 }
+
+// R-WORTH-5 fix (CEO call) — HIDDEN set persists user-flagged false
+// positives (rent payments, salary refunds, one-off charges that the
+// detector wrongly grouped as recurring). Kept separate from CANCELLED
+// so the semantics stay clear: cancelled = sub I terminated; hidden =
+// not actually a sub.
+let HIDDEN = new Set();
+function _loadHidden() {
+  try { return new Set(PFCStorage.getJSON('recurrings_hidden') || []); }
+  catch (_) { return new Set(); }
+}
+function _saveHidden() {
+  try { PFCStorage.setJSON('recurrings_hidden', Array.from(HIDDEN)); }
+  catch (_) {}
+}
+
+// R-CRO-7 fix (CEO call) — SNOOZED is a Map<id, snoozeUntilTimestamp>.
+// Snoozed entries are hidden from the default view until the timestamp
+// passes; persisted as an array of [id, ts] tuples.
+let SNOOZED = new Map();
+function _loadSnoozed() {
+  try {
+    const arr = PFCStorage.getJSON('recurrings_snoozed') || [];
+    return new Map(arr);
+  } catch (_) { return new Map(); }
+}
+function _saveSnoozed() {
+  try { PFCStorage.setJSON('recurrings_snoozed', Array.from(SNOOZED.entries())); }
+  catch (_) {}
+}
+function _isSnoozed(id) {
+  if (!SNOOZED.has(id)) return false;
+  const until = Number(SNOOZED.get(id)) || 0;
+  if (until <= Date.now()) {
+    // Auto-expire: snooze elapsed → remove the entry so it reappears.
+    SNOOZED.delete(id);
+    _saveSnoozed();
+    return false;
+  }
+  return true;
+}
 // R-BUG-19 fix — single persistence helper. Writes to PFCStorage (which
 // already fires `storage` event to other tabs) and dispatches a same-tab
 // custom event so future in-page consumers can react without a full
@@ -219,13 +260,35 @@ function _persistRecurrings() {
   try { window.dispatchEvent(new CustomEvent('pfc:recurrings-updated')); } catch (_) {}
 }
 
-// R-P0-1: backfill stable id for any pre-rollout recurring entry.
+// R-P0-1 + R-WORTH-1: backfill stable id AND nextChargeDate for any
+// pre-rollout recurring entry. Pre-WORTH-1 entries had no renewal date;
+// we estimate one from lastCharge + medianGap (or fall back to +30d).
 function _backfillIds() {
   let needsSave = false;
   RECURRINGS.forEach(r => {
     if (!r.id) { r.id = _mintId(); needsSave = true; }
+    if (!r.nextChargeDate && r.lastCharge) {
+      const lc = _parseLocalDateAtNoon(r.lastCharge);
+      const gap = Number(r.medianGap) || 30;
+      if (lc) {
+        r.nextChargeDate = new Date(lc.getTime() + gap * 86400000).toISOString().slice(0, 10);
+        r.medianGap = gap;
+        needsSave = true;
+      }
+    }
   });
   if (needsSave) { try { PFCStorage.setJSON('recurrings', RECURRINGS); } catch (_) {} }
+}
+
+// R-WORTH-1 helper — days from today (local) to a target YYYY-MM-DD.
+// Negative = already past (overdue), positive = future, 0 = today.
+function _daysUntil(iso) {
+  if (!iso) return null;
+  const target = _parseLocalDateAtNoon(iso);
+  if (!target) return null;
+  const now = new Date();
+  const nowNoon = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12);
+  return Math.round((target.getTime() - nowNoon.getTime()) / 86400000);
 }
 
 const CAT_META = {
@@ -277,6 +340,8 @@ function init() {
   try { USER = (typeof PFCUser !== 'undefined') ? PFCUser.get() : (PFCStorage.getJSON('user') || {}); } catch(e) {}
   USER.sym = escHtml(window.PFCSym ? PFCSym(USER.currency) : (USER.currency || '$'));
   CANCELLED = _loadCancelled();
+  HIDDEN = _loadHidden();      // R-WORTH-5
+  SNOOZED = _loadSnoozed();    // R-CRO-7
   try {
     const saved = PFCStorage.get('recurrings');
     if (saved) {
@@ -522,6 +587,16 @@ function detectRecurrings(txns) {
     // All amounts seen
     const amounts = occ.map(o => o.amount);
 
+    // R-WORTH-1 fix (CEO call 2026-05-24) — the killer landing promise
+    // "flags every subscription before it auto-renews" is now real, not a
+    // bluff. nextChargeDate = lastCharge + median gap. Stored on the entry
+    // so renderCards + renderRenewalBanner can read it without recompute.
+    const lastChargeDate = occ[occ.length-1].date;
+    const lastChargeAtNoon = _parseLocalDateAtNoon(lastChargeDate);
+    const nextChargeDate = lastChargeAtNoon
+      ? new Date(lastChargeAtNoon.getTime() + gap * 86400000).toISOString().slice(0, 10)
+      : '';
+
     recurring.push({
       id:            _mintId(),  // R-P0-1: stable id at every entry creation
       name:          cleanName(g.name),
@@ -536,8 +611,10 @@ function detectRecurrings(txns) {
       amounts,
       minAmount:     Math.min(...amounts),
       maxAmount:     Math.max(...amounts),
-      lastCharge:    occ[occ.length-1].date,
+      lastCharge:    lastChargeDate,
       firstCharge:   occ[0].date,
+      medianGap:     gap,            // R-WORTH-1: persist gap for future re-computes
+      nextChargeDate,                // R-WORTH-1: pre-computed at detect time
       priceIncreased: false, // set later
       priceDiff:     0,
     });
@@ -598,10 +675,45 @@ function showResults() {
   setState('results');
   document.getElementById('btn-add-manual').style.display = 'flex';
   document.getElementById('btn-clear').style.display = 'flex';
+  // R-WORTH-4 (CEO call): show Export button alongside the others.
+  const exportBtn = document.getElementById('btn-export');
+  if (exportBtn) exportBtn.style.display = 'flex';
   updateMetrics();
+  renderRenewalBanner(); // R-WORTH-1 — banner above existing alerts
   renderAlerts();
   renderCharts();
   renderCards();
+}
+
+// R-WORTH-1 fix (CEO call) — in-page renewal banner. Surfaces any active
+// (non-cancelled, non-hidden, non-snoozed) sub renewing within 14 days,
+// with the total upcoming charge size. This is the killer landing promise
+// "flags every subscription before it auto-renews" — now real.
+function renderRenewalBanner() {
+  const wrap = document.getElementById('renewal-banner-wrap');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  const sym = USER.sym || '$';
+  const upcoming = RECURRINGS
+    .filter(r => !CANCELLED.has(r.id))
+    .filter(r => !(HIDDEN && HIDDEN.has && HIDDEN.has(r.id)))
+    .filter(r => !_isSnoozed(r.id))
+    .map(r => ({ r, days: _daysUntil(r.nextChargeDate) }))
+    .filter(x => x.days !== null && x.days >= 0 && x.days <= 14)
+    .sort((a, b) => a.days - b.days);
+  if (!upcoming.length) return;
+  const totalUpcoming = upcoming.reduce((s, x) => {
+    const occLast = (x.r.amounts && x.r.amounts.length) ? Number(x.r.amounts[x.r.amounts.length - 1]) : Number(x.r.monthlyAmount);
+    return s + (Number.isFinite(occLast) ? occLast : 0);
+  }, 0);
+  const next = upcoming[0];
+  const nextLabel = next.days === 0 ? 'today' : next.days === 1 ? 'tomorrow' : `in ${next.days} days`;
+  wrap.innerHTML = `<div class="alert-banner amber">
+    <div class="alert-icon">⏰</div>
+    <div class="alert-text"><strong>${escHtml(next.r.name)}</strong> auto-renews <strong>${nextLabel}</strong> — ${sym}${(Number(next.r.monthlyAmount)||0).toFixed(2)}/mo.
+    ${upcoming.length > 1 ? `${upcoming.length} subscriptions renew in the next 14 days · total upcoming charge ~${sym}${totalUpcoming.toFixed(2)}.` : ''}
+    This is the moment to decide: keep, negotiate, or cancel before it bills.</div>
+  </div>`;
 }
 
 function updateMetrics() {
@@ -609,8 +721,10 @@ function updateMetrics() {
   // every downstream interpolation is safe via textContent (auto-safe) or
   // through escHtml() in innerHTML paths.
   const sym = USER.sym || '$';
-  // R-P0-1: CANCELLED is now keyed by stable r.id, not array index.
-  const active = RECURRINGS.filter(r => !CANCELLED.has(r.id));
+  // R-P0-1 + R-WORTH-5 + R-CRO-7 (CEO call): "active" now means
+  // not-cancelled AND not-hidden AND not-snoozed. Metric strip + alerts
+  // + charts all share this definition for consistency.
+  const active = RECURRINGS.filter(r => !CANCELLED.has(r.id) && !HIDDEN.has(r.id) && !_isSnoozed(r.id));
   const totalMonthly = Number(active.reduce((s,r) => s + (Number(r.monthlyAmount)||0), 0)) || 0;
   const totalAnnual  = Number(active.reduce((s,r) => s + (Number(r.annualAmount)||0), 0)) || 0;
   const flagged      = active.filter(r => r.priceIncreased);
@@ -653,21 +767,34 @@ function renderAlerts() {
   const wrap = document.getElementById('alerts-wrap');
   wrap.innerHTML = '';
 
-  const increased = RECURRINGS.filter(r => !CANCELLED.has(r.id) && r.priceIncreased);
+  // R-WORTH-5 + R-CRO-7 (CEO call) — alerts respect HIDDEN + SNOOZED too,
+  // not just CANCELLED. A hidden false-positive shouldn't trigger price
+  // alerts; a snoozed item is "later" and shouldn't pile on either.
+  const increased = RECURRINGS.filter(r => !CANCELLED.has(r.id) && !HIDDEN.has(r.id) && !_isSnoozed(r.id) && r.priceIncreased);
   if (increased.length) {
     const names = increased.slice(0,3).map(r=>`<strong>${escHtml(r.name)}</strong>`).join(', ');
     const extra = increased.reduce((s,r)=>s+(Number(r.priceDiff)||0)*12,0);
+    // R-WORTH-2 fix (CEO call) — anchor against the €312/year figure
+    // already promised on index.html:2139. Reframing as a discovery win
+    // (the user is "ahead of" the typical household) doubles as a
+    // currency-aware nudge: when sym !== €, fall back to a neutral
+    // sentence so the anchor only fires in matching currency contexts.
+    const isEuro = (sym || '').includes('€');
+    const anchorTail = isEuro
+      ? ` You've already surfaced <strong>€${Math.round(extra).toLocaleString()}</strong> of the <strong>€312/year</strong> a typical European household quietly loses to unannounced hikes.`
+      : '';
     wrap.innerHTML += `<div class="alert-banner red">
       <div class="alert-icon">⚠️</div>
       <div class="alert-text">${increased.length} subscription${increased.length>1?'s have':' has'} quietly raised prices: ${names}${increased.length>3?' and more':''}.
-      You're paying <strong>${sym}${Math.round(extra).toLocaleString()} more per year</strong> than when you first subscribed.</div>
+      You're paying <strong>${sym}${Math.round(extra).toLocaleString()} more per year</strong> than when you first subscribed.${anchorTail}</div>
     </div>`;
   }
 
   // R-P0-8 hardening: use Object.create(null) so a malicious r.cat value
   // like '__proto__' or 'constructor' can't mutate Object.prototype.
   const bycat = Object.create(null);
-  RECURRINGS.filter(r => !CANCELLED.has(r.id)).forEach(r=>{ if(!bycat[r.cat]) bycat[r.cat]=[]; bycat[r.cat].push(r); });
+  // R-WORTH-5 + R-CRO-7: alerts honour HIDDEN + SNOOZED states too.
+  RECURRINGS.filter(r => !CANCELLED.has(r.id) && !HIDDEN.has(r.id) && !_isSnoozed(r.id)).forEach(r=>{ if(!bycat[r.cat]) bycat[r.cat]=[]; bycat[r.cat].push(r); });
   // R-CRO-12 fix — generalize the duplicate-service detector beyond streaming.
   // Pre-fix only fired on streaming; users with 4 software seats or 3 insurance
   // policies got no nudge. Now any category with ≥3 active entries triggers a
@@ -717,8 +844,9 @@ function renderCharts() {
     return;
   }
   const sym = USER.sym || '$';
-  // R-P0-1 fix: filter by stable id, not array index.
-  const active = RECURRINGS.filter(r => !CANCELLED.has(r.id));
+  // R-P0-1 + R-WORTH-5 + R-CRO-7: same "active" definition as updateMetrics —
+  // charts reflect what the user actually considers live, not raw RECURRINGS.
+  const active = RECURRINGS.filter(r => !CANCELLED.has(r.id) && !HIDDEN.has(r.id) && !_isSnoozed(r.id));
 
   // Category donut
   // R-P0-8 hardening: Object.create(null) — prototype pollution defence.
@@ -823,14 +951,21 @@ function renderCharts() {
 function renderCards() {
   const sym  = window.PFCSym ? PFCSym(USER.currency) : (USER.currency || '$');
   const grid = document.getElementById('rec-grid');
-  const filtered = RECURRINGS.filter((r,i)=>{
-    // R-P0-1: filter by stable r.id, not array index. Sort-in-place no
-    // longer desyncs cancellations.
-    if (currentFilter==='cancelled') return CANCELLED.has(r.id);
+  // R-WORTH-5 + R-CRO-7 (CEO call): three orthogonal user-flagged states.
+  //   CANCELLED — user said "I terminated this sub" (kept on disk, restorable)
+  //   HIDDEN    — user said "this isn't actually a recurring sub" (false-positive)
+  //   SNOOZED   — user said "review again later" (auto-restores at timestamp)
+  // Default 'all' view hides cancelled/hidden/snoozed; dedicated filters surface each.
+  const filtered = RECURRINGS.filter((r) => {
+    if (currentFilter === 'cancelled') return CANCELLED.has(r.id);
+    if (currentFilter === 'hidden')    return HIDDEN.has(r.id);
+    if (currentFilter === 'snoozed')   return _isSnoozed(r.id);
     if (CANCELLED.has(r.id)) return false;
-    if (currentFilter==='all') return true;
-    if (currentFilter==='flagged') return r.priceIncreased;
-    return r.cat===currentFilter;
+    if (HIDDEN.has(r.id))    return false;
+    if (_isSnoozed(r.id))    return false;
+    if (currentFilter === 'all')     return true;
+    if (currentFilter === 'flagged') return r.priceIncreased;
+    return r.cat === currentFilter;
   });
 
   if (!filtered.length) {
@@ -878,10 +1013,24 @@ function renderCards() {
     }
     badges.push(`<span class="badge" style="background:${colorSafe};opacity:0.85;color:#fff;">${escHtml(r.icon||'')} ${escHtml(meta.label||'')}</span>`);
     if (r.freqLabel!=='Monthly') badges.push(`<span class="badge badge-blue">${escHtml(r.freqLabel||'')}</span>`);
+    // R-WORTH-1 fix (CEO call) — per-card "Renews in N days" badge so the
+    // user sees the renewal clock on every card, not just the banner.
+    // Days are tinted amber when <=14d (matches banner threshold), red when
+    // <=3d (urgency), grey otherwise.
+    if (!isCancelled && r.nextChargeDate) {
+      const daysToRenew = _daysUntil(r.nextChargeDate);
+      if (daysToRenew !== null && daysToRenew >= 0) {
+        const renewLabel = daysToRenew === 0 ? 'Renews today' : daysToRenew === 1 ? 'Renews tomorrow' : `Renews in ${daysToRenew}d`;
+        const renewClass = daysToRenew <= 3 ? 'badge-red' : daysToRenew <= 14 ? 'badge-amber' : 'badge-grey';
+        badges.push(`<span class="badge ${renewClass}" title="Next charge: ${escHtml(r.nextChargeDate)}">⏰ ${escHtml(renewLabel)}</span>`);
+      }
+    }
 
     // R-P0-6+7: data-action attrs replace inline onclick — wired below.
     // r.id is escaped + used as data attribute (only-base36 from _mintId).
     const safeId = escHtml(r.id || '');
+    const isHidden = HIDDEN.has(r.id);
+    const isSnoozedNow = _isSnoozed(r.id);
     return `<div class="rec-card ${r.priceIncreased&&!isCancelled?'price-up':''} ${isCancelled?'cancelled':''}" data-rec-id="${safeId}">
       <div class="rec-top">
         <div class="rec-icon" style="background:${colorSafe};opacity:0.5;">${escHtml(r.icon||'')}</div>
@@ -903,7 +1052,11 @@ function renderCards() {
         <div class="rec-actions">
           ${!isCancelled?`<button class="rec-action-btn cancel-btn" data-action="toggleCancel" data-id="${safeId}">Mark as cancelled</button>`
                         :`<button class="rec-action-btn" data-action="toggleCancel" data-id="${safeId}" style="color:var(--teal);border-color:rgba(43,182,125,0.2);">Restore</button>`}
-          ${!isCancelled?`<button class="rec-action-btn" data-action="askSage" data-id="${safeId}">Ask Sage</button>`:''}
+          ${(!isCancelled && !isHidden && !isSnoozedNow)?`<button class="rec-action-btn" data-action="snooze" data-id="${safeId}" title="Hide from default view for 30 days">⏸ Snooze 30d</button>`:''}
+          ${(!isCancelled && !isHidden)?`<button class="rec-action-btn" data-action="hide" data-id="${safeId}" title="Mark as not actually a subscription">🚫 Not a sub</button>`:''}
+          ${(isHidden)?`<button class="rec-action-btn" data-action="hide" data-id="${safeId}" style="color:var(--teal);border-color:rgba(43,182,125,0.2);">Restore from hidden</button>`:''}
+          ${(isSnoozedNow)?`<button class="rec-action-btn" data-action="snooze" data-id="${safeId}" style="color:var(--teal);border-color:rgba(43,182,125,0.2);">Wake from snooze</button>`:''}
+          ${!isCancelled?`<button class="rec-action-btn" data-action="askSage" data-id="${safeId}">Ask Sage${(typeof PFCEntitlements!=='undefined' && !PFCEntitlements.isPaid())?' <span class="pro-badge">Pro</span>':''}</button>`:''}
         </div>
       </div>
     </div>`;
@@ -917,6 +1070,12 @@ function renderCards() {
       btn.addEventListener('click', () => toggleCancelById(id));
     } else if (action === 'askSage') {
       btn.addEventListener('click', () => askSageById(id));
+    } else if (action === 'hide') {
+      // R-WORTH-5 (CEO call) — toggle the HIDDEN set.
+      btn.addEventListener('click', () => toggleHideById(id));
+    } else if (action === 'snooze') {
+      // R-CRO-7 (CEO call) — toggle 30-day snooze.
+      btn.addEventListener('click', () => toggleSnoozeById(id));
     }
   });
 }
@@ -940,14 +1099,64 @@ function toggleCancelById(id) {
       // Shows the annualised reward number so the action feels weighed,
       // not just dismissed (same behavioural pattern as a streak reward).
       const yearSaved = Math.round(Number(r.annualAmount) || 0);
+      // R-CRO-5 fix (CEO call) — append "Apply to a goal" link ONLY when
+      // a goal exists in storage (no point routing to an empty goals page).
+      // The link is rendered in HTML in the toast for once — showToast
+      // detects HTML by leading '<' marker. Auto-safe: only sym + numeric
+      // reward + literal goals.html are interpolated; r.name escapes via
+      // escHtml because it can contain user/CSV-controlled punctuation.
+      let goalLink = '';
+      try {
+        const goalsRaw = PFCStorage.get('goals');
+        const goalsArr = goalsRaw ? _safeParseJson(goalsRaw) : [];
+        if (Array.isArray(goalsArr) && goalsArr.length > 0 && yearSaved > 0) {
+          goalLink = ` · <a href="goals.html" style="color:var(--teal);text-decoration:underline;">Apply ${USER.sym || '$'}${yearSaved.toLocaleString()} to a goal →</a>`;
+        }
+      } catch (_) {}
       const reward = yearSaved > 0
-        ? `🎉 ${r.name} cancelled — you just freed up ${USER.sym || '$'}${yearSaved.toLocaleString()}/yr`
-        : `🎉 ${r.name} cancelled`;
-      showToast(reward, 'success');
+        ? `🎉 ${escHtml(r.name)} cancelled — you just freed up ${USER.sym || '$'}${yearSaved.toLocaleString()}/yr${goalLink}`
+        : `🎉 ${escHtml(r.name)} cancelled`;
+      showToast(reward, 'success', goalLink ? 'html' : 'text');
     } else {
       showToast(`${r.name} restored`);
     }
   }
+}
+
+// R-WORTH-5 fix (CEO call) — toggle the HIDDEN set for a single entry.
+// Surfaces a confirmation toast; auto-restores work through the same fn.
+function toggleHideById(id) {
+  if (!id) return;
+  if (HIDDEN.has(id)) HIDDEN.delete(id);
+  else HIDDEN.add(id);
+  _saveHidden();
+  updateMetrics();
+  renderRenewalBanner();
+  renderAlerts();
+  renderCharts();
+  renderCards();
+  const r = RECURRINGS.find(x => x.id === id);
+  if (r) showToast(HIDDEN.has(id) ? `${r.name} hidden — open the Hidden filter to restore.` : `${r.name} restored from hidden.`);
+}
+
+// R-CRO-7 fix (CEO call) — toggle a 30-day snooze for a single entry.
+// Snoozed items are filtered out of the default view + alerts until the
+// timestamp passes. Setting again on an already-snoozed item un-snoozes it.
+function toggleSnoozeById(id) {
+  if (!id) return;
+  if (SNOOZED.has(id)) {
+    SNOOZED.delete(id);
+  } else {
+    SNOOZED.set(id, Date.now() + 30 * 86400000);
+  }
+  _saveSnoozed();
+  updateMetrics();
+  renderRenewalBanner();
+  renderAlerts();
+  renderCharts();
+  renderCards();
+  const r = RECURRINGS.find(x => x.id === id);
+  if (r) showToast(SNOOZED.has(id) ? `${r.name} snoozed for 30 days.` : `${r.name} woken from snooze.`);
 }
 // Legacy alias for any external caller (kept for safety; new code uses ById).
 function toggleCancel(arg) {
@@ -986,8 +1195,13 @@ function sortCards(val) {
 }
 
 // R-P0-1 + R-P0-9: id-keyed Sage call + custom modal replaces native alert.
+// R-WORTH-3 (CEO call): Free users see a soft paywall modal before the
+// Sage call; Pro/Founders proceed immediately. The page itself is fully
+// free — Sage cancel-email-draft is the only premium pull on /recurring.
 async function askSageById(id) {
   if (!id) return;
+  const proceed = await _maybePaywallSage();
+  if (!proceed) return;
   const r = RECURRINGS.find(x => x.id === id);
   if (!r) return;
   const sym = USER.sym || '$';
@@ -1038,6 +1252,12 @@ async function saveManual() {
   if (freq==='annual') monthly = amount / 12;
 
   // R-P0-1: mint stable id on every new entry.
+  // R-WORTH-1: estimate nextChargeDate from today + freq period so the
+  // manual entry participates in renewal banners + per-card pills like
+  // detected entries do. Defaults to monthly cadence (30 days).
+  const periodDays = freq === 'weekly' ? 7 : freq === 'annual' ? 365 : 30;
+  const nextChargeDate = new Date(Date.now() + periodDays * 86400000)
+    .toISOString().slice(0, 10);
   RECURRINGS.unshift({
     id: _mintId(),
     name, rawDesc:name, cat, icon: CAT_META[cat]?.icon||'📄',
@@ -1047,6 +1267,7 @@ async function saveManual() {
     occurrences:[], amounts:[amount],
     minAmount:amount, maxAmount:amount,
     lastCharge:'', firstCharge:'',
+    medianGap: periodDays, nextChargeDate,
     priceIncreased:false, priceDiff:0,
   });
   _persistRecurrings();
@@ -1098,9 +1319,13 @@ async function clearAll() {
   const ok = await _pfcConfirm('Clear all recurring data and re-upload? This cannot be undone.', 'Clear all');
   if (!ok) return;
   RECURRINGS=[]; CANCELLED=new Set();
+  HIDDEN = new Set(); SNOOZED = new Map();
   PFCStorage.remove('recurrings');
   // R-P0-1: clear CANCELLED persistence too (was orphaned key after wipe).
   PFCStorage.remove('recurrings_cancelled');
+  // R-WORTH-5 + R-CRO-7: clear HIDDEN + SNOOZED orphaned keys.
+  PFCStorage.remove('recurrings_hidden');
+  PFCStorage.remove('recurrings_snoozed');
   // R-CRO-3: clear upload timestamp too so the staleness pill resets.
   PFCStorage.remove('recurrings_lastUpload');
   // R-BUG-19: notify same-tab listeners that the dataset has been emptied.
@@ -1117,7 +1342,7 @@ function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
 // argument tints the bar so success/failure are distinguishable beyond
 // just colour (R-CRO-10 celebratory toast hooks into the 'success' variant).
 let _toastTimer = null;
-function showToast(msg, variant){
+function showToast(msg, variant, mode){
   let t = document.getElementById('pfc-toast');
   if (!t) {
     t = document.createElement('div');
@@ -1128,17 +1353,103 @@ function showToast(msg, variant){
     t.setAttribute('aria-atomic', 'true');
     document.body.appendChild(t);
   }
-  t.textContent = msg;
+  // R-CRO-5 fix (CEO call) — opt-in HTML mode for the cancel toast which
+  // needs an embedded "Apply to a goal" link. Caller passes mode='html'
+  // ONLY for messages it built itself with escHtml-wrapped values; default
+  // remains textContent (auto-safe) so any new call sites stay XSS-safe by
+  // default. Toast also gets pointer-events:auto when it contains a link
+  // so the link is clickable.
+  if (mode === 'html') {
+    t.innerHTML = msg;
+    t.style.pointerEvents = 'auto';
+  } else {
+    t.textContent = msg;
+    t.style.pointerEvents = '';
+  }
   t.classList.remove('toast--success', 'toast--error');
   if (variant === 'success') t.classList.add('toast--success');
   else if (variant === 'error') t.classList.add('toast--error');
   t.style.opacity = '1';
   t.style.transition = '';
   if (_toastTimer) clearTimeout(_toastTimer);
+  // R-CRO-5: extend hold time when a clickable link is present.
+  const holdMs = mode === 'html' ? 6000 : 2800;
   _toastTimer = setTimeout(() => {
     t.style.transition = 'opacity .3s';
     t.style.opacity = '0';
-  }, 2800);
+  }, holdMs);
+}
+
+// R-WORTH-4 fix (CEO call) — wire pfc-export.js. Free users get the
+// current filtered view (matches the landing's "exportable to CSV"
+// promise); Pro users get the full RECURRINGS dump. If pfc-export.js
+// isn't loaded yet we fall back to a tiny inline CSV builder so the
+// claim never breaks.
+function exportRecurringsCSV() {
+  const sym = USER.sym || '$';
+  const isPaid = (typeof PFCEntitlements !== 'undefined') && PFCEntitlements.isPaid();
+  // Apply the same filter the cards currently show, so the user gets
+  // exactly what they see on screen (Pro override → full dump).
+  const rows = isPaid
+    ? RECURRINGS.slice()
+    : RECURRINGS.filter(r => !CANCELLED.has(r.id) && !HIDDEN.has(r.id) && !_isSnoozed(r.id));
+  if (!rows.length) {
+    showToast('No recurring items to export yet.', 'error');
+    return;
+  }
+  const header = ['Name', 'Category', 'Frequency', `Monthly (${sym})`, `Annual (${sym})`, 'Next charge', 'Last charge', 'Price increased?'];
+  const lines = [header.join(',')];
+  rows.forEach(r => {
+    const esc = (v) => {
+      const s = String(v == null ? '' : v);
+      return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    lines.push([
+      esc(r.name),
+      esc(CAT_META[r.cat]?.label || r.cat || 'Other'),
+      esc(r.freqLabel || r.freq || ''),
+      esc((Number(r.monthlyAmount) || 0).toFixed(2)),
+      esc(Math.round(Number(r.annualAmount) || 0)),
+      esc(r.nextChargeDate || ''),
+      esc(r.lastCharge || ''),
+      r.priceIncreased ? 'yes' : 'no',
+    ].join(','));
+  });
+  const csv = lines.join('\n');
+  const filename = `profinancecast-recurring-${new Date().toISOString().slice(0,10)}.csv`;
+  try {
+    // Prefer the shared helper if loaded — handles BOM + content-type for Excel.
+    if (typeof PFCExport !== 'undefined' && typeof PFCExport.downloadCSV === 'function') {
+      PFCExport.downloadCSV(csv, filename);
+    } else {
+      const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = filename;
+      document.body.appendChild(a); a.click();
+      setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 100);
+    }
+    showToast(isPaid ? `Exported ${rows.length} rows (full history)` : `Exported ${rows.length} rows (current view) · Pro unlocks full history`, 'success');
+  } catch (e) {
+    showToast('Could not export CSV. Try again.', 'error');
+  }
+}
+
+// R-WORTH-3 fix (CEO call) — soft paywall for Free users hitting Sage.
+// We don't block the page; just open a confirm-modal explaining what
+// Pro unlocks (Sage cancel-email drafts + unlimited CSV history) with
+// a link to billing.html. Existing Pro/Founders users skip the modal.
+async function _maybePaywallSage() {
+  const isPaid = (typeof PFCEntitlements !== 'undefined') && PFCEntitlements.isPaid();
+  if (isPaid) return true;
+  const ok = await _pfcConfirm(
+    'Sage cancel-email drafts are a Pro feature. Upgrade once (€39 lifetime or €9/mo) to unlock haggle + cancel templates plus unlimited CSV-history retention. Continue to billing?',
+    'See Pro plans'
+  );
+  if (ok) {
+    try { window.location.href = 'billing.html'; } catch (_) {}
+  }
+  return false;
 }
 
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeManual();});
@@ -1163,6 +1474,8 @@ function _rehydrateFromStorage() {
   // (pre-fix CANCELLED stayed empty because the guest-namespace read in init()
   // returned nothing; once we flip to pfc:{uid}:* we need to re-read).
   CANCELLED = _loadCancelled();
+  HIDDEN = _loadHidden();      // R-WORTH-5 — reload after auth flips namespace
+  SNOOZED = _loadSnoozed();    // R-CRO-7
   try {
     const saved = PFCStorage.get('recurrings');
     if (saved) {

@@ -163,6 +163,12 @@
   .badge-blue{background:rgba(59,130,246,0.1);color:var(--blue);}
   .badge-teal{background:var(--teal-dim);color:var(--teal);}
   .badge-grey{background:rgba(138,155,176,0.1);color:var(--text3);}
+  /* R-WORTH-1 (CEO call) — amber badge for upcoming-renewal pill on cards
+     (≤14 days but >3 days). Red badge already exists for ≤3 days urgency. */
+  .badge-amber{background:rgba(245,166,35,0.12);color:var(--amber);}
+  /* R-WORTH-3 (CEO call) — inline "Pro" badge for the Sage button so Free
+     users see the upgrade signal without being blocked from the page. */
+  .pro-badge{display:inline-block;font-size:9.5px;font-weight:700;color:var(--canvas);background:var(--gold,#D4AF6A);border-radius:3px;padding:1px 5px;margin-left:4px;letter-spacing:0.03em;text-transform:uppercase;vertical-align:middle;}
 
   .rec-actions{display:flex;gap:6px;}
   .rec-action-btn{flex:1;padding:6px;border-radius:var(--r-sm);font-size:11.5px;cursor:pointer;font-family:var(--font-body);border:1px solid var(--border2);background:transparent;color:var(--text2);transition:all .15s;text-align:center;}
@@ -468,6 +474,10 @@
            already set in the topbar title. Was "+ Add manually" / "Clear
            & re-upload" — now reads like a ledger entry, not a SaaS chip. -->
       <button class="topbar-btn" id="btn-add-manual"  data-pfc-on-click="openManualAdd" style="display:none;">+ Note one by hand</button>
+      <!-- R-WORTH-4 (CEO call) — wires the landing's "exportable to CSV"
+           promise to a real button. Free = current filtered view, Pro =
+           full RECURRINGS dump (toast informs the user of the difference). -->
+      <button class="topbar-btn" id="btn-export"  data-pfc-on-click="exportRecurringsCSV" style="display:none;" title="Export your detected recurring items to a CSV (Pro unlocks full history)">↓ Export CSV</button>
       <button class="topbar-btn danger" id="btn-clear"  data-pfc-on-click="clearAll" style="display:none;">Start the ledger over</button>
       <button class="topbar-btn primary"  data-pfc-on-click="_pfc_trigger_click" data-pfc-target="csv-file">
         <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1v8M3 6l3.5 3.5L10 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M1 11h11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
@@ -580,6 +590,11 @@
         </div>
       </div>
 
+      <!-- R-WORTH-1 (CEO call) — renewal banner appears above alerts when
+           any active sub renews within 14 days. Populated by
+           renderRenewalBanner() in recurring-2.js. -->
+      <div id="renewal-banner-wrap"></div>
+
       <!-- Alert banners (price increases + unused) -->
       <div id="alerts-wrap"></div>
 
@@ -629,6 +644,12 @@
           <button class="filter-tab" data-filter="health"  data-pfc-on-click="setFilter" data-pfc-arg='"health"' data-pfc-arg-this-trailing aria-pressed="false">❤️ Health</button>
           <button class="filter-tab danger-tab" data-filter="flagged"  data-pfc-on-click="setFilter" data-pfc-arg='"flagged"' data-pfc-arg-this-trailing aria-pressed="false">⚠️ Price increased</button>
           <button class="filter-tab amber-tab" data-filter="cancelled"  data-pfc-on-click="setFilter" data-pfc-arg='"cancelled"' data-pfc-arg-this-trailing aria-pressed="false">✕ Cancelled</button>
+          <!-- R-WORTH-5 (CEO call) — Hidden filter surfaces user-flagged false
+               positives so they can be restored if mis-hidden. -->
+          <button class="filter-tab" data-filter="hidden"  data-pfc-on-click="setFilter" data-pfc-arg='"hidden"' data-pfc-arg-this-trailing aria-pressed="false">🚫 Hidden</button>
+          <!-- R-CRO-7 (CEO call) — Snoozed filter surfaces 30-day deferred
+               items so the user can wake them early if they want. -->
+          <button class="filter-tab" data-filter="snoozed"  data-pfc-on-click="setFilter" data-pfc-arg='"snoozed"' data-pfc-arg-this-trailing aria-pressed="false">⏸ Snoozed</button>
         </div>
         <div class="sort-bar" style="margin-bottom:0;">
           <!-- R-A11Y-9 fix — proper <label for=> on the sort select so screen
