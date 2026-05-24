@@ -1454,10 +1454,14 @@ function markAllRead() {
       return;
     }
     // Use the most recent prior snapshot vs latest.
+    // FIX (P1-V verification catch): the snapshot writer at line ~1881 and the
+    // logNWSnapshot IIFE store entries as { date, netWorth, assets, ... } —
+    // there is NO `value` field. Reading latest.value short-circuited the
+    // whole nudge to never render. Field name corrected to `netWorth`.
     const latest = history[history.length - 1];
     const prior  = history[history.length - 2];
-    if (!latest || !prior || typeof latest.value !== 'number' || typeof prior.value !== 'number') return;
-    const delta = latest.value - prior.value;
+    if (!latest || !prior || typeof latest.netWorth !== 'number' || typeof prior.netWorth !== 'number') return;
+    const delta = latest.netWorth - prior.netWorth;
     const sym = window.PFCSym ? PFCSym(USER.currency) : (USER.currency || '$');
     const deltaStr = (delta >= 0 ? '+' : '−') + sym + Math.abs(Math.round(delta)).toLocaleString('en-GB');
     const sinceDate = prior.date
