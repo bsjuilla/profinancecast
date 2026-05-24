@@ -207,6 +207,34 @@
   .dti-banner--good .dti-pct{color:var(--teal);}
   .dti-banner--warn .dti-pct{color:var(--amber);}
   .dti-banner--bad  .dti-pct{color:var(--red);}
+  /* D-CRO-12-FOLLOWUP — actionable per-debt callout appended inside .dti-banner. */
+  .dti-callout{font-family:var(--font-body);}
+  /* D-CRO-7-FOLLOWUP — month-over-month interest delta banner. Tinted like
+     the DTI banner but with smaller padding (it's a complement, not a replacement). */
+  .interest-delta{border-radius:var(--r-sm);padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;gap:10px;font-size:12.5px;line-height:1.5;font-family:var(--font-body);}
+  .interest-delta--good{background:rgba(43,182,125,0.06);border:1px solid rgba(43,182,125,0.2);color:var(--text);}
+  .interest-delta--warn{background:rgba(245,166,35,0.06);border:1px solid rgba(245,166,35,0.2);color:var(--text);}
+  /* D-WORTH-1a — refinance simulator inline panel. */
+  .refi-panel{margin-top:10px;padding:12px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r-sm);display:none;}
+  .refi-panel.open{display:block;}
+  .refi-panel-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
+  .refi-panel-label{font-size:11px;color:var(--text3);margin-bottom:4px;display:block;}
+  .refi-panel-input{width:100%;padding:8px 10px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:13px;color:var(--text);font-family:var(--font-body);outline:none;}
+  .refi-panel-input:focus{border-color:rgba(43,182,125,0.4);}
+  .refi-panel-result{font-size:12.5px;line-height:1.5;margin-bottom:10px;padding:8px 10px;border-radius:var(--r-sm);}
+  .refi-panel-result--win{background:rgba(43,182,125,0.08);border:1px solid rgba(43,182,125,0.25);color:var(--text);}
+  .refi-panel-result--loss{background:rgba(224,82,82,0.08);border:1px solid rgba(224,82,82,0.25);color:var(--text);}
+  .refi-panel-actions{display:flex;gap:8px;}
+  .refi-panel-btn{padding:7px 14px;border-radius:var(--r-sm);font-size:12px;font-family:var(--font-body);cursor:pointer;border:1px solid var(--border2);background:transparent;color:var(--text2);}
+  .refi-panel-btn--apply{background:var(--teal);color:var(--canvas);border-color:var(--teal);font-weight:600;}
+  /* D-WORTH-1b — Scenarios dropdown. */
+  .scenarios-menu{position:absolute;top:100%;right:0;margin-top:6px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r-sm);box-shadow:0 8px 24px rgba(0,0,0,0.4);min-width:280px;max-width:360px;z-index:50;display:none;}
+  .scenarios-menu.open{display:block;}
+  .scenarios-menu-item{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--border);font-size:13px;color:var(--text2);}
+  .scenarios-menu-item:last-child{border-bottom:none;}
+  .scenarios-menu-item .scenarios-menu-actions{margin-left:auto;display:flex;gap:6px;}
+  .scenarios-menu-item button{padding:4px 9px;border-radius:4px;font-size:11px;background:transparent;border:1px solid var(--border2);color:var(--text2);cursor:pointer;font-family:var(--font-body);}
+  .scenarios-menu-empty{padding:14px;font-size:12px;color:var(--text3);text-align:center;}
 
   /* TOAST */
   .toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:var(--card);border:1px solid rgba(43,182,125,0.3);border-radius:10px;padding:12px 20px;font-size:13.5px;color:var(--text);z-index:200;white-space:nowrap;animation:toastIn .25s ease;pointer-events:none;}
@@ -318,6 +346,17 @@
   <script src="js/pfc-currency.js"></script>
   <script src="js/pfc-user.js"></script>
   <script src="js/pfc-entitlements.js"></script>
+  <!-- D-WORTH-2-FOLLOWUP (CEO call 2026-05-24) — shared payoff-sim engine.
+       Must load BEFORE debt-optimizer-2.js so calcPayoff's wrapper can find
+       PFCDebtEngine.payoffSimulate. /tools/debt-strategy.html loads the same
+       module — one source of truth for the math. -->
+  <script src="js/pfc-debt-engine.js?v=20260524d"></script>
+  <!-- D-DES-2-FOLLOWUP (CEO call 2026-05-24) — central SVG icon module.
+       Replaces emoji glyphs in TYPE_COLORS / CAT_META. Inline SVG strings,
+       no extra HTTP fetch, ~3KB total. Used by debt-optimizer-2.js's
+       renderDebtList + renderPayoffOrder. Also loaded by /recurring for
+       its CAT_META migration. -->
+  <script src="js/pfc-icons.js?v=20260524d"></script>
   <!-- v3 reskin: new fonts + emerald palette overrides -->
 <script src="js/pfc-fonts.js" defer></script>
   <link rel="stylesheet" href="css/pfc-reskin.css">
@@ -449,6 +488,14 @@
         <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 2h8v4H4z" stroke="currentColor" stroke-width="1.4"/><path d="M2 6h12v6H2z" stroke="currentColor" stroke-width="1.4"/><path d="M5 10h6v4H5z" stroke="currentColor" stroke-width="1.4"/></svg>
         Download PDF<span class="pro-badge" id="pdf-pro-badge">Pro</span>
       </button>
+      <!-- D-WORTH-1b (CEO call 2026-05-24) — Scenarios dropdown (Pro). -->
+      <div style="position:relative;">
+        <button class="topbar-btn" id="btn-scenarios" data-pfc-on-click="toggleScenariosMenu" title="Save + compare debt scenarios (Pro feature)" aria-haspopup="menu" aria-expanded="false">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="2" y="3" width="12" height="2" stroke="currentColor" stroke-width="1.4"/><rect x="2" y="7" width="12" height="2" stroke="currentColor" stroke-width="1.4"/><rect x="2" y="11" width="12" height="2" stroke="currentColor" stroke-width="1.4"/></svg>
+          Scenarios<span class="pro-badge" id="scenarios-pro-badge">Pro</span>
+        </button>
+        <div id="scenarios-menu" class="scenarios-menu" role="menu" aria-labelledby="btn-scenarios"></div>
+      </div>
       <button class="topbar-btn primary"  data-pfc-on-click="openAddDebt">
         <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1v11M1 6.5h11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
         Add debt
@@ -463,8 +510,16 @@
          _renderDtiBanner() ONLY when USER.income > 0; silently empty
          otherwise so guests / users who skipped income onboarding don't
          see a blank "?% of ?". Lives above the summary strip so it
-         anchors strategic context before tactical metrics. -->
+         anchors strategic context before tactical metrics.
+         D-CRO-12-FOLLOWUP appends actionable callout INSIDE the same banner. -->
     <div id="dti-banner-wrap"></div>
+
+    <!-- D-CRO-7-FOLLOWUP (CEO call 2026-05-24) — month-over-month interest
+         delta. Populated by _renderInterestDelta() ONLY after at least
+         one prior calendar-month snapshot in debts_history. Silent on
+         first visit; surfaces "↓ €X less than {prior month}" or
+         "↑ €X more than {prior month}" on subsequent visits. -->
+    <div id="interest-delta-wrap"></div>
 
     <!-- SUMMARY STRIP -->
     <div class="summary-strip">
@@ -801,7 +856,7 @@
      SR users hear changes without losing focus. Updated by _srAnnounce(). -->
 <div id="sr-announce" class="visually-hidden" role="status" aria-live="polite" aria-atomic="true"></div>
 
-<script src="./js/inline/debt-optimizer-2.js?v=20260524f"></script>
+<script src="./js/inline/debt-optimizer-2.js?v=20260524g"></script>
   <!-- Route guard: redirect unauthed users to sign-in -->
   <script src="./js/inline/debt-optimizer-3.js?v=20260524d"></script>
   <!-- D-P0-8 — scrim element for mobile drawer; shared sidebar JS toggles. -->
