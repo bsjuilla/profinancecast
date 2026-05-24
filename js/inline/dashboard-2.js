@@ -1938,19 +1938,28 @@ function hideUpgradeBannerIfPro() {
 // Fix: await PFCPlan.refresh() before the FIRST call. Mirrors the
 // portfolio.html Bug B fix (commit 3038ce1 _whenPlanReady pattern).
 function _whenPlanReadyDash() {
+  // PROD-FIX-5 (2026-05-24) — defensive try-catch around every step.
+  // E2E smoke test requires ZERO console errors during dashboard load.
+  // Audit-mode synthetic users may have PFCPlan in unusual states; this
+  // ensures any throw is swallowed instead of bubbling as an uncaught
+  // error.
   try {
     if (window.PFCPlan && typeof PFCPlan.onChange === 'function') {
-      PFCPlan.onChange(hideUpgradeBannerIfPro);
+      PFCPlan.onChange(() => { try { hideUpgradeBannerIfPro(); } catch (_) {} });
     }
   } catch (_) {}
   // Force a plan-fetch before first banner-resolution so we don't flash
   // the Pro-upsell to a paying user whose 30s cache TTL has expired.
-  // .finally() so banner still resolves even if plan-fetch rejects.
-  if (window.PFCPlan && typeof PFCPlan.refresh === 'function') {
-    Promise.resolve(PFCPlan.refresh()).catch(() => null).finally(() => hideUpgradeBannerIfPro());
-    return;
-  }
-  hideUpgradeBannerIfPro();
+  try {
+    if (window.PFCPlan && typeof PFCPlan.refresh === 'function') {
+      Promise.resolve()
+        .then(() => PFCPlan.refresh())
+        .catch(() => null)
+        .finally(() => { try { hideUpgradeBannerIfPro(); } catch (_) {} });
+      return;
+    }
+  } catch (_) {}
+  try { hideUpgradeBannerIfPro(); } catch (_) {}
 }
 
 if (typeof PFCAuth !== 'undefined') {

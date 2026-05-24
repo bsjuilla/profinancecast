@@ -430,16 +430,16 @@
       <div class="topbar-title" style="font-size:13px;font-weight:500;color:var(--text2);letter-spacing:.04em;text-transform:uppercase;">The Archive</div>
       <div class="topbar-sub" id="topbar-sub">Your wealth, recorded</div>
     </div>
+    <!-- PROD-FIX-6 (2026-05-24) — Export + "← Dashboard" buttons removed
+         per operator request. Sidebar nav already covers Dashboard
+         navigation; Export was rarely used on this surface and was
+         visually cluttering the topbar. Add entry stays as the only
+         action — the page's primary intent. -->
     <div class="topbar-right">
       <button class="btn"  data-pfc-on-click="openManualEntry">
         <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1v11M1 6.5h11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
         Add entry
       </button>
-      <button class="btn"  data-pfc-on-click="exportCSV">
-        <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 9V1M3 6l3.5 3.5L10 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M1 11h11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-        Export
-      </button>
-      <a href="dashboard.html" class="btn">← Dashboard</a>
     </div>
   </div>
 
