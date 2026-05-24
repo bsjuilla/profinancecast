@@ -1,3 +1,24 @@
+// G-P0-2 fix (audit 2026-05-24) — XSS escape helpers for dashboard-side
+// goal cards. Pre-fix renderGoals interpolated `${g.name}` raw into
+// innerHTML, allowing a tampered localStorage goal name like
+// `<img src=x onerror=alert(1)>` to fire on every dashboard load.
+// barColor (g.color) flowing into style="background:${color}" had the
+// same CSS-context breakout class as goals-2.js — fixed with whitelist.
+function _escHtml(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+function _safeColor(v) {
+  const s = String(v == null ? '' : v).trim();
+  if (/^var\(--[a-z0-9-]+\)$/i.test(s)) return s;
+  if (/^#[0-9a-f]{3,8}$/i.test(s)) return s;
+  if (/^rgba?\(\s*\d+%?\s*,\s*\d+%?\s*,\s*\d+%?(\s*,\s*[\d.]+)?\s*\)$/i.test(s)) return s;
+  if (/^hsla?\(\s*\d+\s*,\s*\d+%\s*,\s*\d+%(\s*,\s*[\d.]+)?\s*\)$/i.test(s)) return s;
+  if (/^(red|blue|green|orange|purple|gold|teal|cyan|magenta|yellow|black|white|gray|grey)$/i.test(s)) return s;
+  return 'var(--teal)';
+}
+
 // ── CENTRAL USER DATA (persisted to localStorage) ──
 // Sprint 5: zero seeds. Empty-state copy renders until real onboarding data exists.
 const DEFAULT_USER = {
@@ -811,22 +832,26 @@ function renderGoals() {
     const pctText   = hasTarget ? (pct + '%') : '—';
     // DASH-P2-A DBUG-14: use stable id (not array index) so out-of-band
     // re-renders can't cause the edit click to land on the wrong goal.
+    // G-P0-2 sink (d) fix — escape g.name + whitelist barColor.
+    const safeName = _escHtml(g.name);
+    const safeBarColor = _safeColor(barColor);
+    const safePctColor = _safeColor(pctColor);
     return `
       <div style="position:relative;" data-goal-id="${g.id}">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
           <div>
-            <div style="font-size:13.5px;font-weight:500;">${g.name}</div>
+            <div style="font-size:13.5px;font-weight:500;">${safeName}</div>
             <div style="font-size:11px;color:var(--text3);">${sym}${Math.round(g.current).toLocaleString()} of ${sym}${Math.round(g.target).toLocaleString()}</div>
           </div>
           <div style="display:flex;align-items:center;gap:8px;">
-            <div style="font-size:13px;font-weight:600;color:${pctColor};">${pctText}</div>
+            <div style="font-size:13px;font-weight:600;color:${safePctColor};">${pctText}</div>
             <div style="display:flex;gap:4px;">
               <button onclick="editGoalById('${g.id}')" style="width:22px;height:22px;border-radius:5px;background:var(--bg3);border:1px solid var(--border);cursor:pointer;font-size:11px;color:var(--text3);display:flex;align-items:center;justify-content:center;" title="Edit">✏</button>
               <button onclick="deleteGoalById('${g.id}')" style="width:22px;height:22px;border-radius:5px;background:var(--bg3);border:1px solid var(--border);cursor:pointer;font-size:11px;color:var(--red);display:flex;align-items:center;justify-content:center;" title="Delete">✕</button>
             </div>
           </div>
         </div>
-        <div class="progress-bar"><div class="progress-fill" style="width:${pct}%;background:${barColor};"></div></div>
+        <div class="progress-bar"><div class="progress-fill" style="width:${pct}%;background:${safeBarColor};"></div></div>
         <div style="font-size:11px;color:var(--text3);margin-top:4px;">
           ${!hasTarget ? 'Set a target amount.' : pct >= 100 ? 'Goal reached.' : months ? `~${months} month${months===1?'':'s'} to reach goal` : 'Increase your surplus to reach this goal'}
         </div>
@@ -880,15 +905,18 @@ function renderGoalsPanel() {
     const pct       = Math.min(100, Math.round(((g.current||0) / Math.max(1, g.target||1)) * 100));
     const remaining = Math.max(0, (g.target||0) - (g.current||0));
     const months    = surplus > 0 ? Math.ceil(remaining / surplus) : null;
-    const barColor  = g.color || 'var(--teal)';
-    const pctColor  = pct >= 100 ? 'var(--teal)' : barColor;
+    // G-P0-2 sink (d) fix #2 — second renderGoals path (full-list view).
+    // Same escape pattern as the mini view above.
+    const barColor  = _safeColor(g.color || 'var(--teal)');
+    const pctColor  = _safeColor(pct >= 100 ? 'var(--teal)' : g.color || 'var(--teal)');
+    const safeName  = _escHtml(g.name);
     return `
     <div style="padding:12px 0;border-bottom:1px solid var(--border);">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
         <div style="display:flex;align-items:center;gap:8px;">
           <div style="width:10px;height:10px;border-radius:50%;background:${barColor};flex-shrink:0;"></div>
           <div>
-            <div style="font-size:13.5px;font-weight:500;">${g.name}</div>
+            <div style="font-size:13.5px;font-weight:500;">${safeName}</div>
             <div style="font-size:11px;color:var(--text3);">${sym}${Math.round(g.current||0).toLocaleString()} of ${sym}${Math.round(g.target||0).toLocaleString()}</div>
           </div>
         </div>
@@ -982,17 +1010,22 @@ function saveGoal() {
   if (!name)    { document.getElementById('goal-name').style.borderColor = 'rgba(224,82,82,.6)'; setTimeout(()=>document.getElementById('goal-name').style.borderColor='',1500); return; }
   if (!target || target <= 0) { document.getElementById('goal-target').style.borderColor = 'rgba(224,82,82,.6)'; setTimeout(()=>document.getElementById('goal-target').style.borderColor='',1500); return; }
 
-  // DASH-P2-A DBUG-14: stable id per goal (see loadGoals backfill above).
-  const goal = { name, current, target, color: selectedGoalColor };
+  // G-P0-1 fix (audit 2026-05-24) — spread-then-merge. Pre-fix this only
+  // rescued `id` manually; editing a goal created on goals.html silently
+  // destroyed category, targetDate, monthlyNeeded, boost, key. Now any
+  // fields this dashboard editor doesn't know about are preserved.
+  const newFields = { name, current, target, color: selectedGoalColor };
   if (editingGoalIdx >= 0) {
-    // Preserve the existing id when editing so render order can never
-    // cause an edit to land on the wrong goal.
-    goal.id = (GOALS[editingGoalIdx] && GOALS[editingGoalIdx].id) || ('g_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8));
-    GOALS[editingGoalIdx] = goal;
+    GOALS[editingGoalIdx] = { ...GOALS[editingGoalIdx], ...newFields };
+    if (!GOALS[editingGoalIdx].id) {
+      GOALS[editingGoalIdx].id = 'g_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
+    }
     showDashToast('Goal updated');
   } else {
-    goal.id = 'g_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
-    GOALS.push(goal);
+    GOALS.push({
+      id: 'g_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8),
+      ...newFields,
+    });
     showDashToast('Goal added — ' + name);
   }
   saveGoals();
@@ -2153,21 +2186,50 @@ function renderNWTab() {
     const netWorth    = assets - debt;
     if (assets === 0 && debt === 0) return;
 
-    const today = new Date().toISOString().slice(0, 10);
+    // NW-P1-2 fix — local date, not UTC. Pre-fix toISOString slice gave a
+    // UTC date that disagreed with net-worth-2.js's _localToday on the
+    // cleared-on string compare, leaving cross-page ghost re-log possible
+    // for users in non-UTC zones. Now both writers compute the same local
+    // YYYY-MM-DD string.
+    const _d = new Date();
+    const today = _d.getFullYear() + '-' +
+      String(_d.getMonth() + 1).padStart(2, '0') + '-' +
+      String(_d.getDate()).padStart(2, '0');
+    // NW-P0-2 cross-page guard — if the user just cleared history (from
+    // net-worth.html clearHistory), don't re-log today's entry from the
+    // dashboard auto-logger either. Must match the same guard in
+    // net-worth-2.js logTodaySnapshot to prevent cross-page ghost-re-log.
+    try {
+      const clearedOn = PFCStorage.getJSON('nw_history_cleared_on');
+      if (clearedOn === today) return;
+    } catch (_) {}
     let history = [];
     try { history = PFCStorage.getJSON('nw_history') || []; } catch(e) {}
 
+    // NW-P1-1 cross-page guard — manual entries always win. Pre-fix the
+    // dashboard writer keyed on (date, source='auto') so a manual entry
+    // logged on net-worth.html would coexist with this auto row on the
+    // same day, producing duplicate rows in the history table.
     const entry = { date: today, netWorth, assets, savings, investments, debt, source: 'auto' };
-    const idx = history.findIndex(h => h.date === today && h.source === 'auto');
-    if (idx >= 0) history[idx] = entry;
+    const anyToday = history.findIndex(h => h.date === today);
+    if (anyToday >= 0 && history[anyToday].source === 'manual') return;
+    if (anyToday >= 0) history[anyToday] = entry;
     else history.push(entry);
 
     history.sort((a, b) => a.date.localeCompare(b.date));
-    // DASH-P2-A DBUG-12 fix — was unbounded growth. After 3 years (1095
-    // daily entries) the encrypted blob bloats and every PFCUser.update
-    // re-encrypts the full payload. Cap to most recent 365 entries —
-    // one year of history covers every chart range the dashboard renders.
-    if (history.length > 365) history = history.slice(-365);
+    // NW-P0-1 fix (audit 2026-05-24) — the 365-cap silently truncated
+    // backfilled manual entries written by net-worth-2.js saveManualEntry
+    // (which had no cap of its own). User reports: "I added an entry for
+    // 2024-01-15 and it disappeared after reloading dashboard." Pro/Founders
+    // were also sold "forever history" on the landing page, but the cap
+    // contradicted that promise.
+    //
+    // Resolution: 10-year backstop (3650 daily entries). At 10y the encrypted
+    // payload is ~440KB — sub-ms to re-encrypt on modern hardware, well under
+    // localStorage's 5MB cap. All 3 nw_history writers (this one,
+    // net-worth-2.js logTodaySnapshot, net-worth-2.js saveManualEntry) now
+    // share the same cap to prevent one writer truncating another's data.
+    if (history.length > 3650) history = history.slice(-3650);
     PFCStorage.setJSON('nw_history', history);
   } catch(e) {}
 })();

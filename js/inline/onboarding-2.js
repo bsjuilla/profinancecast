@@ -386,7 +386,13 @@ function buildComplete() {
       retire:    { name: 'Retire early',   target: 500000 },
       travel:    { name: 'Travel fund',    target: 5000 },
     };
+    // G-P0-1 fix (audit 2026-05-24) — mint canonical `id` at seed time so
+    // dashboard / goals.html cross-page edits work on the very first goal
+    // a user ever creates. Pre-fix the loader had to backfill id on every
+    // page load, and any inflight edit between seed and first load could
+    // race with the backfill.
     const goalsArray = Array.from(selectedGoals).map(key => ({
+      id: 'g_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8) + '_' + key,
       key,
       name: (GOAL_DEFAULTS[key] || {}).name || key,
       target: (GOAL_DEFAULTS[key] || {}).target || 1000,
