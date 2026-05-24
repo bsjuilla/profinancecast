@@ -296,7 +296,26 @@ function _typeLabelHtml(typeKey) {
 }
 
 // ── INIT ──
+// D-PROD-AUDIT fix (2026-05-24) — wrap init body in try/catch defensive net,
+// same pattern as renderAll. Pre-fix: any unguarded getElementById().textContent
+// (m-sym, extra-slider.max) would throw if its DOM target was missing, leaving
+// the page half-initialised with no error surfaced. Now: same banner the
+// renderAll wrapper uses — "your data is safe in storage" — so a bad deploy
+// or a stale HTML fragment never leaves the user staring at a silently-broken
+// page. _renderAllImpl is still called from inside the try; if IT throws,
+// renderAll's own wrapper catches it. Belt + suspenders.
 function init() {
+  try {
+    _initImpl();
+  } catch (err) {
+    try { console.error('[init]', err); } catch (_) {}
+    // _showRenderErrorBanner needs .summary-strip in the DOM. By the time
+    // init runs (DOMContentLoaded), the strip exists, so this is safe.
+    try { _showRenderErrorBanner(err); } catch (_) {}
+  }
+}
+
+function _initImpl() {
   try { USER = (typeof PFCUser !== 'undefined') ? PFCUser.get() : (PFCStorage.getJSON('user') || {}); } catch(e) { USER = {}; }
   // D-SEC-13: prototype-pollution-safe parse.
   try {
@@ -323,7 +342,11 @@ function init() {
   }
 
   const sym = window.PFCSym ? PFCSym(USER.currency) : (USER.currency || '$');
-  document.getElementById('m-sym').textContent = sym;
+  // D-PROD-AUDIT: null-guard the DOM writes inside _initImpl. If the page
+  // is served with a stale HTML fragment that omitted these IDs, the user
+  // sees the error banner instead of a TypeError into a blank page.
+  const msymEl = document.getElementById('m-sym');
+  if (msymEl) msymEl.textContent = sym;
 
   // Sidebar user-pill hydrated by js/pfc-sidebar.js;
   // plan badge by PFCPlan.applyBadges().
@@ -334,7 +357,8 @@ function init() {
   // Set extra slider max based on user surplus
   const surplus = Math.max(500, Math.round(((USER.income||0) + (USER.otherIncome||0)) -
     ((USER.housing||0) + (USER.food||0) + (USER.transport||0) + (USER.otherExp||0) + (USER.debtPay||0))));
-  document.getElementById('extra-slider').max = Math.max(1000, surplus);
+  const slider = document.getElementById('extra-slider');
+  if (slider) slider.max = Math.max(1000, surplus);
 
   renderAll();
 }
@@ -860,7 +884,7 @@ let _refiOpenId = '';
 function _toggleRefiPanelById(id) {
   if (!id) return;
   _refiOpenId = (_refiOpenId === id) ? '' : id;
-  renderDebtList(_lastOptForRefi || calcPayoff(DEBTS, STRATEGY, EXTRA), USER.sym || '$');
+  renderDebtList(_lastOptForRefi || calcPayoff(DEBTS, STRATEGY, EXTRA), (window.PFCSym ? PFCSym(USER.currency) : (USER.currency || '$')));
 }
 let _lastOptForRefi = null; // captured from renderAll for the refi recompute
 // Compute refi impact for a single debt at a hypothetical newRate.
@@ -900,7 +924,7 @@ function applyRefiById(id, newRate) {
   saveDebts(); // saveDebts already appends to debts_history
   _refiOpenId = ''; // close the panel post-apply
   renderAll();
-  const sym = USER.sym || '$';
+  const sym = (window.PFCSym ? PFCSym(USER.currency) : (USER.currency || '$'));
   showToast(`Applied: ${d.name} refinanced from ${before}% → ${safe}% APR`);
   _srAnnounce(`Refinance applied. ${d.name} rate changed from ${before}% to ${safe}%.`);
 }
@@ -924,7 +948,7 @@ async function askSageAboutRefiById(id) {
   // Per-debt context for the Sage prompt. Sanitize name + type per the
   // R-SEC-21 prompt-injection pattern (strip newlines, cap length, frame
   // as labelled data fields so the LLM treats values as data).
-  const sym = USER.sym || '$';
+  const sym = (window.PFCSym ? PFCSym(USER.currency) : (USER.currency || '$'));
   const safeName = String(d.name || '').replace(/[\r\n\t]+/g, ' ').slice(0, 80);
   const typeLabel = (TYPE_COLORS[d.type] && TYPE_COLORS[d.type].label) || 'Other';
   const safeType = String(typeLabel).replace(/[\r\n\t]+/g, ' ').slice(0, 40);
@@ -980,7 +1004,7 @@ function _renderScenariosMenu() {
   menu.classList.toggle('open', _scenariosMenuOpen);
   if (!_scenariosMenuOpen) return;
   const scenarios = _loadDebtScenarios();
-  const sym = USER.sym || '$';
+  const sym = (window.PFCSym ? PFCSym(USER.currency) : (USER.currency || '$'));
   let html = `<div class="scenarios-menu-item" style="font-weight:600;color:var(--text);background:rgba(43,182,125,0.06);"><span>💾 Save current state…</span><div class="scenarios-menu-actions"><button type="button" data-scenarios-action="save">Save</button></div></div>`;
   if (!scenarios.length) {
     html += `<div class="scenarios-menu-empty">No saved scenarios yet. Save the current debt list + strategy + extra payment to compare with future variations.</div>`;
@@ -1085,7 +1109,7 @@ function _openScenarioCompare(scenarioId) {
   const arr = _loadDebtScenarios();
   const sc = arr.find(s => s.id === scenarioId);
   if (!sc) return;
-  const sym = USER.sym || (window.PFCSym ? PFCSym(USER.currency) : (USER.currency || '$'));
+  const sym = window.PFCSym ? PFCSym(USER.currency) : (USER.currency || '$');
 
   // Validate scenario debts have all required fields (defence against
   // tampered storage). If any debt lacks id/balance/rate/minPay, skip
@@ -1465,7 +1489,7 @@ function _srAnnounce(message) {
 // appended ONLY if goals exist in storage AND freed monthly > 0
 // (D-CRO-5 lightweight — matches R-CRO-5 pattern on /recurring).
 function _celebrateClearedDebt(name, freedMonthly) {
-  const sym = USER.sym || (window.PFCSym ? PFCSym(USER.currency) : (USER.currency || '$'));
+  const sym = window.PFCSym ? PFCSym(USER.currency) : (USER.currency || '$');
   const goalsRaw = (() => { try { return PFCStorage.get('goals'); } catch (_) { return null; } })();
   const goals = goalsRaw ? _safeParseJson(goalsRaw) : null;
   const hasGoals = Array.isArray(goals) && goals.length > 0;
@@ -1516,7 +1540,7 @@ function logPaymentById(id) {
   if (!d) return;
   const minPay = Number(d.minPay) || 0;
   if (minPay <= 0) return;
-  const sym = USER.sym || (window.PFCSym ? PFCSym(USER.currency) : (USER.currency || '$'));
+  const sym = window.PFCSym ? PFCSym(USER.currency) : (USER.currency || '$');
   const before = Number(d.balance) || 0;
   const applied = Math.min(minPay, before);
   const after = Math.max(0, before - applied);
@@ -1651,7 +1675,7 @@ function renderDebtList(opt, sym) {
       const resultEl = listEl.querySelector('[data-refi-result="' + id + '"]');
       if (!resultEl) return;
       if (!impact) { resultEl.innerHTML = ''; resultEl.className = 'refi-panel-result'; return; }
-      const sym = USER.sym || '$';
+      const sym = (window.PFCSym ? PFCSym(USER.currency) : (USER.currency || '$'));
       const monthsSaved = Math.max(0, impact.monthsSaved);
       const interestSaved = Math.max(0, impact.interestSaved);
       const interestExtra = Math.max(0, -impact.interestSaved);

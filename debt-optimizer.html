@@ -916,7 +916,23 @@
      SR users hear changes without losing focus. Updated by _srAnnounce(). -->
 <div id="sr-announce" class="visually-hidden" role="status" aria-live="polite" aria-atomic="true"></div>
 
-<script src="./js/inline/debt-optimizer-2.js?v=20260524h"></script>
+<!--
+  CACHE-BUST CONTRACT (D-PROD-AUDIT 2026-05-24)
+  ─────────────────────────────────────────────
+  ANY edit to debt-optimizer-2.js, debt-optimizer-3.js, pfc-debt-engine.js,
+  pfc-icons.js, or pfc-mobile-sidebar.js MUST also bump the ?v= suffix on
+  the corresponding <script> tag below. Browsers cache JS files for 24h
+  (Cache-Control max-age=86400) so without a bump the user keeps running
+  the stale version and any bug fix you ship is invisible.
+
+  Naming convention: ?v=YYYYMMDD<letter>[-suffix]
+  Increment the letter on each push; append `-suffix` ("tdzfix2") only when
+  re-shipping the same date for a critical hotfix. The current commit's
+  Sentry-blocking TDZ regression slipped through ONLY because the ?v= was
+  not bumped — same URL → browser served stale JS → fix invisible. Don't
+  let this happen again.
+-->
+<script src="./js/inline/debt-optimizer-2.js?v=20260524i-tdzfix2"></script>
   <!-- Route guard: redirect unauthed users to sign-in -->
   <script src="./js/inline/debt-optimizer-3.js?v=20260524d"></script>
   <!-- D-P0-8 — scrim element for mobile drawer; shared sidebar JS toggles. -->
