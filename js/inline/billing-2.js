@@ -221,11 +221,32 @@ async function _tryRenderSubscriptionButton() {
   // re-renders the button as failed, which isn't great UX. So we probe
   // FIRST with a real call and either render the subscription button OR
   // throw to trigger fallback.
-  const probe = await fetch('/api/paypal/create-subscription', {
-    method: 'POST',
-    headers: _authHeaders(),
-    body: JSON.stringify({ plan: checkoutPlan }),
-  });
+  // B-P0-PAYPAL-TIMEOUT fix (audit 2026-05-25) — pre-fix the probe had
+  // no timeout. If the PayPal create-subscription endpoint hung
+  // (upstream PayPal slow, network blip), the modal sat with no
+  // feedback indefinitely and the user could rapid-click "Subscribe"
+  // triggering duplicate subscription creation. 12s ceiling is well
+  // above PayPal's typical p99 (~3s) but firmly below user-impatience
+  // threshold. AbortController fires a clean error path that's already
+  // handled by the caller's catch → fallback flow.
+  const _probeAbort = new AbortController();
+  const _probeTimer = setTimeout(() => _probeAbort.abort(), 12_000);
+  let probe;
+  try {
+    probe = await fetch('/api/paypal/create-subscription', {
+      method: 'POST',
+      headers: _authHeaders(),
+      body: JSON.stringify({ plan: checkoutPlan }),
+      signal: _probeAbort.signal,
+    });
+  } catch (e) {
+    clearTimeout(_probeTimer);
+    if (e && e.name === 'AbortError') {
+      throw new Error('subscription_probe_timeout');
+    }
+    throw e;
+  }
+  clearTimeout(_probeTimer);
 
   if (probe.status === 503) {
     // Feature not configured — fall back. (Throw triggers the catch in caller.)
@@ -892,24 +913,60 @@ window.addEventListener('DOMContentLoaded', () => {
   // Live Founders seat count
   refreshFoundersCount();
 
+  // B-P0-PLAN-FLASH fix (audit 2026-05-25) — extracted the banner-write
+  // logic into a single function so we can call it both from PFCPlan.
+  // onChange AND from the initial refresh() resolution. The HTML now
+  // ships visibility:hidden on #current-plan-banner so the "Loading…"
+  // text never paints to a Pro user. Once we have a real plan value
+  // (from PFCPlan.refresh()), we paint the correct copy and reveal.
+  // Same regression class as DASH-PROD-FIX-4 / RC-P0-PLAN-FLASH /
+  // SAGE-P0-UX (banner-flash on cold load for paying users).
+  function _renderPlanBanner(plan) {
+    const safePlan = (plan === 'premium' || plan === 'pro') ? plan : 'free';
+    currentPlan = safePlan;
+    const banner = document.getElementById('banner-plan-name');
+    const tier =
+      safePlan === 'premium' ? 'Premium' :
+      safePlan === 'pro'     ? 'Pro'     :
+                               'Free';
+    if (banner) banner.textContent = tier + ' Plan';
+    const sidebar = document.getElementById('sidebar-plan');
+    if (sidebar) sidebar.textContent = tier + ' plan';
+    // Sage usage row only meaningful on paid tiers (Sage = Pro-only feature)
+    const usageBlock = document.getElementById('plan-usage-block');
+    if (usageBlock) usageBlock.style.display = (safePlan === 'free' ? 'none' : '');
+    const desc = document.getElementById('banner-plan-desc');
+    if (desc) {
+      desc.textContent =
+        safePlan === 'free'    ? 'Core forecasting tools · no card required' :
+        safePlan === 'premium' ? '500 Sage messages a month · all Pro features active' :
+                                 '200 Sage messages a month · all Pro features active';
+    }
+    // Reveal the banner now that we have a real plan value. Setting
+    // visibility (not display) preserves the layout slot — no reflow.
+    const root = document.getElementById('current-plan-banner');
+    if (root) root.style.visibility = 'visible';
+  }
+
   if (typeof PFCPlan !== 'undefined') {
-    PFCPlan.onChange(plan => {
-      currentPlan = plan;
-      const banner = document.getElementById('banner-plan-name');
-      if (banner) banner.textContent = (plan === 'free' ? 'Free' : 'Pro') + ' Plan';
-      const sidebar = document.getElementById('sidebar-plan');
-      if (sidebar) sidebar.textContent = (plan === 'free' ? 'Free' : 'Pro') + ' plan';
-      // Sage usage row only meaningful on paid tiers (Sage = Pro-only feature)
-      const usageBlock = document.getElementById('plan-usage-block');
-      if (usageBlock) usageBlock.style.display = (plan === 'free' ? 'none' : '');
-      const desc = document.getElementById('banner-plan-desc');
-      if (desc) {
-        desc.textContent = (plan === 'free')
-          ? 'Core forecasting tools · no card required'
-          : (plan === 'premium' ? '500 Sage messages a month · all Pro features active'
-                                : '200 Sage messages a month · all Pro features active');
-      }
-    });
-    PFCPlan.refresh();
+    PFCPlan.onChange(_renderPlanBanner);
+    // Wait for the real plan to land BEFORE the first paint of the
+    // banner. If PFCPlan.refresh() rejects, fall back to PFCPlan.get()
+    // (cached value, often correct) and reveal anyway — better to show
+    // a possibly-stale plan than a permanently-hidden banner.
+    if (typeof PFCPlan.refresh === 'function') {
+      PFCPlan.refresh()
+        .then(() => _renderPlanBanner(PFCPlan.get ? PFCPlan.get() : 'free'))
+        .catch(() => _renderPlanBanner(PFCPlan.get ? PFCPlan.get() : 'free'));
+    } else if (PFCPlan.get) {
+      _renderPlanBanner(PFCPlan.get());
+    }
+  } else {
+    // PFCPlan didn't load — reveal the banner with the "Loading…"
+    // placeholder so the layout doesn't stay blank forever. This is
+    // a degraded path; auth + entitlements scripts are normally
+    // required to reach /billing.
+    const root = document.getElementById('current-plan-banner');
+    if (root) root.style.visibility = 'visible';
   }
 });

@@ -26,8 +26,29 @@ function _withDebug(payload, debug) {
   return IS_PROD ? payload : { ...payload, ...debug };
 }
 
+// B-P0-CORS-PIN (audit 2026-05-25) — explicit CORS allow-list pinned to
+// prod origins (override via ALLOWED_ORIGINS env). Headers set BEFORE
+// any early return so the browser shows real status codes on 4xx
+// instead of opaque CORS errors. Same pattern as SAGE-P0-BACK.
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS ||
+  'https://profinancecast.com,https://www.profinancecast.com')
+  .split(',').map(s => s.trim()).filter(Boolean);
+function _setCors(req, res) {
+  const origin = req.headers.origin || '';
+  if (ALLOWED_ORIGINS.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Vary', 'Origin');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
+    res.setHeader('Access-Control-Max-Age', '600');
+  }
+}
+
 export default async function handler(req, res) {
   try {
+  _setCors(req, res);
+  if (req.method === 'OPTIONS') return res.status(204).end();
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
   const auth = req.headers.authorization || '';

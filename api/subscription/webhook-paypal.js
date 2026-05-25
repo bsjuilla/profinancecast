@@ -25,7 +25,24 @@ import { createClient } from '@supabase/supabase-js';
 // is computed over the exact raw bytes PayPal sent; the default parser
 // re-orders keys and changes whitespace, breaking verification silently
 // (HTTP 401 on every real event despite "valid" signatures).
+//
+// !!! DO NOT enable bodyParser without breaking signature verification !!!
+// B-P0-WEBHOOK-DEFENSE (audit 2026-05-25) — A future developer "fixing"
+// the missing JSON parsing by removing this line will silently break
+// EVERY incoming PayPal event (401 on signature verification). The
+// failure mode is subtle: webhooks return 401 but PayPal keeps retrying
+// (per its delivery policy), so the ledger looks fine for hours until
+// retention catches up. _verifySignature MUST see the byte-identical
+// transmission. Re-test signature path before changing this.
 export const config = { api: { bodyParser: false } };
+
+// B-P0-WEBHOOK-DEFENSE — hard cap on the raw body we accept. Real PayPal
+// webhook payloads are ~5KB (largest observed: subscription with all
+// agreement_details ≈ 12KB). 100KB is generously above p99 and acts as
+// a memory-DoS floor — without bodyParser the runtime would happily
+// concatenate megabytes if an attacker shovels them at us. We bail BEFORE
+// running signature verification, which is the expensive step.
+const MAX_WEBHOOK_BODY_BYTES = 100 * 1024;
 
 const PAYPAL_BASE = (process.env.PAYPAL_ENV === 'sandbox')
   ? 'https://api-m.sandbox.paypal.com'
@@ -167,10 +184,22 @@ async function _alertViaSlack(subject, body) {
 
 // Reads the raw incoming bytes as a Buffer. Used for PayPal webhook
 // signature verification (which must see byte-identical input).
+//
+// B-P0-WEBHOOK-DEFENSE — accumulator caps at MAX_WEBHOOK_BODY_BYTES.
+// Throws a tagged error if exceeded so the handler can return 413.
 async function _readRawBody(req) {
   const chunks = [];
+  let total = 0;
   for await (const chunk of req) {
-    chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
+    const buf = typeof chunk === 'string' ? Buffer.from(chunk) : chunk;
+    total += buf.length;
+    if (total > MAX_WEBHOOK_BODY_BYTES) {
+      const err = new Error('WEBHOOK_BODY_TOO_LARGE');
+      err.code = 'WEBHOOK_BODY_TOO_LARGE';
+      err.bytes = total;
+      throw err;
+    }
+    chunks.push(buf);
   }
   return Buffer.concat(chunks);
 }
@@ -229,10 +258,18 @@ export default async function handler(req, res) {
 
   // W25 P0 #10 — read raw body bytes. bodyParser is disabled at top of file
   // so req is a raw stream here, NOT a parsed object.
+  //
+  // B-P0-WEBHOOK-DEFENSE — _readRawBody caps at MAX_WEBHOOK_BODY_BYTES
+  // and throws WEBHOOK_BODY_TOO_LARGE on overflow. Return 413 so PayPal
+  // doesn't retry (it treats 4xx as terminal, 5xx as transient).
   let rawBody;
   try { rawBody = (await _readRawBody(req)).toString('utf8'); }
   catch (e) {
-    console.error('Failed to read webhook raw body:', e);
+    if (e && e.code === 'WEBHOOK_BODY_TOO_LARGE') {
+      console.error('[webhook] body too large code=WEBHOOK_BODY_TOO_LARGE bytes=' + (e.bytes || '?'));
+      return res.status(413).json({ error: 'Payload too large' });
+    }
+    console.error('[webhook] raw-body read failed code=' + (e && e.code || 'UNKNOWN'));
     return res.status(400).json({ error: 'Bad request' });
   }
 

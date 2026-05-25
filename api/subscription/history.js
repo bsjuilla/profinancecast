@@ -26,10 +26,30 @@ export const config = { runtime: 'edge' };
 
 import { createClient } from '@supabase/supabase-js';
 
-function _json(body, status) {
+// B-P0-CORS-PIN (audit 2026-05-25) — explicit CORS allow-list pinned
+// to prod origins. Same pattern as SAGE-P0-BACK / cancel.js / status.js.
+// Edge runtime returns a Response object so headers go on the Response
+// constructor, not res.setHeader.
+const ALLOWED_ORIGINS = ((globalThis.process && globalThis.process.env && globalThis.process.env.ALLOWED_ORIGINS) ||
+  'https://profinancecast.com,https://www.profinancecast.com')
+  .split(',').map(s => s.trim()).filter(Boolean);
+function _corsHeaders(req) {
+  const origin = (req.headers && req.headers.get && req.headers.get('origin')) || '';
+  if (!ALLOWED_ORIGINS.includes(origin)) return {};
+  return {
+    'Access-Control-Allow-Origin': origin,
+    'Vary': 'Origin',
+    'Access-Control-Allow-Credentials': 'true',
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Access-Control-Allow-Headers': 'Authorization, Content-Type',
+    'Access-Control-Max-Age': '600',
+  };
+}
+
+function _json(body, status, req) {
   return new Response(JSON.stringify(body), {
     status: status || 200,
-    headers: { 'Content-Type': 'application/json; charset=utf-8' },
+    headers: { 'Content-Type': 'application/json; charset=utf-8', ...(req ? _corsHeaders(req) : {}) },
   });
 }
 
@@ -75,15 +95,19 @@ const STATUS_BY_TYPE = {
 };
 
 export default async function handler(req) {
-  if (req.method !== 'GET') return _json({ error: 'Method not allowed' }, 405);
+  // B-P0-CORS-PIN — OPTIONS preflight. Edge runtime: return Response directly.
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { status: 204, headers: _corsHeaders(req) });
+  }
+  if (req.method !== 'GET') return _json({ error: 'Method not allowed' }, 405, req);
 
   const auth = req.headers.get('authorization') || '';
   const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
-  if (!token) return _json({ error: 'Missing auth token' }, 401);
+  if (!token) return _json({ error: 'Missing auth token' }, 401, req);
 
   if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
     console.error('subscription/history: missing Supabase env');
-    return _json({ error: 'Service not configured' }, 503);
+    return _json({ error: 'Service not configured' }, 503, req);
   }
 
   const supabase = createClient(
@@ -95,7 +119,7 @@ export default async function handler(req) {
   // Resolve user from the bearer token. service_role bypasses RLS, so we
   // MUST scope queries to data.user.id ourselves below.
   const { data: userData, error: userErr } = await supabase.auth.getUser(token);
-  if (userErr || !userData?.user) return _json({ error: 'Invalid auth token' }, 401);
+  if (userErr || !userData?.user) return _json({ error: 'Invalid auth token' }, 401, req);
   const userId = userData.user.id;
 
   // Parse limit query param (default 20, max 100).
@@ -114,7 +138,7 @@ export default async function handler(req) {
   if (qErr) {
     console.error('subscription/history query error:', qErr);
     // 503 so the client preserves any cached history rather than rendering empty.
-    return _json({ error: 'Could not load history' }, 503);
+    return _json({ error: 'Could not load history' }, 503, req);
   }
 
   // Filter to user-visible types, map to UI shape.
@@ -134,5 +158,5 @@ export default async function handler(req) {
       // we ever add a per-event detail view.
     }));
 
-  return _json({ events: visible });
+  return _json({ events: visible }, 200, req);
 }

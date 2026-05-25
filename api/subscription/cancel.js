@@ -139,7 +139,28 @@ function _originAllowed(req) {
   return false;
 }
 
+// B-P0-CORS-PIN (audit 2026-05-25) — set explicit CORS headers BEFORE
+// any early return so the browser sees a real status code instead of a
+// generic CORS error on 4xx. The _originAllowed() check below already
+// rejects cross-origin POSTs at the application layer; this is
+// defense-in-depth + better DX when an authenticated request from prod
+// hits a non-OK path. Same pattern as SAGE-P0-BACK.
+function _setCors(req, res) {
+  const origin = req.headers.origin || '';
+  if (_originAllowed(req)) {
+    res.setHeader('Access-Control-Allow-Origin', origin || APP_ORIGIN);
+    res.setHeader('Vary', 'Origin');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
+    res.setHeader('Access-Control-Max-Age', '600');
+  }
+}
+
 export default async function handler(req, res) {
+  _setCors(req, res);
+  // B-P0-CORS-PIN — OPTIONS preflight for browsers that probe before POST.
+  if (req.method === 'OPTIONS') return res.status(204).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   // W26-a #12: reject cross-origin/no-origin requests.

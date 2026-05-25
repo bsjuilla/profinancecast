@@ -23,16 +23,24 @@
 <link rel="stylesheet" href="css/pfc-tokens.css">
 <link rel="stylesheet" href="css/pfc-footer.css">
 <script src="js/pfc-export.js" defer></script>
-<!-- Supabase SDK + auth/storage/entitlements (must load before any inline script that uses them) -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/pfc-audit-mode.js"></script>
-  <script src="js/pfc-config.js"></script>
-<script src="js/pfc-auth.js"></script>
-<script src="js/pfc-crypto.js"></script>
-<script src="js/pfc-storage.js"></script>
-<script src="js/pfc-currency.js"></script>
-<script src="js/pfc-user.js"></script>
-<script src="js/pfc-entitlements.js"></script>
+<!-- B-P0-INFRA fix (audit 2026-05-25) — Supabase pinned + SRI + defer.
+     Same canonical hash + version used across all 13 audited siblings.
+     NOT fabricated — copied from journal.html / sage.html / etc. -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.105.4"
+        integrity="sha384-4eCDoMN/7A46qQ5Tj0rZ/D2VEolFGNIINDTLAcWZcvhkRSsvTfqNfaBMlRRoGEZ5"
+        crossorigin="anonymous" defer></script>
+<!-- B-P0-INFRA — defer 8 head pfc-* scripts so they no longer block HTML
+     parsing. defer preserves order; dependencies still resolve in
+     sequence before body-loaded inline scripts. Same pattern as the 13
+     audited sibling surfaces. -->
+<script src="js/pfc-audit-mode.js" defer></script>
+<script src="js/pfc-config.js" defer></script>
+<script src="js/pfc-auth.js" defer></script>
+<script src="js/pfc-crypto.js" defer></script>
+<script src="js/pfc-storage.js" defer></script>
+<script src="js/pfc-currency.js" defer></script>
+<script src="js/pfc-user.js" defer></script>
+<script src="js/pfc-entitlements.js" defer></script>
 <script src="js/pfc-fonts.js" defer></script>
 <link rel="stylesheet" href="css/pfc-reskin.css">
 <link rel="stylesheet" href="css/pfc-app.css">
@@ -45,7 +53,11 @@
      ────────────────────────────────────────────────────────────── */
 
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  /* B-P0-COMPAT (audit 2026-05-25) — iOS text inflation + dark color-scheme.
+     Same one-liner shipped on every audited surface in the polish cycle. */
+  html { -webkit-text-size-adjust: 100%; color-scheme: dark; }
   html, body { height: 100%; }
+  /* dvh fallback so iOS Safari address-bar churn doesn't crop the page. */
   body {
     font-family: var(--pfc-body);
     background: var(--pfc-canvas);
@@ -53,7 +65,19 @@
     display: flex;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
+    min-height: 100vh; min-height: 100dvh;
   }
+
+  /* B-P0-A11Y — skip-link for keyboard users. The page has 25+ sidebar
+     nav items + topbar + hero before reaching the plan cards. Skip-link
+     jumps straight to #main. */
+  .skip-link { position: absolute; left: -9999px; top: 0; background: var(--pfc-emerald); color: var(--pfc-canvas); padding: 10px 16px; border-radius: 0 0 6px 0; font-weight: 600; z-index: 300; text-decoration: none; }
+  .skip-link:focus { left: 0; }
+  .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+
+  /* B-P0-MOB scaffolding — hidden until @899px media activates. */
+  .sidebar-toggle { display: none; }
+  .sidebar-scrim { display: none; }
 
   .num {
     font-family: var(--pfc-mono);
@@ -1030,10 +1054,71 @@
     .plan-usage { width: 100%; min-width: 0; }
     .hero-headline { font-size: var(--type-display-md); }
   }
-  @media (max-width: 720px) {
-    .sidebar { display: none; }
+  /* B-P0-A11Y — global :focus-visible ring. Buttons, links, modal close,
+     PayPal hosted buttons, FAQ summaries — all gain a keyboard ring. */
+  :where(button,a,input,select,textarea,[tabindex]):focus-visible {
+    outline: 2px solid var(--pfc-emerald);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+  }
+
+  /* B-P0-MOB (audit 2026-05-25) — Mobile drawer pattern. Pre-fix the
+     only mobile rule was @media(720px){.sidebar{display:none}} — users
+     below 720px were trapped on /billing with NO nav. Critical UX bug
+     on the MONEY surface. Now below 900px the sidebar slides off-screen,
+     a hamburger reveals it, and a scrim dims the rest. body flips to
+     block + auto-scroll so long content (plan cards + FAQ + history)
+     scrolls naturally. Matches the 13 audited sibling surfaces. */
+  @media (max-width: 899px) {
+    body { display: block; overflow: auto; }
+    .sidebar { position: fixed; top: 0; left: 0; height: 100vh; height: 100dvh; width: 280px; max-width: 85vw; transform: translateX(-100%); transition: transform .25s ease; z-index: 200; box-shadow: 0 0 24px rgba(0,0,0,.4); }
+    .sidebar.is-open { transform: translateX(0); }
+    .sidebar-scrim { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 150; }
+    .sidebar-scrim.is-open { display: block; }
+    .main { height: auto; min-height: 100vh; min-height: 100dvh; }
+    .sidebar-toggle { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; background: transparent; border: 1px solid var(--pfc-line); border-radius: var(--radius-sm); color: var(--pfc-ink); cursor: pointer; margin-right: 8px; flex-shrink: 0; }
+    .topbar { padding: 0 var(--space-4); flex-wrap: wrap; height: auto; min-height: 64px; padding-top: 10px; padding-bottom: 10px; }
     .content { padding: var(--space-5) var(--space-4) var(--space-7); }
-    .topbar { padding: 0 var(--space-4); }
+    /* The plan-grid responsive rule above already collapses to 1 column at 880px. */
+    .plans-grid { grid-template-columns: 1fr; max-width: 100%; margin-left: 0; margin-right: 0; }
+  }
+
+  /* B-P0-COMPAT — safe-area for iOS notched devices. The PayPal modal
+     and FAQ section can sit close to the home indicator on landscape iPhone. */
+  @supports (padding: env(safe-area-inset-bottom)) {
+    .sidebar-footer { padding-bottom: max(16px, env(safe-area-inset-bottom)); }
+    @media (max-width: 899px) {
+      .content { padding-bottom: max(var(--space-7), env(safe-area-inset-bottom)); }
+    }
+  }
+
+  /* B-P0-COMPAT — reduced-motion respect. Card hover transitions, FAQ
+     expand animation, modal fade — all neutralised for users who prefer
+     no motion. */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+  }
+
+  /* B-P0-COMPAT — Windows high-contrast / forced-colors mode. Plan
+     cards, banner, FAQ summaries, tabs all rely on subtle borders that
+     vanish under forced-colors; force a CanvasText border so the
+     structure stays parseable. */
+  @media (forced-colors: active) {
+    .plan-card, .plan-banner, .sash, .sidebar-toggle, .nav-item, .faq-item, .modal, .table { border: 1px solid CanvasText; }
+    .plan-card--featured, .sash, .plan-cta, .nav-badge { forced-color-adjust: none; }
+  }
+
+  /* B-P0-COMPAT — print stylesheet. Printing the billing/plan summary
+     for a personal record is a valid use case (especially for the
+     14-day refund window proof). Hide chrome, white background, keep
+     plan info legible. */
+  @media print {
+    html, body { overflow: visible !important; height: auto !important; background: #fff !important; color: #000 !important; }
+    body { display: block !important; }
+    .sidebar, .sidebar-scrim, .sidebar-toggle, .skip-link, .topbar, .overlay, .footer, footer.site-footer { display: none !important; }
+    .main { height: auto !important; overflow: visible !important; }
+    .plan-card, .plan-banner, .table, .faq-item, .info-grid { background: #fff !important; color: #000 !important; border: 1px solid #ccc !important; page-break-inside: avoid; }
+    .plan-card * { color: #000 !important; }
   }
 </style>
   <script src="js/pfc-sentry-scrub.js" defer></script>
@@ -1045,18 +1130,32 @@
   <script src="js/pfc-sidebar.js?v=20260525a-sagebatch" defer></script>
   <!-- Privacy-friendly analytics by Plausible -->
   <script async src="https://plausible.io/js/pa-EvYdfUp4d9vvohwl_Yy2j.js"></script>
-  <script src="./js/inline/billing-1.js"></script>
+  <script src="./js/inline/billing-1.js?v=20260525a-bbatch" defer></script>
   <link rel="stylesheet" href="css/pfc-fonts.css">
   <link rel="stylesheet" href="css/pfc-photo-rules.css?v=1">
   <link rel="stylesheet" href="css/pfc-rhythm.css?v=1">
 </head>
 <body data-pfc-surface="working">
+<!-- B-P0-A11Y — skip-link first focusable element on page. -->
+<a class="skip-link" href="#main">Skip to plans and billing</a>
+<!-- B-P0-A11Y — noscript fallback. /billing is JS-required (PayPal SDK
+     + Supabase auth + plan refresh). Without JS users see plan cards
+     they can't interact with. This explains why and points elsewhere. -->
+<noscript>
+  <div style="background:#0B1410;color:#E6EBF2;padding:32px 24px;max-width:640px;margin:64px auto;border:1px solid #2BB67D;border-radius:10px;font-family:Georgia,serif;">
+    <h1 style="margin:0 0 12px;font-size:22px;">Billing needs JavaScript</h1>
+    <p style="margin:0 0 16px;font-size:15px;line-height:1.6;">Your billing page authenticates you, syncs your subscription with PayPal, and renders the checkout buttons. It needs JavaScript to run.</p>
+    <p style="margin:0;font-size:15px;line-height:1.6;">Enable JavaScript and reload. To cancel or update your subscription, you can also manage it directly from <a href="https://www.paypal.com/myaccount/autopay/" style="color:#2BB67D;">your PayPal account</a>.</p>
+  </div>
+</noscript>
+<!-- B-P0-MOB — scrim that dims the page when the mobile sidebar is open. -->
+<div class="sidebar-scrim" id="pfc-sidebar-scrim" aria-hidden="true" data-pfc-on-click="_pfcCloseSidebar"></div>
 
 <!-- ═══════════════════════════════════════════════════════════
      SIDEBAR — preserved IDs/classes/data attributes
      (data-pro-only on Scenarios link is REQUIRED — do not remove)
 ═══════════════════════════════════════════════════════════ -->
-<nav class="sidebar" aria-label="Primary navigation">
+<nav class="sidebar" id="pfc-sidebar" aria-label="Primary navigation">
   <a href="dashboard.html" class="sidebar-logo">
     <span class="pfc-brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32" width="32" height="32" aria-hidden="true"><text x="16" y="19" text-anchor="middle" font-family="&apos;Fraunces&apos;,&apos;Cormorant Garamond&apos;,Georgia,serif" font-size="14" font-weight="500" letter-spacing="-0.4" fill="#D4AF6A">PFC</text><rect x="14.5" y="23" width="3" height="3" fill="#D4AF6A" transform="rotate(45 16 24.5)"/></svg></span>
     ProFinanceCast
@@ -1138,8 +1237,14 @@
 <!-- ═══════════════════════════════════════════════════════════
      MAIN
 ═══════════════════════════════════════════════════════════ -->
-<main class="main">
+<main class="main" id="main" role="main">
   <div class="topbar">
+    <!-- B-P0-MOB hamburger toggle — visible below 900px via CSS @media.
+         data-pfc-on-click fires _pfcToggleSidebar (defined in pfc-sidebar.js
+         alongside the close handler shipped in SAGE-P0-MOB). -->
+    <button class="sidebar-toggle" type="button" aria-label="Open navigation menu" aria-controls="pfc-sidebar" aria-expanded="false" data-pfc-on-click="_pfcToggleSidebar">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M3 6h14M3 10h14M3 14h14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+    </button>
     <div class="topbar-left">
       <div class="tb-title">Plans</div>
       <div class="tb-sub">Built for the long arc.</div>
@@ -1148,8 +1253,20 @@
 
   <div class="content">
 
-    <!-- ── CURRENT PLAN BANNER ─────────────────────────────── -->
-    <div class="plan-banner" id="current-plan-banner">
+    <!-- ── CURRENT PLAN BANNER ───────────────────────────────
+         B-P0-PLAN-FLASH fix (audit 2026-05-25) — pre-fix the banner
+         shipped HTML with hard-coded "Free plan" + "Core forecasting
+         tools · no card required" text. For Pro/Premium users on cold
+         load, PFCPlan.get() returns the safe 'free' default until the
+         server responds (~300-800ms), so paying users saw "Free plan"
+         text flash on first paint. Same regression class as DASH-
+         PROD-FIX-4 / RC-P0-PLAN-FLASH / SAGE-P0-UX. We now hide the
+         banner by default via `visibility:hidden` (preserves the
+         layout slot so the page doesn't reflow) and billing-2.js
+         reveals it only after PFCPlan.refresh() resolves with real
+         state. The initial text is changed to "Loading…" as a defensive
+         fallback if JS errors before the reveal. -->
+    <div class="plan-banner" id="current-plan-banner" style="visibility:hidden;">
       <div class="plan-banner-left">
         <div class="plan-icon">
           <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
@@ -1158,8 +1275,8 @@
           </svg>
         </div>
         <div>
-          <div class="plan-name" id="banner-plan-name">Free plan</div>
-          <div class="plan-desc" id="banner-plan-desc">Core forecasting tools · no card required</div>
+          <div class="plan-name" id="banner-plan-name">Loading…</div>
+          <div class="plan-desc" id="banner-plan-desc">&nbsp;</div>
         </div>
       </div>
       <div class="plan-usage" id="plan-usage-block" style="display:none;">
@@ -1229,7 +1346,14 @@
           <span class="plan-price-suffix" id="pro-price-suffix">· /year</span>
         </div>
         <div class="plan-tagline">For households modelling a real financial life.</div>
-        <div class="plan-microcopy" style="font-size:11px;color:var(--text3,#8A9BB0);margin:4px 0 12px;letter-spacing:.02em;">Access pass — extend manually for now. Auto-renewal coming Q2.</div>
+        <!-- B-P0-HONESTY-COPY fix (audit 2026-05-25) — the previous
+             "Access pass — extend manually for now. Auto-renewal coming
+             Q2." microcopy was stale. Auto-renewal has been live since
+             the PayPal Billing Plans wiring (api/subscription/webhook-
+             paypal.js + cancel.js + status.js are fully implemented).
+             The promise contradicted reality and would have looked
+             dishonest to any user who'd already been auto-charged. -->
+        <div class="plan-microcopy" style="font-size:11px;color:var(--text3,#8A9BB0);margin:4px 0 12px;letter-spacing:.02em;">Auto-renews on your card — cancel any time before the next charge.</div>
         <ul class="plan-features">
           <li><svg class="check" viewBox="0 0 16 16" fill="none"><path d="M3 8.5l3 3 7-7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Everything in Free, plus</li>
           <li><svg class="check" viewBox="0 0 16 16" fill="none"><path d="M3 8.5l3 3 7-7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Unlimited scenarios — side-by-side comparisons</li>
@@ -1257,7 +1381,14 @@
           <span class="plan-price-suffix" id="premium-price-suffix">· /year</span>
         </div>
         <div class="plan-tagline">For deeper analysis and a higher Sage allowance.</div>
-        <div class="plan-microcopy" style="font-size:11px;color:var(--text3,#8A9BB0);margin:4px 0 12px;letter-spacing:.02em;">Access pass — extend manually for now. Auto-renewal coming Q2.</div>
+        <!-- B-P0-HONESTY-COPY fix (audit 2026-05-25) — the previous
+             "Access pass — extend manually for now. Auto-renewal coming
+             Q2." microcopy was stale. Auto-renewal has been live since
+             the PayPal Billing Plans wiring (api/subscription/webhook-
+             paypal.js + cancel.js + status.js are fully implemented).
+             The promise contradicted reality and would have looked
+             dishonest to any user who'd already been auto-charged. -->
+        <div class="plan-microcopy" style="font-size:11px;color:var(--text3,#8A9BB0);margin:4px 0 12px;letter-spacing:.02em;">Auto-renews on your card — cancel any time before the next charge.</div>
         <ul class="plan-features">
           <li><svg class="check" viewBox="0 0 16 16" fill="none"><path d="M3 8.5l3 3 7-7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Everything in Pro, plus</li>
           <li><svg class="check" viewBox="0 0 16 16" fill="none"><path d="M3 8.5l3 3 7-7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Sage AI — 500 messages/month (vs Pro's 200)</li>
@@ -1413,6 +1544,16 @@
 
     <!-- ── BILLING HISTORY ──────────────────────────────────── -->
     <h2 class="section-title">Payment history</h2>
+    <!-- B-P0-HONESTY-COPY fix (audit 2026-05-25) — pre-fix the section
+         header was just "Payment history" with no clarifying note. The
+         table below shows internal billing events (capture / refund /
+         cancel) — NOT downloadable invoices. Users expected official
+         receipts. Honest framing: this is our ledger; for VAT-compliant
+         invoices go to PayPal. Mirrors H-P0-HONESTY-BILLING's framing
+         on /history's billing tab. -->
+    <p style="font-size:13px;color:var(--pfc-ink-muted);margin:0 0 var(--space-4);line-height:1.55;max-width:680px;">
+      A log of every payment and refund on your account. For VAT-compliant invoices or downloadable receipts, open the matching transaction in <a href="https://www.paypal.com/myaccount/transactions" target="_blank" rel="noopener" style="color:var(--pfc-emerald);">your PayPal account</a> — PayPal stores the canonical receipt for every charge.
+    </p>
     <table class="billing-table" id="billing-table">
       <thead><tr><th>Date</th><th>Plan</th><th>Amount</th><th>Method</th><th>Status</th><th></th></tr></thead>
       <tbody id="billing-body">
@@ -1441,13 +1582,18 @@
      summary-total, method-paypal, method-card, section-paypal,
      section-card, paypal-button-container)
 ═══════════════════════════════════════════════════════════ -->
-<div class="overlay" id="overlay"  data-pfc-on-click="closeOnOverlay" data-pfc-arg-event>
-  <div class="modal" id="modal">
+<!-- B-P0-MOB+A11Y+COMPAT — promoted overlay+modal to dialog landmark
+     and replaced the close <div> with a <button> so keyboard users can
+     Tab to it and Enter/Space activates close. role=dialog +
+     aria-modal=true so screen readers announce the modal context and
+     trap focus. -->
+<div class="overlay" id="overlay" data-pfc-on-click="closeOnOverlay" data-pfc-arg-event>
+  <div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
     <div class="modal-header">
       <div class="modal-title" id="modal-title">Upgrade to Pro</div>
-      <div class="modal-close"  data-pfc-on-click="closeCheckout">
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 1l12 12M13 1L1 13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-      </div>
+      <button class="modal-close" type="button" aria-label="Close checkout" data-pfc-on-click="closeCheckout">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M1 1l12 12M13 1L1 13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      </button>
     </div>
     <div class="modal-body">
 
@@ -1557,22 +1703,29 @@
      Reuses the .overlay / .modal classes from the checkout modal.
      Hidden by default; opened by confirmCancel() in billing-2.js.
 ═══════════════════════════════════════════════════════════ -->
-<div class="overlay" id="cancel-overlay" data-pfc-on-click="closeCancelModalOnOverlay" data-pfc-arg-event style="display:none;">
+<!-- B-P0-MOB+A11Y+COMPAT — same a11y dialog promotion as the upgrade
+     overlay above. -->
+<div class="overlay" id="cancel-overlay" role="dialog" aria-modal="true" aria-labelledby="cancel-modal-title" data-pfc-on-click="closeCancelModalOnOverlay" data-pfc-arg-event style="display:none;">
   <div class="modal" id="cancel-modal" style="max-width:480px;">
     <div class="modal-header">
-      <div class="modal-title">Cancel Pro?</div>
-      <div class="modal-close" data-pfc-on-click="closeCancelModal">
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 1l12 12M13 1L1 13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-      </div>
+      <div class="modal-title" id="cancel-modal-title">Cancel Pro?</div>
+      <button class="modal-close" type="button" aria-label="Close cancel dialog" data-pfc-on-click="closeCancelModal">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M1 1l12 12M13 1L1 13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      </button>
     </div>
     <div class="modal-body">
 
       <!-- CANCEL CONFIRMATION STATE -->
       <div id="cancel-confirm-state">
+        <!-- B-P0-CANCEL-COPY fix (audit 2026-05-25) — pre-fix copy was
+             "Pro access continues until [date]" + "No clawbacks". Users
+             didn't understand whether they'd be charged again, OR
+             whether they qualified for a refund. Honest copy now: you
+             won't be charged again + the 14-day refund window pointer. -->
         <div id="cancel-period-end-block" style="background:rgba(244,239,229,0.04);border-radius:6px;padding:12px 14px;margin-bottom:14px;font-size:13px;color:var(--pfc-ink);line-height:1.55;">
           <div style="font-size:11px;color:var(--pfc-ink-muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px;">Pro access continues until</div>
           <div id="cancel-period-end-date" style="font-size:16px;color:var(--pfc-ink-strong);font-weight:600;">Loading…</div>
-          <div style="font-size:12px;color:var(--pfc-ink-muted);margin-top:4px;">No clawbacks — you keep everything you've already paid for.</div>
+          <div style="font-size:12px;color:var(--pfc-ink-muted);margin-top:4px;">After that date your account drops to Free. <strong style="color:var(--pfc-ink);font-weight:600;">You won't be charged again.</strong> If you're still inside the 14-day refund window on your most recent charge, email <a href="mailto:founder@profinancecast.com" style="color:var(--pfc-emerald);">founder@profinancecast.com</a> for a full refund.</div>
         </div>
 
         <div style="font-size:13px;color:var(--pfc-ink);line-height:1.55;margin-bottom:14px;">
@@ -1618,10 +1771,10 @@
      SCRIPTS — preserved structure; SKUs updated to
      pro_monthly | pro_annual | founders
 ═══════════════════════════════════════════════════════════ -->
-<script src="./js/inline/billing-2.js"></script>
+<script src="./js/inline/billing-2.js?v=20260525a-bbatch" defer></script>
 
 <!-- Route guard: redirect unauthed users to sign-in -->
-<script src="./js/inline/billing-3.js"></script>
+<script src="./js/inline/billing-3.js?v=20260525a-bbatch" defer></script>
 <footer class="site-footer" role="contentinfo">
   <div class="footer-grid">
     <div class="footer-col">
