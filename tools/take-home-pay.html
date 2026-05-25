@@ -241,12 +241,16 @@
   <script src="../js/pfc-analytics.js" defer></script>
   <script src="../js/pfc-funnel.js" defer></script>
   <script src="../js/pfc-sidebar.js" defer></script>
+  <!-- DEF4 (Senior Architect 2026-05-25) — lazy-load tax library. Pre-DEF4
+       eager-loaded 3 region files (~75KB) before any country was even
+       picked. Now: ~3KB manifest + ~5KB library are eager; the actual
+       brackets/rates lazy-load on first calculation per region. Engine
+       stays eager (it's small + US/UK is the dominant traffic). Order:
+       engine -> manifest -> library. Library reads manifest for dropdown
+       and calls ensureCountry on calculate. -->
   <script src="../js/pfc-tax-engine.js?v=20260525a" defer></script>
-  <!-- Global tax library: data files MUST load before the API so it closes over a populated countries map. -->
-  <script src="../js/tax-library/europe.js?v=20260525b-sourced" defer></script>
-  <script src="../js/tax-library/americas.js?v=20260525b-arprog" defer></script>
-  <script src="../js/tax-library/asia-pacific-mea.js?v=20260525a" defer></script>
-  <script src="../js/pfc-tax-library.js?v=20260525c-pension" defer></script>
+  <script src="../js/tax-library/manifest.js?v=20260525d-lazy" defer></script>
+  <script src="../js/pfc-tax-library.js?v=20260525d-lazy" defer></script>
 
   <script type="application/ld+json">
   {
@@ -592,7 +596,7 @@
   JS for 24h (Cache-Control max-age=86400); same-URL re-fetch returns the
   cached stale file. Naming: ?v=YYYYMMDD<letter>[-suffix].
 -->
-<script src="../js/inline/tools-take-home-pay-3.js?v=20260525c-pension" defer></script>
+<script src="../js/inline/tools-take-home-pay-3.js?v=20260525d-lazy" defer></script>
 
 </body>
 </html>

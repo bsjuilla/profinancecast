@@ -15,8 +15,22 @@
 (function () {
   if (typeof window === 'undefined') return;
   const ROOT = window.PFCTaxLibrary = window.PFCTaxLibrary || { countries: {} };
+  // DEF4 (Senior Architect 2026-05-25) — region-load cache. Stores either
+  // the pending Promise (in-flight load) or `true` (loaded). Prevents
+  // double-injection when multiple calculate() calls fire before the script
+  // has finished evaluating.
+  ROOT._regions = ROOT._regions || {};
 
+  // DEF4 — `listCountries` now reads the MANIFEST (~3KB always loaded) so
+  // the country dropdown populates immediately without waiting for any
+  // region data. Falls back to ROOT.countries if manifest is missing (old
+  // pages that haven't migrated to the manifest yet).
   function listCountries() {
+    if (ROOT.manifest && typeof ROOT.manifest === 'object') {
+      return Object.entries(ROOT.manifest)
+        .map(([code, m]) => ({ code, name: m.name, currency: m.currency, hasRegions: !!m.hasRegions }))
+        .sort((a, b) => a.name.localeCompare(b.name));
+    }
     return Object.entries(ROOT.countries)
       .map(([code, c]) => ({ code, name: c.name, currency: c.currency, hasRegions: !!c.hasRegions }))
       .sort((a, b) => a.name.localeCompare(b.name));
@@ -30,6 +44,50 @@
     return Object.entries(c.regions)
       .map(([rkey, r]) => ({ code: rkey, name: r.name }))
       .sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  // DEF4 — `ensureCountry(code)` returns a Promise that resolves once the
+  // region file containing this country has loaded. If already loaded, the
+  // promise resolves immediately. If in-flight (concurrent calls), returns
+  // the same cached promise. Rejects on script load error.
+  //
+  // Falls back to no-op success if the country is already in ROOT.countries
+  // OR no manifest exists (old pages that still eager-load all regions).
+  function ensureCountry(code) {
+    if (ROOT.countries[code]) return Promise.resolve(); // already loaded
+    if (!ROOT.manifest) return Promise.resolve(); // no manifest = eager mode
+    const meta = ROOT.manifest[code];
+    if (!meta) return Promise.reject(new Error('Unknown country: ' + code));
+    const region = meta.region;
+    if (ROOT._regions[region] === true) return Promise.resolve(); // region loaded
+    if (ROOT._regions[region] && typeof ROOT._regions[region].then === 'function') {
+      return ROOT._regions[region]; // in-flight — reuse
+    }
+    // Inject script. URL pinned via the same ?v= scheme used in HTML so a
+    // cache-buster bump invalidates both eager and lazy loads identically.
+    const promise = new Promise(function (resolve, reject) {
+      const s = document.createElement('script');
+      // Path is relative to the HTML page's base URL. Both consumer pages
+      // (/tools/take-home-pay.html and /salary-calculator.html) sit at
+      // different depths — use absolute path so it works from both.
+      // The version suffix comes from ROOT.dataVersion if set (HTML bumps
+      // both manifest + lib + dataVersion together), else falls back to
+      // a tagged 'lazy' suffix so the cache stays consistent.
+      const ver = ROOT.dataVersion || '20260525-lazy';
+      s.src = '/js/tax-library/' + region + '.js?v=' + ver;
+      s.async = false; // preserve order if multiple regions load concurrently
+      s.onload = function () {
+        ROOT._regions[region] = true;
+        resolve();
+      };
+      s.onerror = function () {
+        delete ROOT._regions[region]; // allow retry
+        reject(new Error('Failed to load tax data for ' + meta.name + ' (' + region + '). Check connection.'));
+      };
+      document.head.appendChild(s);
+    });
+    ROOT._regions[region] = promise;
+    return promise;
   }
 
   // Apply progressive bracket array to a salary, returning total tax owed.
@@ -141,9 +199,15 @@
    * For all other ~60 countries the library's progressive/flat code paths
    * remain authoritative.
    */
-  function calculate({ countryCode, regionCode, salary, filingStatus, pensionContrib }) {
+  // DEF4 (2026-05-25) — `calculate` is now ASYNC. Awaits ensureCountry so
+  // the region's tax data is guaranteed loaded before the math runs.
+  // Backward compat note: callers must `await Lib.calculate(...)` or
+  // `.then(...)`. Pre-DEF4 callers that treated this synchronously will
+  // get a Promise instead of the result object — surface failure mode.
+  async function calculate({ countryCode, regionCode, salary, filingStatus, pensionContrib }) {
+    await ensureCountry(countryCode);
     const country = ROOT.countries[countryCode];
-    if (!country) throw new Error('Unknown country: ' + countryCode);
+    if (!country) throw new Error('Unknown country: ' + countryCode + ' (region failed to load)');
     salary = Math.max(0, Number(salary) || 0);
     // DEF3-1 (2026-05-25) — pension contribution handling. Capped at the
     // country's published cap AND at gross salary (you can't contribute more
@@ -347,8 +411,9 @@
     };
   }
 
-  ROOT.listCountries = listCountries;
-  ROOT.getCountry    = getCountry;
-  ROOT.listRegions   = listRegions;
-  ROOT.calculate     = calculate;
+  ROOT.listCountries  = listCountries;
+  ROOT.getCountry     = getCountry;
+  ROOT.listRegions    = listRegions;
+  ROOT.calculate      = calculate;
+  ROOT.ensureCountry  = ensureCountry; // DEF4 — exposed so consumers can pre-warm
 })();

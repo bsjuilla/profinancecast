@@ -573,7 +573,11 @@ function renderRaiseApplied(monthly, sym) {
 //
 // Verdict copy: leads with the bigger number, names the delta, and uses
 // the editorial Fraunces italic — matches the post-DTI-banner voice.
-function compareOffers() {
+// DEF4 (2026-05-25) — async because PFCTaxLibrary.calculate is now async
+// (ensureCountry awaits the lazy region load). Library call sites that
+// fail (network drop, country file 404) gracefully fall back to pre-tax-
+// only verdict — never throw user-visible errors.
+async function compareOffers() {
   const verdict = document.getElementById('compare-verdict');
   if (!verdict) return;
   function readOffer(prefix) {
@@ -618,11 +622,13 @@ function compareOffers() {
     try {
       // Tax the cash portion only (base + bonus). Equity, benefits, PTO
       // valuation, WFH commute-saved are not cash earned this year.
-      const cashA = A.base + A.bonus + A.pension; // pension contribs taxed as wages in most countries unless pre-tax
+      const cashA = A.base + A.bonus + A.pension;
       const cashB = B.base + B.bonus + B.pension;
-      const tA = PFCTaxLibrary.calculate({ countryCode, salary: cashA });
-      const tB = PFCTaxLibrary.calculate({ countryCode, salary: cashB });
-      // Net comp = take-home cash + non-cash benefits at face value.
+      // DEF4 — await both calculates. Same countryCode means second call
+      // hits the cached region file; only the first call triggers any
+      // network round-trip (~50ms typical).
+      const tA = await PFCTaxLibrary.calculate({ countryCode, salary: cashA });
+      const tB = await PFCTaxLibrary.calculate({ countryCode, salary: cashB });
       netA = tA.takeHome + A.equity + A.health + A.wfh + A.ptoValue;
       netB = tB.takeHome + B.equity + B.health + B.wfh + B.ptoValue;
     } catch (_) { netA = null; netB = null; }

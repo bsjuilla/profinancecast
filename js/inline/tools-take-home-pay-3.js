@@ -122,6 +122,8 @@
     }
 
     // ----- Country / region dropdown population -----
+    // DEF4 — list reads the manifest, which is always loaded eagerly, so
+    // the dropdown populates without waiting for any region data.
     function populateCountries() {
       var list = Lib.listCountries();
       els.country.innerHTML = '';
@@ -131,19 +133,27 @@
         opt.textContent = c.name;
         els.country.appendChild(opt);
       });
-      // Choose default — preferred code if present, otherwise first.
-      var defaultCode = (Lib.getCountry(DEFAULT_COUNTRY) ? DEFAULT_COUNTRY : (list[0] && list[0].code) || '');
+      // Choose default — manifest tells us US is in americas region. Don't
+      // call getCountry here (it returns null until that region has loaded).
+      var defaultCode = (Lib.manifest && Lib.manifest[DEFAULT_COUNTRY]) ? DEFAULT_COUNTRY : (list[0] && list[0].code) || '';
       if (defaultCode) els.country.value = defaultCode;
     }
 
-    function populateRegions(countryCode) {
-      var country = Lib.getCountry(countryCode);
+    // DEF4 — async because regions need ensureCountry to have loaded the
+    // region file first. Showed a brief "Loading regions…" inline during
+    // the network fetch (typically <100ms after first request, instant on
+    // re-renders thanks to the _regions cache).
+    async function populateRegions(countryCode) {
+      // Read manifest first (sync) — tells us whether we even need regions.
+      var meta = Lib.manifest && Lib.manifest[countryCode];
       els.region.innerHTML = '';
-      if (!country || !country.hasRegions) {
+      if (!meta || !meta.hasRegions) {
         els.regionRow.hidden = true;
         return;
       }
       els.regionRow.hidden = false;
+      // Ensure the region file is loaded before reading its regions.
+      try { await Lib.ensureCountry(countryCode); } catch (_) { return; }
       var regions = Lib.listRegions(countryCode);
       regions.forEach(function (r) {
         var opt = document.createElement('option');
@@ -151,7 +161,6 @@
         opt.textContent = r.name;
         els.region.appendChild(opt);
       });
-      // Pick a sensible default if we know one for this country.
       var pref = DEFAULT_REGIONS[countryCode];
       if (pref && regions.some(function (r) { return r.code === pref; })) {
         els.region.value = pref;
@@ -159,28 +168,32 @@
     }
 
     // ----- Salary label reflects currency -----
+    // DEF4 — read currency from manifest (always loaded), not from country
+    // record (lazy-loaded). Works before any region file has been fetched.
     function refreshSalaryLabel(countryCode) {
-      var country = Lib.getCountry(countryCode);
-      if (!country) return;
-      els.grossLabel.textContent = 'Gross annual salary (' + (country.currency || '') + ')';
+      var meta = Lib.manifest && Lib.manifest[countryCode];
+      if (!meta) return;
+      els.grossLabel.textContent = 'Gross annual salary (' + (meta.currency || '') + ')';
     }
 
     // DEF3-1 (2026-05-25) — show/hide + relabel the pension row when country
     // changes. Hidden for 'none' treatments (e.g. SE). Label includes the
     // country's pension vehicle name + cap; field-note explains the treatment.
+    // DEF4 — read currency/symbol from manifest. Pension rule is centralized
+    // in the library (always loaded), so it's available without any region.
     function refreshPensionRow(countryCode) {
       if (!els.pensionRow || !els.pension || !els.pensionLabel || !els.pensionNote) return;
       var rule = (Lib.getPensionRule) ? Lib.getPensionRule(countryCode) : null;
-      var country = Lib.getCountry(countryCode);
-      if (!rule || rule.treatment === 'none' || !country) {
+      var meta = Lib.manifest && Lib.manifest[countryCode];
+      if (!rule || rule.treatment === 'none' || !meta) {
         els.pensionRow.hidden = true;
         els.pension.value = 0;
         return;
       }
       els.pensionRow.hidden = false;
       els.pension.max = String(rule.cap);
-      var sym = country.symbol || '';
-      els.pensionLabel.textContent = 'Annual pension / retirement contribution (' + (country.currency || '') + ', cap ' + sym + (rule.cap || 0).toLocaleString() + ')';
+      var sym = meta.symbol || '';
+      els.pensionLabel.textContent = 'Annual pension / retirement contribution (' + (meta.currency || '') + ', cap ' + sym + (rule.cap || 0).toLocaleString() + ')';
       els.pensionNote.textContent = rule.desc || '';
     }
 
@@ -202,23 +215,31 @@
     }
 
     // ----- Recompute & paint everything -----
-    function recompute() {
+    // DEF4 — async because Lib.calculate awaits ensureCountry. First call
+    // per region triggers the lazy script load (~50-100ms typically); all
+    // subsequent calls for that region are instant (in-memory).
+    async function recompute() {
       var countryCode = els.country.value;
-      var country = Lib.getCountry(countryCode);
-      if (!country) return;
-      var regionCode = (country.hasRegions && els.region) ? els.region.value : null;
+      // DEF4 — read hasRegions from manifest (sync) instead of country
+      // record (lazy), so we know whether to read regionCode BEFORE the
+      // region file has finished loading.
+      var meta = Lib.manifest && Lib.manifest[countryCode];
+      if (!meta) return;
+      var regionCode = (meta.hasRegions && els.region) ? els.region.value : null;
       var salary = Number(els.gross.value) || 0;
-      // DEF3-1 — pension contribution flows through to calculate(). 0 when
-      // input is empty / row hidden. Library clamps to per-country cap.
       var pensionContrib = (els.pension && !els.pensionRow.hidden)
         ? (Number(els.pension.value) || 0)
         : 0;
 
       var r;
       try {
-        r = Lib.calculate({ countryCode: countryCode, regionCode: regionCode, salary: salary, pensionContrib: pensionContrib });
+        r = await Lib.calculate({ countryCode: countryCode, regionCode: regionCode, salary: salary, pensionContrib: pensionContrib });
       } catch (e) {
-        console.error(e);
+        console.error('[take-home-pay] calculate failed:', e);
+        // Surface a one-time inline error if the region file failed to load.
+        if (els.tbody && (!els.tbody.innerHTML || els.tbody.innerHTML.indexOf('tax-load-err') < 0)) {
+          els.tbody.innerHTML = '<tr><td colspan="2" style="color:var(--red);padding:14px 0;" class="tax-load-err">Could not load tax data — check connection and refresh.</td></tr>';
+        }
         return;
       }
 
@@ -339,7 +360,12 @@
       } catch (_) { return false; }
     }
 
-    function debounce() { clearTimeout(debounceTimer); debounceTimer = setTimeout(recompute, 200); }
+    // DEF4 — wrap async recompute so its rejected Promise doesn't propagate
+    // up to the input-event handler (would log an unhandledrejection).
+    function debounce() {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(function () { recompute().catch(function (e) { console.error(e); }); }, 200);
+    }
 
     // ----- Wire up -----
     populateCountries();
@@ -394,26 +420,28 @@
       }
     } catch (_) { /* malformed URL — fall through to defaults */ }
 
-    populateRegions(els.country.value);
+    // DEF4 — initial paint awaits the default country's region load.
     refreshSalaryLabel(els.country.value);
     refreshPensionRow(els.country.value);
+    populateRegions(els.country.value).then(function () {
+      return recompute();
+    }).catch(function (e) { console.error(e); });
 
     els.country.addEventListener('change', function () {
-      populateRegions(els.country.value);
       refreshSalaryLabel(els.country.value);
       refreshPensionRow(els.country.value);
-      recompute();
+      // populateRegions awaits the lazy load; recompute fires after.
+      populateRegions(els.country.value).then(function () {
+        return recompute();
+      }).catch(function (e) { console.error(e); });
     });
-    els.region.addEventListener('change', recompute);
+    els.region.addEventListener('change', function () { recompute().catch(function (e) { console.error(e); }); });
     els.gross.addEventListener('input', debounce);
     els.gross.addEventListener('change', debounce);
-    // DEF3-1 — debounced pension recompute (same pattern as gross).
     if (els.pension) {
       els.pension.addEventListener('input', debounce);
       els.pension.addEventListener('change', debounce);
     }
-
-    recompute();
   }
 
   // The data files + library are deferred, so they evaluate after parse but

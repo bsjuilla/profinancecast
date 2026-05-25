@@ -302,15 +302,14 @@
        Must load before salary-calculator-2.js consumes it. defer preserves
        order so pfc-icons → salary-calculator-2 ordering is guaranteed. -->
   <script src="js/pfc-icons.js" defer></script>
-  <!-- DEF3-2 (2026-05-25) — tax engine + library for compareOffers net-tax
-       comparison. Optional — compareOffers gracefully falls back to pre-tax
-       comparison if these fail to load. Tax library data files use the same
-       sourced 2026-correct numbers as /tools/take-home-pay. -->
+  <!-- DEF3-2 + DEF4 (2026-05-25) — tax engine + lazy library for compareOffers
+       net-tax comparison. Eager: engine (~9KB) + manifest (~3KB) + library
+       (~6KB). Lazy: 3 region data files load on first calculate() for that
+       region. compareOffers gracefully falls back to pre-tax if anything
+       fails. -->
   <script src="js/pfc-tax-engine.js" defer></script>
-  <script src="js/tax-library/europe.js" defer></script>
-  <script src="js/tax-library/americas.js" defer></script>
-  <script src="js/tax-library/asia-pacific-mea.js" defer></script>
-  <script src="js/pfc-tax-library.js" defer></script>
+  <script src="js/tax-library/manifest.js?v=20260525d-lazy" defer></script>
+  <script src="js/pfc-tax-library.js?v=20260525d-lazy" defer></script>
   <!-- Role taxonomy + BLS OES May 2024 US median wages for ~97 common roles.
        Used by getMarketRange() below: when the Job Title input matches a role
        in this table (either via canonical title or any alias), the market band
@@ -1050,7 +1049,7 @@
   cache JS for 24h (Cache-Control max-age=86400); same-URL re-fetch returns
   the cached stale file. Naming convention: ?v=YYYYMMDD<letter>[-suffix].
 -->
-<script src="./js/inline/salary-calculator-2.js?v=20260525e-nettax" defer></script>
+<script src="./js/inline/salary-calculator-2.js?v=20260525f-lazy" defer></script>
   <!-- Salary calculator is now Free (audit B3 / pricing report 07): single-offer
        calculation is the SEO honey-pot. Multi-offer compare and "save scenario"
        Pro hooks land alongside the scenarios.html upsell flow. Auth required so
