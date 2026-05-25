@@ -603,6 +603,31 @@ function compareOffers() {
   }
   verdict.style.display = 'block';
   const sym = _sym();
+
+  // DEF3-2 (2026-05-25) — net-tax delta. Route each offer's TAXABLE
+  // portion (base + bonus, not equity/health/wfh/PTO which are non-cash
+  // or in-kind) through PFCTaxLibrary if available. Falls back to the
+  // pre-tax comparison if the library isn't on the page (salary-calc
+  // doesn't currently bundle the tax library — this is the lift this batch).
+  // For now we approximate net via the country dropdown's selected
+  // country code, which we read from the SAME #i-country select that
+  // drives the market range — already on the page.
+  const countryCode = (document.getElementById('i-country') && document.getElementById('i-country').value) || '';
+  let netA = null, netB = null;
+  if (typeof window.PFCTaxLibrary !== 'undefined' && PFCTaxLibrary.calculate && countryCode) {
+    try {
+      // Tax the cash portion only (base + bonus). Equity, benefits, PTO
+      // valuation, WFH commute-saved are not cash earned this year.
+      const cashA = A.base + A.bonus + A.pension; // pension contribs taxed as wages in most countries unless pre-tax
+      const cashB = B.base + B.bonus + B.pension;
+      const tA = PFCTaxLibrary.calculate({ countryCode, salary: cashA });
+      const tB = PFCTaxLibrary.calculate({ countryCode, salary: cashB });
+      // Net comp = take-home cash + non-cash benefits at face value.
+      netA = tA.takeHome + A.equity + A.health + A.wfh + A.ptoValue;
+      netB = tB.takeHome + B.equity + B.health + B.wfh + B.ptoValue;
+    } catch (_) { netA = null; netB = null; }
+  }
+
   document.getElementById('cmp-totalA').textContent = A.base > 0 ? sym + A.total.toLocaleString() : '—';
   document.getElementById('cmp-totalB').textContent = B.base > 0 ? sym + B.total.toLocaleString() : '—';
 
@@ -638,10 +663,30 @@ function compareOffers() {
       lever = ' driven mostly by benefits + PTO (' + sym + Math.abs(Math.round(benefitDelta)).toLocaleString() + ' delta — non-cash but real)';
     }
   }
+  // DEF3-2 — append the AFTER-TAX delta when the library produced it.
+  // Pre-tax delta is what most calculators stop at; after-tax is the
+  // number that actually hits your bank. The two often disagree because
+  // higher base pushes more income into a higher marginal bracket.
+  let netSentence = '';
+  if (netA != null && netB != null && A.base > 0 && B.base > 0) {
+    const netDelta = Math.round(netB - netA);
+    const netAbs = Math.abs(netDelta);
+    const netWinner = netDelta > 0 ? 'Offer B' : netDelta < 0 ? 'Offer A' : 'still tied';
+    if (netDelta === 0) {
+      netSentence = ' After tax, the offers are still even.';
+    } else if (Math.sign(netDelta) === Math.sign(delta)) {
+      // Same winner pre and post tax — reinforce
+      netSentence = ' After tax, ' + netWinner + ' is still ahead — by ' + sym + netAbs.toLocaleString() + '/yr (' + sym + Math.round(netAbs / 12).toLocaleString() + '/mo).';
+    } else {
+      // FLIPPED — most useful insight (high-base offer can lose to better-benefits offer once tax bites)
+      netSentence = ' But after tax, the winner FLIPS: ' + netWinner + ' actually nets ' + sym + netAbs.toLocaleString() + '/yr more because the higher base pushes ' + (delta > 0 ? 'Offer B' : 'Offer A') + ' into a higher tax bracket.';
+    }
+  }
+
   if (delta === 0) {
-    verdictEl.textContent = 'The two offers are exactly even on total comp. Decide on fit, team, and growth trajectory instead.';
+    verdictEl.textContent = 'The two offers are exactly even on total comp. Decide on fit, team, and growth trajectory instead.' + netSentence;
   } else {
-    verdictEl.textContent = winner + ' is worth ' + sym + absDelta.toLocaleString() + ' more per year' + lever + '.';
+    verdictEl.textContent = winner + ' is worth ' + sym + absDelta.toLocaleString() + ' more per year' + lever + '.' + netSentence;
   }
 }
 

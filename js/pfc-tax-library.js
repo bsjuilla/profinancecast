@@ -52,6 +52,50 @@
     return applyBracketsDetailed(salary, brackets).tax;
   }
 
+  // DEF3-1 (2026-05-25) — centralized pension/retirement contribution rules
+  // per country. Researched by Pension Rules Researcher agent against IRS /
+  // HMRC / Revenue.ie / service-public.fr / BMF / Canada.ca / ATO / IRAS /
+  // iDeCo / Belastingdienst / Agencia Tributaria / Legge di Bilancio /
+  // Wikifin / UBS / PwC Sweden 2026 sources.
+  //
+  // Three treatments:
+  //   'pre-tax'         — contribution reduces taxable income (US 401k, UK
+  //                       pension, FR PER, etc.). Apply BEFORE bracket math.
+  //   'post-tax-credit' — contribution is post-tax but generates a tax
+  //                       credit (BE épargne-pension at 30%). Apply AFTER
+  //                       bracket math by subtracting credit from tax owed.
+  //   'none'            — no tax benefit (SE where ~90% covered by
+  //                       occupational tjänstepension already handled by
+  //                       employer payroll, not visible in net-pay calc).
+  //
+  // Caps in local currency. Centralized here (not on country records) so
+  // future updates touch ONE file, not 3 region files. New countries get
+  // 'none' by default until researched.
+  const PENSION_RULES = {
+    US: { treatment: 'pre-tax', cap: 24500, desc: 'Traditional 401(k)/403(b) contributions reduce federal taxable income up to $24,500/yr (2026 IRS limit; $32,500 with age-50 catch-up). Roth 401(k) is post-tax — model separately.', source: 'IRS Notice 2025-67' },
+    UK: { treatment: 'pre-tax', cap: 60000, desc: 'Personal/workplace pension contributions get tax relief up to £60,000/yr (2026/27 Annual Allowance) or 100% of relevant UK earnings. Tapered down to £10k for incomes over £260k (not modeled).', source: 'HMRC 2026/27 Annual Allowance' },
+    GB: { treatment: 'pre-tax', cap: 60000, desc: 'Personal/workplace pension contributions get tax relief up to £60,000/yr (2026/27 Annual Allowance) or 100% of relevant UK earnings. Tapered down to £10k for incomes over £260k (not modeled).', source: 'HMRC 2026/27 Annual Allowance' },
+    IE: { treatment: 'pre-tax', cap: 28750, desc: 'PRSA/occupational contributions deduct from taxable income; cap shown is 25% × €115k earnings (age 40-49 middle band). Bands: 15% (<30), 20% (30-39), 25% (40-49), 30% (50-54), 35% (55-59), 40% (60+).', source: 'Revenue.ie pension relief limits' },
+    FR: { treatment: 'pre-tax', cap: 37680, desc: 'PER individuel déductible from revenu imposable: 10% of prior-year professional income, floor €4,710 / ceiling €37,680 (2026). Unused allowance carries forward 5 yrs per Loi Finances 2026.', source: 'service-public.fr F14709 / LF 2026' },
+    DE: { treatment: 'pre-tax', cap: 30826, desc: 'Rürup/Basisrente contributions deductible as Sonderausgaben up to €30,826/yr (single 2026) / €61,652 (married). Cap includes mandatory gesetzliche Rentenversicherung — typical employees have less headroom (~€5k-10k).', source: 'BMF 2026 Höchstbetrag' },
+    CA: { treatment: 'pre-tax', cap: 33810, desc: 'RRSP contributions deduct from taxable income up to lesser of $33,810 (2026 CRA cap) or 18% of prior-year earned income, minus pension adjustment. Unused room carries forward.', source: 'Canada.ca MP/RRSP limits 2026' },
+    AU: { treatment: 'pre-tax', cap: 32500, desc: 'Salary-sacrifice + personal deductible super up to $32,500 concessional cap (FY26-27, was $30k). Includes 12% employer SG — typical W-2 has limited headroom. Taxed at 15% inside fund.', source: 'ATO Concessional Cap FY26-27' },
+    SG: { treatment: 'pre-tax', cap: 15300, desc: 'SRS contributions deduct from chargeable income up to S$15,300/yr (citizens & PR; S$35,700 for foreigners). Subject to overall S$80,000 personal relief cap. 50% of withdrawals taxable at retirement.', source: 'IRAS SRS Relief' },
+    JP: { treatment: 'pre-tax', cap: 276000, desc: 'iDeCo contributions 100% deductible. Company employee with corporate DC: ¥23,000/mo (¥276,000/yr) shown. From Apr 2026 corporate DC limit rises to ¥62,000/mo.', source: 'iDeCo / Mercer Japan 2026' },
+    NL: { treatment: 'pre-tax', cap: 35798, desc: 'Lijfrente premiums deductible from box-1 up to your jaarruimte (~30% of pensionable income minus accrued workplace pension, max €35,798/yr 2026). Most employees in good workplace schemes have minimal jaarruimte; cap shown is statutory max.', source: 'Belastingdienst jaarruimte 2026' },
+    ES: { treatment: 'pre-tax', cap: 1500, desc: 'Plan de pensiones individual deducts from base imponible only €1,500/yr (or 30% of net work income, lower). Employment plans (plan de empleo) raise combined cap to €10,000 (€8,500 employer + €1,500 employee).', source: 'Agencia Tributaria IRPF 2025' },
+    IT: { treatment: 'pre-tax', cap: 5300, desc: 'Fondo pensione / previdenza complementare deductible from reddito complessivo up to €5,300/yr (raised from €5,164.57 by Legge di Bilancio 2026). Includes both employee + employer contributions; TFR transferred to fund excluded.', source: 'Legge di Bilancio 2026' },
+    BE: { treatment: 'post-tax-credit', cap: 1050, creditRate: 0.30, desc: 'Épargne-pension (3rd pillar) generates a 30% tax credit on contributions up to €1,050/yr (or 25% credit up to €1,350). Credit applied AFTER tax computed — not a base reduction. Available age 18-64.', source: 'Wikifin / CBC / FSMA 2026' },
+    CH: { treatment: 'pre-tax', cap: 7258, desc: 'Pillar 3a fully deductible from federal, cantonal and municipal income up to CHF 7,258/yr (2026, employees with 2nd pillar). Self-employed without pension fund: up to CHF 36,288. From 2026 retroactive top-ups allowed.', source: 'UBS / Federal Tax Admin 2026' },
+    SE: { treatment: 'none', cap: 0, desc: 'Private pension contributions NOT deductible for typical employees covered by occupational tjänstepension (~90% of workers). Employer tjänstepension is pre-tax at source up to 35% of salary / 10 prisbasbelopp.', source: 'PwC Sweden / Skatteverket' }
+  };
+  function getPensionRule(countryCode) {
+    return PENSION_RULES[countryCode] || { treatment: 'none', cap: 0, desc: '', source: '' };
+  }
+  // Expose so the UI layer can read pension caps/descriptions for tooltips
+  // without re-importing the rules.
+  ROOT.getPensionRule = getPensionRule;
+
   // THP-P0-MATH (audit 2026-05-25) — extract the flat-rate read so all three
   // schema shapes the tax-library data uses are honoured:
   //   `flatRate`     — primary field name (Luxembourg, Czechia)
@@ -97,41 +141,71 @@
    * For all other ~60 countries the library's progressive/flat code paths
    * remain authoritative.
    */
-  function calculate({ countryCode, regionCode, salary, filingStatus }) {
+  function calculate({ countryCode, regionCode, salary, filingStatus, pensionContrib }) {
     const country = ROOT.countries[countryCode];
     if (!country) throw new Error('Unknown country: ' + countryCode);
     salary = Math.max(0, Number(salary) || 0);
+    // DEF3-1 (2026-05-25) — pension contribution handling. Capped at the
+    // country's published cap AND at gross salary (you can't contribute more
+    // than you earn). Pre-tax reduces taxable income BEFORE bracket math;
+    // post-tax-credit applies AFTER tax math. Default 'none' → no effect.
+    const pensionRule = getPensionRule(countryCode);
+    const rawContrib = Math.max(0, Number(pensionContrib) || 0);
+    const effContrib = (pensionRule.treatment === 'pre-tax' || pensionRule.treatment === 'post-tax-credit')
+      ? Math.min(rawContrib, pensionRule.cap, salary)
+      : 0;
+    // For pre-tax: shrink the taxable salary feeding into bracket math.
+    // For post-tax-credit (BE): leave salary alone, apply credit later.
+    const taxableSalary = (pensionRule.treatment === 'pre-tax')
+      ? Math.max(0, salary - effContrib)
+      : salary;
 
     // ── Engine delegation for US + UK (correct math) ────────────────────
+    // DEF3-1 (2026-05-25, hardened post-verifier) — pension reduces INCOME
+    // TAX base only, NOT FICA / NI / state tax. Pre-tax 401k contributions
+    // don't reduce SS/Medicare/state tax (with rare state exceptions). UK
+    // personal pension contributions don't reduce NI (only salary-sacrifice
+    // does, which we don't model). Call the engine TWICE — once with the
+    // post-pension taxable amount to get federal/income tax, once with
+    // gross to get FICA/state/NI. Combine into a single result.
     if (countryCode === 'US' && typeof window.PFCTaxEngine !== 'undefined' &&
         typeof window.PFCTaxEngine.calculateUS === 'function') {
-      const eng = window.PFCTaxEngine.calculateUS({
+      const engGross = window.PFCTaxEngine.calculateUS({
         grossAnnual: salary,
         state: regionCode || 'CA',
         filingStatus: filingStatus === 'mfj' ? 'mfj' : 'single'
       });
-      const fed = eng.federal.tax;
-      const fica = eng.fica.total;
-      const state = eng.state.tax;
+      const engTaxable = effContrib > 0 ? window.PFCTaxEngine.calculateUS({
+        grossAnnual: taxableSalary,
+        state: regionCode || 'CA',
+        filingStatus: filingStatus === 'mfj' ? 'mfj' : 'single'
+      }) : engGross;
+      const fed = engTaxable.federal.tax;     // post-pension
+      const fica = engGross.fica.total;        // GROSS (401k doesn't reduce FICA)
+      const state = engGross.state.tax;        // GROSS (most states don't allow 401k deduction)
+      const totalTax = fed + fica + state;
+      // takeHome = gross - tax - pension (pension is yours, just deferred)
+      const takeHome = Math.max(0, salary - totalTax - effContrib);
+      const eff = salary > 0 ? totalTax / salary : 0;
       const breakdown = [
-        { label: 'Gross income',                 amount: salary,  kind: 'gross' },
-        { label: 'Federal income tax',           amount: -fed,    kind: 'tax' },
+        { label: 'Gross income',                 amount: salary,   kind: 'gross' },
+        ...(effContrib > 0 ? [{ label: '401(k) / retirement (pre-tax)', amount: -effContrib, kind: 'tax' }] : []),
+        { label: 'Federal income tax',           amount: -fed,     kind: 'tax' },
         { label: 'FICA (Social Security + Medicare)', amount: -fica, kind: 'tax' },
-        { label: regionCode ? (eng.state.note ? 'State tax (' + regionCode + ')' : 'State tax') : 'State tax',
-                                                 amount: -state,  kind: 'tax' },
-        { label: 'Take-home',                    amount: eng.takeHome, kind: 'net' }
+        { label: regionCode ? (engGross.state.note ? 'State tax (' + regionCode + ')' : 'State tax') : 'State tax',
+                                                 amount: -state,   kind: 'tax' },
+        { label: 'Take-home',                    amount: takeHome, kind: 'net' }
       ].filter(r => r.kind === 'gross' || r.kind === 'net' || (r.label && r.amount !== 0));
       return {
         incomeTax: fed,
         social: fica,
         regionTax: state,
-        total: eng.totalTax,
-        takeHome: eng.takeHome,
-        effectiveRate: eng.effectiveRate,
-        // DEF-2 (2026-05-25) — surface marginalRate so the THP page can render
-        // the "your next $1 is taxed at X%" teaching line. Engine returns this
-        // for US (federal only — state stacks on top) and UK (income tax only).
-        marginalRate: eng.federal.marginalRate,
+        total: totalTax,
+        takeHome: takeHome,
+        effectiveRate: eff,
+        marginalRate: engGross.federal.marginalRate, // marginal at gross, not post-pension
+        pensionApplied: effContrib,
+        pensionTreatment: pensionRule.treatment,
         currency: country.currency,
         symbol: country.symbol,
         breakdown,
@@ -140,28 +214,36 @@
     }
     if (countryCode === 'GB' && typeof window.PFCTaxEngine !== 'undefined' &&
         typeof window.PFCTaxEngine.calculateUK === 'function') {
-      const eng = window.PFCTaxEngine.calculateUK({
+      const engGross = window.PFCTaxEngine.calculateUK({
         grossAnnual: salary,
         region: regionCode || 'ENG'
       });
-      const inc = eng.incomeTax.tax;
-      const ni = eng.ni.ni;
+      const engTaxable = effContrib > 0 ? window.PFCTaxEngine.calculateUK({
+        grossAnnual: taxableSalary,
+        region: regionCode || 'ENG'
+      }) : engGross;
+      const inc = engTaxable.incomeTax.tax;   // post-pension
+      const ni = engGross.ni.ni;               // GROSS (personal pension doesn't reduce NI)
+      const totalTax = inc + ni;
+      const takeHome = Math.max(0, salary - totalTax - effContrib);
+      const eff = salary > 0 ? totalTax / salary : 0;
       const breakdown = [
-        { label: 'Gross income',          amount: salary,  kind: 'gross' },
-        { label: 'Income tax',            amount: -inc,    kind: 'tax' },
-        { label: 'National Insurance',    amount: -ni,     kind: 'tax' },
-        { label: 'Take-home',             amount: eng.takeHome, kind: 'net' }
+        { label: 'Gross income',          amount: salary,   kind: 'gross' },
+        ...(effContrib > 0 ? [{ label: 'Pension (pre-tax)', amount: -effContrib, kind: 'tax' }] : []),
+        { label: 'Income tax',            amount: -inc,     kind: 'tax' },
+        { label: 'National Insurance',    amount: -ni,      kind: 'tax' },
+        { label: 'Take-home',             amount: takeHome, kind: 'net' }
       ].filter(r => r.kind === 'gross' || r.kind === 'net' || (r.label && r.amount !== 0));
       return {
         incomeTax: inc,
         social: ni,
         regionTax: 0,
-        total: eng.totalTax,
-        takeHome: eng.takeHome,
-        effectiveRate: eng.effectiveRate,
-        // DEF-2 — marginal rate for the teaching line. Engine gives 0.20/0.40/0.45
-        // for rUK; 0.19/0.20/0.21/0.42/0.45/0.48 for Scotland.
-        marginalRate: eng.incomeTax.marginalRate,
+        total: totalTax,
+        takeHome: takeHome,
+        effectiveRate: eff,
+        marginalRate: engGross.incomeTax.marginalRate,
+        pensionApplied: effContrib,
+        pensionTreatment: pensionRule.treatment,
         currency: country.currency,
         symbol: country.symbol,
         breakdown,
@@ -170,30 +252,36 @@
     }
 
     // ── Library calculation for the other ~60 countries ─────────────────
+    // DEF3-1 — feed taxableSalary (post pre-tax pension reduction) into
+    // bracket math. Social contributions still apply to GROSS salary (e.g.
+    // UK NI is on gross even though income tax is on post-pension).
     let incomeTax = 0;
     let marginalRate = 0; // DEF-2 — populated below for the teaching line
     if (country.kind === 'progressive' && Array.isArray(country.brackets)) {
-      const d = applyBracketsDetailed(salary, country.brackets);
+      const d = applyBracketsDetailed(taxableSalary, country.brackets);
       incomeTax = d.tax;
       marginalRate = d.marginalRate;
     } else if (country.kind === 'flat' || country.kind === 'flat-approx') {
-      // THP-P0-MATH-2/3 fix (audit 2026-05-25) — multi-schema flat-rate read.
-      // If neither flatRate/effectiveRate/rate is present, fall through to
-      // brackets (covers HU/RO/BG which mis-typed as `kind:'flat'` with only
-      // brackets[]). Pre-fix all five of those paths returned 0 income tax.
       const r = _resolveFlatRate(country);
       if (r != null) {
-        incomeTax = salary * r;
-        marginalRate = r; // flat rate IS the marginal rate
+        incomeTax = taxableSalary * r;
+        marginalRate = r;
       } else if (Array.isArray(country.brackets)) {
-        const d = applyBracketsDetailed(salary, country.brackets);
+        const d = applyBracketsDetailed(taxableSalary, country.brackets);
         incomeTax = d.tax;
         marginalRate = d.marginalRate;
       }
     }
+    // DEF3-1 — post-tax-credit treatment (BE épargne-pension at 30%).
+    if (pensionRule.treatment === 'post-tax-credit' && effContrib > 0) {
+      const credit = effContrib * (pensionRule.creditRate || 0);
+      incomeTax = Math.max(0, incomeTax - credit);
+    }
 
     let social = 0;
     if (country.socialRate) {
+      // Social applies to GROSS salary (pre-pension) per common convention —
+      // pension contributions reduce income tax but not employee NI/social.
       const base = country.socialCap ? Math.min(salary, country.socialCap) : salary;
       social = base * country.socialRate;
     }
@@ -223,11 +311,22 @@
     }
 
     const total = incomeTax + social + regionTax;
-    const takeHome = Math.max(0, salary - total);
+    // DEF3-1 — take-home = gross - tax - pension (pension is deferred income,
+    // not lost; the user keeps it in their retirement account).
+    const takeHome = Math.max(0, salary - total - effContrib);
     const effectiveRate = salary > 0 ? total / salary : 0;
 
     const breakdown = [
       { label: 'Gross income',                 amount: salary,     kind: 'gross' },
+      ...(effContrib > 0 ? [{
+        label: pensionRule.treatment === 'pre-tax'
+          ? 'Pension/retirement (pre-tax)'
+          : pensionRule.treatment === 'post-tax-credit'
+            ? 'Pension (post-tax, ' + Math.round((pensionRule.creditRate || 0) * 100) + '% credit applied)'
+            : 'Pension',
+        amount: -effContrib,
+        kind: 'tax'
+      }] : []),
       { label: 'Income tax',                   amount: -incomeTax, kind: 'tax' },
       { label: 'Social contributions',         amount: -social,    kind: 'tax' },
       { label: country.hasRegions ? 'Regional/state tax' : '',
@@ -238,7 +337,9 @@
     return {
       incomeTax, social, regionTax, total, takeHome,
       effectiveRate,
-      marginalRate, // DEF-2 — for the THP teaching line
+      marginalRate,
+      pensionApplied: effContrib,
+      pensionTreatment: pensionRule.treatment,
       currency: country.currency,
       symbol: country.symbol,
       breakdown,

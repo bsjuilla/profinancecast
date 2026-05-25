@@ -80,6 +80,10 @@
       grossLabel: document.getElementById('gross-label'),
       regionRow:  document.getElementById('region-row'),
       region:     document.getElementById('region'),
+      pensionRow: document.getElementById('pension-row'),
+      pension:    document.getElementById('pension'),
+      pensionLabel:document.getElementById('pension-label'),
+      pensionNote:document.getElementById('pension-note'),
       takeHome:   document.getElementById('r-takehome'),
       monthly:    document.getElementById('r-monthly'),
       hourly:     document.getElementById('r-hourly'),
@@ -161,6 +165,25 @@
       els.grossLabel.textContent = 'Gross annual salary (' + (country.currency || '') + ')';
     }
 
+    // DEF3-1 (2026-05-25) — show/hide + relabel the pension row when country
+    // changes. Hidden for 'none' treatments (e.g. SE). Label includes the
+    // country's pension vehicle name + cap; field-note explains the treatment.
+    function refreshPensionRow(countryCode) {
+      if (!els.pensionRow || !els.pension || !els.pensionLabel || !els.pensionNote) return;
+      var rule = (Lib.getPensionRule) ? Lib.getPensionRule(countryCode) : null;
+      var country = Lib.getCountry(countryCode);
+      if (!rule || rule.treatment === 'none' || !country) {
+        els.pensionRow.hidden = true;
+        els.pension.value = 0;
+        return;
+      }
+      els.pensionRow.hidden = false;
+      els.pension.max = String(rule.cap);
+      var sym = country.symbol || '';
+      els.pensionLabel.textContent = 'Annual pension / retirement contribution (' + (country.currency || '') + ', cap ' + sym + (rule.cap || 0).toLocaleString() + ')';
+      els.pensionNote.textContent = rule.desc || '';
+    }
+
     // ----- Render the breakdown rows from the library result -----
     function renderBreakdown(result) {
       els.tbody.innerHTML = '';
@@ -185,10 +208,15 @@
       if (!country) return;
       var regionCode = (country.hasRegions && els.region) ? els.region.value : null;
       var salary = Number(els.gross.value) || 0;
+      // DEF3-1 — pension contribution flows through to calculate(). 0 when
+      // input is empty / row hidden. Library clamps to per-country cap.
+      var pensionContrib = (els.pension && !els.pensionRow.hidden)
+        ? (Number(els.pension.value) || 0)
+        : 0;
 
       var r;
       try {
-        r = Lib.calculate({ countryCode: countryCode, regionCode: regionCode, salary: salary });
+        r = Lib.calculate({ countryCode: countryCode, regionCode: regionCode, salary: salary, pensionContrib: pensionContrib });
       } catch (e) {
         console.error(e);
         return;
@@ -368,15 +396,22 @@
 
     populateRegions(els.country.value);
     refreshSalaryLabel(els.country.value);
+    refreshPensionRow(els.country.value);
 
     els.country.addEventListener('change', function () {
       populateRegions(els.country.value);
       refreshSalaryLabel(els.country.value);
+      refreshPensionRow(els.country.value);
       recompute();
     });
     els.region.addEventListener('change', recompute);
     els.gross.addEventListener('input', debounce);
     els.gross.addEventListener('change', debounce);
+    // DEF3-1 — debounced pension recompute (same pattern as gross).
+    if (els.pension) {
+      els.pension.addEventListener('input', debounce);
+      els.pension.addEventListener('change', debounce);
+    }
 
     recompute();
   }

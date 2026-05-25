@@ -246,7 +246,7 @@
   <script src="../js/tax-library/europe.js?v=20260525b-sourced" defer></script>
   <script src="../js/tax-library/americas.js?v=20260525b-arprog" defer></script>
   <script src="../js/tax-library/asia-pacific-mea.js?v=20260525a" defer></script>
-  <script src="../js/pfc-tax-library.js?v=20260525b-marginal" defer></script>
+  <script src="../js/pfc-tax-library.js?v=20260525c-pension" defer></script>
 
   <script type="application/ld+json">
   {
@@ -416,6 +416,16 @@
           <select id="region"></select>
           <div class="field-note" id="region-note">Regional taxes are added on top of national income tax.</div>
         </div>
+        <!-- DEF3-1 (2026-05-25) — pension/retirement contribution input.
+             Hidden when the selected country has pensionTreatment 'none'
+             (e.g. Sweden where occupational pension is handled by employer
+             payroll). Auto-shows with country-appropriate cap + tooltip when
+             a pre-tax or post-tax-credit country is selected. -->
+        <div class="field" id="pension-row" hidden>
+          <label for="pension" id="pension-label">Annual pension / retirement contribution</label>
+          <input class="num-input" type="number" id="pension" inputmode="decimal" min="0" max="500000" step="500" value="0">
+          <div class="field-note" id="pension-note">Pre-tax contributions reduce your taxable income.</div>
+        </div>
       </div>
 
       <!-- THP-P0-DES (audit 2026-05-25) — decorative banknote photo removed
@@ -582,7 +592,7 @@
   JS for 24h (Cache-Control max-age=86400); same-URL re-fetch returns the
   cached stale file. Naming: ?v=YYYYMMDD<letter>[-suffix].
 -->
-<script src="../js/inline/tools-take-home-pay-3.js?v=20260525b-defbatch" defer></script>
+<script src="../js/inline/tools-take-home-pay-3.js?v=20260525c-pension" defer></script>
 
 </body>
 </html>
