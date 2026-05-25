@@ -104,7 +104,26 @@
   input[type=number]{-moz-appearance:textfield;appearance:textfield;}
 
   /* METRIC CARDS */
+  /* DEF2-4 (Senior Designer 2026-05-25) — hero-number hierarchy. The 4-
+     equal-color strip meant NO number stood out; Annual raise is the only
+     ASK the user can speak in a negotiation conversation — promote it to
+     a dominant hero card with 3 secondary tiles on the right. Matches the
+     post-NW-P2-8 pattern. .metric-strip--hierarchy modifier toggles the
+     new layout; the old 4-equal grid is kept as default for any caller
+     that relies on the original. */
   .metric-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px;}
+  .metric-strip--hierarchy{grid-template-columns:1.6fr 1fr;}
+  .metric-strip--hierarchy .metric-secondary{display:flex;flex-direction:column;gap:8px;}
+  .metric-strip--hierarchy .metric-card--hero{padding:24px;}
+  .metric-strip--hierarchy .metric-card--hero .metric-label{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:8px;}
+  .metric-strip--hierarchy .metric-card--hero .metric-val{font-size:44px;line-height:1.05;margin-bottom:6px;}
+  .metric-strip--hierarchy .metric-card--hero .metric-hint{font-size:13px;color:var(--text2);font-family:'Fraunces','Cormorant Garamond',serif;font-style:italic;}
+  .metric-strip--hierarchy .metric-card--hero .metric-accent{height:4px;}
+  .metric-strip--hierarchy .metric-card--secondary{padding:10px 14px;display:grid;grid-template-columns:1fr auto;align-items:baseline;gap:10px;}
+  .metric-strip--hierarchy .metric-card--secondary .metric-accent{top:0;bottom:0;right:auto;left:0;width:2px;height:auto;}
+  .metric-strip--hierarchy .metric-card--secondary .metric-label{font-size:11px;color:var(--text3);margin:0;}
+  .metric-strip--hierarchy .metric-card--secondary .metric-val{font-size:18px;margin:0;}
+  .metric-strip--hierarchy .metric-card--secondary .metric-hint{display:none;}
   .metric-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px 20px;position:relative;overflow:hidden;transition:border-color .2s;}
   .metric-card:hover{border-color:var(--border2);}
   .metric-accent{position:absolute;bottom:0;left:0;right:0;height:2px;}
@@ -207,6 +226,9 @@
     /* Card grids stack vertically on mobile */
     .grid-2,.grid-3{grid-template-columns:1fr;gap:14px;}
     .metric-strip{grid-template-columns:repeat(2,1fr);gap:10px;}
+    /* DEF2-4 — hierarchy mode stacks below 900px: hero full-width on top, 3 secondary tiles below. */
+    .metric-strip--hierarchy{grid-template-columns:1fr;}
+    .metric-strip--hierarchy .metric-card--hero .metric-val{font-size:34px;}
     .field-row,.field-row-3{grid-template-columns:1fr;gap:10px;}
     .raise-grid{grid-template-columns:repeat(3,1fr)!important;gap:6px;}
     .card-inner{padding:16px 14px;}
@@ -638,31 +660,43 @@
       </div>
     </div>
 
-    <!-- SUMMARY METRICS -->
-    <div class="metric-strip" id="metric-strip">
-      <div class="metric-card">
+    <!-- SUMMARY METRICS — DEF2-4 hero-hierarchy mode (Senior Designer 2026-05-25).
+         Annual raise is the only number the user can speak in a negotiation
+         conversation; promote it to a hero card. 5-yr / Lifetime / Monthly
+         become emotional reinforcers in a secondary tile stack on the right.
+         All IDs preserved so calc() / clearMetrics() require no JS changes. -->
+    <div class="metric-strip metric-strip--hierarchy" id="metric-strip">
+      <div class="metric-card metric-card--hero">
         <div class="metric-accent" style="background:var(--teal);"></div>
         <div class="metric-label">Annual raise</div>
         <div class="metric-val" id="m-raise" style="color:var(--teal);">—</div>
-        <div class="metric-hint" id="m-raise-hint">per year</div>
+        <div class="metric-hint" id="m-raise-hint">what you're asking for this cycle</div>
       </div>
-      <div class="metric-card">
-        <div class="metric-accent" style="background:var(--blue);"></div>
-        <div class="metric-label">Monthly increase</div>
-        <div class="metric-val" id="m-monthly" style="color:var(--blue);">—</div>
-        <div class="metric-hint">take-home per month</div>
-      </div>
-      <div class="metric-card">
-        <div class="metric-accent" style="background:var(--amber);"></div>
-        <div class="metric-label">5-year extra earnings</div>
-        <div class="metric-val" id="m-5yr" style="color:var(--amber);">—</div>
-        <div class="metric-hint">compounded with 3% annual raises</div>
-      </div>
-      <div class="metric-card">
-        <div class="metric-accent" style="background:var(--purple);"></div>
-        <div class="metric-label">Lifetime impact</div>
-        <div class="metric-val" id="m-lifetime" style="color:var(--purple);">—</div>
-        <div class="metric-hint" id="m-lifetime-hint">over remaining career</div>
+      <div class="metric-secondary">
+        <div class="metric-card metric-card--secondary">
+          <div class="metric-accent" style="background:var(--blue);"></div>
+          <div>
+            <div class="metric-label">Monthly increase</div>
+            <div class="metric-hint">take-home per month</div>
+          </div>
+          <div class="metric-val" id="m-monthly" style="color:var(--blue);">—</div>
+        </div>
+        <div class="metric-card metric-card--secondary">
+          <div class="metric-accent" style="background:var(--amber);"></div>
+          <div>
+            <div class="metric-label">5-year extra earnings</div>
+            <div class="metric-hint">compounded at 3%/yr</div>
+          </div>
+          <div class="metric-val" id="m-5yr" style="color:var(--amber);">—</div>
+        </div>
+        <div class="metric-card metric-card--secondary">
+          <div class="metric-accent" style="background:var(--purple);"></div>
+          <div>
+            <div class="metric-label">Lifetime impact</div>
+            <div class="metric-hint" id="m-lifetime-hint">over remaining career</div>
+          </div>
+          <div class="metric-val" id="m-lifetime" style="color:var(--purple);">—</div>
+        </div>
       </div>
     </div>
 
@@ -883,6 +917,75 @@
       </div>
     </div>
 
+    <!-- DEF2-2 (Senior Designer 2026-05-25) — Compare two offers card.
+         The unique differentiator vs Levels.fyi/Glassdoor — they don't do
+         side-by-side total-comp. Placed between Counter-offer/Benefits and
+         the take-home cross-link so the natural reading flow becomes:
+         single offer → second offer comparison → take-home → script.
+         Card is collapsed-by-default (only the header + "Compare 2 offers"
+         button shows); expanding reveals 2 columns × 7 fields each + verdict.
+         Renders verdict via renderOfferCompare() in salary-calculator-2.js. -->
+    <div class="card section-gap" id="compare-offers-card">
+      <div class="card-inner">
+        <details class="compare-offers-details">
+          <summary style="cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;gap:12px;margin:-4px 0;padding:6px 0;">
+            <div>
+              <div class="card-title">Comparing two offers?</div>
+              <div class="card-sub">Two real offers head-to-head — base, bonus, equity, benefits. The only calculator on the web that does this.</div>
+            </div>
+            <span style="font-size:24px;color:var(--teal);line-height:1;font-weight:300;transition:transform .2s;" data-compare-chevron>+</span>
+          </summary>
+          <div style="margin-top:18px;display:grid;grid-template-columns:1fr 1fr;gap:18px;" class="compare-offers-grid">
+            <div>
+              <div style="font-family:var(--font-display);font-size:14px;font-weight:700;color:var(--text);margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid var(--teal);">Offer A</div>
+              <div class="field" style="margin-bottom:10px;"><label class="field-label" for="cmpA-base">Base salary</label><input type="number" inputmode="decimal" class="field-input" id="cmpA-base" min="0" max="10000000" placeholder="120000" data-pfc-on-input="compareOffers"></div>
+              <div class="field" style="margin-bottom:10px;"><label class="field-label" for="cmpA-bonus">Bonus (% of base)</label><input type="number" inputmode="decimal" class="field-input" id="cmpA-bonus" min="0" max="500" placeholder="15" data-pfc-on-input="compareOffers"></div>
+              <div class="field" style="margin-bottom:10px;"><label class="field-label" for="cmpA-equity">Equity / RSU per year</label><input type="number" inputmode="decimal" class="field-input" id="cmpA-equity" min="0" max="10000000" placeholder="40000" data-pfc-on-input="compareOffers"></div>
+              <div class="field" style="margin-bottom:10px;"><label class="field-label" for="cmpA-health">Health benefit value/yr</label><input type="number" inputmode="decimal" class="field-input" id="cmpA-health" min="0" max="100000" placeholder="3000" data-pfc-on-input="compareOffers"></div>
+              <div class="field" style="margin-bottom:10px;"><label class="field-label" for="cmpA-pension">Pension match (%)</label><input type="number" inputmode="decimal" class="field-input" id="cmpA-pension" min="0" max="100" placeholder="5" data-pfc-on-input="compareOffers"></div>
+              <div class="field" style="margin-bottom:10px;"><label class="field-label" for="cmpA-wfh">WFH / commute saved/yr</label><input type="number" inputmode="decimal" class="field-input" id="cmpA-wfh" min="0" max="100000" placeholder="2400" data-pfc-on-input="compareOffers"></div>
+              <div class="field" style="margin-bottom:6px;"><label class="field-label" for="cmpA-pto">PTO days (above legal min)</label><input type="number" inputmode="numeric" class="field-input" id="cmpA-pto" min="0" max="365" placeholder="5" data-pfc-on-input="compareOffers"></div>
+            </div>
+            <div>
+              <div style="font-family:var(--font-display);font-size:14px;font-weight:700;color:var(--text);margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid var(--amber);">Offer B</div>
+              <div class="field" style="margin-bottom:10px;"><label class="field-label" for="cmpB-base">Base salary</label><input type="number" inputmode="decimal" class="field-input" id="cmpB-base" min="0" max="10000000" placeholder="135000" data-pfc-on-input="compareOffers"></div>
+              <div class="field" style="margin-bottom:10px;"><label class="field-label" for="cmpB-bonus">Bonus (% of base)</label><input type="number" inputmode="decimal" class="field-input" id="cmpB-bonus" min="0" max="500" placeholder="10" data-pfc-on-input="compareOffers"></div>
+              <div class="field" style="margin-bottom:10px;"><label class="field-label" for="cmpB-equity">Equity / RSU per year</label><input type="number" inputmode="decimal" class="field-input" id="cmpB-equity" min="0" max="10000000" placeholder="30000" data-pfc-on-input="compareOffers"></div>
+              <div class="field" style="margin-bottom:10px;"><label class="field-label" for="cmpB-health">Health benefit value/yr</label><input type="number" inputmode="decimal" class="field-input" id="cmpB-health" min="0" max="100000" placeholder="4500" data-pfc-on-input="compareOffers"></div>
+              <div class="field" style="margin-bottom:10px;"><label class="field-label" for="cmpB-pension">Pension match (%)</label><input type="number" inputmode="decimal" class="field-input" id="cmpB-pension" min="0" max="100" placeholder="7" data-pfc-on-input="compareOffers"></div>
+              <div class="field" style="margin-bottom:10px;"><label class="field-label" for="cmpB-wfh">WFH / commute saved/yr</label><input type="number" inputmode="decimal" class="field-input" id="cmpB-wfh" min="0" max="100000" placeholder="0" data-pfc-on-input="compareOffers"></div>
+              <div class="field" style="margin-bottom:6px;"><label class="field-label" for="cmpB-pto">PTO days (above legal min)</label><input type="number" inputmode="numeric" class="field-input" id="cmpB-pto" min="0" max="365" placeholder="10" data-pfc-on-input="compareOffers"></div>
+            </div>
+          </div>
+          <!-- Verdict block — full-width row under the 2 columns. -->
+          <div id="compare-verdict" style="display:none;margin-top:18px;padding:16px 18px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r-sm);">
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;text-align:center;margin-bottom:14px;" class="compare-verdict-grid">
+              <div>
+                <div style="font-size:10px;letter-spacing:.10em;text-transform:uppercase;color:var(--text3);margin-bottom:4px;">Offer A total comp</div>
+                <div style="font-family:var(--font-display);font-size:18px;font-weight:700;color:var(--teal);" id="cmp-totalA">—</div>
+              </div>
+              <div>
+                <div style="font-size:10px;letter-spacing:.10em;text-transform:uppercase;color:var(--text3);margin-bottom:4px;">Offer B total comp</div>
+                <div style="font-family:var(--font-display);font-size:18px;font-weight:700;color:var(--amber);" id="cmp-totalB">—</div>
+              </div>
+              <div>
+                <div style="font-size:10px;letter-spacing:.10em;text-transform:uppercase;color:var(--text3);margin-bottom:4px;">Delta</div>
+                <div style="font-family:var(--font-display);font-size:18px;font-weight:700;" id="cmp-delta">—</div>
+              </div>
+            </div>
+            <div style="font-family:'Fraunces','Cormorant Garamond',serif;font-style:italic;font-size:17px;color:var(--text);line-height:1.4;text-align:center;" id="cmp-verdict-text">Fill in both columns above to see the side-by-side verdict.</div>
+          </div>
+        </details>
+      </div>
+    </div>
+    <style>
+      .compare-offers-details[open] [data-compare-chevron]{transform:rotate(45deg);}
+      @media (max-width: 720px){
+        .compare-offers-grid{grid-template-columns:1fr!important;gap:14px;}
+        .compare-verdict-grid{grid-template-columns:1fr!important;gap:10px;text-align:left!important;}
+      }
+    </style>
+
     <!-- Cross-link to take-home calculator with target salary pre-filled.
          Sits between Total Comp and Sage script so the natural reading flow
          is: see your band → set a target → know your total comp → see what
@@ -938,7 +1041,7 @@
   cache JS for 24h (Cache-Control max-age=86400); same-URL re-fetch returns
   the cached stale file. Naming convention: ?v=YYYYMMDD<letter>[-suffix].
 -->
-<script src="./js/inline/salary-calculator-2.js?v=20260525c-raiseapplied" defer></script>
+<script src="./js/inline/salary-calculator-2.js?v=20260525d-compare" defer></script>
   <!-- Salary calculator is now Free (audit B3 / pricing report 07): single-offer
        calculation is the SEO honey-pot. Multi-offer compare and "save scenario"
        Pro hooks land alongside the scenarios.html upsell flow. Auth required so

@@ -481,7 +481,7 @@
       notes: 'Sleva na poplatníka (taxpayer credit) ~CZK 30,840/yr not modeled.'
     },
 
-    /* -------- Hungary -------- */
+    /* -------- Hungary (DEF2-1 verified 2026-05-25, HIGH confidence) -------- */
     HU: {
       name: 'Hungary',
       currency: 'HUF',
@@ -491,11 +491,12 @@
       brackets: [
         { upTo: null, rate: 0.15 }
       ],
-      socialRate: 0.185,   // 10% pension + 7% health + 1.5% labour (employee)
-      notes: 'Flat 15% PIT. Family allowances and under-25/under-30 exemptions not modeled.'
+      socialRate: 0.185,   // 10% pension + 7% health + 1.5% labour (employee TB-járulék, no cap)
+      source: 'NAV / PwC Hungary Tax Card 2026',
+      notes: 'Flat 15% PIT confirmed for 2026. Family allowance per child (HUF 10k–66k/child/mo depending on dependent count), under-25 / mothers-of-4 / under-30-new-mothers exemptions, and employer Szocho 13% not modeled. TB has no income ceiling.'
     },
 
-    /* -------- Romania -------- */
+    /* -------- Romania (DEF2-1 verified 2026-05-25, HIGH confidence) -------- */
     RO: {
       name: 'Romania',
       currency: 'RON',
@@ -505,11 +506,12 @@
       brackets: [
         { upTo: null, rate: 0.10 }
       ],
-      socialRate: 0.35,   // CAS 25% pension + CASS 10% health (employee)
-      notes: 'Flat 10% PIT. IT/construction/agri sector exemptions not modeled.'
+      socialRate: 0.35,   // CAS 25% pension + CASS 10% health (employee, most labour categories)
+      source: 'PwC Romania 2026 / TaxRavens',
+      notes: 'Flat 10% PIT confirmed for 2026. Personal deduction (deducere personală, ~RON 600–1310/mo for low earners), dependent allowances, and IT/construction/agri sector exemptions (0% PIT below RON 10k gross) not modeled. CASS has a 60-min-wage floor on some non-salary categories; employer pays additional 2.25% labour-insurance separately.'
     },
 
-    /* -------- Bulgaria -------- */
+    /* -------- Bulgaria (DEF2-1 verified 2026-05-25, HIGH confidence) -------- */
     BG: {
       name: 'Bulgaria',
       currency: 'BGN',
@@ -519,8 +521,10 @@
       brackets: [
         { upTo: null, rate: 0.10 }
       ],
-      socialRate: 0.1378,   // employee social + health
-      notes: 'Flat 10% PIT — one of the lowest in EU.'
+      socialRate: 0.1378,   // employee social + health (3rd labour category)
+      socialCap: 49560,    // monthly cap BGN 4,130 × 12 = 49,560 (raised from 3,750 in 2025; ~EUR 2,112 after euro adoption 1-Jan-2026)
+      source: 'PwC Bulgaria 2026 + Bulgarian Ministry of Economy',
+      notes: 'Flat 10% PIT confirmed for 2026. Social cap BGN 4,130/mo annualised (raised in 2025). Child tax relief (BGN 6,000/child/yr from taxable base), voluntary pension/health deductions, and the labour-category variance in employee share (12.9%–14.4%) not modeled. Employer pays additional ~18.92% separately.'
     },
 
     /* -------- Croatia -------- */

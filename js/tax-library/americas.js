@@ -242,16 +242,31 @@
       notes: 'IRPF (Imposto de Renda Pessoa Fisica) 2025. INSS is actually progressive 7.5/9/12/14% with cap; 11% used as effective approximation.'
     },
 
-    /* ---------- Argentina ---------- */
+    /* ---------- Argentina (DEF2-1 upgraded 2026-05-25, HIGH confidence) ----------
+       Pre-DEF2 this was kind:'flat-approx', rate: 0.27 — a coarse 27% on
+       ALL income that misrepresented both low and high earners. Now uses
+       the actual 9-bracket Ganancias table per Art. 94 LIG eff. 30-Dec-2025.
+       Brackets are in ARS annual net taxable income (post Art. 30 deductions). */
     AR: {
       name: 'Argentina',
       currency: 'ARS',
       symbol: 'AR$',
       hasRegions: false,
-      kind: 'flat-approx',
-      rate: 0.27,
-      socialRate: 0.17,            // jubilacion 11% + obra social 3% + PAMI 3%
-      notes: 'Argentine Impuesto a las Ganancias is highly progressive (5-35%) with frequent inflation indexing. Flat-approx 27% used as middle-bracket effective rate.'
+      kind: 'progressive',
+      brackets: [
+        { upTo: 1749902,  rate: 0.05 },
+        { upTo: 3499803,  rate: 0.09 },
+        { upTo: 5249704,  rate: 0.12 },
+        { upTo: 7874557,  rate: 0.15 },
+        { upTo: 15749113, rate: 0.19 },
+        { upTo: 23623670, rate: 0.23 },
+        { upTo: 35435504, rate: 0.27 },
+        { upTo: 53153257, rate: 0.31 },
+        { upTo: null,     rate: 0.35 }
+      ],
+      socialRate: 0.17,            // jubilación 11% + obra social 3% + PAMI 3%
+      source: 'PwC Argentina (Art. 94 LIG eff. 30-Dec-2025)',
+      notes: 'Brackets re-adjusted twice yearly for IPC; +14.29% lift expected for 1H-2026 per iProfesional. Personal deductions (ganancia no imponible ~ARS 5.15M, spouse ~ARS 4.85M, child ~ARS 2.45M annual), SAC (13th salary) treatment, and self-employed monotributo not modeled.'
     },
 
     /* ---------- Chile ---------- */
@@ -316,7 +331,13 @@
       notes: 'Impuesto a la Renta Quinta Categoria 2025. Bands defined in UIT (Unidad Impositiva Tributaria); UIT 2025 = S/5,350. First 7 UIT (~S/37,450) deductible from gross before applying brackets — not modeled here.'
     },
 
-    /* ---------- Venezuela ---------- */
+    /* ---------- Venezuela (DEF2-1 notes updated 2026-05-25, MEDIUM confidence) ----------
+       Underlying ISLR is progressive in UT (1,000–6,000+ UT bands at 6%–34%
+       per Tarifa 1 Art. 50 LISLR). For a planning tool, we stick with a flat-
+       approx because UT-to-Bs conversion lags real inflation by 6-18 months —
+       a UT-aware engine would mislead users when UT is re-pegged. 0.20 is the
+       middle-of-band effective rate per PwC + Grant Thornton's June-2025 UT 43
+       tabla de retenciones for a typical formal-economy earner. */
     VE: {
       name: 'Venezuela',
       currency: 'VES',
@@ -324,8 +345,9 @@
       hasRegions: false,
       kind: 'flat-approx',
       rate: 0.20,
-      socialRate: 0.04,            // IVSS employee approx
-      notes: 'ISLR is progressive in UT (Unidades Tributarias) but extreme inflation makes UT-based brackets unstable. Flat 20% approximation. Use with caution.'
+      socialRate: 0.055,           // IVSS 4% + paro forzoso 0.5% + LPH 1% (employee)
+      source: 'PwC Venezuela / Grant Thornton LISLR Tabla UT 43 Jun-2025',
+      notes: 'ISLR is progressive in UT (Unidades Tributarias). UT value was Bs 43 per Gaceta 43.140 (Jun-2025) and lags real inflation. Sustraendos (30/75/155/255/375/575/875 UT credits), filing threshold (1,000 UT net / 1,500 UT gross), and bolivar hyperinflation distortions not modeled. 0.20 is a middle-bracket planning approximation only — not filing-grade.'
     },
 
     /* ---------- Uruguay ---------- */
@@ -437,7 +459,7 @@
       notes: 'PAYE 2025. Personal allowance TTD 90,000 not modeled here. Health Surcharge fixed weekly amount also applies.'
     },
 
-    /* ---------- Bolivia ---------- */
+    /* ---------- Bolivia (DEF2-1 notes updated 2026-05-25, HIGH confidence) ---------- */
     BO: {
       name: 'Bolivia',
       currency: 'BOB',
@@ -445,8 +467,9 @@
       hasRegions: false,
       kind: 'flat-approx',
       rate: 0.13,
-      socialRate: 0.1271,          // AFP 10% + RC-IVA effects + others
-      notes: 'RC-IVA (Regimen Complementario al IVA) is effectively a 13% flat tax on labor income, offsetable against VAT receipts.'
+      socialRate: 0.1271,          // AFP 10% pension + 1.71% common-risk + 0.5% commission + 0.5% solidarity for high earners
+      source: 'PwC Bolivia 2026 / RemotePeople 2026',
+      notes: 'RC-IVA is a flat 13% on income above the 4×SMN floor (2026 SMN = BOB 2,750/mo so floor is BOB 11,000/mo). In practice employees offset RC-IVA by submitting personal IVA receipts which typically zero out the liability — this calc OVERSTATES tax by ignoring the offset. Two-minimum-wage additional credit also not modeled.'
     },
 
     /* ---------- Ecuador ---------- */

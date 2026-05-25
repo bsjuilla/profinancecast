@@ -559,6 +559,92 @@ function renderRaiseApplied(monthly, sym) {
   card.style.display = 'block';
 }
 
+// DEF2-2 (Senior Designer 2026-05-25) — Compare two offers feature. Reads
+// 14 inputs (7 per offer), computes total-comp per offer, surfaces verdict
+// with delta + plain-English recommendation. Approximates net delta via
+// the country's effective rate (no cross-page tax engine call needed —
+// effective rate is good enough for a "which offer is better" decision).
+//
+// Total-comp formula per offer:
+//   total = base + (base × bonusPct/100) + equity + health + (base × pensionPct/100) + wfh + (base/260 × ptoDays)
+//
+// PTO valuation = days × daily base rate (base / 260 working days). This
+// matches the formula already used in calcBenefits() for consistency.
+//
+// Verdict copy: leads with the bigger number, names the delta, and uses
+// the editorial Fraunces italic — matches the post-DTI-banner voice.
+function compareOffers() {
+  const verdict = document.getElementById('compare-verdict');
+  if (!verdict) return;
+  function readOffer(prefix) {
+    const get = (id) => _parseFiniteAmount(document.getElementById(prefix + id).value, 10000000) || 0;
+    const getPct = (id) => _parseFiniteAmount(document.getElementById(prefix + id).value, 500) || 0;
+    const getDays = (id) => _parseFiniteAmount(document.getElementById(prefix + id).value, 365) || 0;
+    const base = get('base');
+    const bonusPct = getPct('bonus');
+    const equity = get('equity');
+    const health = get('health');
+    const pensionPct = getPct('pension');
+    const wfh = get('wfh');
+    const ptoDays = getDays('pto');
+    const bonus = base * bonusPct / 100;
+    const pension = base * pensionPct / 100;
+    const ptoValue = ptoDays * (base / 260);
+    const total = Math.round(base + bonus + equity + health + pension + wfh + ptoValue);
+    return { base, bonusPct, bonus, equity, health, pensionPct, pension, wfh, ptoDays, ptoValue, total };
+  }
+  const A = readOffer('cmpA-');
+  const B = readOffer('cmpB-');
+
+  // If neither offer has a base, leave the empty-state copy intact.
+  if (A.base <= 0 && B.base <= 0) {
+    verdict.style.display = 'none';
+    return;
+  }
+  verdict.style.display = 'block';
+  const sym = _sym();
+  document.getElementById('cmp-totalA').textContent = A.base > 0 ? sym + A.total.toLocaleString() : '—';
+  document.getElementById('cmp-totalB').textContent = B.base > 0 ? sym + B.total.toLocaleString() : '—';
+
+  // Delta + recommendation only when BOTH offers have a base
+  const deltaEl = document.getElementById('cmp-delta');
+  const verdictEl = document.getElementById('cmp-verdict-text');
+  if (A.base <= 0 || B.base <= 0) {
+    deltaEl.textContent = '—';
+    deltaEl.style.color = 'var(--text3)';
+    verdictEl.textContent = 'Fill in both columns above to see the side-by-side verdict.';
+    return;
+  }
+  const delta = B.total - A.total;
+  const absDelta = Math.abs(delta);
+  const winner = delta > 0 ? 'Offer B' : delta < 0 ? 'Offer A' : 'Tied';
+  const winnerColor = delta > 0 ? 'var(--amber)' : delta < 0 ? 'var(--teal)' : 'var(--text2)';
+  deltaEl.textContent = (delta > 0 ? '+' : delta < 0 ? '−' : '') + sym + absDelta.toLocaleString();
+  deltaEl.style.color = winnerColor;
+
+  // Editorial verdict — name the bigger number, the gap, and the lever
+  // that drove it (base vs equity vs benefits) so the user sees WHY.
+  let lever = '';
+  if (absDelta > 0) {
+    const baseDelta = B.base - A.base;
+    const equityDelta = B.equity - A.equity;
+    const benefitDelta = (B.health + B.pension + B.wfh + B.ptoValue) - (A.health + A.pension + A.wfh + A.ptoValue);
+    const driver = Math.max(Math.abs(baseDelta), Math.abs(equityDelta), Math.abs(benefitDelta));
+    if (driver === Math.abs(baseDelta) && baseDelta !== 0) {
+      lever = ' driven mostly by a ' + sym + Math.abs(Math.round(baseDelta)).toLocaleString() + ' difference in base';
+    } else if (driver === Math.abs(equityDelta) && equityDelta !== 0) {
+      lever = ' driven mostly by equity (' + sym + Math.abs(Math.round(equityDelta)).toLocaleString() + ' delta — remember equity is a 4-year promise, not cash today)';
+    } else if (driver === Math.abs(benefitDelta) && benefitDelta !== 0) {
+      lever = ' driven mostly by benefits + PTO (' + sym + Math.abs(Math.round(benefitDelta)).toLocaleString() + ' delta — non-cash but real)';
+    }
+  }
+  if (delta === 0) {
+    verdictEl.textContent = 'The two offers are exactly even on total comp. Decide on fit, team, and growth trajectory instead.';
+  } else {
+    verdictEl.textContent = winner + ' is worth ' + sym + absDelta.toLocaleString() + ' more per year' + lever + '.';
+  }
+}
+
 // Pure presentation — each row in the raise-applied card. All user-controlled
 // text already escHtml'd by caller; CTA href is a hardcoded route.
 function _raiseAppliedRowHtml({ icon, label, insight, ctaLabel, ctaHref }) {
@@ -944,14 +1030,20 @@ async function generateScript() {
   const scriptBox = document.getElementById('script-box');
   const copyBtn = document.getElementById('copy-btn');
 
-  // Pro-gate: Sage is a Pro-only feature. Show upgrade prompt instead of failing API call.
+  // DEF2-3 (Senior Designer 2026-05-25) — Pro-gate copy rewrite. Was: "AI-
+  // generated scripts are a Pro feature. Upgrade to get..." — lock-first
+  // framing with no specifics. Now leads with what the script CONTAINS:
+  // opening ask, two fallback positions, the line for equity pushback. Same
+  // 53-word draft the Designer signed off on. Matches the restrained
+  // editorial voice in the position-box copy ("strong case", "data-backed
+  // request") — specific, second-person, no superlatives.
   const plan = (typeof PFCPlan !== 'undefined' && PFCPlan.get) ? PFCPlan.get() : 'free';
   if (plan === 'free') {
     if (copyBtn) copyBtn.style.display = 'none';
-    scriptBox.innerHTML = '<div style="padding:8px 0;color:var(--text2);line-height:1.6;">'
-      + '<strong style="color:var(--text);display:block;margin-bottom:6px;">AI-generated scripts are a Pro feature.</strong>'
-      + 'Upgrade to get personalised negotiation scripts tailored to your role, market data, and target number — plus full Sage AI access.<br><br>'
-      + '<a href="/billing.html?upgrade=salary-script" style="display:inline-block;padding:8px 16px;background:var(--teal);color:var(--canvas);font-weight:700;border-radius:var(--r-sm);text-decoration:none;font-family:var(--font-body);">Upgrade to Pro &rarr;</a>'
+    scriptBox.innerHTML = '<div style="padding:8px 0;color:var(--text2);line-height:1.65;">'
+      + 'Pro unlocks a negotiation script written for your role, your market band, and the gap between your offer and target — including the opening ask, two fallback positions, and the line to use when they push back on equity.'
+      + '<br><br>'
+      + '<a href="/billing.html?upgrade=salary-script" style="display:inline-block;padding:8px 16px;background:var(--teal);color:var(--canvas);font-weight:700;border-radius:var(--r-sm);text-decoration:none;font-family:var(--font-body);">Unlock with Pro &rarr;</a>'
       + '</div>';
     return;
   }
