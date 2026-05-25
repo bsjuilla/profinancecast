@@ -5,13 +5,25 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <title>Journal — ProFinanceCast</title>
-  <meta name="description" content="Practical writing on debt, salary, and ten-year planning — clearly written, no jargon, no fluff.">
+  <!-- J-COPY (audit 2026-05-25) — meta description rewritten to match the
+       page's actual content (curated reading list of articles) rather than
+       the previous "practical writing" framing which falsely implied
+       editorial output. -->
+  <meta name="description" content="A curated reading list — articles on debt, salary, taxes, and the few money decisions that compound. Auth-shell view of the public /blog.">
   <meta name="robots" content="noindex,nofollow">
   <link rel="canonical" href="https://profinancecast.com/journal.html">
 <style>
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  /* J-P0-COMPAT (audit 2026-05-25) — iOS text inflation + dark color-scheme. */
+  html{-webkit-text-size-adjust:100%;color-scheme:dark;}
   html,body{height:100%;}
-  body{font-family:var(--font-body);background:var(--bg);color:var(--text);display:flex;overflow:hidden;}
+  /* J-P0-MOB + COMPAT — dvh fallback for iOS Safari address-bar churn. */
+  body{font-family:var(--font-body);background:var(--bg);color:var(--text);display:flex;overflow:hidden;min-height:100vh;min-height:100dvh;}
+
+  /* J-P0-A11Y (audit 2026-05-25) — skip-link for keyboard users. */
+  .skip-link{position:absolute;left:-9999px;top:0;background:var(--teal);color:var(--canvas);padding:10px 16px;border-radius:0 0 6px 0;font-weight:600;z-index:300;text-decoration:none;}
+  .skip-link:focus{left:0;}
+  .visually-hidden{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
 
   /* SIDEBAR */
   .sidebar{width:240px;flex-shrink:0;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;height:100vh;overflow-y:auto;}
@@ -70,6 +82,55 @@
   ::-webkit-scrollbar{width:4px;}
   ::-webkit-scrollbar-track{background:transparent;}
   ::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:2px;}
+
+  /* J-P0-A11Y — global :focus-visible ring. */
+  :where(button,a,input,select,textarea,[tabindex]):focus-visible{
+    outline:2px solid var(--teal);
+    outline-offset:2px;
+    border-radius:var(--r-sm);
+  }
+
+  /* J-P0-MOB (audit 2026-05-25) — Mobile drawer pattern. Pre-fix page had
+     ZERO sidebar @media; 240px sidebar ate 67% of 360px viewport. Below
+     900px: sidebar slides off-screen by default, hamburger reveals it,
+     scrim dims the rest. Matches R-P0-10 / DASH-P0-2 / G-P0-3 / SC-P0-D /
+     THP-P0-MOB / DS-P0-MOB. */
+  .sidebar-toggle{display:none;}
+  .sidebar-scrim{display:none;}
+  @media (max-width: 899px){
+    body{display:block;overflow:auto;}
+    .sidebar{position:fixed;top:0;left:0;height:100vh;height:100dvh;width:280px;max-width:85vw;transform:translateX(-100%);transition:transform .25s ease;z-index:200;box-shadow:0 0 24px rgba(0,0,0,.4);}
+    .sidebar.is-open{transform:translateX(0);}
+    .sidebar-scrim{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:150;}
+    .sidebar-scrim.is-open{display:block;}
+    .main{height:auto;min-height:100vh;min-height:100dvh;}
+    .sidebar-toggle{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;background:transparent;border:1px solid var(--border2);border-radius:var(--r-sm);color:var(--text);cursor:pointer;margin-right:8px;flex-shrink:0;}
+    .topbar{padding:0 14px;flex-wrap:wrap;height:auto;min-height:64px;padding-top:10px;padding-bottom:10px;}
+    .content{padding:16px;}
+    .arts-grid{grid-template-columns:1fr;}
+  }
+  /* J-P0-COMPAT — safe-area for iOS notched devices. */
+  @supports (padding: env(safe-area-inset-bottom)){
+    .sidebar-footer{padding-bottom:max(16px, env(safe-area-inset-bottom));}
+    @media (max-width: 899px){.content{padding-bottom:max(16px, env(safe-area-inset-bottom));}}
+  }
+  /* J-P0-COMPAT — reduced-motion respect (cardIn animation, transitions). */
+  @media (prefers-reduced-motion: reduce){
+    *,*::before,*::after{animation-duration:0.01ms!important;animation-iteration-count:1!important;transition-duration:0.01ms!important;scroll-behavior:auto!important;}
+  }
+  /* J-P0-COMPAT — Windows high-contrast / forced-colors mode. */
+  @media (forced-colors: active){
+    .art-card,.filter-tab,.sidebar-toggle{border:1px solid CanvasText;}
+    .filter-tab.active,.art-tag{forced-color-adjust:none;}
+  }
+  /* J-P0-COMPAT — print stylesheet. */
+  @media print{
+    body{overflow:visible;display:block;}
+    .sidebar,.sidebar-scrim,.sidebar-toggle,.skip-link,.filter-tabs,.pfc-photo-figure{display:none!important;}
+    .main{height:auto;}
+    .topbar{position:static;border-bottom:1px solid #333;}
+    .art-card{break-inside:avoid;page-break-inside:avoid;border:1px solid #aaa!important;background:#fff!important;color:#000!important;}
+  }
 </style>
   <link rel="stylesheet" href="css/pfc-tokens.css">
   <link rel="stylesheet" href="css/pfc-photos.css?v=3">
@@ -77,14 +138,25 @@
   <link rel="stylesheet" href="css/pfc-rhythm.css?v=1">
   <link rel="stylesheet" href="css/pfc-anim.css?v=1">
   <link rel="stylesheet" href="css/pfc-footer.css">
-  <!-- Supabase SDK + auth/storage/entitlements (must load before any inline script that uses them) -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/pfc-audit-mode.js"></script>
-  <script src="js/pfc-config.js"></script>
-  <script src="js/pfc-auth.js"></script>
-  <script src="js/pfc-crypto.js"></script>
-  <script src="js/pfc-storage.js"></script>
-  <script src="js/pfc-entitlements.js"></script>
+  <!-- J-P0-INFRA fix (audit 2026-05-25) — Supabase CDN version-pinned + SRI.
+       Pre-fix `@2` floating tag with no integrity hash left the same supply-
+       chain hole closed across NW-P1-5 / R-P0-4 / G-P1-E / D-P0-6 /
+       SC-HOTFIX / THP-P0-SEC / DS-P0-INFRA. Hash + version copied from
+       audited siblings (not fabricated — lesson from SC-HOTFIX). -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.105.4"
+          integrity="sha384-4eCDoMN/7A46qQ5Tj0rZ/D2VEolFGNIINDTLAcWZcvhkRSsvTfqNfaBMlRRoGEZ5"
+          crossorigin="anonymous" defer></script>
+  <!-- J-P0-INFRA — defer all 6 head pfc-* scripts so they no longer block
+       HTML parsing. defer preserves order; deps still resolve in sequence
+       before body-loaded inline scripts. Same atomic-defer pattern as the
+       9 sibling working surfaces (DASH-P0-7 / NW-P1-7 / R-P0-11 / G-* /
+       D-* / SC-P0-F / THP-P0-PERF / DS-P0-INFRA). -->
+  <script src="js/pfc-audit-mode.js" defer></script>
+  <script src="js/pfc-config.js" defer></script>
+  <script src="js/pfc-auth.js" defer></script>
+  <script src="js/pfc-crypto.js" defer></script>
+  <script src="js/pfc-storage.js" defer></script>
+  <script src="js/pfc-entitlements.js" defer></script>
   <script src="js/pfc-motion.js" defer></script>
   <script src="js/pfc-anim.js" defer></script>
   <!-- v3 reskin: new fonts + emerald palette overrides -->
@@ -100,13 +172,26 @@
   <script src="js/pfc-sidebar.js" defer></script>
   <!-- Privacy-friendly analytics by Plausible -->
   <script async src="https://plausible.io/js/pa-EvYdfUp4d9vvohwl_Yy2j.js"></script>
-  <script src="./js/inline/journal-1.js"></script>
+  <!-- Inline bundle deferred (was sync) so defer-ordered head modules
+       resolve before this consumer runs. -->
+  <script src="./js/inline/journal-1.js?v=20260525a" defer></script>
   <link rel="stylesheet" href="css/pfc-fonts.css">
 </head>
 <body data-pfc-surface="working">
 
+<!-- J-P0-A11Y (audit 2026-05-25) — skip-link + noscript fallback. -->
+<a href="#main" class="skip-link">Skip to main content</a>
+<noscript>
+  <div style="background:rgba(245,166,35,0.12);border:1px solid rgba(245,166,35,0.4);color:#F0EDE2;padding:14px 18px;margin:16px;border-radius:8px;font-family:Georgia,serif;line-height:1.6;">
+    <strong>JavaScript required.</strong> The Journal renders article cards in your browser. Please enable JavaScript and refresh — or read the same articles directly at <a href="/blog" style="color:#F0EDE2;">/blog</a>.
+  </div>
+</noscript>
+
+<!-- J-P0-MOB — sidebar scrim, shared by pfc-sidebar.js hamburger toggle. -->
+<div class="sidebar-scrim" id="pfc-sidebar-scrim" aria-hidden="true" data-pfc-on-click="_pfcCloseSidebar"></div>
+
 <!-- SIDEBAR -->
-<nav class="sidebar" aria-label="Primary navigation">
+<nav class="sidebar" id="pfc-sidebar" aria-label="Primary navigation">
   <a href="dashboard.html" class="sidebar-logo">
     <span class="pfc-brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32" width="32" height="32" aria-hidden="true"><text x="16" y="19" text-anchor="middle" font-family="&apos;Fraunces&apos;,&apos;Cormorant Garamond&apos;,Georgia,serif" font-size="14" font-weight="500" letter-spacing="-0.4" fill="#D4AF6A">PFC</text><rect x="14.5" y="23" width="3" height="3" fill="#D4AF6A" transform="rotate(45 16 24.5)"/></svg></span>
     ProFinanceCast
@@ -186,25 +271,43 @@
 </nav>
 
 <!-- MAIN -->
-<div class="main">
+<!-- J-P0-A11Y (audit 2026-05-25) — proper <main> landmark with #main id for skip-link. -->
+<main class="main" id="main" role="main" aria-labelledby="page-h1">
   <div class="topbar">
+    <!-- J-P0-MOB hamburger toggle — visible below 900px. -->
+    <button class="sidebar-toggle" type="button" aria-label="Open navigation menu" aria-controls="pfc-sidebar" data-pfc-on-click="_pfcToggleSidebar">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M2 5h14M2 9h14M2 13h14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+    </button>
     <div class="topbar-left">
-      <div class="topbar-title">Journal</div>
-      <div class="topbar-sub">Practical writing on debt, salary, and ten-year planning.</div>
+      <!-- J-P0-A11Y — promote topbar title to proper <h1>. Pre-fix the page had ZERO h1. -->
+      <h1 class="topbar-title" id="page-h1" style="margin:0;">Journal</h1>
+      <!-- J-COPY (audit 2026-05-25) — honest subtitle. Was: "Practical writing
+           on debt, salary, and ten-year planning." which lined up with the
+           misleading hero caption below. The page is a CURATED READING LIST
+           of marketing blog posts (no journaling, nothing dated, nothing
+           private). New copy describes what the page actually does. -->
+      <div class="topbar-sub">A curated reading list — articles on debt, salary, taxes, and the few money decisions that compound.</div>
     </div>
   </div>
 
   <div class="content">
+    <!-- J-COPY (audit 2026-05-25) — caption rewritten from "Practical writing,
+         dated and private." (which falsely promised personal journaling) to
+         match what the page actually delivers: a curated reading list. The
+         photo (open notebook + teacup) stays — it's evocative of "reading"
+         not just "writing", so it still earns its place. Future strategic
+         batch may transform this into a real private notes/journal feature
+         (auditor's CEO worth-it verdict); for now we ship honest copy. -->
     <figure class="pfc-photo-figure">
       <picture>
         <source srcset="assets/img/photos/journal-page-hero.avif" type="image/avif">
         <source srcset="assets/img/photos/journal-page-hero.webp" type="image/webp">
         <img class="pfc-photo-hero" src="assets/img/photos/journal-page-hero.webp"
-             alt="Worn Moleskine open to a half-finished page beside a cobalt-edged teacup — private finance journaling."
+             alt="Open notebook beside a cobalt-edged teacup — reading and reflection on money."
              loading="lazy" decoding="async"
              width="1672" height="941">
       </picture>
-        <figcaption>Practical writing, dated and private.</figcaption>
+        <figcaption>The articles we keep coming back to.</figcaption>
     </figure>
 
     <!-- CATEGORY FILTER CHIPS -->
@@ -224,9 +327,15 @@
   </div><!-- /content -->
 
   <!-- Route guard: redirect unauthed users to sign-in -->
-  <script src="./js/inline/journal-2.js"></script>
-
-  <script src="./js/inline/journal-3.js"></script>
+  <script src="./js/inline/journal-2.js?v=20260525a" defer></script>
+<!--
+  CACHE-BUST CONTRACT (J-P0 2026-05-25)
+  ─────────────────────────────────────
+  ANY edit to journal-*.js MUST also bump the ?v= suffix below. Browsers
+  cache JS for 24h; same-URL re-fetch returns the cached stale file.
+  Naming: ?v=YYYYMMDD<letter>[-suffix].
+-->
+  <script src="./js/inline/journal-3.js?v=20260525a-jbatch" defer></script>
 
 <footer class="site-footer" role="contentinfo">
   <div class="footer-grid">
@@ -251,7 +360,10 @@
       <h4>Resources</h4>
       <ul>
         <li><a href="help.html">Help</a></li>
-        <li><a href="journal.html">Articles</a></li>
+        <!-- J-CONTRACT (audit 2026-05-25) — was duplicate "Articles" pointing
+             at journal.html (same as the Product>Journal link two columns over).
+             Now routes to /blog which is the canonical public reading surface. -->
+        <li><a href="blog">Articles</a></li>
       </ul>
     </div>
     <div class="footer-col">
@@ -277,6 +389,6 @@
     financial adviser before any financial decision.
   </p>
 </footer>
-</div><!-- /main -->
+</main><!-- /main -->
 </body>
 </html>

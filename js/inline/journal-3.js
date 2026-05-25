@@ -1,5 +1,16 @@
-    // Static article list — same articles surfaced on the public /blog page,
-    // but rendered with the app's dark-theme card styling for the auth shell.
+    // tech-debt — HAND-MAINTAINED article list (J-CONTRACT, audit 2026-05-25).
+    // This array MUST be kept in sync with the public blog-*.html files surfaced
+    // on /blog.html. Pre-DEF4-style "single source of truth" would derive this
+    // from feed.xml (already in the project root) to prevent silent desync when
+    // a new blog post is added but this list isn't updated.
+    //
+    // For now: any time you add a new blog-*.html article, ALSO add a matching
+    // entry below (category + tag + tagClass + title + summary + date + href).
+    // Future batch: replace this static array with a fetch('/feed.xml') parser
+    // so the journal page becomes self-updating.
+    //
+    // Same articles surfaced on the public /blog page, but rendered with the
+    // app's dark-theme card styling for the authed shell.
     const ARTICLES = [
       {
         category: 'debt',
