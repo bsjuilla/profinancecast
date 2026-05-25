@@ -22,11 +22,33 @@
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Financial report card — ProFinanceCast">
   <meta name="twitter:description" content="Pro feature — get a graded breakdown of your savings rate, debt load, and emergency-fund coverage.">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<!-- RC-P0-INFRA fix (audit 2026-05-25) — html2canvas pinned + SRI + defer.
+     Pre-fix: floating cdnjs URL, no integrity, sync-blocking. The library
+     is only used by downloadCard() in report-card-3.js, so defer is safe.
+     SRI hash retrieved from cdnjs API for 1.4.1 — NOT fabricated. -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"
+        integrity="sha512-BNaRQnYJYiPSqHHDb58B0yaPfCu+Wgds8Gp/gU33kqBtgNS4tSPHuGibyoeqMV/TJlSKda6FXzoEyYGjTe+vXA=="
+        crossorigin="anonymous" referrerpolicy="no-referrer" defer></script>
 <style>
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  /* RC-P0-COMPAT (audit 2026-05-25) — iOS text inflation + dark color-scheme.
+     Same one-liner shipped on every audited surface in this batch series. */
+  html{-webkit-text-size-adjust:100%;color-scheme:dark}
   html,body{height:100%}
-  body{font-family:var(--font-body);background:var(--bg);color:var(--text);display:flex;overflow:hidden}
+  /* dvh fallback so iOS Safari's address-bar churn doesn't crop the page. */
+  body{font-family:var(--font-body);background:var(--bg);color:var(--text);display:flex;overflow:hidden;min-height:100vh;min-height:100dvh}
+
+  /* RC-P0-A11Y (audit 2026-05-25) — skip-link for keyboard users.
+     Pre-fix the page had 25+ sidebar nav items + 2 topbar buttons before
+     the main content; keyboard users were tabbing through all of them
+     before reaching the report card. Now Tab→Enter jumps to #main. */
+  .skip-link{position:absolute;left:-9999px;top:0;background:var(--teal);color:var(--canvas);padding:10px 16px;border-radius:0 0 6px 0;font-weight:600;z-index:300;text-decoration:none}
+  .skip-link:focus{left:0}
+  .visually-hidden{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+
+  /* RC-P0-MOB scaffolding — hidden until @899px media activates. */
+  .sidebar-toggle{display:none}
+  .sidebar-scrim{display:none}
   .sidebar{width:240px;flex-shrink:0;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;height:100vh;overflow-y:auto}
   .sidebar-logo{display:flex;align-items:center;gap:10px;padding:22px 20px 18px;border-bottom:1px solid var(--border);font-family:var(--font-display);font-size:15px;font-weight:700;color:var(--text);text-decoration:none}
   .logo-mark{width:30px;height:30px;background:var(--teal);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:var(--canvas);font-family:var(--font-display);flex-shrink:0}
@@ -213,7 +235,88 @@
   @keyframes slideUp{from{opacity:0;transform:translateX(-50%) translateY(12px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
   .toast{animation:slideUp .2s ease}
   @media(max-width:1050px){.page-layout{grid-template-columns:1fr}}
-  @media(max-width:680px){.sidebar{display:none}.content{padding:16px}}
+
+  /* RC-P0-A11Y — global :focus-visible ring. Same one-liner shipped on
+     every audited surface. Keyboard users now see a teal ring on every
+     focusable target — buttons, links, share/download CTAs, history rows. */
+  :where(button,a,input,select,textarea,[tabindex]):focus-visible{
+    outline:2px solid var(--teal);
+    outline-offset:2px;
+    border-radius:var(--r-sm);
+  }
+
+  /* RC-P0-MOB (audit 2026-05-25) — Mobile drawer pattern. Pre-fix the
+     only mobile rule was @media(680px){.sidebar{display:none}} which hid
+     the sidebar with NO way to reach it — mobile users were trapped on
+     /report-card with no navigation. Now below 900px the sidebar slides
+     off-screen, a hamburger reveals it, and a scrim dims the rest. Body
+     overflow flips to auto so the report card itself can scroll on
+     short mobile viewports. Matches J-P0-MOB / DS-P0-MOB / R-P0-10 /
+     G-P0-3 / DASH-P0-2 / THP-P0-MOB / SC-P0-D / SAGE-P0-MOB. */
+  @media (max-width: 899px){
+    body{display:block;overflow:auto;}
+    .sidebar{position:fixed;top:0;left:0;height:100vh;height:100dvh;width:280px;max-width:85vw;transform:translateX(-100%);transition:transform .25s ease;z-index:200;box-shadow:0 0 24px rgba(0,0,0,.4);}
+    .sidebar.is-open{transform:translateX(0);}
+    .sidebar-scrim{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:150;}
+    .sidebar-scrim.is-open{display:block;}
+    .main{height:auto;min-height:100vh;min-height:100dvh;}
+    .sidebar-toggle{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;background:transparent;border:1px solid var(--border2);border-radius:var(--r-sm);color:var(--text);cursor:pointer;margin-right:8px;flex-shrink:0;}
+    .topbar{padding:0 14px;flex-wrap:wrap;height:auto;min-height:64px;padding-top:10px;padding-bottom:10px;}
+    /* RC-P1-8 — topbar buttons would overflow on narrow viewports because
+       "Download image" + "← Dashboard" + the new hamburger don't fit in
+       360px. Shrink + truncate so the row stays single-line. */
+    .topbar-right{flex-wrap:wrap;gap:8px;}
+    .topbar-btn{padding:7px 10px;font-size:12.5px;}
+    .content{padding:16px;}
+  }
+
+  /* RC-P0-COMPAT — safe-area for iOS notched devices (the share-row
+     buttons would otherwise sit under the home indicator on landscape). */
+  @supports (padding: env(safe-area-inset-bottom)){
+    .sidebar-footer{padding-bottom:max(16px, env(safe-area-inset-bottom));}
+    @media (max-width: 899px){.content{padding-bottom:max(16px, env(safe-area-inset-bottom));}}
+  }
+
+  /* RC-P0-COMPAT — reduced-motion respect. ring-fill stroke transition,
+     bar-fill width transition, cardIn fade — all neutralised for users
+     who prefer no motion. */
+  @media (prefers-reduced-motion: reduce){
+    *,*::before,*::after{animation-duration:0.01ms!important;animation-iteration-count:1!important;transition-duration:0.01ms!important;scroll-behavior:auto!important;}
+  }
+
+  /* RC-P0-COMPAT — Windows high-contrast / forced-colors mode. Card and
+     pill borders are subtle teal-tinted; force CanvasText borders so they
+     don't disappear when forced-colors strips the palette. */
+  @media (forced-colors: active){
+    .card,.breakdown-row,.rec-item,.history-row,.sidebar-toggle,.topbar-btn,.share-btn,#rc-canvas,.rc-metric,.rc-bar-bg{border:1px solid CanvasText;}
+    .nav-badge,.rc-grade-letter,.cta-primary{forced-color-adjust:none;}
+  }
+
+  /* RC-P0-COMPAT — print stylesheet. Printing a report card is a valid
+     use case (paper keepsake) — hide chrome, white background, keep the
+     #rc-canvas grade card legible. */
+  @media print{
+    html,body{overflow:visible !important;height:auto !important;background:#fff !important;color:#000 !important;}
+    body{display:block !important;}
+    .sidebar,.sidebar-scrim,.sidebar-toggle,.skip-link,.topbar-right,.toast,.rc-invitation,.share-row,footer.site-footer{display:none !important;}
+    .main{height:auto !important;overflow:visible !important;}
+    .topbar{position:static !important;border-bottom:1px solid #ccc !important;}
+    #rc-canvas{break-inside:avoid;page-break-inside:avoid;border:1px solid #aaa !important;background:#fff !important;color:#000 !important;}
+    #rc-canvas *{color:#000 !important;}
+    .card{break-inside:avoid;border:1px solid #ccc !important;background:#fff !important;color:#000 !important;}
+  }
+
+  /* RC-P0-MODAL (audit 2026-05-25) — overlay styles for _pfcConfirm
+     modal (see #confirm-modal in body). Mirrors NW-P1-6 pattern: opaque
+     scrim + centered card + focus-trapping role=dialog. */
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.55);display:none;align-items:center;justify-content:center;z-index:400;padding:16px;}
+  .modal-overlay.open{display:flex;}
+  .modal-box{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);max-width:400px;width:100%;box-shadow:0 12px 32px rgba(0,0,0,0.5);}
+  .modal-head{padding:16px 20px 0;}
+  .modal-title-el{font-family:var(--font-display);font-size:15px;font-weight:700;}
+  .modal-body{padding:14px 20px 18px;}
+  .rc-confirm-cancel{padding:10px 18px;background:transparent;border:1px solid var(--border2);border-radius:var(--r-sm);font-size:13px;color:var(--text2);font-family:var(--font-body);cursor:pointer;}
+  .rc-confirm-ok{padding:10px 18px;background:var(--red);border:none;border-radius:var(--r-sm);font-size:13px;font-weight:600;color:#fff;font-family:var(--font-body);cursor:pointer;}
 
   /* NOTE: W2.4 attempted to flip this page to data-surface="ivory" so it
      read as a printable paper deliverable. That broke rendering because
@@ -230,20 +333,30 @@
   <link rel="stylesheet" href="css/pfc-anim.css?v=1">
   <link rel="stylesheet" href="css/pfc-footer.css">
   <script src="js/pfc-export.js" defer></script>
-  <!-- Supabase SDK + auth/storage/entitlements (must load before any inline script that uses them) -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/pfc-audit-mode.js"></script>
-  <script src="js/pfc-config.js"></script>
-  <script src="js/pfc-auth.js"></script>
-  <script src="js/pfc-crypto.js"></script>
-  <script src="js/pfc-storage.js"></script>
-  <script src="js/pfc-currency.js"></script>
-  <script src="js/pfc-user.js"></script>
-  <script src="js/pfc-entitlements.js"></script>
+  <!-- RC-P0-INFRA fix (audit 2026-05-25) — Supabase pinned + SRI + defer.
+       Same canonical hash + version copied from audited siblings (NOT
+       fabricated — SC-HOTFIX lesson). Closes the same supply-chain hole
+       fixed across NW-P1-5 / R-P0-4 / G-P1-E / SC-HOTFIX / THP-P0-SEC /
+       DS-P0-INFRA / J-P0-INFRA / SAGE-P0-INFRA. -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.105.4"
+          integrity="sha384-4eCDoMN/7A46qQ5Tj0rZ/D2VEolFGNIINDTLAcWZcvhkRSsvTfqNfaBMlRRoGEZ5"
+          crossorigin="anonymous" defer></script>
+  <!-- RC-P0-INFRA — defer all 9 head pfc-* scripts. defer preserves order
+       so PFCAuth / PFCStorage / PFCPlan are ready before the body-loaded
+       inline scripts. Same atomic-defer pattern as 11 sibling pages. -->
+  <script src="js/pfc-audit-mode.js" defer></script>
+  <script src="js/pfc-config.js" defer></script>
+  <script src="js/pfc-auth.js" defer></script>
+  <script src="js/pfc-crypto.js" defer></script>
+  <script src="js/pfc-storage.js" defer></script>
+  <script src="js/pfc-currency.js" defer></script>
+  <script src="js/pfc-user.js" defer></script>
+  <script src="js/pfc-entitlements.js" defer></script>
+  <script src="js/pfc-icons.js" defer></script>
   <!-- Auth guard. Pro gating moved to in-page editorial preview (UX §6.26);
        set window.PFC_PREVIEW_GALLERY=false above this script to restore the
        legacy redirect for rollback. -->
-  <script src="./js/inline/report-card-1.js"></script>
+  <script src="./js/inline/report-card-1.js?v=20260525a-rcbatch" defer></script>
   <!-- v3 reskin: new fonts + emerald palette overrides -->
 <script src="js/pfc-fonts.js" defer></script>
   <link rel="stylesheet" href="css/pfc-reskin.css">
@@ -259,12 +372,29 @@
   <script src="js/pfc-sidebar.js?v=20260525a-sagebatch" defer></script>
   <!-- Privacy-friendly analytics by Plausible -->
   <script async src="https://plausible.io/js/pa-EvYdfUp4d9vvohwl_Yy2j.js"></script>
-  <script src="./js/inline/report-card-2.js"></script>
+  <script src="./js/inline/report-card-2.js?v=20260525a-rcbatch" defer></script>
   <script src="js/pfc-anim.js" defer></script>
   <link rel="stylesheet" href="css/pfc-fonts.css">
 </head>
 <body data-pfc-surface="working">
-<nav class="sidebar" aria-label="Primary navigation">
+<!-- RC-P0-A11Y — skip-link first focusable element on page. -->
+<a class="skip-link" href="#main">Skip to your report card</a>
+<!-- RC-P0-A11Y — noscript fallback. Report card is JS-required (every
+     metric is computed in browser from stored profile). Without JS the
+     user gets a frozen template with em-dashes everywhere — confusing.
+     Now they get a clear explanation. -->
+<noscript>
+  <div style="background:#0B1410;color:#E6EBF2;padding:32px 24px;max-width:640px;margin:64px auto;border:1px solid #2BB67D;border-radius:10px;font-family:Georgia,serif;">
+    <h1 style="margin:0 0 12px;font-size:22px;">Report card needs JavaScript</h1>
+    <p style="margin:0 0 16px;font-size:15px;line-height:1.6;">Your financial report card is computed in your browser from your real numbers — savings rate, debt ratio, emergency-fund coverage. It needs JavaScript to read your stored profile and render the grade.</p>
+    <p style="margin:0;font-size:15px;line-height:1.6;">Enable JavaScript and reload, or open the <a href="dashboard.html" style="color:#2BB67D;">dashboard</a> for a non-graded overview.</p>
+  </div>
+</noscript>
+<!-- RC-P0-MOB — scrim that dims the page when the mobile sidebar is open.
+     pfc-sidebar.js _pfcCloseSidebar (added in SAGE-P0-MOB) handles the
+     click. -->
+<div class="sidebar-scrim" id="pfc-sidebar-scrim" aria-hidden="true" data-pfc-on-click="_pfcCloseSidebar"></div>
+<nav class="sidebar" id="pfc-sidebar" aria-label="Primary navigation">
   <a href="dashboard.html" class="sidebar-logo">
     <span class="pfc-brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32" width="32" height="32" aria-hidden="true"><text x="16" y="19" text-anchor="middle" font-family="&apos;Fraunces&apos;,&apos;Cormorant Garamond&apos;,Georgia,serif" font-size="14" font-weight="500" letter-spacing="-0.4" fill="#D4AF6A">PFC</text><rect x="14.5" y="23" width="3" height="3" fill="#D4AF6A" transform="rotate(45 16 24.5)"/></svg></span>
     ProFinanceCast
@@ -343,16 +473,27 @@
   </div>
 </nav>
 
-<main class="main">
+<main class="main" id="main" role="main">
   <div class="topbar">
+    <!-- RC-P0-MOB — hamburger only renders below @899px (CSS-hidden above).
+         data-pfc-on-click fires _pfcToggleSidebar (defined in pfc-sidebar.js
+         alongside the close handler — SAGE-P0-MOB shipped this for legacy
+         .sidebar pages like this one). aria-controls + aria-expanded keep
+         the toggle accessible to assistive tech. -->
+    <button class="sidebar-toggle" type="button" aria-label="Open navigation menu" aria-controls="pfc-sidebar" aria-expanded="false" data-pfc-on-click="_pfcToggleSidebar">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M3 6h14M3 10h14M3 14h14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+    </button>
     <div class="topbar-left">
       <div class="pfc-eyebrow-mono">The certificate · Report card</div>
-      <div class="topbar-title">Financial Report Card</div>
+      <!-- RC-P0-A11Y — was a div, now a real h1 so the page has a top-level
+           landmark. Visual treatment unchanged (still uses topbar-title
+           class). -->
+      <h1 class="topbar-title" style="font-size:17px;font-weight:700;">Financial Report Card</h1>
       <div class="topbar-sub" id="today-date"></div>
     </div>
     <div class="topbar-right">
       <button class="topbar-btn dl-btn"  data-pfc-on-click="downloadCard">
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v8M4 6l3 3 3-3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 10v1.5a.5.5 0 0 0 .5.5h9a.5.5 0 0 0 .5-.5V10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M7 1v8M4 6l3 3 3-3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 10v1.5a.5.5 0 0 0 .5.5h9a.5.5 0 0 0 .5-.5V10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
         Download image
       </button>
       <button class="topbar-btn primary"  data-pfc-on-click="_pfc_nav" data-pfc-href="dashboard.html">&#8592; Dashboard</button>
@@ -372,7 +513,7 @@
         <source srcset="assets/img/photos/report-card-merit-certificate.webp" type="image/webp">
         <img class="pfc-photo-hero" src="assets/img/photos/report-card-merit-certificate.webp"
              alt="Heirloom letterpress merit certificate on aged ivory linen with gilded olive-wreath border and chestnut wax seal — the report card as an heirloom."
-             loading="lazy" decoding="async"
+             decoding="async"
              width="1672" height="941">
       </picture>
     </figure>
@@ -382,7 +523,7 @@
         <source srcset="assets/img/photos/report-card-overdue-stamp.webp" type="image/webp">
         <img class="pfc-photo-card" src="assets/img/photos/report-card-overdue-stamp.webp"
              alt="Aged cream envelope on walnut desk stamped diagonally with oxblood-red OVERDUE letterpress, brass desk-bell behind — the score that needs attention."
-             loading="lazy" decoding="async"
+             decoding="async"
              width="1448" height="1086">
       </picture>
     </figure>
@@ -448,8 +589,14 @@
         <div class="card">
           <div class="card-header">
             <div>
-              <div class="card-title">Share your report card</div>
-              <div class="card-sub">Download and post on social media to inspire others</div>
+              <!-- RC-P0-COPY fix (audit 2026-05-25) — pre-fix copy was
+                   "Share your report card / Download and post on social
+                   media to inspire others" but Copy Link sent a generic
+                   product URL (anyone clicking saw their own report, not
+                   yours). Honest framing: download is the ONLY way to
+                   share your actual grade; the link is for the product. -->
+              <div class="card-title">Share your card</div>
+              <div class="card-sub">Download the PNG to share your grade. The link button copies the product page so friends can take their own report card.</div>
             </div>
           </div>
           <div class="share-row">
@@ -478,7 +625,7 @@
               <source srcset="assets/img/photos/report-card-keepsake.webp" type="image/webp">
               <img class="pfc-photo-portrait" src="assets/img/photos/report-card-keepsake.webp"
                    alt="Framed letterpress merit certificate on aged ivory — the report card as an heirloom."
-                   loading="lazy" decoding="async"
+                   decoding="async"
                    width="1122" height="1402">
             </picture>
           </figure>
@@ -523,7 +670,26 @@
     </div>
   </div>
 
-<script src="./js/inline/report-card-3.js"></script>
+<!-- RC-P0-MODAL: _pfcConfirm modal — replaces window.confirm() which is
+     unreliable in iOS PWA standalone mode (prompt invisible on some
+     versions). Same dialog shape as NW-P1-6 / G-P1-D / R-P0-9 — promise
+     returns true/false. -->
+<div class="modal-overlay" id="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+  <div class="modal-box">
+    <div class="modal-head">
+      <div class="modal-title-el" id="confirm-title">Confirm</div>
+    </div>
+    <div class="modal-body">
+      <p id="confirm-msg" style="font-size:13.5px;color:var(--text2);margin-bottom:18px;line-height:1.5;"></p>
+      <div style="display:flex;gap:10px;justify-content:flex-end;">
+        <button id="confirm-cancel" type="button" class="rc-confirm-cancel">Cancel</button>
+        <button id="confirm-ok" type="button" class="rc-confirm-ok">Confirm</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="./js/inline/report-card-3.js?v=20260525a-rcbatch" defer></script>
 <footer class="site-footer" role="contentinfo">
   <div class="footer-grid">
     <div class="footer-col">
