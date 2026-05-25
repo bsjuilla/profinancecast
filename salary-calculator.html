@@ -666,6 +666,21 @@
       </div>
     </div>
 
+    <!-- DEF-4 (2026-05-25) — "Your raise, applied" cross-link insight card.
+         Closes the loop: the lifetime-impact number ($1.2M over 30 years) is
+         abstract; this card translates the monthly raise into concrete
+         outcomes in /goals and /debt-optimizer with one-click routing.
+         Hidden by default; rendered by renderRaiseApplied() in salary-
+         calculator-2.js when target > salary AND goals OR debts exist in
+         storage. nper() closed-form math inline — no engine import needed. -->
+    <div id="raise-applied-card" class="card section-gap" style="display:none;background:linear-gradient(135deg,rgba(43,182,125,0.06),rgba(212,175,106,0.03));border-color:rgba(43,182,125,0.20);">
+      <div class="card-inner">
+        <div class="card-title" style="margin-bottom:6px;">Your raise, applied</div>
+        <div class="card-sub" style="margin-bottom:14px;" data-raise-applied-sub>What this monthly increase actually buys you in the rest of ProFinanceCast.</div>
+        <div id="raise-applied-rows" style="display:flex;flex-direction:column;gap:10px;"></div>
+      </div>
+    </div>
+
     <!-- SECTION 3: 5-YEAR PROJECTION + LIFETIME CHART -->
     <div class="grid-2 section-gap">
       <!-- 5-year table -->
@@ -923,7 +938,7 @@
   cache JS for 24h (Cache-Control max-age=86400); same-URL re-fetch returns
   the cached stale file. Naming convention: ?v=YYYYMMDD<letter>[-suffix].
 -->
-<script src="./js/inline/salary-calculator-2.js?v=20260525b-srifix" defer></script>
+<script src="./js/inline/salary-calculator-2.js?v=20260525c-raiseapplied" defer></script>
   <!-- Salary calculator is now Free (audit B3 / pricing report 07): single-offer
        calculation is the SEO honey-pot. Multi-offer compare and "save scenario"
        Pro hooks land alongside the scenarios.html upsell flow. Auth required so

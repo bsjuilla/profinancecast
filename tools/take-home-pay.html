@@ -246,7 +246,7 @@
   <script src="../js/tax-library/europe.js?v=20260525a" defer></script>
   <script src="../js/tax-library/americas.js?v=20260525a" defer></script>
   <script src="../js/tax-library/asia-pacific-mea.js?v=20260525a" defer></script>
-  <script src="../js/pfc-tax-library.js?v=20260525a-mathfix" defer></script>
+  <script src="../js/pfc-tax-library.js?v=20260525b-marginal" defer></script>
 
   <script type="application/ld+json">
   {
@@ -429,7 +429,7 @@
         <div class="result-hero result-hero-empty" id="r-takehome">—</div>
         <div class="result-sub">
           <div><span class="result-meta">Per month</span><span class="num" id="r-monthly">—</span></div>
-          <div><span class="result-meta">Per hour (2080 h)</span><span class="num" id="r-hourly">—</span></div>
+          <div><span class="result-meta" data-thp-hourly-label>Per hour (2,080 h/yr)</span><span class="num" id="r-hourly">—</span></div>
           <div><span class="result-meta">Effective rate</span><span class="num" id="r-effective">—</span></div>
         </div>
 
@@ -444,6 +444,13 @@
         </div>
 
         <p class="pull" id="r-pull">After tax, you keep the result of pure-browser math — your salary never leaves your machine.</p>
+
+        <!-- DEF-2 (2026-05-25) — marginal-rate teaching line. Surfaces the
+             actionable "next $1" rate (vs effective, which is a summary
+             statistic). Populated each render by renderMarginalTeaching()
+             in tools-take-home-pay-3.js. Hidden by default; shows only
+             when salary > 0 AND the engine returned a marginalRate. -->
+        <p id="thp-marginal-teach" style="display:none;font-size:13px;line-height:1.55;color:var(--text2);background:rgba(43,182,125,0.06);border:1px solid rgba(43,182,125,0.20);border-radius:var(--r-sm);padding:10px 14px;margin:14px 0 0;"></p>
 
         <!-- THP-P0-A11Y — table head <th scope="col">, body rows use <th scope="row"> for the label cell. -->
         <table class="breakdown">
@@ -460,6 +467,32 @@
         <p class="disclaimer" id="r-engine-source" data-thp-engine-source>All math runs in your browser. Numbers are estimates for planning, not tax advice.</p>
         <p class="disclaimer">Where a country uses a flat-rate approximation, exact figures vary by deductions, locality, credits and filing status — consult a qualified accountant for filing.</p>
       </div>
+    </section>
+
+    <!-- DEF-1 (2026-05-25) — save-to-dashboard CTA card. Closes the funnel
+         loop — pre-fix the page was a dead-end after compute. Now: 3 one-
+         click routes carry the take-home number into the rest of PFC with
+         URL params for prefill. Goals + debt-optimizer routes hide when
+         storage is empty (don't promise an action the user can't take
+         without setup). Populated by renderSaveActions() in inline-3.js. -->
+    <section id="thp-save-card" style="display:none;margin-top:28px;background:linear-gradient(135deg,rgba(43,182,125,0.06),rgba(212,175,106,0.03));border:1px solid rgba(43,182,125,0.20);border-radius:var(--r);padding:20px 22px;" aria-labelledby="thp-save-h">
+      <h2 id="thp-save-h" style="font-family:var(--font-display);font-size:16px;font-weight:700;margin:0 0 8px;color:var(--text);">Use this number across the rest of ProFinanceCast</h2>
+      <p data-thp-save-lead style="font-size:13.5px;line-height:1.55;color:var(--text2);margin:0 0 14px;">You can drop this take-home number into the rest of ProFinanceCast — no re-typing required.</p>
+      <div style="display:flex;flex-wrap:wrap;gap:10px;">
+        <a data-thp-save-route="dashboard.html" href="/dashboard.html" style="display:inline-flex;align-items:center;gap:8px;padding:10px 18px;background:var(--teal);color:var(--canvas);font-weight:700;font-size:13px;border-radius:var(--r-sm);text-decoration:none;font-family:var(--font-body);transition:transform 160ms,box-shadow 160ms;">
+          Set as dashboard income
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M3 7h8m-3-3l3 3-3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+        <a data-thp-save-route="goals.html" href="/goals.html" style="display:inline-flex;align-items:center;gap:8px;padding:10px 18px;background:transparent;color:var(--text);font-weight:600;font-size:13px;border:1px solid var(--border2);border-radius:var(--r-sm);text-decoration:none;font-family:var(--font-body);">
+          Apply to my goals
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M3 7h8m-3-3l3 3-3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+        <a data-thp-save-route="debt-optimizer.html" href="/debt-optimizer.html" style="display:inline-flex;align-items:center;gap:8px;padding:10px 18px;background:transparent;color:var(--text);font-weight:600;font-size:13px;border:1px solid var(--border2);border-radius:var(--r-sm);text-decoration:none;font-family:var(--font-body);">
+          Model accelerated debt payoff
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M3 7h8m-3-3l3 3-3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+      </div>
+      <p style="font-size:11px;color:var(--text3);margin:12px 0 0;line-height:1.5;">Your salary stays in your browser — these routes pass only your monthly take-home + country to the next tool via URL params.</p>
     </section>
 
     <section class="faq">
@@ -549,7 +582,7 @@
   JS for 24h (Cache-Control max-age=86400); same-URL re-fetch returns the
   cached stale file. Naming: ?v=YYYYMMDD<letter>[-suffix].
 -->
-<script src="../js/inline/tools-take-home-pay-3.js?v=20260525a-thpbatch" defer></script>
+<script src="../js/inline/tools-take-home-pay-3.js?v=20260525b-defbatch" defer></script>
 
 </body>
 </html>

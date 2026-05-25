@@ -440,6 +440,13 @@ function calc() {
   // Lifetime chart
   renderLifetimeChart(ltCurr, ltNew, sym, careerYrs);
 
+  // DEF-4 (2026-05-25) — "Your raise, applied" cross-link insight card.
+  // Translates the abstract lifetime-impact number into concrete months-
+  // sooner outcomes on /goals + /debt-optimizer. Silent skip when no
+  // goals/debts in storage. Pure-browser closed-form math (no PFCDebtEngine
+  // import needed — it isn't loaded on this page).
+  renderRaiseApplied(monthly, sym);
+
   // Benefits base
   calcBenefits();
 
@@ -447,10 +454,135 @@ function calc() {
   calcCounter();
 }
 
+// DEF-4 helper — "Your raise, applied" cross-link card.
+function renderRaiseApplied(monthly, sym) {
+  const card = document.getElementById('raise-applied-card');
+  if (!card) return;
+  const rowsEl = document.getElementById('raise-applied-rows');
+  if (!rowsEl) return;
+  if (!monthly || monthly <= 0) { card.style.display = 'none'; return; }
+
+  // Storage reads — defensive: never throw, never leak across users.
+  let goals = [], debts = [];
+  try {
+    const g = (typeof PFCStorage !== 'undefined') ? PFCStorage.getJSON('goals') : null;
+    if (Array.isArray(g)) goals = g;
+  } catch (_) {}
+  try {
+    const d = (typeof PFCStorage !== 'undefined') ? PFCStorage.getJSON('debts') : null;
+    if (Array.isArray(d)) debts = d;
+  } catch (_) {}
+
+  const rows = [];
+
+  // ── Top goal — "X months sooner" ──────────────────────────────────────
+  // Pick the goal with the LARGEST remaining shortfall and a positive
+  // monthlyNeeded. Skip 100%-funded or untargeted goals. Math: months
+  // sooner = remaining / monthlyNeeded - remaining / (monthlyNeeded + monthly).
+  if (goals.length > 0) {
+    let top = null;
+    let topRemaining = 0;
+    for (const g of goals) {
+      const target = Number(g.target) || 0;
+      const current = Number(g.current) || 0;
+      const mn = Number(g.monthlyNeeded) || 0;
+      const remaining = target - current;
+      if (target <= 0 || remaining <= 0 || mn <= 0) continue;
+      if (remaining > topRemaining) { top = g; topRemaining = remaining; }
+    }
+    if (top) {
+      const mn = Number(top.monthlyNeeded) || 0;
+      const remaining = (Number(top.target) || 0) - (Number(top.current) || 0);
+      const currentMonths = remaining / mn;
+      const newMonths = remaining / (mn + monthly);
+      const sooner = Math.max(0, Math.round(currentMonths - newMonths));
+      if (sooner >= 1) {
+        rows.push(_raiseAppliedRowHtml({
+          icon: '◎',
+          label: escHtml(top.name || 'your top goal'),
+          insight: `Funded <strong style="color:var(--teal);">${sooner} month${sooner !== 1 ? 's' : ''} sooner</strong> (was ${Math.round(currentMonths)} mo, now ${Math.round(newMonths)} mo at ${sym}${Math.round(mn + monthly).toLocaleString()}/mo)`,
+          ctaLabel: 'Open Goals',
+          ctaHref: '/goals.html'
+        }));
+      }
+    }
+  }
+
+  // ── Top debt — "X months earlier debt-free" ──────────────────────────
+  // Pick the HIGHEST-rate debt with positive balance + minPay. Closed-form
+  // NPER differential: months = -log(1 - r*PV/PMT) / log(1+r) per period.
+  // Guards: rate=0 → straight balance / minPay. minPay+monthly not covering
+  // monthly interest → cannot pay off, skip silently.
+  if (debts.length > 0) {
+    let top = null;
+    let topRate = -1;
+    for (const d of debts) {
+      const balance = Number(d.balance) || 0;
+      const rate = Number(d.rate) || 0;
+      const minPay = Number(d.minPay) || 0;
+      if (balance <= 0 || minPay <= 0) continue;
+      if (rate > topRate) { top = d; topRate = rate; }
+    }
+    if (top) {
+      const balance = Number(top.balance) || 0;
+      const minPay = Number(top.minPay) || 0;
+      const rate = Number(top.rate) || 0;
+      const monthlyRate = rate / 100 / 12;
+      const newPay = minPay + monthly;
+      const nper = (pmt, pv, r) => {
+        if (r === 0) return pv / pmt;
+        if (pmt <= pv * r) return null; // payment doesn't cover interest
+        return -Math.log(1 - r * pv / pmt) / Math.log(1 + r);
+      };
+      const currentMonths = nper(minPay, balance, monthlyRate);
+      const newMonthsCalc = nper(newPay, balance, monthlyRate);
+      if (currentMonths != null && newMonthsCalc != null && isFinite(currentMonths) && isFinite(newMonthsCalc)) {
+        const sooner = Math.max(0, Math.round(currentMonths - newMonthsCalc));
+        if (sooner >= 1) {
+          rows.push(_raiseAppliedRowHtml({
+            icon: '◈',
+            label: escHtml(top.name || 'your highest-rate debt'),
+            insight: `Paid off <strong style="color:var(--teal);">${sooner} month${sooner !== 1 ? 's' : ''} sooner</strong> (was ${Math.round(currentMonths)} mo, now ${Math.round(newMonthsCalc)} mo at ${sym}${Math.round(newPay).toLocaleString()}/mo)`,
+            ctaLabel: 'Open Debt Strategy',
+            ctaHref: '/debt-optimizer.html'
+          }));
+        }
+      }
+    }
+  }
+
+  if (rows.length === 0) {
+    card.style.display = 'none';
+    return;
+  }
+  rowsEl.innerHTML = rows.join('');
+  card.style.display = 'block';
+}
+
+// Pure presentation — each row in the raise-applied card. All user-controlled
+// text already escHtml'd by caller; CTA href is a hardcoded route.
+function _raiseAppliedRowHtml({ icon, label, insight, ctaLabel, ctaHref }) {
+  return `<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:12px 14px;background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:var(--r-sm);">
+    <div style="display:flex;align-items:flex-start;gap:10px;flex:1;min-width:200px;">
+      <span style="font-size:18px;line-height:1;color:var(--teal);">${icon}</span>
+      <div style="flex:1;font-size:13px;line-height:1.55;color:var(--text2);">
+        <strong style="color:var(--text);">${label}</strong> — ${insight}
+      </div>
+    </div>
+    <a href="${ctaHref}" style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;background:transparent;color:var(--text);font-weight:600;font-size:12px;border:1px solid var(--border2);border-radius:var(--r-sm);text-decoration:none;font-family:var(--font-body);white-space:nowrap;">
+      ${ctaLabel}
+      <svg width="12" height="12" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M3 7h8m-3-3l3 3-3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </a>
+  </div>`;
+}
+
 function clearMetrics(sym) {
   ['m-raise','m-monthly','m-5yr','m-lifetime'].forEach(id => document.getElementById(id).textContent = '—');
   document.getElementById('yr-body').innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text3);padding:20px 0;">Enter your salary and target above</td></tr>';
   if (lifetimeChart) { lifetimeChart.destroy(); lifetimeChart = null; }
+  // DEF-4 — hide the raise-applied card too when there's nothing to apply.
+  const raiseCard = document.getElementById('raise-applied-card');
+  if (raiseCard) raiseCard.style.display = 'none';
 }
 
 // ── MARKET RANGE UI ──

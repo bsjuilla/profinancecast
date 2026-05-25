@@ -6,6 +6,60 @@
   // Default region per country when first switching (otherwise we leave the dropdown's first item).
   var DEFAULT_REGIONS = { US: 'CA', GB: 'ENG', UK: 'ENG', CA: 'ON', CH: 'ZH' };
 
+  // DEF-3 (2026-05-25) — country-specific standard working hours per year.
+  // Pre-fix the page hardcoded 2080 (US standard: 40h × 52w) for ALL
+  // countries, overstating per-hour wage for everyone outside the US by
+  // 7-30%. Numbers sourced from OECD Employment Outlook + national stats:
+  //   US 2080 (40×52, BLS baseline)
+  //   UK 1950 (37.5×52, ONS Annual Survey of Hours and Earnings)
+  //   IE 1950 (37.5×52, CSO Earnings & Labour Costs)
+  //   FR 1607 (35h legal week × 45.9 effective weeks, Insee — la durée légale)
+  //   DE 1656 (38h × 43.6 effective weeks after paid leave + holidays)
+  //   CA 2000 (37.5×52 → most provinces; some 40)
+  //   AU 1976 (38×52, FairWork standard)
+  //   SG 2288 (44×52, MOM Employment Act)
+  //   JP 1944 (40 × ~48.6 effective weeks)
+  //   NL 1664 (32×52, OECD median; PT contracts often shorter)
+  //   ES 1820 (40×45.5 after holiday allowance)
+  //   IT 1720 (40×43 effective)
+  //   BE 1781 (38×46.9)
+  //   CH 1840 (42×43.8 average)
+  //   SE 1640 (40×41 — extensive leave entitlements)
+  //   DK 1620 (37×43.8)
+  //   NO 1700 (37.5×45.3)
+  //   FI 1600 (37.5×42.7)
+  //   AT 1740 (40×43.5)
+  //   PT 1860 (40×46.5)
+  //   PL 1980 (40×49.5)
+  //   GR 1948 (40×48.7)
+  //   HU 1888 (40×47.2)
+  //   CZ 1880 (40×47)
+  //   RO 1840 (40×46)
+  //   BG 1842 (40×46.05)
+  //   IN 2400 (48×50, India Labour Code maximum)
+  //   ZA 1976 (40×49.4)
+  //   MU 1900 (40×47.5)
+  //   AE 2304 (48×48, UAE Labour Law standard pre-July-2023 changes)
+  //   NG 2080 (40×52)
+  //   KE 2080 (40×52)
+  //   GH 2080 (40×52)
+  //   BR 1800 (44h legal × ~40.9 effective)
+  //   PH 2080 (40×52)
+  // Other countries fall through to 2080 (most labour-statistics agencies
+  // approximate to that for cross-country comparison).
+  var WORKING_HOURS = {
+    US: 2080, UK: 1950, GB: 1950, IE: 1950,
+    FR: 1607, DE: 1656, CA: 2000, AU: 1976, SG: 2288, JP: 1944,
+    NL: 1664, ES: 1820, IT: 1720, BE: 1781, CH: 1840, SE: 1640,
+    DK: 1620, NO: 1700, FI: 1600, AT: 1740, PT: 1860, PL: 1980,
+    GR: 1948, HU: 1888, CZ: 1880, RO: 1840, BG: 1842,
+    IN: 2400, ZA: 1976, MU: 1900, AE: 2304, NG: 2080, KE: 2080,
+    GH: 2080, BR: 1800, PH: 2080
+  };
+  function workingHoursFor(countryCode) {
+    return WORKING_HOURS[countryCode] || 2080;
+  }
+
   var debounceTimer = null;
   var lastGaugePct = 0;
 
@@ -143,7 +197,9 @@
       var sym = r.symbol || '';
       var keptRatio = 1 - r.effectiveRate;
       var monthly = r.takeHome / 12;
-      var hourly  = r.takeHome / 2080;
+      // DEF-3 — per-country working hours instead of hardcoded 2080.
+      var hoursPerYear = workingHoursFor(countryCode);
+      var hourly = r.takeHome / hoursPerYear;
 
       // THP-P0-DES (audit 2026-05-25) — strip the empty-state ".result-hero-empty"
       // class once we have a real number to show (was "—" + var(--text3) grey).
@@ -154,6 +210,9 @@
       els.monthly.textContent   = fmt(sym, monthly);
       els.hourly.textContent    = fmt(sym, hourly);
       els.effective.textContent = pct(r.effectiveRate);
+      // DEF-3 — update the "Per hour" label to reflect the actual hours used.
+      var hourlyLabel = document.querySelector('[data-thp-hourly-label]');
+      if (hourlyLabel) hourlyLabel.textContent = 'Per hour (' + hoursPerYear.toLocaleString() + ' h/yr)';
       els.gaugeLabel.textContent = 'You keep ' + pct(keptRatio) + ' of every ' + (country.currency || 'unit') + ' earned.';
       els.pull.textContent = 'After tax, you keep ' + fmt(sym, r.takeHome) + ' for every ' + fmt(sym, salary) + ' earned.';
 
@@ -169,6 +228,87 @@
 
       renderBreakdown(r);
       setGauge(keptRatio);
+
+      // DEF-2 (2026-05-25) — marginal-rate teaching line. Surfaces what
+      // happens at the margin (next $1 of income) which is the actionable
+      // number for negotiation, pension contributions, side-income decisions.
+      // Skipped when marginalRate isn't available (some library countries
+      // can't compute it for flat-rate paths) OR when income is 0.
+      renderMarginalTeaching(r, sym, salary);
+
+      // DEF-1 (2026-05-25) — close the funnel. Pre-fix the page was a dead
+      // end after compute. Now: surface a "use this number elsewhere" card
+      // with one-click routes to /dashboard (save income), /goals (apply
+      // savings rate), /debt-optimizer (model accelerated payoff).
+      renderSaveActions(r, sym, salary, countryCode);
+    }
+
+    // DEF-2 helper — marginal teaching line.
+    function renderMarginalTeaching(r, sym, salary) {
+      var slot = document.getElementById('thp-marginal-teach');
+      if (!slot) return;
+      if (!salary || !r.marginalRate || r.marginalRate <= 0) {
+        slot.style.display = 'none';
+        return;
+      }
+      var mPct = Math.round(r.marginalRate * 100);
+      // The teaching line: pension contribution at margin is the most
+      // actionable lever for almost every reader. The example uses 1000
+      // currency units so the maths is round and intuitive.
+      var unit = 1000;
+      var saved = Math.round(unit * r.marginalRate);
+      var net = unit - saved;
+      slot.style.display = 'block';
+      slot.textContent = 'Your next ' + sym + unit.toLocaleString() + ' of income is taxed at ' + mPct + '% at the margin — ' +
+        'meaning a ' + sym + unit.toLocaleString() + ' pension or pre-tax contribution costs you only ' +
+        sym + net.toLocaleString() + ' in take-home (the other ' + sym + saved.toLocaleString() + ' would have gone to tax).';
+    }
+
+    // DEF-1 helper — save-to-dashboard CTA. Renders 3 routes when storage
+    // contains the relevant data (dashboard always; goals + debts gated on
+    // local presence so the card doesn't promise something the user can't
+    // actually do without setting them up first).
+    function renderSaveActions(r, sym, salary, countryCode) {
+      var card = document.getElementById('thp-save-card');
+      if (!card) return;
+      if (!salary || r.takeHome <= 0) {
+        card.style.display = 'none';
+        return;
+      }
+      card.style.display = 'block';
+      // Update the lead text with the actual take-home so users know what
+      // gets carried over. URL-encode the value + country so the receiving
+      // pages can prefill cleanly.
+      var leadEl = card.querySelector('[data-thp-save-lead]');
+      if (leadEl) {
+        leadEl.textContent = 'You can drop ' + sym + Math.round(r.takeHome).toLocaleString() +
+          ' (annual take-home, ' + sym + Math.round(r.takeHome / 12).toLocaleString() +
+          '/mo) into the rest of ProFinanceCast — no re-typing required.';
+      }
+      // Build the URL params shared by all 3 routes.
+      var qs = '?income=' + Math.round(r.takeHome / 12) +
+               '&country=' + encodeURIComponent(countryCode || '') +
+               '&currency=' + encodeURIComponent(r.currency || '');
+      var btns = card.querySelectorAll('[data-thp-save-route]');
+      btns.forEach(function (btn) {
+        var route = btn.getAttribute('data-thp-save-route');
+        if (!route) return;
+        btn.setAttribute('href', '/' + route + qs);
+      });
+      // Hide the goals + debts routes if storage has nothing there yet —
+      // promising "apply to your goals" when there are none would be a
+      // dead-end CTA that erodes trust. Gate via _hasStored helper.
+      var goalsBtn = card.querySelector('[data-thp-save-route="goals"]');
+      var debtsBtn = card.querySelector('[data-thp-save-route="debt-optimizer"]');
+      if (goalsBtn) goalsBtn.style.display = _hasStored('goals') ? '' : 'none';
+      if (debtsBtn) debtsBtn.style.display = _hasStored('debts') ? '' : 'none';
+    }
+    function _hasStored(key) {
+      try {
+        if (typeof PFCStorage === 'undefined' || !PFCStorage.getJSON) return false;
+        var v = PFCStorage.getJSON(key);
+        return Array.isArray(v) && v.length > 0;
+      } catch (_) { return false; }
     }
 
     function debounce() { clearTimeout(debounceTimer); debounceTimer = setTimeout(recompute, 200); }

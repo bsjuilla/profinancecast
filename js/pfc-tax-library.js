@@ -33,16 +33,23 @@
   }
 
   // Apply progressive bracket array to a salary, returning total tax owed.
-  function applyBrackets(salary, brackets) {
-    let owed = 0, prev = 0;
+  // DEF-2 (2026-05-25) — `applyBracketsDetailed` returns { tax, marginalRate }
+  // so the THP teaching line can render "your next $1 is taxed at X%". The
+  // simpler applyBrackets is kept for backward compatibility (regions, social).
+  function applyBracketsDetailed(salary, brackets) {
+    let owed = 0, prev = 0, marginal = 0;
     for (const b of brackets) {
       const ceil = (b.upTo === null || b.upTo === undefined) ? Infinity : b.upTo;
       const inBand = Math.max(0, Math.min(salary, ceil) - prev);
       owed += inBand * b.rate;
+      if (salary > prev) marginal = b.rate; // last bracket the salary actually entered
       if (salary <= ceil) break;
       prev = ceil;
     }
-    return owed;
+    return { tax: owed, marginalRate: marginal };
+  }
+  function applyBrackets(salary, brackets) {
+    return applyBracketsDetailed(salary, brackets).tax;
   }
 
   // THP-P0-MATH (audit 2026-05-25) — extract the flat-rate read so all three
@@ -121,6 +128,10 @@
         total: eng.totalTax,
         takeHome: eng.takeHome,
         effectiveRate: eng.effectiveRate,
+        // DEF-2 (2026-05-25) — surface marginalRate so the THP page can render
+        // the "your next $1 is taxed at X%" teaching line. Engine returns this
+        // for US (federal only — state stacks on top) and UK (income tax only).
+        marginalRate: eng.federal.marginalRate,
         currency: country.currency,
         symbol: country.symbol,
         breakdown,
@@ -148,6 +159,9 @@
         total: eng.totalTax,
         takeHome: eng.takeHome,
         effectiveRate: eng.effectiveRate,
+        // DEF-2 — marginal rate for the teaching line. Engine gives 0.20/0.40/0.45
+        // for rUK; 0.19/0.20/0.21/0.42/0.45/0.48 for Scotland.
+        marginalRate: eng.incomeTax.marginalRate,
         currency: country.currency,
         symbol: country.symbol,
         breakdown,
@@ -157,8 +171,11 @@
 
     // ── Library calculation for the other ~60 countries ─────────────────
     let incomeTax = 0;
+    let marginalRate = 0; // DEF-2 — populated below for the teaching line
     if (country.kind === 'progressive' && Array.isArray(country.brackets)) {
-      incomeTax = applyBrackets(salary, country.brackets);
+      const d = applyBracketsDetailed(salary, country.brackets);
+      incomeTax = d.tax;
+      marginalRate = d.marginalRate;
     } else if (country.kind === 'flat' || country.kind === 'flat-approx') {
       // THP-P0-MATH-2/3 fix (audit 2026-05-25) — multi-schema flat-rate read.
       // If neither flatRate/effectiveRate/rate is present, fall through to
@@ -167,8 +184,11 @@
       const r = _resolveFlatRate(country);
       if (r != null) {
         incomeTax = salary * r;
+        marginalRate = r; // flat rate IS the marginal rate
       } else if (Array.isArray(country.brackets)) {
-        incomeTax = applyBrackets(salary, country.brackets);
+        const d = applyBracketsDetailed(salary, country.brackets);
+        incomeTax = d.tax;
+        marginalRate = d.marginalRate;
       }
     }
 
@@ -218,6 +238,7 @@
     return {
       incomeTax, social, regionTax, total, takeHome,
       effectiveRate,
+      marginalRate, // DEF-2 — for the THP teaching line
       currency: country.currency,
       symbol: country.symbol,
       breakdown,
