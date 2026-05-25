@@ -37,16 +37,34 @@
   }
   </script>
 
-<!-- Chart.js must execute BEFORE the PFCAuth.onReady chain reaches `new Chart()` —
-     `defer` here would race against the rehydration callback and throw on cold loads. -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js" integrity="sha384-bs/nf9FbdNouRbMiFcrcZfLXYPKiPaGVGplVbv7dLGECccEXDW+S3zjqSKR5ZEaD" crossorigin="anonymous"></script>
+<!-- H-P0-INFRA fix (audit 2026-05-25) — the previous comment claimed Chart.js
+     could not be deferred because of "the PFCAuth.onReady chain". That was
+     wrong: history-2.js init() binds to DOMContentLoaded (not PFCAuth.onReady)
+     and renderNetWorth() — the only `new Chart()` call site — runs inside
+     activateTab() which fires after init(). Since `defer` waits for HTML
+     parsing AND preserves order, Chart.js is guaranteed to be available
+     before DOMContentLoaded fires, which is before init() runs. Verified
+     by reading history-2.js end-to-end. Defer is safe and gives us back
+     ~80–150ms of head-blocking time on cold loads. -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js" integrity="sha384-bs/nf9FbdNouRbMiFcrcZfLXYPKiPaGVGplVbv7dLGECccEXDW+S3zjqSKR5ZEaD" crossorigin="anonymous" defer></script>
 <style>
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  /* H-P0-COMPAT (audit 2026-05-25) — iOS text inflation + dark color-scheme. */
+  html{-webkit-text-size-adjust:100%;color-scheme:dark;}
   html,body{height:100%;}
-  body{font-family:var(--font-body);background:var(--bg);color:var(--text);display:flex;overflow:hidden;}
+  /* dvh fallback so iOS Safari's address-bar churn doesn't crop the chart. */
+  body{font-family:var(--font-body);background:var(--bg);color:var(--text);display:flex;overflow:hidden;min-height:100vh;min-height:100dvh;}
+
+  /* H-P0-A11Y (audit 2026-05-25) — skip-link for keyboard users. */
+  .skip-link{position:absolute;left:-9999px;top:0;background:var(--teal);color:var(--canvas);padding:10px 16px;border-radius:0 0 6px 0;font-weight:600;z-index:300;text-decoration:none;}
+  .skip-link:focus{left:0;}
+  .visually-hidden{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
 
   /* SIDEBAR */
   .sidebar{width:240px;flex-shrink:0;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;height:100vh;overflow-y:auto;}
+  /* H-P0-MOB scaffolding — hidden until @899px media activates. */
+  .sidebar-toggle{display:none;}
+  .sidebar-scrim{display:none;}
   .sidebar-logo{display:flex;align-items:center;gap:10px;padding:22px 20px 18px;border-bottom:1px solid var(--border);font-family:var(--font-display);font-size:15px;font-weight:700;color:var(--text);text-decoration:none;}
   .logo-mark{width:30px;height:30px;background:var(--teal);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:var(--canvas);font-family:var(--font-display);flex-shrink:0;}
   .sidebar-section{padding:18px 12px 8px;font-size:10px;font-weight:600;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;}
@@ -131,6 +149,75 @@
   ::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:2px;}
 
   @keyframes cardIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+
+  /* H-P0-A11Y — global :focus-visible ring. Tab buttons + View/Reopen
+     anchor buttons + "Open full tracker" CTAs all gain a keyboard ring. */
+  :where(button,a,input,select,textarea,[tabindex]):focus-visible{
+    outline:2px solid var(--teal);
+    outline-offset:2px;
+    border-radius:var(--r-sm);
+  }
+
+  /* H-P0-MOB (audit 2026-05-25) — Mobile drawer pattern. Pre-fix the page
+     had ZERO mobile rules — 240px sidebar ate 67% of a 360px viewport with
+     no way to dismiss. Now below 900px the sidebar slides off-screen, a
+     hamburger reveals it, and a scrim dims the rest. Body flips to block
+     so the long content scrolls naturally. Matches J-P0-MOB / DS-P0-MOB /
+     R-P0-10 / G-P0-3 / DASH-P0-2 / THP-P0-MOB / SC-P0-D / SAGE-P0-MOB /
+     RC-P0-MOB. */
+  @media (max-width: 899px){
+    body{display:block;overflow:auto;}
+    .sidebar{position:fixed;top:0;left:0;height:100vh;height:100dvh;width:280px;max-width:85vw;transform:translateX(-100%);transition:transform .25s ease;z-index:200;box-shadow:0 0 24px rgba(0,0,0,.4);}
+    .sidebar.is-open{transform:translateX(0);}
+    .sidebar-scrim{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:150;}
+    .sidebar-scrim.is-open{display:block;}
+    .main{height:auto;min-height:100vh;min-height:100dvh;}
+    .sidebar-toggle{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;background:transparent;border:1px solid var(--border2);border-radius:var(--r-sm);color:var(--text);cursor:pointer;margin-right:8px;flex-shrink:0;}
+    .topbar{padding:0 14px;flex-wrap:wrap;height:auto;min-height:64px;padding-top:10px;padding-bottom:10px;}
+    .topbar-right{flex-wrap:wrap;gap:8px;}
+    .btn{padding:6px 10px;font-size:12.5px;}
+    .content{padding:16px;}
+    .tab-strip{overflow-x:auto;white-space:nowrap;flex-wrap:nowrap;}
+    .tab-btn{flex-shrink:0;}
+    .data-table th,.data-table td{padding-left:12px !important;padding-right:12px !important;font-size:12.5px;}
+  }
+
+  /* H-P0-COMPAT — safe-area for iOS notched devices on the chat-input rail
+     pattern (no input rail here, but the bottom of long tables can sit
+     under the home indicator on landscape iPhone). */
+  @supports (padding: env(safe-area-inset-bottom)){
+    .sidebar-footer{padding-bottom:max(16px, env(safe-area-inset-bottom));}
+    @media (max-width: 899px){.content{padding-bottom:max(16px, env(safe-area-inset-bottom));}}
+  }
+
+  /* H-P0-COMPAT — reduced-motion respect. cardIn fade + Chart.js tension
+     animations get neutralised for users who prefer no motion. */
+  @media (prefers-reduced-motion: reduce){
+    *,*::before,*::after{animation-duration:0.01ms!important;animation-iteration-count:1!important;transition-duration:0.01ms!important;scroll-behavior:auto!important;}
+  }
+
+  /* H-P0-COMPAT — Windows high-contrast / forced-colors mode. Tab borders,
+     pill backgrounds, card outlines all rely on subtle tinted colors that
+     vanish under forced-colors; force a CanvasText border on the structure. */
+  @media (forced-colors: active){
+    .card,.chart-card,.list-row,.data-table th,.data-table td,.tab-btn,.sidebar-toggle,.btn,.pill,.empty-icon{border:1px solid CanvasText;}
+    .nav-badge,.pill,.tab-btn.active{forced-color-adjust:none;}
+  }
+
+  /* H-P0-COMPAT — print stylesheet. Printing a history table is a valid
+     use case (paper backup of activity). Hide chrome, force white BG. */
+  @media print{
+    html,body{overflow:visible !important;height:auto !important;background:#fff !important;color:#000 !important;}
+    body{display:block !important;}
+    .sidebar,.sidebar-scrim,.sidebar-toggle,.skip-link,.topbar-right,.btn,.tab-strip,.pfc-photo-figure,footer.site-footer{display:none !important;}
+    .main{height:auto !important;overflow:visible !important;}
+    .topbar{position:static !important;border-bottom:1px solid #ccc !important;}
+    .tab-pane{display:block !important;animation:none !important;}
+    .card,.chart-card,.list-row{background:#fff !important;color:#000 !important;border:1px solid #ccc !important;page-break-inside:avoid;}
+    .data-table th,.data-table td{color:#000 !important;}
+    /* Print all panes when paper is what you want — chart canvas is OK to skip. */
+    .chart-wrap{display:none !important;}
+  }
 </style>
   <link rel="stylesheet" href="css/pfc-tokens.css">
   <link rel="stylesheet" href="css/pfc-photos.css?v=3">
@@ -138,16 +225,24 @@
   <link rel="stylesheet" href="css/pfc-rhythm.css?v=1">
   <link rel="stylesheet" href="css/pfc-anim.css?v=1">
   <script src="js/pfc-export.js" defer></script>
-  <!-- Supabase SDK + auth/storage/entitlements (must load before any inline script that uses them) -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/pfc-audit-mode.js"></script>
-  <script src="js/pfc-config.js"></script>
-  <script src="js/pfc-auth.js"></script>
-  <script src="js/pfc-crypto.js"></script>
-  <script src="js/pfc-storage.js"></script>
-  <script src="js/pfc-currency.js"></script>
-  <script src="js/pfc-user.js"></script>
-  <script src="js/pfc-entitlements.js"></script>
+  <!-- H-P0-INFRA fix (audit 2026-05-25) — Supabase pinned + SRI + defer.
+       Same canonical hash + version used across journal/sage/report-card/
+       debt-strategy/etc. NOT fabricated — copied from working sibling. -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.105.4"
+          integrity="sha384-4eCDoMN/7A46qQ5Tj0rZ/D2VEolFGNIINDTLAcWZcvhkRSsvTfqNfaBMlRRoGEZ5"
+          crossorigin="anonymous" defer></script>
+  <!-- H-P0-INFRA — defer all 9 head pfc-* scripts so they no longer block
+       HTML parsing. defer preserves order; deps still resolve in sequence
+       before body-loaded inline scripts. Same pattern as the 11 audited
+       sibling surfaces. -->
+  <script src="js/pfc-audit-mode.js" defer></script>
+  <script src="js/pfc-config.js" defer></script>
+  <script src="js/pfc-auth.js" defer></script>
+  <script src="js/pfc-crypto.js" defer></script>
+  <script src="js/pfc-storage.js" defer></script>
+  <script src="js/pfc-currency.js" defer></script>
+  <script src="js/pfc-user.js" defer></script>
+  <script src="js/pfc-entitlements.js" defer></script>
   <!-- v3 reskin: new fonts + emerald palette overrides -->
 <script src="js/pfc-fonts.js" defer></script>
   <link rel="stylesheet" href="css/pfc-reskin.css">
@@ -161,14 +256,29 @@
   <script src="js/pfc-sidebar.js?v=20260525a-sagebatch" defer></script>
   <!-- Privacy-friendly analytics by Plausible -->
   <script async src="https://plausible.io/js/pa-EvYdfUp4d9vvohwl_Yy2j.js"></script>
-  <script src="./js/inline/history-1.js"></script>
+  <script src="./js/inline/history-1.js?v=20260525a-hbatch" defer></script>
   <script src="js/pfc-anim.js" defer></script>
   <link rel="stylesheet" href="css/pfc-fonts.css">
 </head>
 <body data-pfc-surface="working">
+<!-- H-P0-A11Y — skip-link first focusable element on page. -->
+<a class="skip-link" href="#main">Skip to history content</a>
+<!-- H-P0-A11Y — noscript fallback. The page is entirely JS-rendered
+     (every list and chart is computed in the browser from PFCStorage).
+     Without JS the user sees empty tabs and no chart — confusing.
+     This explains why and points elsewhere. -->
+<noscript>
+  <div style="background:#0B1410;color:#E6EBF2;padding:32px 24px;max-width:640px;margin:64px auto;border:1px solid #2BB67D;border-radius:10px;font-family:Georgia,serif;">
+    <h1 style="margin:0 0 12px;font-size:22px;">History needs JavaScript</h1>
+    <p style="margin:0 0 16px;font-size:15px;line-height:1.6;">Your history page reads your saved data and renders charts + tables in your browser. It needs JavaScript to run.</p>
+    <p style="margin:0;font-size:15px;line-height:1.6;">Enable JavaScript and reload, or open the <a href="dashboard.html" style="color:#2BB67D;">dashboard</a> for a static overview.</p>
+  </div>
+</noscript>
+<!-- H-P0-MOB — scrim that dims the page when the mobile sidebar is open. -->
+<div class="sidebar-scrim" id="pfc-sidebar-scrim" aria-hidden="true" data-pfc-on-click="_pfcCloseSidebar"></div>
 
 <!-- SIDEBAR -->
-<nav class="sidebar" aria-label="Primary navigation">
+<nav class="sidebar" id="pfc-sidebar" aria-label="Primary navigation">
   <a href="dashboard.html" class="sidebar-logo">
     <span class="pfc-brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32" width="32" height="32" aria-hidden="true"><text x="16" y="19" text-anchor="middle" font-family="&apos;Fraunces&apos;,&apos;Cormorant Garamond&apos;,Georgia,serif" font-size="14" font-weight="500" letter-spacing="-0.4" fill="#D4AF6A">PFC</text><rect x="14.5" y="23" width="3" height="3" fill="#D4AF6A" transform="rotate(45 16 24.5)"/></svg></span>
     ProFinanceCast
@@ -248,11 +358,21 @@
 </nav>
 
 <!-- MAIN -->
-<div class="main">
+<!-- H-P0-A11Y — main landmark with id for the skip-link to target. -->
+<main class="main" id="main" role="main">
   <div class="topbar">
+    <!-- H-P0-MOB hamburger toggle — visible below 900px via media query.
+         data-pfc-on-click fires _pfcToggleSidebar (defined in pfc-sidebar.js
+         alongside the close handler shipped in SAGE-P0-MOB). -->
+    <button class="sidebar-toggle" type="button" aria-label="Open navigation menu" aria-controls="pfc-sidebar" aria-expanded="false" data-pfc-on-click="_pfcToggleSidebar">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M3 6h14M3 10h14M3 14h14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+    </button>
     <div class="topbar-left">
       <div class="pfc-eyebrow-mono">The archive · History</div>
-      <div class="topbar-title">History</div>
+      <!-- H-P0-A11Y — promote topbar-title to <h1>. Pre-fix the page had
+           ZERO h1 element. Visual style unchanged (still uses .topbar-title
+           class). -->
+      <h1 class="topbar-title" id="page-h1" style="font-size:17px;font-weight:700;line-height:1.2;">History</h1>
       <div class="topbar-sub">The full record, entry by entry.</div>
     </div>
     <div class="topbar-right">
@@ -265,9 +385,13 @@
       <picture>
         <source srcset="assets/img/photos/history-archive-eyebrow.avif" type="image/avif">
         <source srcset="assets/img/photos/history-archive-eyebrow.webp" type="image/webp">
+        <!-- H-P0-LCP — was loading="lazy" but this image sits at the top
+             of .content (immediately below the topbar) and is the LCP
+             element on first paint. Eager load. Same fix class as
+             DASH-P1-8 / NW-P1-8 / RC-P0-MOB. -->
         <img class="pfc-photo-eyebrow" src="assets/img/photos/history-archive-eyebrow.webp"
              alt="Library card-catalog drawer pulled half-open with manila tabs — your full history rendered as a real archive."
-             loading="lazy" decoding="async"
+             decoding="async"
              width="2243" height="701">
       </picture>
     </figure>
@@ -321,34 +445,34 @@
       </div>
     </div>
 
-    <!-- ── BILLING PANE ── -->
+    <!-- ── BILLING PANE ──
+         H-P0-HONESTY-BILLING fix (audit 2026-05-25) — pre-fix this pane
+         rendered an empty table to a "Date / Plan / Amount / Status"
+         schema and a "No billing activity yet — you're on the free
+         plan" empty state. Both were dishonest: billing_history has
+         ZERO writers anywhere in the codebase, so the table renders
+         empty for EVERY user regardless of plan, and the "you're on
+         the free plan" copy lies to Pro/Premium users. Subscription
+         state lives on /billing (and ultimately PayPal). Replaced
+         with an honest pointer card. -->
     <div class="tab-pane" data-pane="billing" role="tabpanel">
       <div class="card" style="padding:0;overflow:hidden;">
-        <div style="padding:18px 22px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+        <div style="padding:18px 22px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
           <div>
-            <div class="card-title">Billing history</div>
-            <div class="card-sub">Subscription invoices and plan changes</div>
+            <div class="card-title">Billing &amp; subscription</div>
+            <div class="card-sub">Your live plan and payment method live on the billing page</div>
           </div>
-          <a href="billing.html" class="btn">Manage billing →</a>
+          <a href="billing.html" class="btn primary">Open billing →</a>
         </div>
-        <div id="billing-content">
-          <div style="overflow-x:auto;">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th style="padding:10px 22px;">Date</th>
-                  <th style="padding:10px 22px;">Plan</th>
-                  <th style="padding:10px 22px;">Amount</th>
-                  <th style="padding:10px 22px;">Status</th>
-                </tr>
-              </thead>
-              <tbody id="billing-body"></tbody>
-            </table>
-          </div>
-          <div id="billing-empty" class="empty-state" style="display:none;">
-            <div class="empty-icon">💳</div>
-            <div class="empty-title">No billing activity yet</div>
-            <div class="empty-body">No billing activity yet — you're on the free plan.</div>
+        <div style="padding:32px 28px;">
+          <div class="card-sub" style="font-size:13.5px;line-height:1.65;color:var(--text2);max-width:560px;">
+            <p style="margin:0 0 10px;">Invoice history isn't archived inside the app — PayPal keeps the full receipt trail. From <a href="billing.html" style="color:var(--teal);">your billing page</a> you can:</p>
+            <ul style="margin:0 0 10px 18px;padding:0;">
+              <li style="margin-bottom:5px;">See your current plan (Free, Pro, or Premium) and the renewal date</li>
+              <li style="margin-bottom:5px;">Open your active PayPal subscription to view every past payment</li>
+              <li style="margin-bottom:5px;">Cancel, pause, or upgrade your plan</li>
+            </ul>
+            <p style="margin:10px 0 0;color:var(--text3);font-size:12.5px;">If you need a downloadable receipt for tax or expense filing, the PayPal email confirmations carry an official VAT-compliant copy.</p>
           </div>
         </div>
       </div>
@@ -375,32 +499,38 @@
       </div>
     </div>
 
-    <!-- ── SAGE CHATS PANE ── -->
+    <!-- ── SAGE CHATS PANE ──
+         H-P0-HONESTY-SAGE fix (audit 2026-05-25) — pre-fix this pane
+         tried to render entries from PFCStorage('sage_history'), which
+         has ZERO writers in the codebase. Sage chat state lives only in
+         the in-memory `history` array of sage-3.js — it's per-session
+         and never persisted. Old copy "saved automatically once you
+         start chatting" was a flat-out lie. Replaced with an honest
+         pointer card. -->
     <div class="tab-pane" data-pane="sage" role="tabpanel">
       <div class="card" style="padding:0;overflow:hidden;">
-        <div style="padding:18px 22px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+        <div style="padding:18px 22px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
           <div>
             <div class="card-title">Sage conversations</div>
-            <div class="card-sub">Your previous AI advisor sessions</div>
+            <div class="card-sub">Persistent chat history isn't shipped yet</div>
           </div>
-          <a href="sage.html" class="btn">Ask Sage →</a>
+          <a href="sage.html" class="btn primary">Open Sage →</a>
         </div>
-        <div style="padding:18px 22px;">
-          <div id="sage-list"></div>
-          <div id="sage-empty" class="empty-state" style="display:none;">
-            <div class="empty-icon">💬</div>
-            <div class="empty-title">No Sage conversations yet</div>
-            <div class="empty-body">Sage conversations are saved automatically once you start chatting.</div>
+        <div style="padding:32px 28px;">
+          <div class="card-sub" style="font-size:13.5px;line-height:1.65;color:var(--text2);max-width:560px;">
+            <p style="margin:0 0 10px;">Sage is the in-app AI advisor. Conversations are <strong style="color:var(--text);font-weight:600;">live in your current tab</strong> only — closing the tab clears the chat. Cross-session conversation history is on the roadmap but not yet built.</p>
+            <p style="margin:0 0 10px;">If you want to keep a particular answer, copy the reply text out of Sage before closing the tab.</p>
+            <p style="margin:10px 0 0;color:var(--text3);font-size:12.5px;">When persistent Sage history ships, your past conversations will appear here automatically — no migration needed.</p>
           </div>
         </div>
       </div>
     </div>
 
   </div><!-- /content -->
-</div><!-- /main -->
+</main><!-- /main -->
 
-<script src="./js/inline/history-2.js"></script>
+<script src="./js/inline/history-2.js?v=20260525a-hbatch" defer></script>
   <!-- Route guard: redirect unauthed users to sign-in -->
-  <script src="./js/inline/history-3.js"></script>
+  <script src="./js/inline/history-3.js?v=20260525a-hbatch" defer></script>
 </body>
 </html>
