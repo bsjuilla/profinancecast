@@ -157,7 +157,9 @@ async function sendMessage(text) {
   const ws = document.getElementById('welcome-screen');
   if (ws) ws.style.display = 'none';
   if (!text) { input.value = ''; input.style.height = 'auto'; }
-  document.getElementById('char-count').textContent = '0 / 500';
+  // SAGE-HOTFIX (2026-05-25) — append "chars" so the per-message char
+  // cap doesn't read like a contradiction with "0 / 200 messages" above.
+  document.getElementById('char-count').textContent = '0 / 500 chars';
   addUserBubble(msg);
   addHistory(msg);
   showTyping();
@@ -374,7 +376,7 @@ function addHistory(q) {
 
 function sendStarter(t) { sendMessage(t); }
 function handleKey(e) { if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();} }
-function autoResize(el) { el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,120)+'px'; const l=el.value.length; document.getElementById('char-count').textContent=l+' / 500'; if(l>500)el.value=el.value.substring(0,500); }
+function autoResize(el) { el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,120)+'px'; const l=el.value.length; document.getElementById('char-count').textContent=l+' / 500 chars'; if(l>500)el.value=el.value.substring(0,500); }
 // SAGE-P0-CSP fix (audit 2026-05-25) — STARTERS are now defined ONCE here
 // and reused by both initial render (NOT injected by JS since the HTML
 // already ships them) and clearChat. The pre-fix clearChat re-injected the

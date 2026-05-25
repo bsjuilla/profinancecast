@@ -446,7 +446,11 @@
         </div>
         <div class="input-footer">
           <span>Sage uses AI — double-check important financial decisions with a qualified advisor</span>
-          <span id="char-count">0 / 500</span>
+          <!-- SAGE-HOTFIX (2026-05-25) — was "0 / 500" with no unit, which
+               read like a contradiction with "0 / 200 messages" in the
+               topbar. Added "chars" so the per-message character cap is
+               unambiguous against the monthly message quota above. -->
+          <span id="char-count">0 / 500 chars</span>
         </div>
       </div>
     </div>
@@ -495,7 +499,7 @@
   </div>
 </main>
 
-<script src="./js/inline/sage-3.js?v=20260525a-sagebatch" defer></script>
+<script src="./js/inline/sage-3.js?v=20260525b-charlabel" defer></script>
 
 
 <script src="js/pfc-inline-bootstrap.js" defer></script>
