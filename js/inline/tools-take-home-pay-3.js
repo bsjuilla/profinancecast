@@ -69,8 +69,17 @@
       console.error('PFCTaxLibrary not loaded');
       return;
     }
-    if (!Lib.countries || Object.keys(Lib.countries).length === 0) {
-      console.error('PFCTaxLibrary.countries is empty — data files did not load.');
+    // DEF4-HOTFIX (2026-05-25) — lazy-load mode init guard. Pre-DEF4 the
+    // 3 region files eagerly populated Lib.countries during head-parse, so
+    // checking countries.length === 0 was a valid "data didn't load" guard.
+    // After DEF4, countries starts EMPTY and only fills on demand via
+    // ensureCountry — but the dropdown needs to populate from the MANIFEST
+    // immediately. New guard: accept manifest-only as ready; only bail if
+    // BOTH manifest AND countries are missing (true "nothing loaded" state).
+    var hasManifest = Lib.manifest && Object.keys(Lib.manifest).length > 0;
+    var hasCountries = Lib.countries && Object.keys(Lib.countries).length > 0;
+    if (!hasManifest && !hasCountries) {
+      console.error('PFCTaxLibrary: neither manifest nor countries loaded — tax data files missing.');
       return;
     }
 
@@ -444,9 +453,15 @@
     }
   }
 
-  // The data files + library are deferred, so they evaluate after parse but
+  // The library + manifest are deferred, so they evaluate after parse but
   // potentially after this inline script. Wait for window 'load' to be safe.
-  if (window.PFCTaxLibrary && window.PFCTaxLibrary.countries && Object.keys(window.PFCTaxLibrary.countries).length > 0) {
+  // DEF4-HOTFIX: check for MANIFEST (always loaded eagerly) instead of
+  // countries (lazy-loaded). Pre-DEF4 the 3 region files filled `countries`
+  // eagerly; in lazy mode `countries` starts empty and only populates on
+  // first calculate. If manifest is already there, run ready() immediately;
+  // otherwise wait for window.load.
+  var Lib0 = window.PFCTaxLibrary;
+  if (Lib0 && Lib0.manifest && Object.keys(Lib0.manifest).length > 0) {
     ready();
   } else {
     window.addEventListener('load', ready);
