@@ -27,8 +27,16 @@
 <script src="../js/pfc-fonts.js" defer></script>
 <style>
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  /* DS-P0-COMPAT (audit 2026-05-25) — iOS text inflation + dark color-scheme. */
+  html{-webkit-text-size-adjust:100%;color-scheme:dark;}
   html,body{height:100%;}
-  body{font-family:var(--font-body);background:var(--bg);color:var(--text);display:flex;overflow:hidden;}
+  /* DS-P0-MOB + COMPAT — dvh fallback for iOS Safari address-bar churn. */
+  body{font-family:var(--font-body);background:var(--bg);color:var(--text);display:flex;overflow:hidden;min-height:100vh;min-height:100dvh;}
+
+  /* DS-P0-A11Y (audit 2026-05-25) — skip-link for keyboard users. */
+  .skip-link{position:absolute;left:-9999px;top:0;background:var(--teal);color:var(--canvas);padding:10px 16px;border-radius:0 0 6px 0;font-weight:600;z-index:300;text-decoration:none;}
+  .skip-link:focus{left:0;}
+  .visually-hidden{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
 
   /* SIDEBAR */
   .sidebar{width:240px;flex-shrink:0;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;height:100vh;overflow-y:auto;}
@@ -150,6 +158,56 @@
   ::-webkit-scrollbar{width:4px;}
   ::-webkit-scrollbar-track{background:transparent;}
   ::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:2px;}
+
+  /* DS-P0-A11Y — global :focus-visible ring. */
+  :where(button,a,input,select,textarea,[tabindex]):focus-visible{
+    outline:2px solid var(--teal);
+    outline-offset:2px;
+    border-radius:var(--r-sm);
+  }
+
+  /* DS-P0-MOB (audit 2026-05-25) — Mobile drawer pattern. Pre-fix page
+     had ONE @media query (760px grid collapse) but ZERO sidebar behaviour
+     at mobile sizes; 240px sidebar ate 67% of 360px viewport. Below 900px:
+     sidebar slides off-screen by default, hamburger reveals it, scrim
+     dims the rest. Mirrors R-P0-10 / DASH-P0-2 / G-P0-3 / SC-P0-D / THP-P0-MOB. */
+  .sidebar-toggle{display:none;}
+  .sidebar-scrim{display:none;}
+  @media (max-width: 899px){
+    body{display:block;overflow:auto;}
+    .sidebar{position:fixed;top:0;left:0;height:100vh;height:100dvh;width:280px;max-width:85vw;transform:translateX(-100%);transition:transform .25s ease;z-index:200;box-shadow:0 0 24px rgba(0,0,0,.4);}
+    .sidebar.is-open{transform:translateX(0);}
+    .sidebar-scrim{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:150;}
+    .sidebar-scrim.is-open{display:block;}
+    .main{height:auto;min-height:100vh;min-height:100dvh;}
+    .sidebar-toggle{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;background:transparent;border:1px solid var(--border2);border-radius:var(--r-sm);color:var(--text);cursor:pointer;margin-right:8px;flex-shrink:0;}
+    .topbar{padding:0 14px;flex-wrap:wrap;height:auto;min-height:64px;padding-top:10px;padding-bottom:10px;}
+    .content{padding:16px;}
+    .result-card .num.big{font-size:34px;}
+  }
+  /* DS-P0-COMPAT — safe-area for iOS notched devices. */
+  @supports (padding: env(safe-area-inset-bottom)){
+    .sidebar-footer{padding-bottom:max(16px, env(safe-area-inset-bottom));}
+    @media (max-width: 899px){.content{padding-bottom:max(16px, env(safe-area-inset-bottom));}}
+  }
+  /* DS-P0-COMPAT — reduced-motion respect (curve draw, transitions). */
+  @media (prefers-reduced-motion: reduce){
+    *,*::before,*::after{animation-duration:0.01ms!important;animation-iteration-count:1!important;transition-duration:0.01ms!important;scroll-behavior:auto!important;}
+  }
+  /* DS-P0-COMPAT — Windows high-contrast / forced-colors mode. */
+  @media (forced-colors: active){
+    .card,.debt-row input,.debt-row .remove-btn,.add-debt-btn,.sidebar-toggle{border:1px solid CanvasText;}
+    .result-card.is-winner{forced-color-adjust:none;}
+  }
+  /* DS-P0-COMPAT — print stylesheet. */
+  @media print{
+    body{overflow:visible;display:block;}
+    .sidebar,.sidebar-scrim,.sidebar-toggle,.skip-link,.pfc-photo-figure{display:none!important;}
+    .main{height:auto;}
+    .topbar{position:static;border-bottom:1px solid #333;}
+    .card{break-inside:avoid;page-break-inside:avoid;border:1px solid #aaa!important;background:#fff!important;color:#000!important;}
+    .result-card .num.big,.verdict{color:#000!important;}
+  }
 </style>
   <link rel="stylesheet" href="../css/pfc-tokens.css">
   <link rel="stylesheet" href="../css/pfc-photos.css?v=3">
@@ -158,13 +216,25 @@
   <link rel="stylesheet" href="../css/pfc-anim.css?v=1">
   <link rel="stylesheet" href="../css/pfc-app.css">
   <link rel="stylesheet" href="../css/pfc-footer.css">
-  <!-- Supabase SDK + auth/storage/entitlements -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="../js/pfc-config.js"></script>
-  <script src="../js/pfc-auth.js"></script>
-  <script src="../js/pfc-crypto.js"></script>
-  <script src="../js/pfc-storage.js"></script>
-  <script src="../js/pfc-entitlements.js"></script>
+  <!-- DS-P0-INFRA fix (audit 2026-05-25) — Supabase CDN now version-pinned
+       + SRI-locked. Pre-fix the `@2` floating tag with no integrity hash
+       left the same supply-chain hole closed across NW-P1-5 / R-P0-4 /
+       G-P1-E / D-P0-6 / SC-HOTFIX / THP-P0-SEC. Pinned to @2.105.4 with
+       the proven hash from sibling pages (NOT a freshly fabricated one —
+       lesson learned from SC-HOTFIX). -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.105.4"
+          integrity="sha384-4eCDoMN/7A46qQ5Tj0rZ/D2VEolFGNIINDTLAcWZcvhkRSsvTfqNfaBMlRRoGEZ5"
+          crossorigin="anonymous" defer></script>
+  <!-- DS-P0-INFRA — defer all 5 pfc-* head scripts so they no longer block
+       HTML parsing. defer preserves order: config → auth → crypto → storage
+       → entitlements all still run in dependency order before the body-
+       loaded inline scripts. Same atomic-defer pattern as DASH-P0-7 /
+       NW-P1-7 / R-P0-11 / SC-P0-F / THP-P0-PERF. -->
+  <script src="../js/pfc-config.js" defer></script>
+  <script src="../js/pfc-auth.js" defer></script>
+  <script src="../js/pfc-crypto.js" defer></script>
+  <script src="../js/pfc-storage.js" defer></script>
+  <script src="../js/pfc-entitlements.js" defer></script>
   <script src="../js/pfc-motion.js" defer></script>
   <script src="../js/pfc-anim.js" defer></script>
   <link rel="stylesheet" href="../css/pfc-reskin.css">
@@ -176,7 +246,7 @@
   <script src="../js/pfc-analytics.js" defer></script>
   <script src="../js/pfc-funnel.js" defer></script>
   <script src="../js/pfc-sidebar.js" defer></script>
-  <script src="../js/pfc-debt-engine.js" defer></script>
+  <script src="../js/pfc-debt-engine.js?v=20260525a" defer></script>
 
   <script type="application/ld+json">
   {
@@ -213,13 +283,26 @@
   </script>
   <!-- Privacy-friendly analytics by Plausible -->
   <script async src="https://plausible.io/js/pa-EvYdfUp4d9vvohwl_Yy2j.js"></script>
-  <script src="../js/inline/tools-debt-strategy-1.js"></script>
+  <!-- Inline bundle deferred (was sync) so defer-ordered head modules
+       resolve before this consumer runs. -->
+  <script src="../js/inline/tools-debt-strategy-1.js?v=20260525a" defer></script>
   <link rel="stylesheet" href="../css/pfc-fonts.css">
 </head>
 <body data-pfc-surface="working">
 
+<!-- DS-P0-A11Y (audit 2026-05-25) — skip-link + noscript fallback. -->
+<a href="#main" class="skip-link">Skip to main content</a>
+<noscript>
+  <div style="background:rgba(245,166,35,0.12);border:1px solid rgba(245,166,35,0.4);color:#F0EDE2;padding:14px 18px;margin:16px;border-radius:8px;font-family:Georgia,serif;line-height:1.6;">
+    <strong>JavaScript required.</strong> The debt strategy comparator runs entirely in your browser — your numbers never leave your machine, but we need JS to do the math. Please enable JavaScript and refresh.
+  </div>
+</noscript>
+
+<!-- DS-P0-MOB — sidebar scrim, shared by pfc-sidebar.js hamburger toggle. -->
+<div class="sidebar-scrim" id="pfc-sidebar-scrim" aria-hidden="true" data-pfc-on-click="_pfcCloseSidebar"></div>
+
 <!-- SIDEBAR -->
-<nav class="sidebar" aria-label="Primary navigation">
+<nav class="sidebar" id="pfc-sidebar" aria-label="Primary navigation">
   <a href="../dashboard.html" class="sidebar-logo">
     <span class="pfc-brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32" width="32" height="32" aria-hidden="true"><text x="16" y="19" text-anchor="middle" font-family="&apos;Fraunces&apos;,&apos;Cormorant Garamond&apos;,Georgia,serif" font-size="14" font-weight="500" letter-spacing="-0.4" fill="#D4AF6A">PFC</text><rect x="14.5" y="23" width="3" height="3" fill="#D4AF6A" transform="rotate(45 16 24.5)"/></svg></span>
     ProFinanceCast
@@ -294,10 +377,18 @@
 </nav>
 
 <!-- MAIN -->
-<div class="main">
+<!-- DS-P0-A11Y (audit 2026-05-25) — proper <main> landmark with #main id for skip-link. -->
+<main class="main" id="main" role="main" aria-labelledby="page-h1">
   <div class="topbar">
+    <!-- DS-P0-MOB hamburger toggle — visible below 900px. -->
+    <button class="sidebar-toggle" type="button" aria-label="Open navigation menu" aria-controls="pfc-sidebar" data-pfc-on-click="_pfcToggleSidebar">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M2 5h14M2 9h14M2 13h14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+    </button>
     <div class="topbar-left">
-      <div class="topbar-title">Debt strategy comparator</div>
+      <!-- DS-P0-A11Y — promote topbar title to proper <h1>. Pre-fix the page
+           had ZERO h1 (topbar-title was a div, page H2 was "Your debts").
+           Document outline now starts correctly. -->
+      <h1 class="topbar-title" id="page-h1" style="margin:0;">Debt strategy comparator</h1>
       <div class="topbar-sub">Compare avalanche vs snowball — see how many months earlier you finish and how much interest you save.</div>
     </div>
   </div>
@@ -308,9 +399,20 @@
     <section class="card" aria-labelledby="inputs-heading">
       <h2 id="inputs-heading">Your debts</h2>
 
-      <div id="debtList" class="debt-list" aria-live="polite"></div>
+      <!-- DS-P0-MOB / A11Y — aria-live moved to verdict; the debt list
+           is an INPUT region and shouldn't announce every keystroke. -->
+      <div id="debtList" class="debt-list"></div>
 
-      <button type="button" class="add-debt-btn" id="addDebtBtn">+ Add another debt</button>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;">
+        <button type="button" class="add-debt-btn" id="addDebtBtn">+ Add another debt</button>
+        <!-- DS-P0-DES — opt-in sample loader. Pre-fix the page hardcoded 3
+             realistic-looking sample debts ($31,500 total) into the dropdown
+             on first paint — a fresh SEO visitor saw a confident "Avalanche
+             pays off $X less" before typing anything (DASH-P0-5 anti-pattern).
+             Now: empty state by default; user clicks this if they want a
+             quick demo without typing real numbers. -->
+        <button type="button" class="add-debt-btn" id="loadSampleBtn" style="border-style:solid;color:var(--text2);">Load example debts</button>
+      </div>
 
       <div class="budget-row">
         <div class="input-block">
@@ -324,18 +426,13 @@
       <div id="warningBar" class="warning-bar" hidden></div>
     </section>
 
-    <!-- RESULTS -->
+    <!-- RESULTS — DS-P0-DES (audit 2026-05-25) decorative envelope photo
+         removed; it was crowding the results-grid into a 3-column layout on
+         desktop and competing for attention with the strategy cards. Matches
+         the DASH-P1-14 / SC-DES-4 / THP-DES "working analytic surfaces drop
+         page-level visual junk" convention. The two strategy cards now own
+         a clean 2-column layout. -->
     <section class="results-grid" id="resultsGrid">
-      <figure class="pfc-photo-figure">
-        <picture>
-          <source srcset="../assets/img/photos/debt-strategy-vs-band.avif" type="image/avif">
-          <source srcset="../assets/img/photos/debt-strategy-vs-band.webp" type="image/webp">
-          <img class="pfc-photo-eyebrow is-cinema" src="../assets/img/photos/debt-strategy-vs-band.webp"
-               alt="Two stacks of stamped envelopes side by side on walnut desk, left stack taller — avalanche vs snowball, no illustration."
-               loading="lazy" decoding="async"
-               width="1659" height="948">
-        </picture>
-      </figure>
       <article class="card result-card" id="cardAvalanche" data-strategy="avalanche">
         <div class="strat-tag">Avalanche · highest APR first</div>
         <h3>Pays off in</h3>
@@ -359,7 +456,28 @@
       </article>
     </section>
 
-    <p class="verdict" id="verdict">&nbsp;</p>
+    <!-- DS-P0-MOB / A11Y — verdict gets aria-live=polite so SR users hear
+         each recompute result. Pre-fix aria-live was on the INPUT list,
+         which announced every keystroke instead of just the result. -->
+    <p class="verdict" id="verdict" aria-live="polite" aria-atomic="true">&nbsp;</p>
+
+    <!-- DS-P0-DES (audit 2026-05-25) — funnel-close cross-link to the full
+         /debt-optimizer. The standalone /tools/debt-strategy is a thin SEO
+         landing page; once a user has compared strategies and decided, the
+         natural next step is the full optimizer with refi modeling, scenario
+         saving, per-debt minimum tracking, etc. Without this CTA the user
+         has nowhere to go after the verdict. Pattern matches DEF-1 THP
+         save-to-dashboard + DEF-4 SC raise-applied cross-link. -->
+    <section style="margin-top:28px;padding:20px 22px;background:linear-gradient(135deg,rgba(43,182,125,0.06),rgba(212,175,106,0.03));border:1px solid rgba(43,182,125,0.20);border-radius:var(--r);" aria-labelledby="ds-handoff-h">
+      <h2 id="ds-handoff-h" style="font-family:var(--font-display);font-size:16px;font-weight:700;margin:0 0 8px;color:var(--text);">Take this further</h2>
+      <p style="font-size:13.5px;line-height:1.55;color:var(--text2);margin:0 0 14px;">
+        The full Debt Optimizer adds refinance modeling, per-debt logging, payoff scenarios you can save, and tracks your progress month over month. Same math, deeper tools, free to start.
+      </p>
+      <a href="/debt-optimizer.html" style="display:inline-flex;align-items:center;gap:8px;padding:10px 18px;background:var(--teal);color:var(--canvas);font-weight:700;font-size:13px;border-radius:var(--r-sm);text-decoration:none;font-family:var(--font-body);">
+        Open the full Debt Optimizer
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M3 7h8m-3-3l3 3-3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+    </section>
 
     <!-- FAQ -->
     <section class="faq">
@@ -392,8 +510,8 @@
 
   </div>
 
-  <!-- Route guard: redirect unauthed users to sign-in -->
-  <script src="../js/inline/tools-debt-strategy-2.js"></script>
+  <!-- Public-tool entry no-op (was a requireAuth gate that broke SEO purpose) -->
+  <script src="../js/inline/tools-debt-strategy-2.js?v=20260525a-public" defer></script>
 
   <footer class="site-footer" role="contentinfo">
     <div class="footer-grid">
@@ -444,9 +562,16 @@
     financial adviser before any financial decision.
   </p>
 </footer>
-</div><!-- /main -->
+</main><!-- /main -->
 
-<script src="../js/inline/tools-debt-strategy-3.js"></script>
+<!--
+  CACHE-BUST CONTRACT (DS-P0 2026-05-25)
+  ─────────────────────────────────────
+  ANY edit to tools-debt-strategy-*.js or pfc-debt-engine.js MUST also
+  bump the ?v= suffix below. Browsers cache JS for 24h; same-URL re-fetch
+  returns the cached stale file. Naming: ?v=YYYYMMDD<letter>[-suffix].
+-->
+<script src="../js/inline/tools-debt-strategy-3.js?v=20260525a-dsbatch" defer></script>
 
 </body>
 </html>
