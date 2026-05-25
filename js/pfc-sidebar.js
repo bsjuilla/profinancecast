@@ -288,4 +288,65 @@
       if (sb) { hydrateUserPill(sb); hydrateUserPillPlan(sb); }
     }
   };
+
+  // SAGE-P0-MOB fix (audit 2026-05-25) — legacy .sidebar pages (journal, debt
+  // strategy, take-home-pay, salary-calculator, sage) ship a hamburger with
+  // `data-pfc-on-click="_pfcToggleSidebar"` / `_pfcCloseSidebar`, but neither
+  // handler was ever defined — pfc-inline-bootstrap silently swallows the
+  // "_"-prefixed missing-handler warning. Net result: mobile users on every
+  // audited legacy page see no nav at all (CSS hides sidebar by default,
+  // hamburger doesn't toggle it, scrim click can't close it).
+  //
+  // Define them once here so all five surfaces work without per-page wiring.
+  // Idempotent: calling toggle/close twice is harmless. Targets `#pfc-sidebar`
+  // (the standard id) and falls back to the first nav.sidebar / aside.sidebar
+  // for resilience.
+  function _pfcGetSidebar() {
+    return document.getElementById('pfc-sidebar') ||
+           document.querySelector('nav.sidebar, aside.sidebar');
+  }
+  function _pfcGetScrim() {
+    return document.getElementById('pfc-sidebar-scrim') ||
+           document.querySelector('.sidebar-scrim');
+  }
+  function _pfcGetToggle() {
+    return document.querySelector('.sidebar-toggle, [data-sidebar-toggle]');
+  }
+  window._pfcToggleSidebar = function _pfcToggleSidebar() {
+    const sb = _pfcGetSidebar(); if (!sb) return;
+    const open = !sb.classList.contains('is-open');
+    sb.classList.toggle('is-open', open);
+    const scrim = _pfcGetScrim();
+    if (scrim) scrim.classList.toggle('is-open', open);
+    const tog = _pfcGetToggle();
+    if (tog) tog.setAttribute('aria-expanded', open ? 'true' : 'false');
+    document.body.classList.toggle('pfc-sidebar-open', open);
+  };
+  window._pfcCloseSidebar = function _pfcCloseSidebar() {
+    const sb = _pfcGetSidebar(); if (!sb) return;
+    sb.classList.remove('is-open');
+    const scrim = _pfcGetScrim(); if (scrim) scrim.classList.remove('is-open');
+    const tog = _pfcGetToggle(); if (tog) tog.setAttribute('aria-expanded', 'false');
+    document.body.classList.remove('pfc-sidebar-open');
+  };
+
+  // Escape key + outside-nav-link click also close the drawer (parity with
+  // wireMobileToggle's behaviour for the new pfc-sidebar class). Idempotent
+  // guard with a sentinel so multiple loads of this file don't double-bind.
+  if (!window.__pfc_legacy_drawer_wired__) {
+    window.__pfc_legacy_drawer_wired__ = true;
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') {
+        const sb = _pfcGetSidebar();
+        if (sb && sb.classList.contains('is-open')) window._pfcCloseSidebar();
+      }
+    });
+    // Following any nav-item link should close the drawer.
+    document.addEventListener('click', function (e) {
+      const a = e.target.closest('nav.sidebar a.nav-item, aside.sidebar a.nav-item');
+      if (!a) return;
+      const sb = _pfcGetSidebar();
+      if (sb && sb.classList.contains('is-open')) window._pfcCloseSidebar();
+    });
+  }
 })();

@@ -39,6 +39,19 @@ function hydrateContext(){
                    null;
     if (!stored) return; // empty state stays until PFCUser resolves
     Object.assign(USER_CTX, stored, _deriveSnapshot(stored));
+    // SAGE-P0-UX fix (audit 2026-05-25) — pre-fix USER_CTX.name was declared
+    // as '' and never populated, so addUserBubble's avatar always rendered
+    // 'Y' (the literal fallback initial). PFCUser stores name as
+    // `full_name` (Supabase profile) or `name` (legacy). Promote whichever
+    // exists; full_name wins on collision. fall back to email's local-part
+    // if neither is set so the avatar is still personal.
+    let resolvedName = stored.full_name || stored.name || '';
+    if (!resolvedName && typeof PFCAuth !== 'undefined') {
+      const sess = PFCAuth.getSession && PFCAuth.getSession();
+      const email = sess && sess.user && sess.user.email;
+      if (email) resolvedName = email.split('@')[0] || '';
+    }
+    USER_CTX.name = String(resolvedName || '').trim();
     // Reveal the panel when ANY meaningful input field is set, not just
     // income. A user who hasn't entered income yet but has set savings/debt
     // should still see their snapshot.
@@ -137,6 +150,10 @@ async function sendMessage(text) {
   if (!msg || isTyping) return;
   const limit = LIMITS[USER_CTX.plan] || 200;
   if (queryCount >= limit) { document.getElementById('limit-wall').classList.add('show'); return; }
+  // SAGE-P0-UX — kick off the news fetch now (lazy). The first send won't
+  // wait for it (no await) — subsequent sends pick up the cached headlines
+  // via _sageNewsContext.
+  _ensureSageNews();
   const ws = document.getElementById('welcome-screen');
   if (ws) ws.style.display = 'none';
   if (!text) { input.value = ''; input.style.height = 'auto'; }
@@ -158,20 +175,56 @@ async function sendMessage(text) {
     updateUsage();
   } catch(e) {
     hideTyping();
-    addSageBubble("I'm having a moment — please try again. If this keeps happening, check your connection.");
+    // SAGE-P0-UX fix (audit 2026-05-25) — distinguish 429 quota from a
+    // crash. 429 means the user has burned their monthly Sage allowance
+    // and needs the upgrade wall, NOT the "having a moment" line that
+    // implies a transient bug. 401 means their session lapsed mid-chat.
+    // Anything else is the generic recover-and-retry copy.
+    if (e && e.status === 429) {
+      // Force the limit wall to render with the honest message from the
+      // server (which includes the actual cap and upgrade-availability),
+      // then mirror queryCount up to the cap so the usage pill reads 100%.
+      const wall = document.getElementById('limit-wall');
+      const wallText = document.getElementById('limit-wall-text');
+      const cta = document.getElementById('limit-wall-cta');
+      if (wallText) {
+        wallText.textContent = e.serverMsg ||
+          "You've used all your Sage messages for this 30-day window. Your quota resets 30 days after your first message in the current window.";
+      }
+      if (wall) wall.classList.add('show');
+      if (cta) cta.style.display = e.upgrade ? 'inline-flex' : 'none';
+      const limit = LIMITS[USER_CTX.plan] || 200;
+      queryCount = Math.max(queryCount, limit);
+      updateUsage();
+    } else if (e && e.status === 401) {
+      addSageBubble("Your session timed out. Please refresh the page and sign back in to continue the conversation.");
+    } else {
+      addSageBubble("I'm having a moment — please try again. If this keeps happening, check your connection.");
+    }
   }
   isTyping = false;
   document.getElementById('send-btn').disabled = false;
 }
 
-// Recent financial-news context (Marketaux). Fetched once at page load
-// (1h cache in sessionStorage via PFCNews), passed to /api/sage so Gemini
+// Recent financial-news context (Marketaux). Passed to /api/sage so Gemini
 // can ground answers in real-world headlines. Silent fallback to no-news
 // if MARKETAUX_API_KEY isn't configured server-side.
+//
+// SAGE-P0-UX fix (audit 2026-05-25) — was eagerly fetched on every page
+// load (even if the user just opened Sage to read history and bounced).
+// Every visit hit Marketaux's quota AND ran a network call before any
+// user intent existed. Now we lazy-load on the FIRST sendMessage. The
+// /api/news route still caches for 1h via sessionStorage, so the second
+// chat round-trip is free even though the first looks slightly slower.
 let _sageNewsContext = null;
-(function _preloadNews() {
-  if (typeof PFCNews === 'undefined' || !PFCNews.getHeadlines) return;
-  PFCNews.getHeadlines({ limit: 5 })
+let _sageNewsPromise = null;
+function _ensureSageNews() {
+  if (_sageNewsContext) return Promise.resolve(_sageNewsContext);
+  if (_sageNewsPromise) return _sageNewsPromise;
+  if (typeof PFCNews === 'undefined' || !PFCNews.getHeadlines) {
+    return Promise.resolve(null);
+  }
+  _sageNewsPromise = PFCNews.getHeadlines({ limit: 5 })
     .then((articles) => {
       if (Array.isArray(articles) && articles.length > 0) {
         _sageNewsContext = articles.map((a) => ({
@@ -180,9 +233,11 @@ let _sageNewsContext = null;
           published_at: a.published_at || null,
         }));
       }
+      return _sageNewsContext;
     })
-    .catch(() => { /* silent — Sage works fine without news context */ });
-})();
+    .catch(() => null);
+  return _sageNewsPromise;
+}
 
 async function callSage(msg) {
   const session = (typeof PFCAuth !== 'undefined') ? PFCAuth.getSession() : null;
@@ -213,7 +268,21 @@ async function callSage(msg) {
     headers,
     body: JSON.stringify(body)
   });
-  if (!res.ok) throw new Error('API ' + res.status);
+  // SAGE-P0-UX fix (audit 2026-05-25) — surface HTTP status code AND any
+  // upgrade flag so sendMessage can render the right UX (quota-exceeded
+  // upsell vs generic "moment" copy). Pre-fix every non-2xx threw the same
+  // string and the catch always showed the same friendly-but-misleading
+  // line; a Premium user out of 500 messages got the same message as
+  // someone who lost wifi mid-request.
+  if (!res.ok) {
+    let payload = null;
+    try { payload = await res.json(); } catch (_) {}
+    const err = new Error('API ' + res.status);
+    err.status = res.status;
+    err.upgrade = !!(payload && payload.upgrade);
+    err.serverMsg = (payload && typeof payload.error === 'string') ? payload.error : '';
+    throw err;
+  }
   const d = await res.json();
   return d.reply;
 }
@@ -274,7 +343,12 @@ function updateUsage() {
   if (queryCount >= limit) {
     document.getElementById('limit-wall').classList.add('show');
     document.getElementById('send-btn').disabled = true;
-    document.getElementById('msg-input').placeholder = 'Quota reached — resets on the 1st';
+    // SAGE-P0-UX fix (audit 2026-05-25) — was "Quota reached — resets on
+    // the 1st" but the server uses a 30-day rolling window keyed off the
+    // user's first message (see api/sage.js: ai_queries_reset_at = first
+    // call + 30 days). The "1st" copy was dishonest and produced support
+    // tickets every month. Honest copy now.
+    document.getElementById('msg-input').placeholder = 'Quota reached — resets 30 days from your first message';
     // Show Premium CTA only to Pro users (Premium has nowhere to upgrade to).
     const cta = document.getElementById('limit-wall-cta');
     if (cta) cta.style.display = (USER_CTX.plan === 'pro') ? 'inline-flex' : 'none';
@@ -287,8 +361,13 @@ function addHistory(q) {
   card.style.display = 'block';
   const d = document.createElement('div');
   d.className = 'history-item';
-  d.innerHTML = `<div class="history-q">${esc(q.substring(0,55))}${q.length>55?'…':''}</div><div class="history-t">${now()}</div>`;
-  d.onclick = () => sendStarter(q);
+  // SAGE-P0-CSP fix (audit 2026-05-25) — was building click via d.onclick
+  // closure. Switched to addEventListener so all event wiring follows the
+  // same CSP-friendly pattern as the starters (data-pfc-on-click bus).
+  // q is bound via closure; no inline handler string interpolation.
+  const tail = q.length > 55 ? '…' : '';
+  d.innerHTML = `<div class="history-q">${esc(q.substring(0,55))}${esc(tail)}</div><div class="history-t">${esc(now())}</div>`;
+  d.addEventListener('click', () => sendStarter(q));
   list.insertBefore(d, list.firstChild);
   if (list.children.length > 5) list.removeChild(list.lastChild);
 }
@@ -296,30 +375,77 @@ function addHistory(q) {
 function sendStarter(t) { sendMessage(t); }
 function handleKey(e) { if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();} }
 function autoResize(el) { el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,120)+'px'; const l=el.value.length; document.getElementById('char-count').textContent=l+' / 500'; if(l>500)el.value=el.value.substring(0,500); }
+// SAGE-P0-CSP fix (audit 2026-05-25) — STARTERS are now defined ONCE here
+// and reused by both initial render (NOT injected by JS since the HTML
+// already ships them) and clearChat. The pre-fix clearChat re-injected the
+// six buttons via innerHTML with inline `onclick="sendStarter(...)"` —
+// six CSP violations per Clear-Chat click and the only place on the
+// surface that still relied on inline handlers. All renders now use
+// data-pfc-on-click="sendStarter" + data-pfc-arg='"..."' which is dispatched
+// by pfc-inline-bootstrap (same pattern as G-P0-5, R-P0-6+7, DASH-PROD-FIX).
+const _SAGE_STARTERS = [
+  { q:'Can I afford a holiday in 3 months?', label:'Can I afford a holiday in 3 months?',
+    svg:'<svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1v11M1 6.5h11" stroke="#8A9BB0" stroke-width="1.4" stroke-linecap="round"/></svg>' },
+  { q:'When will I be completely debt-free?', label:'When will I be debt-free?',
+    svg:'<svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 9l3-4 2.5 2L11 3" stroke="#8A9BB0" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>' },
+  { q:'How does a 10% salary raise change my net worth forecast?', label:'How does a 10% raise change my forecast?',
+    svg:'<svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="5.5" r="2.5" stroke="#8A9BB0" stroke-width="1.3"/><path d="M1 12c0-2 2.5-3.5 5.5-3.5s5.5 1.5 5.5 3.5" stroke="#8A9BB0" stroke-width="1.3" stroke-linecap="round"/></svg>' },
+  { q:'Am I on track for my savings goals?', label:'Am I on track for my goals?',
+    svg:'<svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5l2.5 2.5L11 3" stroke="#8A9BB0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>' },
+  { q:'Should I pay off debt or save more money first?', label:'Pay off debt or save more first?',
+    svg:'<svg width="13" height="13" viewBox="0 0 13 13" fill="none"><rect x="1.5" y="3" width="10" height="7" rx="1.5" stroke="#8A9BB0" stroke-width="1.3"/><path d="M4.5 3V2a2 2 0 014 0v1" stroke="#8A9BB0" stroke-width="1.3" stroke-linecap="round"/></svg>' },
+  { q:'What happens to my finances if inflation rises to 6%?', label:'What if inflation rises to 6%?',
+    svg:'<svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M3 10L10 3M7.5 3h2.5v2.5" stroke="#8A9BB0" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>' },
+];
 function clearChat() {
   const m=document.getElementById('messages');
   m.innerHTML='';
   const w=document.createElement('div');
   w.id='welcome-screen'; w.className='welcome';
-  w.innerHTML=`<div class="welcome-avatar">S</div>
-<h2>What can Sage forecast for you today?</h2>
-<p class="welcome-sub">Sage works from your real numbers — income, expenses, debt, goals, and your 12-month forecast. Ask anything; answers cite your data.</p>
-<div class="starters">
-  <button class="starter" onclick="sendStarter('Can I afford a holiday in 3 months?')"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1v11M1 6.5h11" stroke="#8A9BB0" stroke-width="1.4" stroke-linecap="round"/></svg>Can I afford a holiday in 3 months?</button>
-  <button class="starter" onclick="sendStarter('When will I be completely debt-free?')"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 9l3-4 2.5 2L11 3" stroke="#8A9BB0" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>When will I be debt-free?</button>
-  <button class="starter" onclick="sendStarter('How does a 10% salary raise change my net worth forecast?')"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="5.5" r="2.5" stroke="#8A9BB0" stroke-width="1.3"/><path d="M1 12c0-2 2.5-3.5 5.5-3.5s5.5 1.5 5.5 3.5" stroke="#8A9BB0" stroke-width="1.3" stroke-linecap="round"/></svg>How does a 10% raise change my forecast?</button>
-  <button class="starter" onclick="sendStarter('Am I on track for my savings goals?')"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5l2.5 2.5L11 3" stroke="#8A9BB0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Am I on track for my goals?</button>
-  <button class="starter" onclick="sendStarter('Should I pay off debt or save more money first?')"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><rect x="1.5" y="3" width="10" height="7" rx="1.5" stroke="#8A9BB0" stroke-width="1.3"/><path d="M4.5 3V2a2 2 0 014 0v1" stroke="#8A9BB0" stroke-width="1.3" stroke-linecap="round"/></svg>Pay off debt or save more first?</button>
-  <button class="starter" onclick="sendStarter('What happens to my finances if inflation rises to 6%?')"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M3 10L10 3M7.5 3h2.5v2.5" stroke="#8A9BB0" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>What if inflation rises to 6%?</button>
-</div>`;
+  // Avatar + headline + starter grid. Each starter button gets a direct
+  // addEventListener AFTER append (the pfc-inline-bootstrap dispatcher
+  // runs once at script load and exposes no public re-bind hook, so a
+  // closure-bound listener is the cleanest local fix). esc() runs over
+  // every interpolated value to keep parity with the rest of the surface.
+  const startersHtml = _SAGE_STARTERS.map((s, i) =>
+    `<button class="starter" data-sage-starter="${i}" type="button">${s.svg}${esc(s.label)}</button>`
+  ).join('');
+  w.innerHTML =
+    `<div class="welcome-avatar">S</div>` +
+    `<h2>What can Sage forecast for you today?</h2>` +
+    `<p class="welcome-sub">Sage works from your real numbers — income, expenses, debt, goals, and your 12-month forecast. Ask anything; answers cite your data.</p>` +
+    `<div class="starters">${startersHtml}</div>`;
   m.appendChild(w);
+  // Wire each starter button — closure-bound, idempotent (the buttons are
+  // freshly created so no prior listener exists). NO inline onclick = CSP safe.
+  w.querySelectorAll('[data-sage-starter]').forEach((btn) => {
+    const idx = parseInt(btn.getAttribute('data-sage-starter'), 10);
+    const starter = _SAGE_STARTERS[idx];
+    if (starter) btn.addEventListener('click', () => sendStarter(starter.q));
+  });
   history=[];
   document.getElementById('limit-wall').classList.remove('show');
   document.getElementById('history-card').style.display='none';
   document.getElementById('history-list').innerHTML='';
 }
 function now() { return new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}); }
-function esc(t) { return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+// SAGE-P0-XSS fix (audit 2026-05-25) — was the 3-char escape
+// (& < >) only. Sage user-bubble text comes from the message input which
+// then gets re-rendered through this function (addUserBubble line ~227) AND
+// the history pill (addHistory). A payload like `" onmouseover="alert(1)`
+// inside an attribute context would have slipped through the 3-char escape;
+// the bubble is a text node now but defense in depth + parity with the
+// 5-char escHtml invariant used across the codebase (NW-P0-3, DASH-P1-12,
+// G-P0-2, R-P0-8, DS-P0-MATH, J-P0-* — same regex everywhere) means we
+// upgrade. Matches _safeSageMarkdown which already does all five.
+function esc(t) {
+  return String(t)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 
 // ── AUTH-AWARE RE-HYDRATION ──
 function _rehydrateFromStorage() { hydrateContext(); hydratePlanInfo(); updateUsage(); }

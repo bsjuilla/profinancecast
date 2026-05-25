@@ -22,9 +22,24 @@
   <meta name="twitter:description" content="Pro feature — ask Sage anything about your finances and get answers grounded in your real numbers.">
 <style>
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  /* SAGE-P0-COMPAT (audit 2026-05-25) — iOS text inflation + dark color-scheme.
+     Same one-liner shipped on every audited surface in this batch series. */
+  html{-webkit-text-size-adjust:100%;color-scheme:dark;}
   html,body{height:100%;overflow:hidden;}
-  body{font-family:var(--font-body);background:var(--bg);color:var(--text);display:flex;}
+  /* dvh fallback so iOS Safari's address-bar churn doesn't crop the chat. */
+  body{font-family:var(--font-body);background:var(--bg);color:var(--text);display:flex;min-height:100vh;min-height:100dvh;}
+
+  /* SAGE-P0-A11Y (audit 2026-05-25) — skip-link for keyboard users.
+     Sage layout has a 240-px sidebar AND a 280-px context-panel before the
+     chat textarea — keyboard-only users were tabbing through ~25 nav items
+     before reaching the input. Skip-link jumps straight to #main. */
+  .skip-link{position:absolute;left:-9999px;top:0;background:var(--teal);color:var(--canvas);padding:10px 16px;border-radius:0 0 6px 0;font-weight:600;z-index:300;text-decoration:none;}
+  .skip-link:focus{left:0;}
+  .visually-hidden{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
   .sidebar{width:240px;flex-shrink:0;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;height:100vh;overflow-y:auto;}
+  /* SAGE-P0-MOB scaffolding — hidden until @899px media activates. */
+  .sidebar-toggle{display:none;}
+  .sidebar-scrim{display:none;}
   .sidebar-logo{display:flex;align-items:center;gap:10px;padding:22px 20px 18px;border-bottom:1px solid var(--border);font-family:var(--font-display);font-size:15px;font-weight:700;color:var(--text);text-decoration:none;}
   .logo-mark{width:30px;height:30px;background:var(--teal);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:var(--canvas);flex-shrink:0;}
   .sidebar-section{padding:18px 12px 8px;font-size:10px;font-weight:600;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;}
@@ -130,7 +145,70 @@
   .limit-wall-cta:hover{opacity:.88;}
 
   @media(max-width:1000px){.context-panel{display:none;}}
-  @media(max-width:700px){.sidebar{display:none;} .input-area,.messages,.limit-wall{padding-left:16px;padding-right:16px;} .starters{grid-template-columns:1fr;}}
+
+  /* SAGE-P0-A11Y — global :focus-visible ring. Same one-liner shipped on
+     every audited surface. Keyboard users now see a teal ring on every
+     focusable target — buttons, links, the chat input, history pills. */
+  :where(button,a,input,select,textarea,[tabindex]):focus-visible{
+    outline:2px solid var(--teal);
+    outline-offset:2px;
+    border-radius:var(--r-sm);
+  }
+
+  /* SAGE-P0-MOB (audit 2026-05-25) — Mobile drawer pattern. Pre-fix the
+     only mobile rule was a single @media(700px){.sidebar{display:none}} that
+     hid the sidebar with NO way to reach it (no hamburger, no scrim). Now
+     below 900px the sidebar slides off-screen, a hamburger reveals it, and
+     a scrim dims the rest. Body keeps `overflow:hidden` because the chat
+     surface is a fixed-viewport UI (typing doesn't scroll the page).
+     Matches J-P0-MOB / DS-P0-MOB / R-P0-10 / G-P0-3 / DASH-P0-2 /
+     THP-P0-MOB / SC-P0-D. */
+  @media (max-width: 899px){
+    .sidebar{position:fixed;top:0;left:0;height:100vh;height:100dvh;width:280px;max-width:85vw;transform:translateX(-100%);transition:transform .25s ease;z-index:200;box-shadow:0 0 24px rgba(0,0,0,.4);}
+    .sidebar.is-open{transform:translateX(0);}
+    .sidebar-scrim{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:150;}
+    .sidebar-scrim.is-open{display:block;}
+    .sidebar-toggle{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;background:transparent;border:1px solid var(--border2);border-radius:var(--r-sm);color:var(--text);cursor:pointer;margin-right:8px;flex-shrink:0;}
+    .main{width:100%;}
+    .topbar{padding:0 14px;}
+    .input-area,.messages,.limit-wall{padding-left:16px;padding-right:16px;}
+    .starters{grid-template-columns:1fr;}
+    .topbar-right .usage-pill{display:none !important;}
+  }
+
+  /* SAGE-P0-COMPAT — safe-area for iOS notched devices (chat input rail
+     would otherwise sit under the home indicator on landscape iPhone). */
+  @supports (padding: env(safe-area-inset-bottom)){
+    .input-area{padding-bottom:max(16px, env(safe-area-inset-bottom));}
+    .sidebar-footer{padding-bottom:max(16px, env(safe-area-inset-bottom));}
+  }
+
+  /* SAGE-P0-COMPAT — reduced-motion respect. status-dot pulse, typing
+     dots, sidebar slide, fade transitions — all neutralised for users
+     who prefer no motion. */
+  @media (prefers-reduced-motion: reduce){
+    *,*::before,*::after{animation-duration:0.01ms!important;animation-iteration-count:1!important;transition-duration:0.01ms!important;scroll-behavior:auto!important;}
+  }
+
+  /* SAGE-P0-COMPAT — Windows high-contrast / forced-colors mode. Sage's
+     bubbles, sidebar nav items, sidebar-toggle, and the limit-wall CTA all
+     rely on subtle tinted borders that vanish under forced-colors. Force
+     a CanvasText border on the structural shapes. */
+  @media (forced-colors: active){
+    .bubble,.starter,.ctx-card,.history-item,.sidebar-toggle,.tb-btn,.limit-wall,.usage-pill,.input-wrap{border:1px solid CanvasText;}
+    .pro-pill,.nav-badge,.limit-wall-cta{forced-color-adjust:none;}
+  }
+
+  /* SAGE-P0-COMPAT — print. Print is rarely the goal for a chat surface,
+     but printing a transcript should be legible: hide chrome, white BG. */
+  @media print{
+    html,body{overflow:visible !important;height:auto !important;}
+    body{display:block !important;background:#fff !important;color:#000 !important;}
+    .sidebar,.sidebar-scrim,.sidebar-toggle,.skip-link,.context-panel,.topbar-right,.input-area,.welcome,.limit-wall{display:none !important;}
+    .main{height:auto !important;}
+    .chat-body,.chat-col,.messages{overflow:visible !important;display:block !important;height:auto !important;}
+    .bubble{break-inside:avoid;page-break-inside:avoid;border:1px solid #ccc !important;background:#fff !important;color:#000 !important;}
+  }
 </style>
   <link rel="stylesheet" href="css/pfc-tokens.css">
   <link rel="stylesheet" href="css/pfc-photos.css?v=3">
@@ -139,17 +217,29 @@
   <link rel="stylesheet" href="css/pfc-anim.css?v=1">
   <link rel="stylesheet" href="css/pfc-footer.css">
   <script src="js/pfc-export.js" defer></script>
-  <!-- Supabase SDK + auth/storage/entitlements (must load before any inline script that uses them) -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/pfc-audit-mode.js"></script>
-  <script src="js/pfc-config.js"></script>
-  <script src="js/pfc-auth.js"></script>
-  <script src="js/pfc-crypto.js"></script>
-  <script src="js/pfc-storage.js"></script>
-  <script src="js/pfc-currency.js"></script>
-  <script src="js/pfc-user.js"></script>
-  <script src="js/pfc-news.js"></script>
-  <script src="js/pfc-entitlements.js"></script>
+  <!-- SAGE-P0-INFRA fix (audit 2026-05-25) — Supabase CDN version-pinned + SRI.
+       Pre-fix `@2` floating tag with no integrity hash left the same supply-
+       chain hole closed across NW-P1-5 / R-P0-4 / G-P1-E / D-P0-6 /
+       SC-HOTFIX / THP-P0-SEC / DS-P0-INFRA / J-P0-INFRA. Hash + version
+       copied from audited siblings (not fabricated — lesson from SC-HOTFIX). -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.105.4"
+          integrity="sha384-4eCDoMN/7A46qQ5Tj0rZ/D2VEolFGNIINDTLAcWZcvhkRSsvTfqNfaBMlRRoGEZ5"
+          crossorigin="anonymous" defer></script>
+  <!-- SAGE-P0-INFRA — defer all 10 head pfc-* scripts so they no longer
+       block HTML parsing. defer preserves order; deps still resolve in
+       sequence before body-loaded inline scripts. Same atomic-defer
+       pattern as the 10 sibling working surfaces (DASH-P0-7 / NW-P1-7 /
+       R-P0-11 / G-* / D-* / SC-P0-F / THP-P0-PERF / DS-P0-INFRA /
+       J-P0-INFRA). -->
+  <script src="js/pfc-audit-mode.js" defer></script>
+  <script src="js/pfc-config.js" defer></script>
+  <script src="js/pfc-auth.js" defer></script>
+  <script src="js/pfc-crypto.js" defer></script>
+  <script src="js/pfc-storage.js" defer></script>
+  <script src="js/pfc-currency.js" defer></script>
+  <script src="js/pfc-user.js" defer></script>
+  <script src="js/pfc-news.js" defer></script>
+  <script src="js/pfc-entitlements.js" defer></script>
   <!-- v3 reskin: new fonts + emerald palette overrides -->
 <script src="js/pfc-fonts.js" defer></script>
   <link rel="stylesheet" href="css/pfc-reskin.css">
@@ -160,7 +250,7 @@
   <!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "37cb784ad53047a9921bfd79e9835310"}'></script><!-- End Cloudflare Web Analytics -->
   <script src="js/pfc-analytics.js" defer></script>
   <script src="js/pfc-funnel.js" defer></script>
-  <script src="js/pfc-sidebar.js" defer></script>
+  <script src="js/pfc-sidebar.js?v=20260525a-sagebatch" defer></script>
 
   <!-- Pro-only gate: free users get redirected to billing.
        Bug fix (May 2026): the previous version called requirePlan() synchronously
@@ -169,15 +259,31 @@
        to billing.html on every page load — a false-negative that locked them out
        of the feature they paid for. Now we wait for PFCAuth.onReady so PFCPlan
        has the correct plan state before the gate decision. -->
-  <script src="./js/inline/sage-1.js"></script>
+  <script src="./js/inline/sage-1.js?v=20260525a-sagebatch" defer></script>
   <!-- Privacy-friendly analytics by Plausible -->
   <script async src="https://plausible.io/js/pa-EvYdfUp4d9vvohwl_Yy2j.js"></script>
-  <script src="./js/inline/sage-2.js"></script>
+  <script src="./js/inline/sage-2.js?v=20260525a-sagebatch" defer></script>
   <script src="js/pfc-anim.js" defer></script>
   <link rel="stylesheet" href="css/pfc-fonts.css">
 </head>
 <body data-pfc-surface="working">
-<nav class="sidebar" aria-label="Primary navigation">
+<!-- SAGE-P0-A11Y — skip-link first focusable element on page. -->
+<a class="skip-link" href="#main">Skip to chat input</a>
+<!-- SAGE-P0-A11Y — noscript fallback. Sage is JS-required (Pro gate +
+     real-time chat). Users with JS disabled get a clear explanation, not a
+     blank chrome with no chat history rendered. -->
+<noscript>
+  <div style="background:#0B1410;color:#E6EBF2;padding:32px 24px;max-width:640px;margin:64px auto;border:1px solid #2BB67D;border-radius:10px;font-family:Georgia,serif;">
+    <h1 style="margin:0 0 12px;font-size:22px;">Sage needs JavaScript</h1>
+    <p style="margin:0 0 16px;font-size:15px;line-height:1.6;">Sage is the real-time AI chat surface on ProFinanceCast. It needs JavaScript to authenticate you, build your numbers-only context, and stream answers from the model.</p>
+    <p style="margin:0;font-size:15px;line-height:1.6;">Enable JavaScript and reload, or open the <a href="dashboard.html" style="color:#2BB67D;">dashboard</a> for a non-chat overview of your finances.</p>
+  </div>
+</noscript>
+<!-- SAGE-P0-MOB — scrim that dims the page when the mobile sidebar is open.
+     pfc-sidebar.js toggles .is-open on this element and the sidebar in sync.
+     Click on the scrim dismisses the drawer (matches J-P0-MOB). -->
+<div class="sidebar-scrim" id="pfc-sidebar-scrim" aria-hidden="true" data-pfc-on-click="_pfcCloseSidebar"></div>
+<nav class="sidebar" id="pfc-sidebar" aria-label="Primary navigation">
   <a href="dashboard.html" class="sidebar-logo">
     <span class="pfc-brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32" width="32" height="32" aria-hidden="true"><text x="16" y="19" text-anchor="middle" font-family="&apos;Fraunces&apos;,&apos;Cormorant Garamond&apos;,Georgia,serif" font-size="14" font-weight="500" letter-spacing="-0.4" fill="#D4AF6A">PFC</text><rect x="14.5" y="23" width="3" height="3" fill="#D4AF6A" transform="rotate(45 16 24.5)"/></svg></span>
     ProFinanceCast
@@ -257,12 +363,24 @@
   </div>
 </nav>
 
-<main class="main">
+<main class="main" id="main" role="main">
   <div class="topbar">
+    <!-- SAGE-P0-MOB — hamburger only renders below @899px (CSS-hidden above).
+         data-pfc-on-click fires _pfcToggleSidebar (defined in pfc-sidebar.js
+         alongside the close handler). aria-controls + aria-expanded keep the
+         toggle accessible to assistive tech (matches J-P0-MOB / DS-P0-MOB
+         / THP-P0-MOB / SC-P0-D). -->
+    <button class="sidebar-toggle" type="button" aria-label="Open navigation menu" aria-controls="pfc-sidebar" aria-expanded="false" data-pfc-on-click="_pfcToggleSidebar">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M3 6h14M3 10h14M3 14h14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+    </button>
     <div class="topbar-sage">
       <div class="sage-avatar-top">S</div>
       <div>
-        <div class="sage-name-top">Sage <span class="pro-pill" aria-label="Pro feature">Pro</span></div>
+        <!-- SAGE-P0-A11Y — promote the surface name to <h1>. Pre-fix the
+             whole sage page had ZERO <h1>, so screen readers had no top-level
+             landmark for the surface. Visual treatment unchanged (still uses
+             the .sage-name-top class). -->
+        <h1 class="sage-name-top" style="font-size:16px;font-weight:700;line-height:1.2;">Sage <span class="pro-pill" aria-label="Pro feature">Pro</span></h1>
         <div class="sage-status"><div class="status-dot"></div>Online — grounded in your numbers</div>
       </div>
     </div>
@@ -304,8 +422,13 @@
       </div>
 
       <div class="limit-wall" id="limit-wall">
-        <div class="limit-wall-title">You've reached this month's Sage allowance</div>
-        <div class="limit-wall-text" id="limit-wall-text">Your quota resets on the 1st of next month.</div>
+        <!-- SAGE-P0-UX fix (audit 2026-05-25) — both the title and the
+             reset-window copy were lies. Server uses a 30-day rolling
+             window keyed off the user's first message; "this month" / "1st
+             of next month" are calendar-month framing that doesn't match
+             the back-end at all. Honest copy now. -->
+        <div class="limit-wall-title">You've used all your Sage messages for this 30-day window</div>
+        <div class="limit-wall-text" id="limit-wall-text">Your quota resets 30 days after your first message in the current window. Need answers sooner? Upgrade for more headroom.</div>
         <a href="billing.html?upgrade=sage-premium" class="limit-wall-cta" id="limit-wall-cta" style="display:none;">
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M2 7l3 3 7-7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
           Upgrade to Premium — 500 messages / month
@@ -314,7 +437,9 @@
 
       <div class="input-area">
         <div class="input-wrap">
-          <textarea class="msg-textarea" id="msg-input" placeholder="Ask Sage anything about your finances…" rows="1"  data-pfc-on-keydown="handleKey" data-pfc-arg-event  data-pfc-on-input="autoResize" data-pfc-arg-this></textarea>
+          <!-- SAGE-P0-A11Y — aria-label so screen readers announce the input
+               purpose (no visible <label> for the textarea). -->
+          <textarea class="msg-textarea" id="msg-input" placeholder="Ask Sage anything about your finances…" rows="1" aria-label="Ask Sage a question about your finances" data-pfc-on-keydown="handleKey" data-pfc-arg-event data-pfc-on-input="autoResize" data-pfc-arg-this></textarea>
           <button class="send-btn" id="send-btn"  data-pfc-on-click="sendMessage">
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 7h12M7.5 2l5.5 5-5.5 5" stroke="#0B1410" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </button>
@@ -370,7 +495,7 @@
   </div>
 </main>
 
-<script src="./js/inline/sage-3.js"></script>
+<script src="./js/inline/sage-3.js?v=20260525a-sagebatch" defer></script>
 
 
 <script src="js/pfc-inline-bootstrap.js" defer></script>

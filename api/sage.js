@@ -9,10 +9,111 @@
 //   • System prompt is built SERVER-SIDE from the authenticated profile.
 //     systemPrompt in the request body is intentionally ignored (and any
 //     unknown key produces a 400). See Workstream 0 Task 0.2.
+//   • SAGE-P0-BACK (audit 2026-05-25):
+//     - PII-redacted logs: Gemini error bodies and thrown errors used to be
+//       JSON.stringified into Vercel logs; both can echo back the original
+//       user prompt under model failures. We now log status code + a short
+//       static class label only — enough for ops triage, nothing for PII.
+//     - increment_ai_queries is awaited with a 2-second timeout, so a
+//       missed counter no longer lets users rapid-fire past their cap.
+//     - Explicit CORS pin to the production origins (and OPTIONS preflight).
+//     - 16 KB request body cap via Next/Vercel config below — Sage messages
+//       are 500 chars + bounded history/userContext, so this is generous.
+//     - Hard-coded gemini-2.5-flash now falls back to gemini-2.0-flash if
+//       the primary returns 4xx/5xx (one retry, never silent loops).
 //
 // Required env: GEMINI_API_KEY, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
+// Optional env: ALLOWED_ORIGINS (comma-separated) — defaults to
+//   https://profinancecast.com,https://www.profinancecast.com.
 
 import { createClient } from '@supabase/supabase-js';
+
+// SAGE-P0-BACK — cap request body so a hostile caller can't push MBs of
+// padding to chew quota or starve event-loop memory. 16KB > our worst-case
+// (500-char message + 10×500-char history + ~1KB userContext + ~1KB news).
+export const config = { api: { bodyParser: { sizeLimit: '16kb' } } };
+
+// SAGE-P0-BACK — CORS allow-list. Default to prod origins; ALLOWED_ORIGINS
+// env can override (handy for staging previews). Wildcard is NEVER allowed
+// for a JWT-authenticated endpoint (would let any third-party site forward
+// a user's session token via fetch + credentials).
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS ||
+  'https://profinancecast.com,https://www.profinancecast.com')
+  .split(',').map(s => s.trim()).filter(Boolean);
+function _setCors(req, res) {
+  const origin = req.headers.origin || '';
+  if (ALLOWED_ORIGINS.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Vary', 'Origin');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
+    res.setHeader('Access-Control-Max-Age', '600');
+  }
+}
+
+// SAGE-P0-BACK — log helper. Reveals enough for ops triage (status + class
+// label) but never the raw Gemini body, never the user prompt, never stack
+// traces with embedded data. Sentry's pfc-sentry-scrub already does this on
+// the client; we mirror that contract server-side.
+function _logSafely(label, status, errCode) {
+  // Single line, no JSON.stringify of any object that may contain user text.
+  // eslint-disable-next-line no-console
+  console.error('[sage]', label, 'status=' + (status || 'n/a'), 'code=' + (errCode || 'n/a'));
+}
+
+// SAGE-P0-BACK — promise timeout helper. Used to bound the increment RPC
+// so a stuck Supabase call can't hold a Sage response indefinitely.
+function _withTimeout(promise, ms, label) {
+  return new Promise((resolve) => {
+    let done = false;
+    const t = setTimeout(() => {
+      if (done) return; done = true;
+      resolve({ error: { code: 'TIMEOUT_' + label, message: 'timeout ' + ms + 'ms' } });
+    }, ms);
+    Promise.resolve(promise).then((v) => {
+      if (done) return; done = true; clearTimeout(t); resolve(v);
+    }).catch((e) => {
+      if (done) return; done = true; clearTimeout(t);
+      resolve({ error: { code: 'THROW_' + label, message: String(e && e.message || e) } });
+    });
+  });
+}
+
+// SAGE-P0-BACK — Gemini model fallback list. Primary is the 2.5-flash that
+// shipped audit-day; fallback is 2.0-flash, which has a stable contract and
+// the same response shape. Only the first non-OK response triggers the
+// fallback — we never loop, never retry on success.
+const GEMINI_MODELS = ['gemini-2.5-flash', 'gemini-2.0-flash'];
+function _geminiUrl(model, key) {
+  return 'https://generativelanguage.googleapis.com/v1beta/models/' +
+         encodeURIComponent(model) + ':generateContent?key=' + encodeURIComponent(key);
+}
+async function _callGeminiWithFallback(geminiBody, key, labelPrefix) {
+  let lastStatus = 0;
+  for (let i = 0; i < GEMINI_MODELS.length; i++) {
+    const model = GEMINI_MODELS[i];
+    let r;
+    try {
+      r = await fetch(_geminiUrl(model, key), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(geminiBody),
+      });
+    } catch (e) {
+      _logSafely(labelPrefix + ' fetch-throw model=' + model, 0, 'NETWORK');
+      lastStatus = 0;
+      continue;
+    }
+    if (r.ok) return { ok: true, response: r, modelUsed: model };
+    lastStatus = r.status;
+    _logSafely(labelPrefix + ' non-ok model=' + model, r.status, 'GEMINI_' + r.status);
+    // Don't bother falling back on 4xx that aren't 429 — those are our bug,
+    // not Google's. Fall back only on 5xx and 429.
+    if (r.status < 500 && r.status !== 429) break;
+  }
+  return { ok: false, status: lastStatus };
+}
 
 // ── In-memory throttle (resets per cold start; good enough as a floor).
 // Audit M4: keyed by userId after auth (primary) and IP (pre-auth backstop).
@@ -229,6 +330,11 @@ function buildSagePrompt(profile, userContext, newsContext) {
 }
 
 export default async function handler(req, res) {
+  // SAGE-P0-BACK — CORS + preflight. Setting headers BEFORE any early return
+  // ensures even 4xx responses include the allow-origin so the browser shows
+  // the real status code instead of a generic CORS error.
+  _setCors(req, res);
+  if (req.method === 'OPTIONS') return res.status(204).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   // Pre-auth IP backstop (M4: secondary).
@@ -334,7 +440,9 @@ export default async function handler(req, res) {
     }
   }
 
-  const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY}`;
+  // SAGE-P0-BACK — removed the single hard-coded gemini-2.5-flash URL.
+  // _callGeminiWithFallback iterates GEMINI_MODELS and only retries on 5xx
+  // / 429, preserving 4xx as our-bug signals.
 
   // ── CSV batch mode (low temp, JSON-array output) ──────────────────────
   if (isCsv) {
@@ -343,21 +451,20 @@ export default async function handler(req, res) {
       generationConfig: { maxOutputTokens: 1200, temperature: 0.1, topP: 0.9 },
     };
     try {
-      const r = await fetch(GEMINI_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(geminiBody),
-      });
-      if (!r.ok) {
-        console.error('Gemini CSV error:', await r.text());
+      const callRes = await _callGeminiWithFallback(geminiBody, GEMINI_KEY, 'csv');
+      if (!callRes.ok) {
         return res.status(502).json({ error: 'AI service temporarily unavailable.' });
       }
-      const data = await r.json();
+      const data = await callRes.response.json();
       const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (!reply) return res.status(502).json({ error: 'No response from AI.' });
+      if (!reply) {
+        _logSafely('csv empty-reply model=' + callRes.modelUsed, 200, 'EMPTY_REPLY');
+        return res.status(502).json({ error: 'No response from AI.' });
+      }
       return res.status(200).json({ reply });
     } catch (err) {
-      console.error('Sage CSV API error:', err);
+      // SAGE-P0-BACK — no `err` object in the log; use safe label only.
+      _logSafely('csv unexpected-throw', 0, 'EXCEPTION');
       return res.status(500).json({ error: 'Internal error.' });
     }
   }
@@ -397,34 +504,41 @@ export default async function handler(req, res) {
   };
 
   try {
-    const r = await fetch(GEMINI_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(geminiBody),
-    });
-    if (!r.ok) {
-      console.error('Gemini error:', await r.text());
+    const callRes = await _callGeminiWithFallback(geminiBody, GEMINI_KEY, 'chat');
+    if (!callRes.ok) {
       return res.status(502).json({ error: 'AI service temporarily unavailable. Please try again.' });
     }
-    const data = await r.json();
+    const data = await callRes.response.json();
     const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!reply) return res.status(502).json({ error: 'No response from AI. Please try again.' });
+    if (!reply) {
+      _logSafely('chat empty-reply model=' + callRes.modelUsed, 200, 'EMPTY_REPLY');
+      return res.status(502).json({ error: 'No response from AI. Please try again.' });
+    }
 
-    // Increment usage counter atomically via RPC (audit M5).
-    // Fallback removed — the RPC is created in 20260508_subscriptions_fixup.sql
-    // and the SELECT-then-UPDATE fallback raced under concurrent calls,
-    // letting Free users exceed their monthly cap.
+    // SAGE-P0-BACK — AWAIT the increment with a 2s timeout.
+    // Pre-fix this was fire-and-forget — the response shipped before the
+    // counter wrote, so a Postgres hiccup let users rapid-fire past their
+    // monthly cap. Now: success means the counter actually moved. If the
+    // RPC throws or times out we log (no PII) and STILL return success so
+    // the user isn't punished for our infra; but the 2s ceiling means we
+    // never hang the response.
     // Owner is exempt — testing shouldn't burn their own counter.
     if (!isOwner) {
-      supabase.rpc('increment_ai_queries', { p_user_id: userId })
-        .then(({ error }) => { if (error) console.error('[sage] increment_ai_queries:', error); })
-        .catch(e => console.error('[sage] increment_ai_queries threw:', e));
+      const incRes = await _withTimeout(
+        supabase.rpc('increment_ai_queries', { p_user_id: userId }),
+        2000,
+        'increment_ai_queries'
+      );
+      if (incRes && incRes.error) {
+        _logSafely('increment_ai_queries failed', incRes.error.status, incRes.error.code || 'UNKNOWN');
+      }
     }
 
     return res.status(200).json({ reply });
 
   } catch (err) {
-    console.error('Sage API error:', err);
+    // SAGE-P0-BACK — strip the err object from the log; class label only.
+    _logSafely('chat unexpected-throw', 0, 'EXCEPTION');
     return res.status(500).json({ error: 'Internal error. Please try again.' });
   }
 }
