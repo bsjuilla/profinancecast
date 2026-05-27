@@ -2,15 +2,27 @@
  * pfc-fx.js — Live foreign-exchange rates via Frankfurter (frankfurter.dev).
  *
  * Why Frankfurter:
- *   - No API key, no signup, no monthly cap (CORS-enabled).
+ *   - No API key, no signup, no monthly cap.
  *   - Sourced from the European Central Bank (published weekdays ~16:00 CET).
  *   - 30+ major currencies, full history since 1999.
- *   - JSON, supports any base currency on the fly: /latest?base=USD&symbols=EUR,MUR.
+ *   - JSON, supports any base currency on the fly.
  *
  * The data only changes once per business day, so we cache aggressively in
  * localStorage (24h validity) — most users never hit the network.
  *
- * Public API
+ * FULL-P1-G (audit 2026-05-27) — endpoint moved from direct browser fetch
+ * to a same-origin proxy at /api/fx. Three reasons:
+ *   1. CI smoke test on commit 526d778 caught a `net::ERR_FAILED` from
+ *      Frankfurter/Cloudflare that the browser reported as "blocked by
+ *      CORS policy" (Chrome's catch-all label for any cross-origin
+ *      response without an Access-Control-Allow-Origin header — including
+ *      responses that never arrived). Proxying through same-origin makes
+ *      this class of 3rd-party blip invisible to the dashboard.
+ *   2. Vercel CDN now absorbs identical-URL hits (s-maxage 6h, swr 24h)
+ *      instead of every user hitting Frankfurter directly.
+ *   3. Frankfurter outages serve stale rates via SWR rather than failing.
+ *
+ * Public API (unchanged — all 6 dashboard-3.js callers continue to work):
  *   PFCFx.getRate(from, to) → Promise<number>      e.g. PFCFx.getRate('USD','EUR')
  *   PFCFx.convert(amount, from, to) → Promise<number>
  *   PFCFx.getRates(base) → Promise<{[code]: rate}>  all rates against the base
@@ -22,7 +34,11 @@
 (function () {
   'use strict';
 
-  const ENDPOINT = 'https://api.frankfurter.dev/v1/latest';
+  // FULL-P1-G — was 'https://api.frankfurter.dev/v1/latest' (direct).
+  // Now hits our own /api/fx Node serverless endpoint which proxies
+  // Frankfurter with same-origin guard + rate-limit + CDN caching.
+  // Response shape is pass-through (still { rates, base, date }).
+  const ENDPOINT = '/api/fx';
   const CACHE_KEY_PREFIX = 'pfc_fx_v1_';
   const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24h — ECB publishes once per business day
 
@@ -67,9 +83,9 @@
     const url = ENDPOINT + '?base=' + encodeURIComponent(base);
     const promise = fetch(url, { credentials: 'omit' })
       .then(async (res) => {
-        if (!res.ok) throw new Error('frankfurter ' + res.status);
+        if (!res.ok) throw new Error('pfc-fx: api/fx ' + res.status);
         const data = await res.json();
-        if (!data || !data.rates) throw new Error('frankfurter: missing rates');
+        if (!data || !data.rates) throw new Error('pfc-fx: missing rates');
         // Frankfurter doesn't include the base currency in `rates`, but
         // consumers expect rate-from-base-to-base = 1. Patch that in.
         data.rates[data.base || base] = 1;
