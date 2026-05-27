@@ -320,7 +320,10 @@ export default async function handler(req, res) {
       }
       // Any other DB error: log + fall through. We'd rather process the event
       // twice than reject a real webhook and have PayPal retry forever.
-      console.error('[webhook-paypal] dedup insert error (continuing):', dedupErr);
+      // FULL-P1-F (audit 2026-05-27) — redact. dedupErr.details on a
+      // webhook_event_dedup INSERT failure includes the event payload
+      // hash + provider_id we tried to insert.
+      console.error('[webhook-paypal:dedup] insert failed (continuing) code=' + (dedupErr?.code || 'UNKNOWN'));
     } else if (!dedupRow) {
       // No row returned + no error = also a conflict swallowed by the row
       // visibility rules. Treat as duplicate.
@@ -387,10 +390,18 @@ export default async function handler(req, res) {
         raw_payload: redactedPayload,
       });
       if (insertErr) {
-        console.error('[webhook-paypal] event-log insert error:', {
-          message: insertErr.message, details: insertErr.details, code: insertErr.code,
-          event_type: extra.event_type, provider_id: extra.provider_id,
-        });
+        // FULL-P1-F (audit 2026-05-27) — drop insertErr.message and
+        // .details from the console log. .details on a subscription_events
+        // INSERT can include the row values (amount, currency, raw_payload
+        // which contains the full event). Keep event_type + provider_id
+        // (PayPal-shape, useful for triage) + code; drop the rich error
+        // object. The _alertOps below already gets the message + code in
+        // a structured form for the ops alert sink (where the audience is
+        // internal-only).
+        console.error('[webhook-paypal:audit] event-log insert failed' +
+          ' event_type=' + (extra?.event_type || 'UNKNOWN') +
+          ' provider_id=' + (extra?.provider_id || 'NONE') +
+          ' code=' + (insertErr?.code || 'UNKNOWN'));
         _alertOps('subscription_events insert failed', JSON.stringify({
           db_error: { message: insertErr.message, code: insertErr.code },
           extra,
@@ -545,7 +556,10 @@ export default async function handler(req, res) {
             period_end: periodEnd,
           });
         if (periodErr && periodErr.code !== '23505') {
-          console.error('[webhook-paypal] subscription_periods insert err:', periodErr);
+          // FULL-P1-F (audit 2026-05-27) — redact. periodErr.details on
+          // an UNIQUE-violation-other-than-23505 (e.g., FK violation)
+          // would include the row values (user_id, captureId, amount).
+          console.error('[webhook-paypal:seat] subscription_periods insert failed code=' + (periodErr?.code || 'UNKNOWN'));
         }
 
         const { error: upsertErr } = await supabase.from('subscriptions').upsert({
@@ -561,7 +575,13 @@ export default async function handler(req, res) {
           updated_at: nowIso,
         }, { onConflict: 'user_id' });
         if (upsertErr) {
-          console.error('[webhook-paypal] fallback upsert err:', upsertErr);
+          // FULL-P1-F — redact console log. The full upsertErr is also
+          // written to subscription_events.raw_payload below (line ~575)
+          // which IS the canonical audit trail — RLS-scoped to service
+          // role only, encrypted at rest, intentionally rich. Console
+          // log → Vercel/Sentry log aggregators (third-party visibility)
+          // so it must be code-only.
+          console.error('[webhook-paypal:db] fallback upsert failed code=' + (upsertErr?.code || 'UNKNOWN') + ' capture_id=' + captureId);
           await _logEvent({
             user_id: userId,
             event_type: 'webhook_capture_upsert_failed',
@@ -582,7 +602,9 @@ export default async function handler(req, res) {
             { p_user_id: userId, p_capture_id: captureId }
           );
           if (finErr) {
-            console.error('[webhook-paypal] finalize_founders_seat err:', finErr);
+            // FULL-P1-F — redact. RPC error.details includes the
+            // user_id + capture_id passed in.
+            console.error('[webhook-paypal:seat] finalize_founders_seat failed code=' + (finErr?.code || 'UNKNOWN'));
           }
         }
         break;
@@ -680,11 +702,17 @@ export default async function handler(req, res) {
           .eq('provider_capture_id', captureId)
           .is('refunded_at', null);  // don't double-mark on retry
         if (periodRefundErr) {
-          console.error('[webhook-paypal] subscription_periods refund mark err:', periodRefundErr);
+          // FULL-P1-F (audit 2026-05-27) — redact. periodRefundErr.details
+          // on the subscription_periods UPDATE includes the captureId we
+          // filtered on plus the refund_capture_id we set; PayPal-shape
+          // identifiers we don't want in third-party log aggregators.
+          console.error('[webhook-paypal:refund] period mark failed code=' + (periodRefundErr?.code || 'UNKNOWN'));
         }
 
         if (updErr) {
-          console.error('[webhook-paypal] refund update err:', updErr);
+          // FULL-P1-F — redact. subscriptions UPDATE on refund path;
+          // .details contains user_id + plan + status.
+          console.error('[webhook-paypal:refund] subscriptions update failed code=' + (updErr?.code || 'UNKNOWN'));
         }
         await supabase.from('profiles').update({ plan: 'free' }).eq('id', userId);
 
@@ -798,7 +826,11 @@ export default async function handler(req, res) {
           plan: planTier || undefined,  // skip if we couldn't derive tier
           updated_at: new Date().toISOString(),
         }).eq('user_id', customUserId)).error;
-        if (updErr) console.error('[webhook] subscription.activated upd err:', updErr);
+        // FULL-P1-F (audit 2026-05-27) — redact. updErr.details on the
+        // subscriptions UPDATE includes user_id + plan + period_end +
+        // billing_agreement_id — all PayPal subscription-state context
+        // we don't want in third-party logs.
+        if (updErr) console.error('[webhook-paypal:activate] subscriptions update failed code=' + (updErr?.code || 'UNKNOWN'));
 
         await _logEvent({
           user_id: customUserId,
@@ -1048,7 +1080,9 @@ export default async function handler(req, res) {
             period_end: periodEnd,
           });
         if (periodErr && periodErr.code !== '23505') {
-          console.error('[webhook] sale.completed period insert err:', periodErr);
+          // FULL-P1-F — redact. Same shape as the capture handler above
+          // (line ~547); .details on FK violations carries row values.
+          console.error('[webhook-paypal:sale] period insert failed code=' + (periodErr?.code || 'UNKNOWN'));
         }
 
         // Update subscriptions current state — push period_end forward and
@@ -1209,7 +1243,15 @@ export default async function handler(req, res) {
     }
     return res.status(200).json({ received: true });
   } catch (e) {
-    console.error('webhook-paypal error:', e);
+    // FULL-P1-F (audit 2026-05-27) — redact stack. Unhandled errors
+    // mid-flow include the FULL parsed PayPal webhook event in their
+    // stack scope — which contains payer email, transaction details,
+    // subscriber name. Webhook signature is verified at the top of the
+    // handler so the rich payload IS legitimate, but logging it to
+    // Sentry exports PII to a third-party log aggregator. Code-only
+    // for the console; the webhook signature-verification logic and
+    // event-routing remain intact.
+    console.error('[webhook-paypal] unhandled name=' + (e?.name || 'Error') + ' code=' + (e?.code || 'UNKNOWN'));
     return res.status(500).json({ error: 'Internal error' });
   }
 }

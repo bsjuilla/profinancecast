@@ -337,8 +337,18 @@ export default async function handler(req) {
     return _json({ error: 'Could not reach PayPal' }, 502);
   }
   if (!subRes.ok) {
-    const errText = await subRes.text();
-    console.error('[create-subscription] PayPal returned', subRes.status, errText);
+    // FULL-P1-F (audit 2026-05-27) — drop errText body dump. PayPal
+    // error responses include debug_id + internal trace tokens + on
+    // some 4xx paths partial subscription context (plan_id). Parse
+    // just status + issue + debug_id (debug_id is what PayPal
+    // Support asks for when escalating).
+    let issue = 'UNKNOWN', debugId = 'NONE';
+    try {
+      const errJson = JSON.parse(await subRes.text());
+      issue   = errJson?.details?.[0]?.issue || errJson?.name || 'UNKNOWN';
+      debugId = errJson?.debug_id || 'NONE';
+    } catch { /* PayPal returned non-JSON */ }
+    console.error('[create-subscription:paypal] create failed status=' + subRes.status + ' issue=' + issue + ' debug_id=' + debugId);
     return _json({ error: 'Could not create subscription' }, 502);
   }
   const subData = await subRes.json();
@@ -346,7 +356,15 @@ export default async function handler(req) {
   const approveLink = (subData.links || []).find(l => l.rel === 'approve');
 
   if (!subscriptionId || !approveLink?.href) {
-    console.error('[create-subscription] missing id or approve link', subData);
+    // FULL-P1-F (audit 2026-05-27) — redact subData dump. The full PayPal
+    // subscription response includes the approve URL with embedded
+    // subscription token + plan_id + custom_id (our user_id). Log only
+    // the presence flags + top-level status so on-call can tell
+    // "no id" from "no approve link" without seeing the payload.
+    console.error('[create-subscription:paypal] missing id or approve link' +
+      ' has_id=' + (subscriptionId ? 'YES' : 'NO') +
+      ' has_approve=' + (approveLink?.href ? 'YES' : 'NO') +
+      ' status=' + (subData?.status || 'NONE'));
     return _json({ error: 'Subscription created but PayPal returned unexpected shape' }, 502);
   }
 
@@ -383,7 +401,11 @@ export default async function handler(req) {
   if (upsertErr) {
     // Don't fail the request — the user can still approve at PayPal, and the
     // webhook will fill in our DB later. But log loudly for support.
-    console.error('[create-subscription] pre-write upsert err:', upsertErr);
+    // FULL-P1-F (audit 2026-05-27) — redact. Supabase upsert error
+    // .details/.hint includes the row values (user_id + plan +
+    // provider_subscription_id). Code-only is enough to triage; the
+    // webhook will reconcile the row regardless.
+    console.error('[create-subscription:db] pre-write upsert failed code=' + (upsertErr?.code || 'UNKNOWN'));
   }
 
   return _json({

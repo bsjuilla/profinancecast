@@ -136,7 +136,10 @@ export default async function handler(req) {
     .limit(limit);
 
   if (qErr) {
-    console.error('subscription/history query error:', qErr);
+    // FULL-P1-F (audit 2026-05-27) — redact. qErr.details on a
+    // subscription_events SELECT includes the user_id we filtered on.
+    // This is a hot path (history page load); terse logs reduce spend.
+    console.error('[subscription/history] query failed code=' + (qErr?.code || 'UNKNOWN'));
     // 503 so the client preserves any cached history rather than rendering empty.
     return _json({ error: 'Could not load history' }, 503, req);
   }

@@ -204,7 +204,9 @@ export default async function handler(req, res) {
     .maybeSingle();
 
   if (readErr) {
-    console.error('[cancel] read err:', readErr);
+    // FULL-P1-F (audit 2026-05-27) — redact. readErr.details on the
+    // subscriptions SELECT includes the user_id we filtered on.
+    console.error('[cancel:db] subscription read failed code=' + (readErr?.code || 'UNKNOWN'));
     return res.status(500).json({ error: 'Could not read subscription.' });
   }
   if (!existing) {
@@ -260,9 +262,20 @@ export default async function handler(req, res) {
       if (!cancelRes.ok && cancelRes.status !== 422) {
         const errText = await cancelRes.text();
         paypalCancelFailed = true;
-        console.error('[cancel] PayPal cancel failed after retries:', cancelRes.status, errText, {
-          userId, subscriptionId: existing.provider_subscription_id,
-        });
+        // FULL-P1-F (audit 2026-05-27) — drop errText body dump + the
+        // {userId, subscriptionId} object from the console log. PayPal
+        // cancel error bodies include debug_id + trace tokens; the
+        // {userId, subscriptionId} dump is full PII. Parse just status
+        // + issue + debug_id (debug_id is what PayPal Support asks for).
+        // The _alertOps call below already carries the full context to
+        // the ops alert sink (internal-only audience by design).
+        let issue = 'UNKNOWN', debugId = 'NONE';
+        try {
+          const errJson = JSON.parse(errText);
+          issue   = errJson?.details?.[0]?.issue || errJson?.name || 'UNKNOWN';
+          debugId = errJson?.debug_id || 'NONE';
+        } catch { /* PayPal returned non-JSON */ }
+        console.error('[cancel:paypal] cancel failed after retries status=' + cancelRes.status + ' issue=' + issue + ' debug_id=' + debugId);
         _alertOps(
           'Cancel failed at PayPal — user may keep getting charged',
           `user_id: ${userId}\n` +
@@ -278,9 +291,11 @@ export default async function handler(req, res) {
       }
     } catch (e) {
       paypalCancelFailed = true;
-      console.error('[cancel] PayPal cancel threw:', e?.message || e, {
-        userId, subscriptionId: existing.provider_subscription_id,
-      });
+      // FULL-P1-F (audit 2026-05-27) — drop {userId, subscriptionId}
+      // object + e.message (network errors can include destination URL
+      // with our PayPal auth header in scope). Code/name only; _alertOps
+      // below still carries the structured PII for internal ops.
+      console.error('[cancel:paypal] cancel threw name=' + (e?.name || 'Error') + ' code=' + (e?.code || 'UNKNOWN'));
       _alertOps(
         'Cancel threw at PayPal — user may keep getting charged',
         `user_id: ${userId}\n` +
@@ -306,7 +321,10 @@ export default async function handler(req, res) {
     .single();
 
   if (updErr) {
-    console.error('[cancel] update err:', updErr);
+    // FULL-P1-F (audit 2026-05-27) — redact. updErr.details on the
+    // subscriptions UPDATE includes the row values we set (status,
+    // cancel_at_period_end, cancel_reason) + user_id we filtered on.
+    console.error('[cancel:db] subscription update failed code=' + (updErr?.code || 'UNKNOWN'));
     return res.status(500).json({ error: 'Could not cancel — please try again.' });
   }
 
@@ -327,7 +345,10 @@ export default async function handler(req, res) {
       },
     });
   } catch (logErr) {
-    console.error('[cancel] event log non-fatal:', logErr);
+    // FULL-P1-F (audit 2026-05-27) — redact. subscription_events
+    // insert errors include the row values (user_id + plan + period).
+    // Non-fatal log; code-only is enough.
+    console.error('[cancel:audit] event log non-fatal code=' + (logErr?.code || 'UNKNOWN'));
   }
 
   return res.status(200).json({
