@@ -218,10 +218,12 @@
   <link rel="stylesheet" href="css/pfc-reskin.css">
 
   <!-- Supabase + auth stack first, then portfolio module -->
-  <!-- FULL-P0-A3 (audit 2026-05-26) — Supabase pinned + SRI + defer. -->
+  <!-- FULL-P0-A3 (audit 2026-05-26) — Supabase pinned + SRI.
+       FULL-P0-A3-HOTFIX — removed `defer`; followers below are not
+       deferred. See auth.html comment for full rationale. -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.105.4"
           integrity="sha384-4eCDoMN/7A46qQ5Tj0rZ/D2VEolFGNIINDTLAcWZcvhkRSsvTfqNfaBMlRRoGEZ5"
-          crossorigin="anonymous" defer></script>
+          crossorigin="anonymous"></script>
   <script src="js/pfc-audit-mode.js"></script>
   <script src="js/pfc-config.js"></script>
   <script src="js/pfc-auth.js"></script>

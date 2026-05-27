@@ -823,13 +823,25 @@
   5. In Supabase → Authentication → URL Configuration → add https://profinancecast.com
 -->
 <!-- FULL-P0-A3 (audit 2026-05-26) — Supabase pinned @2.105.4 + canonical
-     SRI + crossorigin + defer. auth.html is the credential-entry surface;
-     leaving Supabase floating-pin meant a jsDelivr compromise or malicious
-     2.x minor would silently swap the auth code path for every user.
-     SRI hash copied from journal.html (verified-shipping) — NOT fabricated. -->
+     SRI + crossorigin. auth.html is the credential-entry surface; leaving
+     Supabase floating-pin meant a jsDelivr compromise or malicious 2.x
+     minor would silently swap the auth code path for every user.
+     SRI hash copied from journal.html (verified-shipping) — NOT fabricated.
+
+     FULL-P0-A3-HOTFIX (audit 2026-05-26) — removed `defer` from this tag.
+     Opus re-verifier caught the regression: the followers below
+     (js/pfc-audit-mode.js, js/pfc-config.js, js/pfc-auth.js, js/inline/
+     auth-2.js at lines 833-836) are NOT marked `defer`. Per HTML5 spec,
+     a deferred script runs AFTER parsing while non-deferred scripts
+     block the parser and execute immediately. So with `defer` on
+     Supabase, the followers ran FIRST — pfc-auth.js found `window.supabase`
+     undefined, latched _failed=true, and auth-2.js showed the hardcoded
+     "Service unavailable" overlay. Users literally could not sign in.
+     The supply-chain protection (pin + SRI + crossorigin) is the real
+     security win and is retained — `defer` was only a perf nicety. -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.105.4"
         integrity="sha384-4eCDoMN/7A46qQ5Tj0rZ/D2VEolFGNIINDTLAcWZcvhkRSsvTfqNfaBMlRRoGEZ5"
-        crossorigin="anonymous" defer></script>
+        crossorigin="anonymous"></script>
 <script src="js/pfc-audit-mode.js"></script>
   <script src="js/pfc-config.js"></script>
 <script src="js/pfc-auth.js"></script>
