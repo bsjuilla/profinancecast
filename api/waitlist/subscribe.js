@@ -99,13 +99,18 @@ async function _sendWelcomeEmail(email) {
       }),
     });
     if (!res.ok) {
-      const errBody = await res.text().catch(() => '');
-      console.warn('waitlist: Resend send failed', res.status, errBody.slice(0, 200));
+      // FULL-P1-E (audit 2026-05-27) — drop errBody. Resend error
+      // responses include the destination email and our API key prefix
+      // on some error paths (auth_failed, quota_exceeded). Status code
+      // is enough to classify retry-or-give-up.
+      console.warn('[waitlist:resend] send failed status=' + res.status);
       return { sent: false, reason: 'resend_http_' + res.status };
     }
     return { sent: true };
   } catch (e) {
-    console.warn('waitlist: Resend send threw', e.message);
+    // FULL-P1-E — redact. e.message on network errors can include the
+    // destination URL with our auth header in stack frames.
+    console.warn('[waitlist:resend] send threw name=' + (e?.name || 'Error') + ' code=' + (e?.code || 'UNKNOWN'));
     return { sent: false, reason: 'resend_threw' };
   }
 }
@@ -191,7 +196,11 @@ export default async function handler(req) {
     // Duplicate signup → soft success (no PII leakage about who's on the list)
     const isDuplicate = error && /duplicate|unique/i.test(error.message || '');
     if (error && !isDuplicate) {
-      console.error('waitlist/subscribe insert failed:', error);
+      // FULL-P1-E (audit 2026-05-27) — redact. The Supabase error object
+      // for an INSERT INTO waitlist can include the email being inserted
+      // on error.details / error.hint depending on the constraint
+      // violated. Same pattern as newsletter/subscribe.js D2.
+      console.error('[waitlist/subscribe] insert failed code=' + (error?.code || 'UNKNOWN'));
       return _json({ ok: true, status: 'soft_failure' }, 200);
     }
 
@@ -201,12 +210,15 @@ export default async function handler(req) {
     // is acceptable for a once-per-signup transactional email.
     if (!isDuplicate) {
       try { await _sendWelcomeEmail(email); }
-      catch (e) { console.warn('waitlist: welcome email failed:', e.message); }
+      // FULL-P1-E — redact e.message; can leak email or Resend token.
+      catch (e) { console.warn('[waitlist] welcome email failed name=' + (e?.name || 'Error') + ' code=' + (e?.code || 'UNKNOWN')); }
     }
 
     return _json({ ok: true }, 200);
   } catch (err) {
-    console.error('waitlist/subscribe unhandled:', err);
+    // FULL-P1-E — redact stack. Unhandled in this handler means the
+    // stack contains parsed body fields (email + use_case + source).
+    console.error('[waitlist/subscribe] unhandled name=' + (err?.name || 'Error') + ' code=' + (err?.code || 'UNKNOWN'));
     return _json({ ok: true, status: 'error_fallback' }, 200);
   }
 }

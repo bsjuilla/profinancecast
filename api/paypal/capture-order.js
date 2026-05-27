@@ -250,16 +250,25 @@ export default async function handler(req, res) {
       'order-preflight'
     );
     if (!preflightRes.ok) {
-      console.error('[capture-order] preflight GET failed', { orderID, status: preflightRes.status });
+      // FULL-P1-E (audit 2026-05-27) — redact. orderID is a PayPal token
+      // that can be used to GET capture details from PayPal dashboards;
+      // keeping it in plaintext logs exposes a correlation channel if
+      // logs leak. Status alone is enough to triage 404 vs 5xx.
+      console.error('[capture-order:preflight] failed status=' + preflightRes.status);
       return res.status(404).json({ error: 'Order not found' });
     }
     const preflightData = await preflightRes.json();
     const orderCustomId = preflightData.purchase_units?.[0]?.custom_id;
     if (orderCustomId && orderCustomId !== user.id) {
       // Don't leak who the order belongs to — generic 403.
-      console.warn('[capture-order] cross-user capture attempt', {
-        attempting_user_id: user.id, order_user_id: orderCustomId, orderID,
-      });
+      // FULL-P1-E (audit 2026-05-27) — keep the audit trail (this is a
+      // genuine security event worth investigating) but mask user IDs
+      // to 8-char prefix so a log breach can't be replayed against
+      // Supabase admin endpoints. orderID dropped — PayPal correlation
+      // surface, not needed for incident triage.
+      console.warn('[capture-order:audit] cross-user capture attempt' +
+        ' attempting_uid=' + String(user.id).slice(0, 8) +
+        ' order_uid=' + String(orderCustomId).slice(0, 8));
       return res.status(403).json({ error: 'Order does not belong to this user' });
     }
     if (preflightData.status === 'COMPLETED') {
@@ -294,8 +303,20 @@ export default async function handler(req, res) {
       'capture'
     );
     if (!capRes.ok) {
-      const err = await capRes.text();
-      console.error('Capture error:', err);
+      // FULL-P1-E (audit 2026-05-27) — `err` was the FULL PayPal response
+      // body (HTML or JSON depending on the failure mode), which can
+      // contain debug_id, internal trace tokens, and even truncated
+      // payer details on some 4xx paths. Parse just the issue + status
+      // and drop the body. debug_id is logged here in the spirit of
+      // capture-order's CAPTURED-BUT-NOT-UPGRADED log: on-call needs it
+      // for PayPal support escalation.
+      let issue = 'UNKNOWN', debugId = 'NONE';
+      try {
+        const errJson = JSON.parse(await capRes.text());
+        issue   = errJson?.details?.[0]?.issue || errJson?.name || 'UNKNOWN';
+        debugId = errJson?.debug_id || 'NONE';
+      } catch { /* PayPal returned non-JSON; status alone is fine */ }
+      console.error('[capture-order:paypal] capture failed status=' + capRes.status + ' issue=' + issue + ' debug_id=' + debugId);
       return res.status(502).json({ error: 'Payment capture failed' });
     }
     const captureData = await capRes.json();
@@ -309,7 +330,13 @@ export default async function handler(req, res) {
     const amountPaid = parseFloat(capture?.amount?.value);
     const currencyPaid = capture?.amount?.currency_code;
     if (currencyPaid !== 'EUR' || Math.abs(amountPaid - PLAN_PRICES[plan]) > 0.005) {
-      console.error(`Amount mismatch: paid ${amountPaid} ${currencyPaid}, expected ${PLAN_PRICES[plan]} EUR for plan ${plan}`);
+      // FULL-P1-E (audit 2026-05-27) — KEPT as-is. This is a security
+      // audit log for an attempted payment-amount tamper; values are
+      // numeric (not PII), the plan is a SKU enum (public), and the
+      // subscription_events insert below records the full row to the
+      // canonical audit table. Operators triaging the alert need to see
+      // these values inline without a database round-trip.
+      console.error(`[capture-order:audit] amount mismatch paid=${amountPaid} ${currencyPaid} expected=${PLAN_PRICES[plan]} EUR plan=${plan}`);
       // W27-c #21 — auto-refund. Previously we refused to upgrade and left
       // the money sitting in PayPal awaiting manual reconciliation. Now we
       // fire an auto-refund and log the outcome to subscription_events so
@@ -334,7 +361,9 @@ export default async function handler(req, res) {
           },
         });
       } catch (logErr) {
-        console.error('[capture-order] failed to log auto-refund event:', logErr);
+        // FULL-P1-E — redact. Supabase insert errors include row values
+        // on details/hint fields.
+        console.error('[capture-order:audit] subscription_events insert failed code=' + (logErr?.code || 'UNKNOWN'));
       }
       const userMsg = refund.ok
         ? 'Payment amount didn\'t match the expected price — we\'ve issued an automatic refund. It should appear in 3-5 business days.'
@@ -380,7 +409,8 @@ export default async function handler(req, res) {
       // 23505 = unique_violation (this capture already logged). Anything
       // else is a real error worth logging — but DON'T fail the upgrade,
       // the subscriptions upsert below is the entitlement source of truth.
-      console.error('[capture-order] subscription_periods insert err:', periodErr);
+      // FULL-P1-E — redact. periodErr.details can include row values.
+      console.error('[capture-order:seat] subscription_periods insert failed code=' + (periodErr?.code || 'UNKNOWN'));
     }
 
     const { error: upsertErr } = await supabase
@@ -404,12 +434,21 @@ export default async function handler(req, res) {
       // PAYMENT.CAPTURE.COMPLETED). Now: 5xx so the client retries, and the
       // captureID is logged loudly for support reconciliation via the PayPal
       // dashboard until the webhook fallback ships in Phase B.
-      console.error('[capture-order] CAPTURED-BUT-NOT-UPGRADED', {
-        userId: user.id, sku, dbPlan, orderID,
-        captureId: capture?.id,
-        amountPaid, currencyPaid,
-        upsertErr: { message: upsertErr.message, details: upsertErr.details, code: upsertErr.code },
-      });
+      //
+      // FULL-P1-E (audit 2026-05-27) — KEEP the captureId (on-call MUST
+      // have it to find the money in PayPal dashboard), but mask the
+      // userId to 8-char prefix and DROP upsertErr.message/.details
+      // (Supabase error details include the row values being upserted,
+      // which here means amount + plan + provider_capture_id — the same
+      // captureId we're already logging cleanly above). The error code
+      // is enough for SQL-level triage.
+      console.error('[capture-order:seat] CAPTURED-BUT-NOT-UPGRADED' +
+        ' uid=' + String(user.id).slice(0, 8) +
+        ' sku=' + sku +
+        ' tier=' + dbPlan +
+        ' capture_id=' + (capture?.id || 'MISSING') +
+        ' amount=' + amountPaid + ' ' + currencyPaid +
+        ' db_code=' + (upsertErr?.code || 'UNKNOWN'));
       return res.status(500).json({
         error: 'Payment captured but account upgrade failed. Our team has been notified — please refresh in a moment, or contact support if your plan still shows Free.',
         captureID: capture?.id,
@@ -435,7 +474,9 @@ export default async function handler(req, res) {
         { p_user_id: user.id, p_capture_id: capture?.id || orderID }
       );
       if (finErr) {
-        console.error('[capture-order] finalize_founders_seat err:', finErr);
+        // FULL-P1-E — redact. finErr.details from Supabase RPC includes
+        // the params we passed in (user_id, capture_id).
+        console.error('[capture-order:seat] finalize_founders_seat failed code=' + (finErr?.code || 'UNKNOWN'));
       } else {
         foundersSeatNo = typeof seat === 'number' ? seat : (seat?.seat_no ?? null);
       }
@@ -449,7 +490,10 @@ export default async function handler(req, res) {
     });
 
   } catch (err) {
-    console.error('capture-order error:', err);
+    // FULL-P1-E — redact stack. Unhandled errors throw mid-flow and
+    // the stack contains the parsed body (orderID + plan) + JWT
+    // remnants from the Bearer header.
+    console.error('[capture-order] unhandled name=' + (err?.name || 'Error') + ' code=' + (err?.code || 'UNKNOWN'));
     return res.status(500).json({ error: 'Internal server error' });
   }
 }

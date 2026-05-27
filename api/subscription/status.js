@@ -120,7 +120,13 @@ export default async function handler(req, res) {
     // the response as a transient failure and preserves the user's
     // last-known-good cached plan (pfc-entitlements.js:84-115) rather than
     // silently demoting every Pro user to Free while Supabase is degraded.
-    console.error('subscription/status query error:', subErr);
+    // FULL-P1-E (audit 2026-05-27) — redact. Supabase error.details on
+    // this SELECT can include the user_id we filtered on. Code-only is
+    // enough to triage CONNECTION_FAILED vs PERMISSION_DENIED (RLS) vs
+    // FUNCTION_NOT_FOUND. This is a hot path (every page load) so the
+    // log volume here is meaningful — keeping it terse also reduces
+    // log spend.
+    console.error('[subscription/status] query failed code=' + (subErr?.code || 'UNKNOWN'));
     return res.status(503).json(_withDebug(
       { plan: 'unknown', status: 'db_error' },
       { _reason: 'db_error', _ownerEmailsConfigured: OWNER_EMAILS.length > 0 }
@@ -193,7 +199,10 @@ export default async function handler(req, res) {
     // W27-a #18 — return 503 on unhandled errors too so PFCPlan.refresh()
     // preserves the user's last-known-good plan instead of silently
     // demoting every Pro user to Free during a server hiccup.
-    console.error('subscription/status: unhandled error', err);
+    // FULL-P1-E — redact stack. Unhandled errors thrown from inside
+    // this handler can have the Bearer token in scope when the stack
+    // is captured.
+    console.error('[subscription/status] unhandled name=' + (err?.name || 'Error') + ' code=' + (err?.code || 'UNKNOWN'));
     return res.status(503).json(_withDebug(
       { plan: 'unknown', status: 'error_fallback' },
       { _reason: 'unhandled_error' }

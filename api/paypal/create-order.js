@@ -224,7 +224,11 @@ export default async function handler(req, res) {
       { p_user_id: user.id, p_ttl_minutes: 15 }
     );
     if (seatErr) {
-      console.error('[create-order] claim_founders_seat error:', seatErr);
+      // FULL-P1-E (audit 2026-05-27) — redact. Supabase RPC errors
+      // include the params we passed in (.details / .hint), which here
+      // means the caller's user_id. Code-only is enough to triage
+      // CONNECTION_FAILED vs UNIQUE_VIOLATION vs FUNCTION_NOT_FOUND.
+      console.error('[create-order:seat] claim_founders_seat failed code=' + (seatErr?.code || 'UNKNOWN'));
       return res.status(500).json({ error: 'Could not reserve Founders seat — please try again.' });
     }
     foundersSeatNo = typeof seat === 'number' ? seat : (seat?.seat_no ?? null);
@@ -276,14 +280,24 @@ export default async function handler(req, res) {
     }, 'create-order');
 
     if (!order.ok) {
-      const err = await order.text();
-      console.error('PayPal create order error:', err);
+      // FULL-P1-E (audit 2026-05-27) — was dumping the FULL PayPal
+      // response body, which can include debug_id, trace headers, and
+      // partial payer context. Parse just status + issue + debug_id —
+      // debug_id is what PayPal Support asks for when escalating.
+      let issue = 'UNKNOWN', debugId = 'NONE';
+      try {
+        const errJson = JSON.parse(await order.text());
+        issue   = errJson?.details?.[0]?.issue || errJson?.name || 'UNKNOWN';
+        debugId = errJson?.debug_id || 'NONE';
+      } catch { /* PayPal returned non-JSON */ }
+      console.error('[create-order:paypal] order create failed status=' + order.status + ' issue=' + issue + ' debug_id=' + debugId);
       // W26-d #4/#5: release the Founders seat we reserved above so the
       // next buyer can claim it. Best-effort — even if the release fails,
       // the 15-minute TTL will eventually free the row.
       if (foundersSeatNo && foundersSupabase) {
+        // FULL-P1-E — redact release failures too.
         await foundersSupabase.rpc('release_founders_seat', { p_user_id: user.id })
-          .then(({ error }) => { if (error) console.error('[create-order] release_founders_seat err:', error); });
+          .then(({ error }) => { if (error) console.error('[create-order:seat] release_founders_seat failed code=' + (error?.code || 'UNKNOWN')); });
       }
       return res.status(502).json({ error: 'Could not create PayPal order' });
     }
@@ -294,12 +308,15 @@ export default async function handler(req, res) {
     });
 
   } catch (err) {
-    console.error('create-order error:', err);
+    // FULL-P1-E — redact stack. Unhandled errors' stack frames can
+    // contain the parsed body (plan + waiver_acknowledged) + JWT
+    // remnants from the Bearer header.
+    console.error('[create-order] unhandled name=' + (err?.name || 'Error') + ' code=' + (err?.code || 'UNKNOWN'));
     // Release the seat on any thrown error from the PayPal side too.
     if (foundersSeatNo && foundersSupabase) {
       await foundersSupabase.rpc('release_founders_seat', { p_user_id: user.id })
-        .then(({ error }) => { if (error) console.error('[create-order] release_founders_seat err:', error); })
-        .catch((e) => console.error('[create-order] release_founders_seat threw:', e));
+        .then(({ error }) => { if (error) console.error('[create-order:seat] release_founders_seat failed code=' + (error?.code || 'UNKNOWN')); })
+        .catch((e) => console.error('[create-order:seat] release_founders_seat threw name=' + (e?.name || 'Error') + ' code=' + (e?.code || 'UNKNOWN')));
     }
     return res.status(500).json({ error: 'Internal server error' });
   }
