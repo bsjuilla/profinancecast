@@ -1587,22 +1587,53 @@ function setProc(title, sub, pct) {
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 function toggleNotifications(btn) {
   const panel = document.getElementById('notif-panel');
+  if (!panel) return;
   const isOpen = panel.style.display === 'flex';
   panel.style.display = isOpen ? 'none' : 'flex';
   panel.style.flexDirection = 'column';
-  document.addEventListener('click', function handler(e) {
-    if (!panel.contains(e.target) && e.target !== btn) {
-      panel.style.display = 'none';
-      document.removeEventListener('click', handler);
-    }
-  });
+  // Opening? — only then arm the outside-click closer.
+  // Closing? — no listener needed; the explicit toggle already closed it.
+  if (isOpen) return;
+  // FULL-H-P0-1 (audit 2026-05-27): defer addEventListener via
+  // setTimeout(0). Previously this listener was attached synchronously,
+  // so the SAME click that fired toggleNotifications() bubbled up to
+  // `document` in the same tick. The handler fired, found that
+  // e.target (the SVG/span INSIDE the button) was neither inside the
+  // panel nor strictly === btn, and immediately re-hid the panel.
+  // Net effect: the panel opened and closed in one frame and the
+  // notification button appeared dead. Deferring with setTimeout(0)
+  // pushes the listener registration past the current event tick, so
+  // the opening click cannot trigger the closer. Also added
+  // btn.contains(e.target) so a click on the SVG/span/text inside the
+  // button is correctly recognised as "still the button" and doesn't
+  // re-toggle. Defense-in-depth — even without the setTimeout, this
+  // contains() check would have prevented the self-close race.
+  setTimeout(() => {
+    document.addEventListener('click', function handler(e) {
+      if (!panel.contains(e.target) && !btn.contains(e.target) && e.target !== btn) {
+        panel.style.display = 'none';
+        document.removeEventListener('click', handler);
+      }
+    });
+  }, 0);
 }
 function markRead(item) {
   if (item.classList.contains('unread')) {
     item.classList.remove('unread');
-    item.querySelector('.notif-dot-sm').style.opacity = '0';
+    // FULL-H-P1-3 (audit 2026-05-27): null-guard the dot lookup.
+    // Previously this threw "Cannot read properties of null (reading
+    // 'style')" the moment we surfaced any notification whose DOM
+    // shape didn't include a .notif-dot-sm child (e.g., a system
+    // notification rendered from a different template). The empty
+    // state currently in markup happens to include the dot so no one
+    // hit it, but the first real notification with a different
+    // template would have killed the function mid-way and left
+    // unreadCount stale.
+    const dot = item.querySelector('.notif-dot-sm');
+    if (dot) dot.style.opacity = '0';
     unreadCount = Math.max(0, unreadCount - 1);
-    document.getElementById('notif-dot').style.display = unreadCount > 0 ? 'block' : 'none';
+    const dotEl = document.getElementById('notif-dot');
+    if (dotEl) dotEl.style.display = unreadCount > 0 ? 'block' : 'none';
   }
 }
 function markAllRead() {
