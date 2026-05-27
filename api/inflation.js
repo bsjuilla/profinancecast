@@ -45,9 +45,42 @@ const COUNTRY_NAMES = {
   'EC': 'Ecuador', 'PE': 'Peru', 'UY': 'Uruguay',
 };
 
+// FULL-P1-D3 (audit 2026-05-27) — same-origin guard. World Bank is a
+// public unauthenticated API but their quota is shared across our
+// merchant account. A cross-site `<img src="https://profinancecast.com
+// /api/inflation?country=ZW">` placed on any malicious site (or a
+// scraper crawling pre-rendered HTML) would burn our World Bank quota
+// AND our Vercel Edge minutes with zero benefit to us. Accept only
+// browser GETs that originate from our own pages (Origin / Referer
+// header matches APP_ORIGIN). Server-to-server callers (curl, our own
+// SSR) typically don't set Origin and will be rejected — which is fine,
+// the dashboard is the only legitimate caller and it always sets one.
+const APP_ORIGIN_INFL = process.env.APP_ORIGIN || 'https://profinancecast.com';
+function _normOrig(o) {
+  if (!o || typeof o !== 'string') return '';
+  try { const u = new URL(o); return u.protocol + '//' + u.hostname.replace(/^www\./, '') + (u.port ? ':' + u.port : ''); }
+  catch { return ''; }
+}
+function _isSameOriginRequest(req) {
+  const expected = _normOrig(APP_ORIGIN_INFL);
+  if (!expected) return true; // dev / preview without APP_ORIGIN — allow
+  const origin  = req.headers.origin  || '';
+  const referer = req.headers.referer || '';
+  if (origin)  return _normOrig(origin)  === expected;
+  if (referer) { try { return _normOrig(new URL(referer).origin) === expected; } catch { return false; } }
+  return false; // no Origin and no Referer = reject (typical for hot-linked <img>)
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  // FULL-P1-D3 — reject cross-site / hot-linked GETs that would burn
+  // our World Bank quota with no benefit. Returns 403 not 404 so legit
+  // dashboard hits get a clear signal if APP_ORIGIN is misconfigured.
+  if (!_isSameOriginRequest(req)) {
+    return res.status(403).json({ error: 'Forbidden: same-origin only' });
   }
 
   const countryCode = (req.query.country || 'US').toUpperCase().trim();
@@ -126,7 +159,12 @@ export default async function handler(req, res) {
     });
 
   } catch (err) {
-    console.error('Inflation API error:', err);
+    // FULL-P1-D2 (audit 2026-05-27) — redact PII / stack. Original
+    // `console.error('Inflation API error:', err)` dumped the full
+    // Error including stack frames + URL string with caller-supplied
+    // country code. Log only the error name + code so Sentry can
+    // cluster without leaking caller context.
+    console.error('[inflation] fetch failed name=' + (err?.name || 'Error') + ' code=' + (err?.code || 'UNKNOWN'));
     return res.status(500).json({
       error: 'Could not fetch inflation data. Please try again.',
       fallback: true,

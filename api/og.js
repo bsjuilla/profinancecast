@@ -21,6 +21,7 @@
 //   /api/og?eyebrow=Blog%20%C2%B7%20Budgeting&title=...&subtitle=...
 
 import { ImageResponse } from '@vercel/og';
+import { checkRateLimit } from './_lib/rate-limit.js';
 
 export const config = { runtime: 'edge' };
 
@@ -37,7 +38,51 @@ const h = (type, props, ...children) => ({
   },
 });
 
-export default function handler(req) {
+// FULL-P1-D4 (audit 2026-05-27) — per-IP rate limit. og.js is the only
+// Edge-runtime function we ship and the only one that does real CPU
+// work per request (Satori SVG layout + PNG encode = ~150–300ms each).
+// The Cache-Control header below (public, s-maxage=2592000 immutable)
+// makes Vercel's CDN absorb repeated identical URLs, but an attacker
+// can trivially bypass that by varying the query string:
+//   /api/og?title=spam_1, /api/og?title=spam_2, ...
+// Each unique URL is a cache miss → real compute → real $$$ on our
+// @vercel/og minutes. At 5 req/s sustained from one IP that's ~430k
+// renders/day — well into Vercel's per-function compute budget on
+// Hobby. Cap at 60 renders/minute per IP (10/min default in the
+// shared limiter × 6) — generous for any legit social-card scraper
+// (Twitter/Facebook/LinkedIn re-fetch maybe 2-3x/page) but enough to
+// stop quota-burn abuse.
+//
+// Soft-fails OPEN when Upstash isn't configured — same trade-off as
+// the payment endpoints. Better to let social cards render than to
+// brick OG previews during a Redis outage.
+function _ipFromEdgeReq(req) {
+  const xff = req.headers.get('x-forwarded-for') || '';
+  const first = xff.split(',')[0].trim();
+  return first || req.headers.get('x-real-ip') || 'unknown';
+}
+
+export default async function handler(req) {
+  // FULL-P1-D4 — rate-limit BEFORE we spend any CPU on Satori.
+  const ip = _ipFromEdgeReq(req);
+  const rl = await checkRateLimit('og:' + ip);
+  if (!rl.allowed) {
+    return new Response(
+      JSON.stringify({ error: 'Too many og-image requests. Slow down.', retry_after_sec: rl.retryAfterSec }),
+      {
+        status: 429,
+        headers: {
+          'Content-Type': 'application/json; charset=utf-8',
+          'Retry-After': String(rl.retryAfterSec || 60),
+          // Tell CDN NOT to cache the 429 — once the window expires
+          // the IP should be able to retry without waiting for any
+          // stale negative cache to evict.
+          'Cache-Control': 'no-store',
+        },
+      }
+    );
+  }
+
   const url = new URL(req.url);
   const title    = (url.searchParams.get('title')    || 'See where your money lands in 2036.').slice(0, 140);
   const eyebrow  = (url.searchParams.get('eyebrow')  || 'ProFinanceCast').slice(0, 40);

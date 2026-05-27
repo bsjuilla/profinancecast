@@ -91,13 +91,21 @@ export default async function handler(req, res) {
 
     // Treat unique-violation as success ("already subscribed" is fine for UX)
     if (error && !/duplicate|unique/i.test(error.message || '')) {
-      console.error('newsletter/subscribe insert failed:', error);
+      // FULL-P1-D2 (audit 2026-05-27) — redact. The Supabase error object
+      // can include row-level details (the email being inserted ends up
+      // in error.details on uniqueness conflicts or RLS denials). Logging
+      // it raw means newsletter emails land in our log aggregator in
+      // plain text. code-only keeps clustering useful without PII.
+      console.error('[newsletter/subscribe] insert failed code=' + (error?.code || 'UNKNOWN'));
       return res.status(200).json({ ok: true, status: 'soft_failure' });
     }
 
     return res.status(200).json({ ok: true });
   } catch (err) {
-    console.error('newsletter/subscribe unhandled:', err);
+    // FULL-P1-D2 — redact stack. Unhandled errors can include the parsed
+    // body (email + source) in their stack frames depending on where they
+    // throw. Log only error name + code.
+    console.error('[newsletter/subscribe] unhandled name=' + (err?.name || 'Error') + ' code=' + (err?.code || 'UNKNOWN'));
     return res.status(200).json({ ok: true, status: 'error_fallback' });
   }
 }

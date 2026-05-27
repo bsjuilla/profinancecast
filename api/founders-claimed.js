@@ -56,7 +56,11 @@ export default async function handler(req, res) {
     .neq('status', 'refunded');
 
   if (error) {
-    console.error('founders-claimed: count query error:', error);
+    // FULL-P1-D2 (audit 2026-05-27) — redact. Original log dumped the
+    // full Supabase error object including query SQL fragments which
+    // leak schema details to log aggregators. code-only matches the
+    // account/delete.js + forecast/save.js pattern.
+    console.error('[founders-claimed] count query failed code=' + (error?.code || 'UNKNOWN'));
     // Fail closed with cap shown — UI degrades to "— of 500" rather than 500.
     return res.status(200).json({ claimed: null, cap: FOUNDERS_CAP, remaining: FOUNDERS_CAP });
   }

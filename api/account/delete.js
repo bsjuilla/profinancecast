@@ -32,6 +32,55 @@
 
 import { createClient } from '@supabase/supabase-js';
 
+const APP_ORIGIN = process.env.APP_ORIGIN || 'https://profinancecast.com';
+
+// FULL-P1-D1 (audit 2026-05-27) — CORS pin + origin guard. Account
+// deletion is a destructive, irreversible operation; a malicious site
+// running in the user's session-bearing browser shouldn't be able to
+// trigger it via cross-origin POST (CSRF defence-in-depth). The auth
+// token check below already requires a valid Bearer token from
+// Supabase, but a cross-origin script with stolen access to a token
+// could still issue the call — pinning Origin/Referer to APP_ORIGIN
+// closes that vector. Pattern mirrors api/subscription/cancel.js.
+function _normalizeOrigin(o) {
+  if (!o || typeof o !== 'string') return '';
+  try {
+    const u = new URL(o);
+    return u.protocol + '//' + u.hostname.replace(/^www\./, '') + (u.port ? ':' + u.port : '');
+  } catch { return ''; }
+}
+function _originAllowed(req) {
+  const IS_PROD = (process.env.VERCEL_ENV === 'production') || (process.env.NODE_ENV === 'production');
+  if (!APP_ORIGIN || !APP_ORIGIN.startsWith('https://')) {
+    if (IS_PROD) {
+      console.error('[account/delete] APP_ORIGIN missing or non-https in production — refusing request');
+      return false;
+    }
+    return true;
+  }
+  const expected = _normalizeOrigin(APP_ORIGIN);
+  if (!expected) return false;
+  const origin = req.headers.origin || '';
+  const referer = req.headers.referer || '';
+  if (origin) return _normalizeOrigin(origin) === expected;
+  if (referer) {
+    try { return _normalizeOrigin(new URL(referer).origin) === expected; }
+    catch { return false; }
+  }
+  return false;
+}
+function _setCors(req, res) {
+  const origin = req.headers.origin || '';
+  if (_originAllowed(req)) {
+    res.setHeader('Access-Control-Allow-Origin', origin || APP_ORIGIN);
+    res.setHeader('Vary', 'Origin');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
+    res.setHeader('Access-Control-Max-Age', '600');
+  }
+}
+
 // ── PayPal helpers (copied verbatim from api/subscription/cancel.js so this
 //    file has the exact same retry / error semantics as the user-facing
 //    cancel flow. When the NEW-R1 shared-lib refactor lands, both files
@@ -144,9 +193,24 @@ async function _cancelOnePayPalSubscription(accessToken, subscriptionId) {
 }
 
 export default async function handler(req, res) {
+  // FULL-P1-D1 — CORS pin + OPTIONS preflight. Headers must be set
+  // BEFORE the early returns below so the browser sees the right CORS
+  // posture even on 4xx.
+  _setCors(req, res);
+  if (req.method === 'OPTIONS') return res.status(204).end();
+
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
     return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  // FULL-P1-D1 — reject cross-origin / no-origin POSTs as CSRF defence.
+  // The Bearer-token check below also prevents unauthenticated abuse,
+  // but origin pinning blocks the case where a malicious site holds a
+  // valid token (XSS-stolen, SSO bug, etc.) and tries to issue the
+  // destructive account-delete cross-origin.
+  if (!_originAllowed(req)) {
+    return res.status(403).json({ error: 'Forbidden: invalid origin' });
   }
 
   const auth = req.headers.authorization || '';

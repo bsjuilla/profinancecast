@@ -43,10 +43,66 @@ export const config = { api: { bodyParser: { sizeLimit: '1kb' } } };
 import { createClient } from '@supabase/supabase-js';
 import { rateLimitOrReject } from '../_lib/rate-limit.js';
 
+const APP_ORIGIN = process.env.APP_ORIGIN || 'https://profinancecast.com';
+
+// FULL-P1-D1 (audit 2026-05-27) — CORS pin + origin guard. This is a
+// telemetry endpoint (writes profiles.first_forecast_at), low-risk per
+// call, but a cross-origin script could spam it to forge activation
+// data for monitoring/funnel analytics — corrupting our launch metric.
+// Origin pinning + the existing rate limit close that vector. Pattern
+// mirrors api/subscription/cancel.js (the canonical reference).
+function _normalizeOrigin(o) {
+  if (!o || typeof o !== 'string') return '';
+  try {
+    const u = new URL(o);
+    return u.protocol + '//' + u.hostname.replace(/^www\./, '') + (u.port ? ':' + u.port : '');
+  } catch { return ''; }
+}
+function _originAllowed(req) {
+  const IS_PROD = (process.env.VERCEL_ENV === 'production') || (process.env.NODE_ENV === 'production');
+  if (!APP_ORIGIN || !APP_ORIGIN.startsWith('https://')) {
+    if (IS_PROD) {
+      console.error('[forecast/save] APP_ORIGIN missing or non-https in production — refusing request');
+      return false;
+    }
+    return true;
+  }
+  const expected = _normalizeOrigin(APP_ORIGIN);
+  if (!expected) return false;
+  const origin = req.headers.origin || '';
+  const referer = req.headers.referer || '';
+  if (origin) return _normalizeOrigin(origin) === expected;
+  if (referer) {
+    try { return _normalizeOrigin(new URL(referer).origin) === expected; }
+    catch { return false; }
+  }
+  return false;
+}
+function _setCors(req, res) {
+  const origin = req.headers.origin || '';
+  if (_originAllowed(req)) {
+    res.setHeader('Access-Control-Allow-Origin', origin || APP_ORIGIN);
+    res.setHeader('Vary', 'Origin');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
+    res.setHeader('Access-Control-Max-Age', '600');
+  }
+}
+
 export default async function handler(req, res) {
+  // FULL-P1-D1 — CORS pin + OPTIONS preflight before early returns.
+  _setCors(req, res);
+  if (req.method === 'OPTIONS') return res.status(204).end();
+
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
     return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  // FULL-P1-D1 — reject cross-origin / no-origin POSTs.
+  if (!_originAllowed(req)) {
+    return res.status(403).json({ error: 'Forbidden: invalid origin' });
   }
 
   const auth = req.headers.authorization || '';
@@ -94,7 +150,11 @@ export default async function handler(req, res) {
     .select('id');
 
   if (error) {
-    console.error('forecast/save: update error:', error);
+    // FULL-P1-D2 (audit 2026-05-27) — redact. Supabase update errors can
+    // include the row values being upserted in details/hint fields; for
+    // a user-scoped row that's a leak of profile data. code-only matches
+    // the account/delete.js + newsletter/subscribe.js pattern.
+    console.error('[forecast/save] update failed code=' + (error?.code || 'UNKNOWN'));
     return res.status(200).json({ first_run: false });
   }
 
