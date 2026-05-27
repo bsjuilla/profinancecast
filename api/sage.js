@@ -40,7 +40,15 @@ import { createClient } from '@supabase/supabase-js';
 // path below is preserved unchanged for this exact reason). This lets us
 // flip back in < 60s if the router misbehaves in production.
 import * as aiRouter from './_lib/ai/router.js';
-const AI_ROUTER_ENABLED = process.env.AI_ROUTER_ENABLED !== 'false'; // default true
+// FULL-P1-I-HOTFIX (audit 2026-05-28) — flipped default to FALSE (opt-in).
+// Original Batch I shipped with default-true; user reported the router was
+// returning CASCADE_EXHAUSTED on their first chat attempt, which is either
+// (a) a runtime bug we cannot debug without Vercel logs, or (b) Groq+Gemini
+// both legitimately rate-limited at that moment. Either way, defaulting to
+// "router off" until manually opt-in is the safer posture: known-good
+// Gemini-only path runs until operator explicitly sets AI_ROUTER_ENABLED=true.
+// Set to 'true' (literal string) in Vercel env to re-enable the multi-AI router.
+const AI_ROUTER_ENABLED = process.env.AI_ROUTER_ENABLED === 'true'; // opt-in
 
 // SAGE-P0-BACK — cap request body so a hostile caller can't push MBs of
 // padding to chew quota or starve event-loop memory. 16KB > our worst-case

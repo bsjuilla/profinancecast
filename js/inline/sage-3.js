@@ -183,21 +183,55 @@ async function sendMessage(text) {
     // implies a transient bug. 401 means their session lapsed mid-chat.
     // Anything else is the generic recover-and-retry copy.
     if (e && e.status === 429) {
-      // Force the limit wall to render with the honest message from the
-      // server (which includes the actual cap and upgrade-availability),
-      // then mirror queryCount up to the cap so the usage pill reads 100%.
-      const wall = document.getElementById('limit-wall');
-      const wallText = document.getElementById('limit-wall-text');
-      const cta = document.getElementById('limit-wall-cta');
-      if (wallText) {
-        wallText.textContent = e.serverMsg ||
-          "You've used all your Sage messages for this 30-day window. Your quota resets 30 days after your first message in the current window.";
+      // FULL-P1-I-HOTFIX (audit 2026-05-28) — distinguish THREE distinct
+      // 429 causes that all hit this code path:
+      //
+      //   (a) REAL quota-exhausted    — payload.error mentions "queries for
+      //                                  this month" AND no retry_after_sec.
+      //                                  → show the limit wall + upgrade CTA
+      //                                  + jump queryCount to cap (legit).
+      //   (b) Router CASCADE_EXHAUSTED — payload has retry_after_sec.
+      //                                  → show transient-busy message; do
+      //                                  NOT jump queryCount (real quota is
+      //                                  fine; the upstream AI providers are
+      //                                  temporarily rate-limited).
+      //   (c) IP/user rate-limit      — payload.error mentions "Too many
+      //                                  requests — slow down a moment".
+      //                                  → same as (b) — transient.
+      //
+      // Pre-hotfix, ALL three rendered as (a) — which faked the user's
+      // queryCount to 200/200 even when their actual ai_queries_used was
+      // single-digit. Caused the "I didn't use 200 messages!" bug report
+      // on commit 67ff158.
+      const isTransientBusy =
+        (e.retryAfterSec && e.retryAfterSec > 0) ||
+        (e.serverMsg && /slow down|busy right now|every AI provider|temporarily/i.test(e.serverMsg));
+
+      if (isTransientBusy) {
+        // Transient — show a friendly retry bubble, do NOT touch quota counter
+        const retryMin = e.retryAfterSec
+          ? Math.max(1, Math.ceil(e.retryAfterSec / 60))
+          : 5;
+        addSageBubble(
+          (e.serverMsg && e.serverMsg.length > 10)
+            ? e.serverMsg + ` (Try again in about ${retryMin} minute${retryMin === 1 ? '' : 's'}.)`
+            : `Sage is briefly unavailable. Please try again in about ${retryMin} minute${retryMin === 1 ? '' : 's'}.`
+        );
+      } else {
+        // Real quota exhausted — show the wall + upgrade CTA + cap the counter
+        const wall = document.getElementById('limit-wall');
+        const wallText = document.getElementById('limit-wall-text');
+        const cta = document.getElementById('limit-wall-cta');
+        if (wallText) {
+          wallText.textContent = e.serverMsg ||
+            "You've used all your Sage messages for this 30-day window. Your quota resets 30 days after your first message in the current window.";
+        }
+        if (wall) wall.classList.add('show');
+        if (cta) cta.style.display = e.upgrade ? 'inline-flex' : 'none';
+        const limit = LIMITS[USER_CTX.plan] || 200;
+        queryCount = Math.max(queryCount, limit);
+        updateUsage();
       }
-      if (wall) wall.classList.add('show');
-      if (cta) cta.style.display = e.upgrade ? 'inline-flex' : 'none';
-      const limit = LIMITS[USER_CTX.plan] || 200;
-      queryCount = Math.max(queryCount, limit);
-      updateUsage();
     } else if (e && e.status === 401) {
       addSageBubble("Your session timed out. Please refresh the page and sign back in to continue the conversation.");
     } else {
@@ -283,6 +317,14 @@ async function callSage(msg) {
     err.status = res.status;
     err.upgrade = !!(payload && payload.upgrade);
     err.serverMsg = (payload && typeof payload.error === 'string') ? payload.error : '';
+    // FULL-P1-I-HOTFIX (audit 2026-05-28) — capture retry_after_sec so the
+    // sendMessage 429-handler can distinguish router CASCADE_EXHAUSTED
+    // (transient, has retry_after_sec) from real quota-exhausted (terminal,
+    // no retry_after_sec). Without this, the UI couldn't tell them apart
+    // and falsely rendered the user's quota as 200/200 on every router
+    // cascade event.
+    err.retryAfterSec = (payload && typeof payload.retry_after_sec === 'number')
+      ? payload.retry_after_sec : null;
     throw err;
   }
   const d = await res.json();
