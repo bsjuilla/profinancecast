@@ -28,6 +28,20 @@
 
 import { createClient } from '@supabase/supabase-js';
 
+// FULL-P1-I (audit 2026-05-28) — multi-AI router import. The router
+// orchestrates Groq (primary) → Gemini (fallback) with quota tracking,
+// cooldown management, and email alerts on rate-limit. See architecture
+// at api/_lib/ai/ — Phase 0 ToS verification cleared Groq for production;
+// Cerebras adapter built but gated `prodEnabled: false` (5 RPM global
+// limit too tight for paying users; dev/QA only via owner force-header).
+//
+// Feature flag: set AI_ROUTER_ENABLED=false in Vercel env to instantly
+// revert to direct Gemini calls (the original _callGeminiWithFallback
+// path below is preserved unchanged for this exact reason). This lets us
+// flip back in < 60s if the router misbehaves in production.
+import * as aiRouter from './_lib/ai/router.js';
+const AI_ROUTER_ENABLED = process.env.AI_ROUTER_ENABLED !== 'false'; // default true
+
 // SAGE-P0-BACK — cap request body so a hostile caller can't push MBs of
 // padding to chew quota or starve event-loop memory. 16KB > our worst-case
 // (500-char message + 10×500-char history + ~1KB userContext + ~1KB news).
@@ -444,8 +458,44 @@ export default async function handler(req, res) {
   // _callGeminiWithFallback iterates GEMINI_MODELS and only retries on 5xx
   // / 429, preserving 4xx as our-bug signals.
 
+  // FULL-P1-I — owner-only debug override. Header X-PFC-Force-Provider
+  // lets the owner force a specific provider when investigating quality
+  // issues. STRICTLY server-side: only honoured if isOwner === true (the
+  // server-validated flag from the Supabase profile + OWNER_EMAILS env).
+  // Never trust client claims — `isOwner` was computed at line 362 above
+  // from the authenticated user's email, not from any header.
+  const forceProviderRaw = (req.headers['x-pfc-force-provider'] || '').toString().toLowerCase();
+  const forceProvider = (isOwner && /^(groq|gemini|cerebras)$/.test(forceProviderRaw)) ? forceProviderRaw : null;
+
   // ── CSV batch mode (low temp, JSON-array output) ──────────────────────
+  // FULL-P1-I — CSV mode pins to Gemini per CEO §9 decision. Reasoning:
+  // downstream callers (debt-optimizer / recurring / dashboard / salary-
+  // calculator) parse the reply as JSON; Gemini is the most reliable JSON
+  // producer at temperature 0.1. We can extend to Groq Llama after we have
+  // production data on Llama JSON quality. For now: zero-regression-risk.
   if (isCsv) {
+    if (AI_ROUTER_ENABLED) {
+      const canonical = {
+        systemPrompt: '',  // CSV mode has no system prompt — the message IS the instruction
+        messages: [{ role: 'user', text: message }],
+        opts: {
+          maxTokens: 1200,
+          temperature: 0.1,
+          topP: 0.9,
+          label: 'csv',
+          providerPin: 'gemini',  // CEO §9 — Gemini only for CSV until quality data on Llama
+          isOwner,
+          forceProvider,  // owner debug-override; null otherwise
+        },
+      };
+      const routerRes = await aiRouter.complete(canonical);
+      if (!routerRes.ok) {
+        return res.status(502).json({ error: 'AI service temporarily unavailable.' });
+      }
+      return res.status(200).json({ reply: routerRes.reply, provider_used: routerRes.provider });
+    }
+    // FEATURE-FLAG-OFF FALLBACK: original direct-Gemini path preserved
+    // for instant rollback if AI_ROUTER_ENABLED=false in env.
     const geminiBody = {
       contents: [{ role: 'user', parts: [{ text: message }] }],
       generationConfig: { maxOutputTokens: 1200, temperature: 0.1, topP: 0.9 },
@@ -463,7 +513,6 @@ export default async function handler(req, res) {
       }
       return res.status(200).json({ reply });
     } catch (err) {
-      // SAGE-P0-BACK — no `err` object in the log; use safe label only.
       _logSafely('csv unexpected-throw', 0, 'EXCEPTION');
       return res.status(500).json({ error: 'Internal error.' });
     }
@@ -503,26 +552,51 @@ export default async function handler(req, res) {
     ],
   };
 
-  try {
-    const callRes = await _callGeminiWithFallback(geminiBody, GEMINI_KEY, 'chat');
-    if (!callRes.ok) {
-      return res.status(502).json({ error: 'AI service temporarily unavailable. Please try again.' });
+  // FULL-P1-I — multi-AI router primary path. Falls through to direct-
+  // Gemini call below if AI_ROUTER_ENABLED=false.
+  if (AI_ROUTER_ENABLED) {
+    // Translate sage.js's existing 'history' (already validated above as
+    // Array<{role:'user'|'assistant', text}>) + 'message' into the
+    // canonical messages array the router expects.
+    const canonicalMessages = [];
+    if (history && history.length) {
+      for (const turn of history) canonicalMessages.push({ role: turn.role, text: turn.text });
     }
-    const data = await callRes.response.json();
-    const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!reply) {
-      _logSafely('chat empty-reply model=' + callRes.modelUsed, 200, 'EMPTY_REPLY');
-      return res.status(502).json({ error: 'No response from AI. Please try again.' });
+    canonicalMessages.push({ role: 'user', text: message });
+
+    const canonical = {
+      systemPrompt,                  // built by buildSagePrompt() above — pure server-side
+      messages: canonicalMessages,
+      opts: {
+        maxTokens: 600,
+        temperature: 0.7,
+        topP: 0.9,
+        label: 'chat',
+        isOwner,                     // bypasses soft-cap check (still increments counters for observability)
+        forceProvider,               // owner debug-only; null for normal users
+      },
+    };
+
+    const routerRes = await aiRouter.complete(canonical);
+
+    if (!routerRes.ok) {
+      // Router exhausted all providers (or no providers configured).
+      // Surface cleanly with Retry-After header so the client can show
+      // a "try again in 5 min" message rather than a generic error.
+      if (routerRes.retryAfterSec) {
+        res.setHeader('Retry-After', String(routerRes.retryAfterSec));
+      }
+      return res.status(routerRes.status || 502).json({
+        error: routerRes.reason === 'CASCADE_EXHAUSTED'
+          ? 'Sage is busy right now — every AI provider is rate-limited. Please try again in a few minutes.'
+          : 'AI service temporarily unavailable. Please try again.',
+        retry_after_sec: routerRes.retryAfterSec || null,
+      });
     }
 
-    // SAGE-P0-BACK — AWAIT the increment with a 2s timeout.
-    // Pre-fix this was fire-and-forget — the response shipped before the
-    // counter wrote, so a Postgres hiccup let users rapid-fire past their
-    // monthly cap. Now: success means the counter actually moved. If the
-    // RPC throws or times out we log (no PII) and STILL return success so
-    // the user isn't punished for our infra; but the 2s ceiling means we
-    // never hang the response.
-    // Owner is exempt — testing shouldn't burn their own counter.
+    // SAGE-P0-BACK preserved: await the quota counter with 2s timeout
+    // so a flaky Supabase can't let a user rapid-fire past their cap.
+    // Owner is still exempt.
     if (!isOwner) {
       const incRes = await _withTimeout(
         supabase.rpc('increment_ai_queries', { p_user_id: userId }),
@@ -534,10 +608,39 @@ export default async function handler(req, res) {
       }
     }
 
-    return res.status(200).json({ reply });
+    // FULL-P1-I — surface provider_used so the dashboard can show a
+    // "answered by Groq" indicator (transparency builds trust + helps
+    // ops debug if a user complains about a specific reply's quality).
+    return res.status(200).json({ reply: routerRes.reply, provider_used: routerRes.provider });
+  }
 
+  // FEATURE-FLAG-OFF FALLBACK: original direct-Gemini path preserved
+  // unchanged for instant rollback if AI_ROUTER_ENABLED=false in env.
+  // This branch is dead-code-eliminated when the flag is true (most of
+  // the time) but stays here so we can flip back in <60s if needed.
+  try {
+    const callRes = await _callGeminiWithFallback(geminiBody, GEMINI_KEY, 'chat');
+    if (!callRes.ok) {
+      return res.status(502).json({ error: 'AI service temporarily unavailable. Please try again.' });
+    }
+    const data = await callRes.response.json();
+    const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!reply) {
+      _logSafely('chat empty-reply model=' + callRes.modelUsed, 200, 'EMPTY_REPLY');
+      return res.status(502).json({ error: 'No response from AI. Please try again.' });
+    }
+    if (!isOwner) {
+      const incRes = await _withTimeout(
+        supabase.rpc('increment_ai_queries', { p_user_id: userId }),
+        2000,
+        'increment_ai_queries'
+      );
+      if (incRes && incRes.error) {
+        _logSafely('increment_ai_queries failed', incRes.error.status, incRes.error.code || 'UNKNOWN');
+      }
+    }
+    return res.status(200).json({ reply });
   } catch (err) {
-    // SAGE-P0-BACK — strip the err object from the log; class label only.
     _logSafely('chat unexpected-throw', 0, 'EXCEPTION');
     return res.status(500).json({ error: 'Internal error. Please try again.' });
   }
