@@ -333,8 +333,36 @@
 
   // Re-hydrate on sign-in / sign-out — the namespaced storage changes under
   // our feet, so the cached _user is no longer valid.
+  // FULL-P0-B4 helper (audit 2026-05-26) — clears the three global LS
+  // mirrors (LS_SYNC_KEY, LS_LEGACY_CF, LS_LEGACY_PFCU). Used by the
+  // sign-out / user-switch path below to PREVENT cross-user data leak
+  // on shared devices. Without this, User A logs out, User B logs in,
+  // and during the brief window before PFCStorage warms up under User
+  // B's namespace, _readBestAvailable would fall through to LS_SYNC_KEY
+  // — which still contains User A's plaintext income/expenses/name. The
+  // multi-user landlord-and-tenant case is the worst scenario: the
+  // tenant momentarily sees the landlord's finances, or vice versa.
+  function _clearGlobalLSMirrors() {
+    try { window.localStorage.removeItem(LS_SYNC_KEY); } catch (_) {}
+    try { window.localStorage.removeItem(LS_LEGACY_CF); } catch (_) {}
+    try { window.localStorage.removeItem(LS_LEGACY_PFCU); } catch (_) {}
+  }
+
   if (typeof window.PFCAuth !== 'undefined' && typeof window.PFCAuth.onAuthChange === 'function') {
     window.PFCAuth.onAuthChange((newUid, prevUid) => {
+      // FULL-P0-B4 — clear the global LS mirrors on every real user
+      // transition (sign-out OR user-switch). Specifically:
+      //   • prevUid = a real user id AND newUid = guest/null  → sign-out
+      //   • prevUid = userA      AND newUid = userB (different) → switch
+      // Skip the clear on the initial guest→user signal (prevUid is
+      // unset / 'guest' / falsy AND newUid is the first real id) — that
+      // path benefits from the LS sync mirror surviving the encrypt
+      // window, AND there's no other user's data to leak in.
+      const isRealUidTransition = (prevUid && prevUid !== 'guest') &&
+                                   prevUid !== newUid;
+      if (isRealUidTransition) {
+        _clearGlobalLSMirrors();
+      }
       // The namespace just flipped. Re-read everything and notify consumers.
       _ready = false;
       _consumerWroteDuringHydration = false;

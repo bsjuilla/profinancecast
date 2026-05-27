@@ -52,6 +52,20 @@ function loadUser() {
   // layers (PFCStorage, LS sync mirror, cash-forecast legacy LS, pre-namespace
   // LS) plus currency normalisation. Falls back to the previous logic if
   // PFCUser hasn't loaded yet (e.g. script tag blocked).
+  // FULL-P0-B3 helper (audit 2026-05-26) — prototype-pollution-safe JSON
+  // parse. Pre-fix the JSON.parse(raw) below would silently mutate
+  // Object.prototype on a tampered localStorage payload like
+  // `{"__proto__":{"isAdmin":true}}`. Same pattern as D-SEC-13, R-SEC-17,
+  // and the version now baked into scenarios-3.js (B1).
+  const _safeParseJson = (str) => {
+    try {
+      return JSON.parse(str, (k, v) => {
+        if (k === '__proto__' || k === 'constructor' || k === 'prototype') return undefined;
+        return v;
+      });
+    } catch (_) { return null; }
+  };
+
   if (typeof PFCUser !== 'undefined') {
     const u = { ...DEFAULT_USER, ...PFCUser.get() };
     if (!Array.isArray(u.customIn))  u.customIn  = [];
@@ -67,7 +81,11 @@ function loadUser() {
     if (!raw) {
       try { raw = localStorage.getItem('pfc_user'); } catch (_) {}
     }
-    const u = !raw ? { ...DEFAULT_USER } : { ...DEFAULT_USER, ...JSON.parse(raw) };
+    // FULL-P0-B3 — was raw JSON.parse(raw); now routes through _safeParseJson
+    // which strips __proto__ / constructor / prototype keys to block
+    // prototype-pollution via a tampered localStorage payload.
+    const parsed = raw ? _safeParseJson(raw) : null;
+    const u = !parsed ? { ...DEFAULT_USER } : { ...DEFAULT_USER, ...parsed };
     if (!Array.isArray(u.customIn))  u.customIn  = [];
     if (!Array.isArray(u.customOut)) u.customOut = [];
     if (typeof PFCCurrency !== 'undefined' && PFCCurrency.toSymbol) {

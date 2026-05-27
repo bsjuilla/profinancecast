@@ -1,3 +1,50 @@
+// FULL-P0-B2 helper (audit 2026-05-26) — promise-based modal that replaces
+// native window.confirm() in confirmReset. Native confirm() is silently
+// invisible in iOS PWA standalone mode — the user taps "Clear my data"
+// → modal never appears → user thinks the click did nothing → clicks
+// again → still nothing. Same pattern as scenarios-3.js / RC-P0-MODAL /
+// G-P1-D / NW-P1-6. Falls back to window.confirm if the modal markup
+// hasn't loaded (degraded path).
+let _pfcConfirmActive = false;
+function _pfcConfirm(message, okLabel) {
+  return new Promise(function (resolve) {
+    if (_pfcConfirmActive) { resolve(false); return; }
+    _pfcConfirmActive = true;
+    const modal = document.getElementById('settings-confirm-modal');
+    const msgEl = document.getElementById('settings-confirm-msg');
+    const okBtn = document.getElementById('settings-confirm-ok');
+    const cancelBtn = document.getElementById('settings-confirm-cancel');
+    if (!modal || !msgEl || !okBtn || !cancelBtn) {
+      _pfcConfirmActive = false;
+      resolve(window.confirm(message));
+      return;
+    }
+    const previousFocus = document.activeElement;
+    msgEl.textContent = message;
+    okBtn.textContent = okLabel || 'Confirm';
+    modal.classList.add('open');
+    okBtn.focus();
+    function cleanup(result) {
+      modal.classList.remove('open');
+      okBtn.removeEventListener('click', onOk);
+      cancelBtn.removeEventListener('click', onCancel);
+      document.removeEventListener('keydown', onKey);
+      _pfcConfirmActive = false;
+      try { if (previousFocus && previousFocus.focus) previousFocus.focus(); } catch (_) {}
+      resolve(result);
+    }
+    function onOk() { cleanup(true); }
+    function onCancel() { cleanup(false); }
+    function onKey(e) {
+      if (e.key === 'Escape') cleanup(false);
+      if (e.key === 'Enter') cleanup(true);
+    }
+    okBtn.addEventListener('click', onOk);
+    cancelBtn.addEventListener('click', onCancel);
+    document.addEventListener('keydown', onKey);
+  });
+}
+
 function showTab(btn, tab) {
   document.querySelectorAll('.stab').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.settings-panel').forEach(p => p.classList.remove('active'));
@@ -250,22 +297,33 @@ function connectFacebook() {
   showToast('Redirecting to Facebook sign-in…');
 }
 
-// Real reset — actually clears storage now (audit H5)
+// Real reset — actually clears storage now (audit H5).
+// FULL-P0-B2 — was native window.confirm(). Now uses _pfcConfirm (defined
+// above) so iOS PWA standalone-mode users actually see the prompt instead
+// of a silent no-op. PFCStorage.clearAll() is destructive enough that a
+// flaky modal would have led to "I tapped it and nothing happened" support
+// tickets at best, or accidental data loss if a user double-tapped and
+// hit OK on the second attempt without realizing.
 function confirmReset() {
-  if (!confirm('This will delete all your financial data (income, expenses, debts, goals). Your account and settings will stay. Are you sure?')) return;
-  if (typeof PFCStorage === 'undefined') {
-    showToast('Storage unavailable — please refresh');
-    return;
-  }
-  try {
-    PFCStorage.clearAll();
-  } catch (e) {
-    console.error('[confirmReset] clearAll failed:', e);
-    showToast('Reset failed — please try again');
-    return;
-  }
-  showToast('Financial data cleared. Redirecting to onboarding…');
-  setTimeout(() => { window.location.href = 'onboarding.html'; }, 1400);
+  _pfcConfirm(
+    'This will delete all your financial data (income, expenses, debts, goals). Your account and settings will stay. Are you sure?',
+    'Clear data'
+  ).then((ok) => {
+    if (!ok) return;
+    if (typeof PFCStorage === 'undefined') {
+      showToast('Storage unavailable — please refresh');
+      return;
+    }
+    try {
+      PFCStorage.clearAll();
+    } catch (e) {
+      console.error('[confirmReset] clearAll failed:', e);
+      showToast('Reset failed — please try again');
+      return;
+    }
+    showToast('Financial data cleared. Redirecting to onboarding…');
+    setTimeout(() => { window.location.href = 'onboarding.html'; }, 1400);
+  });
 }
 
 // Real account deletion — calls /api/account/delete with double-confirm (audit H5, GDPR)
