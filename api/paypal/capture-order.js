@@ -33,7 +33,16 @@ function _normalizeOrigin(o) {
   } catch { return ''; }
 }
 function _originAllowed(req) {
-  if (!APP_ORIGIN || !APP_ORIGIN.startsWith('https://')) return true;
+  // FULL-P0-A4 fix (audit 2026-05-26) — fail-CLOSED in production. See
+  // create-order.js for the full rationale.
+  const IS_PROD = (process.env.VERCEL_ENV === 'production') || (process.env.NODE_ENV === 'production');
+  if (!APP_ORIGIN || !APP_ORIGIN.startsWith('https://')) {
+    if (IS_PROD) {
+      console.error('[origin] APP_ORIGIN missing or non-https in production — refusing request');
+      return false;
+    }
+    return true;
+  }
   const expected = _normalizeOrigin(APP_ORIGIN);
   if (!expected) return false;
   const origin = req.headers.origin || '';

@@ -546,7 +546,10 @@
        DASH-P0-7: `defer` added on all 11. None are needed pre-parse for the
        <body> markup to render; defer preserves their load order while
        unblocking the HTML parser. Same fix as landing PERF-1. -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+  <!-- FULL-P0-A3 (audit 2026-05-26) — Supabase pinned + SRI. -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.105.4"
+          integrity="sha384-4eCDoMN/7A46qQ5Tj0rZ/D2VEolFGNIINDTLAcWZcvhkRSsvTfqNfaBMlRRoGEZ5"
+          crossorigin="anonymous" defer></script>
   <script src="js/pfc-audit-mode.js" defer></script>
   <script src="js/pfc-config.js" defer></script>
   <script src="js/pfc-auth.js" defer></script>

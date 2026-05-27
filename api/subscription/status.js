@@ -130,15 +130,36 @@ export default async function handler(req, res) {
   // Treat subscriptions whose period_end is in the past as "free".
   // cancel_at_period_end=true while period_end is still in the future =>
   // user retains Pro until period end (audit H1).
+  //
+  // FULL-P0-A2 fix (audit 2026-05-26) — pre-fix this line treated EVERY
+  // non-'active' status as free, which silently demoted past_due users
+  // mid-cycle on the first PayPal renewal failure. Documented intent
+  // (webhook-paypal.js SUSPENDED handler comments + cancel modal copy)
+  // is "user keeps access until period_end" — i.e. a grace period that
+  // matches industry norm (Stripe, Apple App Store, etc) so a card-
+  // expiry or bank decline doesn't kill access before the user can
+  // update payment details. We now respect that contract:
+  //   - status='active'   while period_end > now  → paid plan
+  //   - status='past_due' while period_end > now  → paid plan (grace)
+  //   - any status when period_end is in the past → free
+  //   - any other status (cancelled, expired, suspended-without-period_end,
+  //     etc) → free
+  // This is the canonical source of truth for the entire client (every
+  // PFCPlan.requirePlan call reads from /api/subscription/status), so
+  // changing it here propagates the grace period everywhere automatically.
   const now = Date.now();
   const periodEnd = sub?.current_period_end ? new Date(sub.current_period_end).getTime() : 0;
   const expired = periodEnd && periodEnd < now;
-  const plan = (sub && sub.status === 'active' && !expired) ? sub.plan : 'free';
+  const STILL_PAID_STATUSES = new Set(['active', 'past_due']);
+  const inGrace = (sub && sub.status === 'past_due' && !expired);
+  const plan = (sub && STILL_PAID_STATUSES.has(sub.status) && !expired) ? sub.plan : 'free';
   let reason;
   if (!sub) reason = 'no_subscription_row';
-  else if (sub.status !== 'active') reason = 'sub_status_' + (sub.status || 'unknown');
-  else if (expired) reason = 'sub_expired';
-  else reason = 'active_subscription';
+  else if (sub.status === 'active' && expired) reason = 'sub_expired';
+  else if (sub.status === 'active') reason = 'active_subscription';
+  else if (sub.status === 'past_due' && expired) reason = 'past_due_period_ended';
+  else if (sub.status === 'past_due') reason = 'past_due_in_grace';
+  else reason = 'sub_status_' + (sub.status || 'unknown');
 
   // Optional: include AI query usage
   const { data: profile } = await supabase
@@ -154,6 +175,11 @@ export default async function handler(req, res) {
     cancelAtPeriodEnd: sub?.cancel_at_period_end === true,
     cancelledAt: sub?.cancelled_at || null,
     provider: sub?.provider || null,
+    // FULL-P0-A2 — surface the grace-period flag so the client can show
+    // a "Update payment method" banner before the user wakes up to a
+    // post-period_end downgrade. PFCPlan reads this; pages should render
+    // a warning when inGrace=true (defer to a P1 UI follow-up).
+    inGrace,
     queries: profile ? {
       used: profile.ai_queries_used || 0,
       limit: profile.ai_queries_limit || (plan === 'premium' ? 500 : plan === 'pro' ? 200 : 10),

@@ -57,7 +57,20 @@ function _normalizeOrigin(o) {
   } catch { return ''; }
 }
 function _originAllowed(req) {
-  if (!APP_ORIGIN || !APP_ORIGIN.startsWith('https://')) return true;
+  // FULL-P0-A4 fix (audit 2026-05-26) — was fail-OPEN: returning true when
+  // APP_ORIGIN was unset or non-https. A single env-misconfig deploy would
+  // silently expose this payment endpoint to cross-site forgery (any HTTPS
+  // page on any domain could trigger a PayPal charge). Now fails CLOSED in
+  // production; stays permissive only on dev / Vercel preview builds so
+  // localhost testing still works.
+  const IS_PROD = (process.env.VERCEL_ENV === 'production') || (process.env.NODE_ENV === 'production');
+  if (!APP_ORIGIN || !APP_ORIGIN.startsWith('https://')) {
+    if (IS_PROD) {
+      console.error('[origin] APP_ORIGIN missing or non-https in production — refusing request');
+      return false;
+    }
+    return true;
+  }
   const expected = _normalizeOrigin(APP_ORIGIN);
   if (!expected) return false;
   const origin = req.headers.origin || '';
