@@ -398,15 +398,74 @@ function drawCharts(t) {
 }
 
 // ── Subscriptions cross-reference (read-only) ────────────────────────────
+// FULL-P0-C1 fix (audit 2026-05-26) — pre-fix this summed EVERY entry in
+// `recurrings`, ignoring the three sibling state keys that recurring-2.js
+// writes (`recurrings_cancelled`, `recurrings_hidden`, `recurrings_snoozed`).
+// Result: user cancels Netflix on /recurring → /cash-forecast still adds
+// $15.99 to "subscription total" forever. The contract was page-local at
+// the writer side; this batch makes the readers honour it too.
+//
+// We re-implement the three filters here (rather than exporting a helper
+// from recurring-2.js) because:
+//   1. cash-forecast loads independently — pages don't share globals.
+//   2. The filter logic is simple: a 3-line set/map lookup. Lifting it to
+//      a shared module would mean a new pfc-recurrings.js file + a script
+//      tag in every page that reads recurrings. Bigger surface, same answer.
+//   3. The SAME three storage keys are the canonical source of truth — both
+//      writers and both readers go through PFCStorage with the same shapes
+//      (array<string>, array<string>, array<[string, number]>). If a third
+//      reader appears (dashboard?), it copies this same 8-line helper.
+
+function _loadRecurringFlags() {
+  const cancelled = new Set();
+  const hidden    = new Set();
+  const snoozed   = new Map();   // id -> snoozeUntilTimestamp
+  try {
+    const c = PFCStorage.getJSON('recurrings_cancelled');
+    if (Array.isArray(c)) c.forEach(id => cancelled.add(id));
+  } catch (_) {}
+  try {
+    const h = PFCStorage.getJSON('recurrings_hidden');
+    if (Array.isArray(h)) h.forEach(id => hidden.add(id));
+  } catch (_) {}
+  try {
+    const s = PFCStorage.getJSON('recurrings_snoozed');
+    if (Array.isArray(s)) {
+      // Each entry is [id, untilTimestamp]. Snoozed entries auto-expire
+      // when until <= now — they reappear in the totals immediately,
+      // matching the recurring-2._isSnoozed semantics so the two pages
+      // never disagree on what "active" means.
+      const now = Date.now();
+      for (const tuple of s) {
+        if (!Array.isArray(tuple) || tuple.length < 2) continue;
+        const [id, until] = tuple;
+        if (Number(until) > now) snoozed.set(id, Number(until));
+      }
+    }
+  } catch (_) {}
+  return { cancelled, hidden, snoozed };
+}
+
+function _isActiveRecurring(r, flags) {
+  if (!r || !r.id) return true;  // missing id → couldn't have been flagged
+  if (flags.cancelled.has(r.id)) return false;
+  if (flags.hidden.has(r.id))    return false;
+  if (flags.snoozed.has(r.id))   return false;
+  return true;
+}
+
 function renderSubscriptions() {
   try {
     const recurrings = (typeof PFCStorage !== 'undefined') ? PFCStorage.getJSON('recurrings') : null;
     if (!Array.isArray(recurrings) || recurrings.length === 0) return;
-    const total = recurrings.reduce((s,r)=>s+(parseFloat(r.monthlyAmount)||0), 0);
+    const flags = _loadRecurringFlags();
+    const active = recurrings.filter(r => _isActiveRecurring(r, flags));
+    if (active.length === 0) return;
+    const total = active.reduce((s,r)=>s+(parseFloat(r.monthlyAmount)||0), 0);
     if (total <= 0) return;
     document.getElementById('subs-strip').style.display = '';
     document.getElementById('subs-total').textContent = fmt(total);
-    document.getElementById('subs-count').textContent = recurrings.length;
+    document.getElementById('subs-count').textContent = active.length;
   } catch(_) {}
 }
 

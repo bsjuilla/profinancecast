@@ -24,10 +24,24 @@
 // Returns 200 { first_run: boolean } so the client analytics wrapper can
 // fire `forecast_first_run` exactly once.
 // Returns 401 if no/invalid token.
+// Returns 429 if rate-limit exceeded (per-user).
 // Fails closed on Supabase outage (logs but returns 200 so the client
 // doesn't think the forecast itself failed — only telemetry is impacted).
+//
+// FULL-P0-C2 hardening (audit 2026-05-26):
+//   1) bodyParser size cap — this endpoint reads ZERO body fields, so
+//      Vercel's default 4MB ceiling was pure DoS surface. An authenticated
+//      attacker could POST 4MB of garbage 10/s and consume function memory
+//      while the body parser munched through the payload. 1KB is generous
+//      (the real body is empty `{}`).
+//   2) Per-user rate limit via the shared Upstash helper. Soft-fails open
+//      if Upstash isn't configured (same trade-off as the payment
+//      endpoints; better to allow legit telemetry than break activation
+//      tracking during a Redis outage).
+export const config = { api: { bodyParser: { sizeLimit: '1kb' } } };
 
 import { createClient } from '@supabase/supabase-js';
+import { rateLimitOrReject } from '../_lib/rate-limit.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -59,6 +73,15 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: 'Invalid token' });
   }
   const userId = userData.user.id;
+
+  // FULL-P0-C2 — per-user rate limit. Bucket key includes the endpoint
+  // label so cancel/create budgets stay separate from this telemetry tap.
+  // 10/min per user is generous (a real user runs the forecast once or
+  // twice per session) but caps any script-level abuse to PayPal-safe
+  // bounds. Auth check above runs BEFORE this so the rate-limit bucket
+  // is keyed on a verified user id (not a forgeable header).
+  const rl = await rateLimitOrReject(req, res, `forecast-save:${userId}`);
+  if (rl) return;
 
   // Conditional update scoped to the caller's own row. The .is() filter
   // makes this idempotent — second + Nth saves return zero rows.

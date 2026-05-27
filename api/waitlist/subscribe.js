@@ -26,9 +26,24 @@
 //                   or temporarily "ProFinanceCast <onboarding@resend.dev>"
 //                   before domain verification completes)
 
+// FULL-P0-C3 hardening (audit 2026-05-26) — pre-fix this endpoint had
+// ZERO rate limit (the W24-fix comment above admits "rate limit dropped"
+// when migrating to Edge runtime). Result: a script could mass-signup
+// thousands of victim emails (Joe-job attack) until Resend rate-limits
+// our domain. We now apply TWO independent buckets via the shared
+// Upstash helper:
+//   • waitlist-ip:{ip}    → caps signup rate per source IP (anti-script)
+//   • waitlist-email:{email} → caps signups for a single victim address
+//                              (anti-email-bomb — a single attacker
+//                              spinning new IPs can't keep hammering
+//                              one victim's inbox)
+// Both soft-fail open if Upstash isn't configured (same trade-off
+// pattern as the PayPal endpoints — better to allow legit signups
+// than block when Redis is down).
 export const config = { runtime: 'edge' };
 
 import { createClient } from '@supabase/supabase-js';
+import { checkRateLimit } from '../_lib/rate-limit.js';
 
 const EMAIL_RE = /^[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}$/;
 const ALLOWED_USE_CASES = new Set(['cross-border', 'fire', 'household', 'other', '']);
@@ -128,6 +143,27 @@ export default async function handler(req) {
     const ip = (req.headers.get('x-forwarded-for') || '').split(',')[0].trim()
             || req.headers.get('x-real-ip')
             || 'unknown';
+
+    // FULL-P0-C3 — IP + email rate limits, checked BEFORE the Resend send
+    // so we never email a victim that's being targeted. We return a
+    // soft-success (ok:true) on rate-limit hits to avoid telling the
+    // attacker whether the bucket is actually blocking — same posture as
+    // the duplicate-email path below. Sliding window is 10/60s per the
+    // shared helper config; per the audit math that's well above legit
+    // user behaviour (one signup per session) but tight enough to
+    // throttle scripted abuse to manageable bounds.
+    const [ipCheck, emailCheck] = await Promise.all([
+      checkRateLimit('waitlist-ip:' + ip),
+      checkRateLimit('waitlist-email:' + email),
+    ]);
+    if (!ipCheck.allowed || !emailCheck.allowed) {
+      const retryAfter = Math.max(ipCheck.retryAfterSec || 0, emailCheck.retryAfterSec || 0);
+      return _json(
+        { ok: true, status: 'rate_limited' },
+        200,
+        retryAfter ? { 'Retry-After': String(retryAfter) } : null
+      );
+    }
 
     if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
       console.error('waitlist/subscribe: missing Supabase env vars');

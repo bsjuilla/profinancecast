@@ -3,10 +3,22 @@
 // Stores blog newsletter signups in public.newsletter_signups.
 // Public endpoint (no auth required), but rate-limited per IP.
 //
+// FULL-P0-C4 hardening (audit 2026-05-26) — pre-fix the rate limit was
+// `new Map()` scoped to the function module, which is per-isolate on
+// Vercel. An attacker could trivially bypass by triggering cold starts
+// (random query strings, distributed IPs, parallel connections). The
+// in-memory check is kept as a defense-in-depth fast path (catches the
+// dumbest abuse without a Redis round-trip), but the authoritative
+// cross-isolate check now goes through the shared Upstash helper.
+// EITHER bucket trip = 429. Both soft-fail open if Upstash is missing.
+//
 // Required env: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
+// Optional (recommended in prod): UPSTASH_REDIS_REST_URL / KV_REST_API_URL
+//                                  for cross-isolate rate-limit enforcement
 
 import { createClient } from '@supabase/supabase-js';
 import { createHash } from 'crypto';
+import { checkRateLimit } from '../_lib/rate-limit.js';
 
 const _rateBuckets = new Map();
 function _rateLimit(key, max = 3, windowMs = 60_000) {
@@ -36,7 +48,24 @@ export default async function handler(req, res) {
 
     const ip = req.headers['x-forwarded-for']?.split(',')[0].trim()
             || req.socket?.remoteAddress || 'unknown';
-    if (!_rateLimit(ip, 3, 60_000)) {
+
+    // FULL-P0-C4 — two-layer rate limit. The in-memory check is a free
+    // fast-path; the Upstash check is the authoritative cross-isolate
+    // gate. Run them in parallel so the worst case is one Redis round-
+    // trip instead of two. EITHER tripping = 429.
+    const normalizedEmail = email.trim().toLowerCase();
+    const [memOk, ipUpstash, emailUpstash] = await Promise.all([
+      Promise.resolve(_rateLimit(ip, 3, 60_000)),
+      checkRateLimit('newsletter-ip:' + ip),
+      checkRateLimit('newsletter-email:' + normalizedEmail),
+    ]);
+    if (!memOk || !ipUpstash.allowed || !emailUpstash.allowed) {
+      const retryAfter = Math.max(
+        ipUpstash.retryAfterSec || 0,
+        emailUpstash.retryAfterSec || 0,
+        memOk ? 0 : 60
+      );
+      res.setHeader('Retry-After', String(retryAfter));
       return res.status(429).json({ error: 'Too many signups, slow down' });
     }
 
