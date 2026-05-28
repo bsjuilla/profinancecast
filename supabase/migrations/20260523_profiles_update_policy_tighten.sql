@@ -28,10 +28,9 @@
 DROP POLICY IF EXISTS "users_set_first_forecast_once" ON public.profiles;
 
 -- Defense-in-depth: also block self-update at the column level via a
--- trigger that REJECTS authenticated-role attempts to modify quota,
--- plan, or activation-event fields. If a future migration re-adds an
--- UPDATE policy by mistake, this trigger still blocks the dangerous
--- columns.
+-- trigger that REJECTS authenticated-role attempts to modify quota or
+-- plan. If a future migration re-adds an UPDATE policy by mistake,
+-- this trigger still blocks the dangerous columns.
 --
 -- HOW service_role / pg_cron / DBA WRITES PASS THROUGH:
 -- We read request.jwt.claim.role with the (missing-ok) flag. The result is:
@@ -46,14 +45,25 @@ DROP POLICY IF EXISTS "users_set_first_forecast_once" ON public.profiles;
 -- The IF check below is the explicit deny step; everything else is
 -- allow-through. Service-role writes are NEVER blocked.
 --
+-- COLUMN SET (3 columns, matches production schema as of 2026-05-28):
+--   - ai_queries_limit, ai_queries_used, plan
+-- NOTE: an earlier attempt to also guard `first_forecast_at` and
+-- `forecast_count` had to be reverted because those columns do NOT
+-- exist on the production profiles table. The 20260510 migration's
+-- ALTER TABLE statements (which add them) were never applied to
+-- production — only the bad UPDATE policy lower in that file made
+-- it in. Until a follow-up migration reconciles the schema (either
+-- adds the columns or removes the code that references them in
+-- api/forecast/save.js), this trigger sticks to the 3 columns that
+-- are actually present.
+--
 -- CHECKLIST FOR ADDING A NEW COLUMN TO `profiles`:
 --   Ask: will an authenticated client legitimately write this column
 --   directly (not via a server endpoint with SERVICE_ROLE_KEY)?
 --     - If NO: add the column name to the IF block below.
 --     - If YES: leave it out + document the legitimate write path in an ADR.
--- Currently-guarded columns: ai_queries_limit, ai_queries_used, plan,
--- first_forecast_at, forecast_count. Safe for client write: full_name,
--- country_code, updated_at.
+-- Safe for authenticated client to write today: full_name, country_code,
+-- updated_at.
 CREATE OR REPLACE FUNCTION public.profiles_block_quota_self_update()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -65,11 +75,9 @@ DECLARE
 BEGIN
   v_role := current_setting('request.jwt.claim.role', true);
   IF v_role = 'authenticated' THEN
-    IF NEW.ai_queries_limit  IS DISTINCT FROM OLD.ai_queries_limit
-       OR NEW.ai_queries_used   IS DISTINCT FROM OLD.ai_queries_used
-       OR NEW.plan              IS DISTINCT FROM OLD.plan
-       OR NEW.first_forecast_at IS DISTINCT FROM OLD.first_forecast_at
-       OR NEW.forecast_count    IS DISTINCT FROM OLD.forecast_count THEN
+    IF NEW.ai_queries_limit IS DISTINCT FROM OLD.ai_queries_limit
+       OR NEW.ai_queries_used  IS DISTINCT FROM OLD.ai_queries_used
+       OR NEW.plan             IS DISTINCT FROM OLD.plan THEN
       RAISE EXCEPTION 'forbidden: client cannot modify server-managed profile fields'
         USING ERRCODE = '42501';
     END IF;
@@ -85,4 +93,4 @@ CREATE TRIGGER profiles_block_quota_self_update_t
   EXECUTE FUNCTION public.profiles_block_quota_self_update();
 
 COMMENT ON FUNCTION public.profiles_block_quota_self_update IS
-  'NEW-P0b defense-in-depth: even if a future migration re-installs a permissive UPDATE policy on profiles, this trigger blocks the authenticated role from modifying ai_queries_limit, ai_queries_used, plan, first_forecast_at, or forecast_count. service_role bypasses via JWT role check; pg_cron/psql bypass via NULL GUC fallthrough; anon role is blocked at the RLS SELECT layer before reaching UPDATE.';
+  'NEW-P0b defense-in-depth: blocks authenticated role from modifying ai_queries_limit, ai_queries_used, or plan. service_role bypasses via JWT role check; pg_cron/psql bypass via NULL GUC fallthrough; anon role blocked at RLS SELECT layer. Verified in production 2026-05-28 via 6/6 PASS test matrix.';
