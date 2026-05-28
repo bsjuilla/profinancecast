@@ -291,17 +291,38 @@ async function _tryRenderSubscriptionButton() {
   btn.appendChild(icons);
 
   const label = document.createElement('span');
-  label.textContent = 'Subscribe with PayPal or Card';
+  // Card-first framing (2026-05-28): "Pay with card or PayPal" puts the
+  // payment method most customers actually use first. Conversion-audit
+  // hypothesis: card-only users were bouncing on the "PayPal" lede even
+  // though the underlying flow supports card without a PayPal account.
+  label.textContent = 'Pay with card or PayPal';
   btn.appendChild(label);
 
   container.appendChild(btn);
+
+  // Acceptance-marks strip (2026-05-28): simplified Visa / Mastercard /
+  // Amex marks shown at point of payment to communicate "card is a real
+  // first-class option here." Inline SVG — no external loads (CSP-safe),
+  // ~600 bytes total. Each mark carries an aria-label so screen readers
+  // announce them as the brand, not as "image." These are simplified
+  // acceptance marks (not the licensed full logos) which is the
+  // standard pattern for checkout pages everywhere.
+  const cardStrip = document.createElement('div');
+  cardStrip.style.cssText = 'display:flex;justify-content:center;align-items:center;gap:8px;margin-top:10px;';
+  cardStrip.setAttribute('aria-label', 'Cards accepted: Visa, Mastercard, American Express');
+  cardStrip.innerHTML =
+    '<svg viewBox="0 0 32 12" width="32" height="12" role="img" aria-label="Visa"><rect width="32" height="12" rx="1.5" fill="#1A1F71"/><text x="16" y="9" text-anchor="middle" font-family="Arial,sans-serif" font-size="7" font-weight="900" fill="white" letter-spacing="0.4">VISA</text></svg>' +
+    '<svg viewBox="0 0 32 12" width="32" height="12" role="img" aria-label="Mastercard"><rect width="32" height="12" rx="1.5" fill="#ffffff" stroke="#dcdcdc" stroke-width="0.6"/><circle cx="13" cy="6" r="3.6" fill="#EB001B"/><circle cx="19" cy="6" r="3.6" fill="#F79E1B" fill-opacity="0.85"/></svg>' +
+    '<svg viewBox="0 0 32 12" width="32" height="12" role="img" aria-label="American Express"><rect width="32" height="12" rx="1.5" fill="#006FCF"/><text x="16" y="9" text-anchor="middle" font-family="Arial,sans-serif" font-size="6" font-weight="900" fill="white" letter-spacing="0.3">AMEX</text></svg>';
+  container.appendChild(cardStrip);
 
   // Helper line — explicit on both renewal AND card-without-paypal-account.
   const note = document.createElement('div');
   note.style.cssText = 'margin-top:8px;font-size:11px;color:var(--pfc-ink-muted);text-align:center;line-height:1.5;';
   note.innerHTML =
-    'Use any major credit or debit card — <strong>no PayPal account needed</strong>.<br>' +
-    'Renews automatically. Cancel any time — Pro stays active until period end.';
+    'Visa, Mastercard, American Express, or any major debit card &mdash; ' +
+    '<strong>no PayPal account needed</strong>.<br>' +
+    'Renews automatically. Cancel any time &mdash; Pro stays active until period end.';
   container.appendChild(note);
 }
 
