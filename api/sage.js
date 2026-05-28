@@ -47,8 +47,22 @@ import * as aiRouter from './_lib/ai/router.js';
 // both legitimately rate-limited at that moment. Either way, defaulting to
 // "router off" until manually opt-in is the safer posture: known-good
 // Gemini-only path runs until operator explicitly sets AI_ROUTER_ENABLED=true.
-// Set to 'true' (literal string) in Vercel env to re-enable the multi-AI router.
-const AI_ROUTER_ENABLED = process.env.AI_ROUTER_ENABLED === 'true'; // opt-in
+// Set to 'true' (any case — 'true', 'True', 'TRUE' all accepted) in Vercel
+// env to re-enable the multi-AI router.
+// FULL-P1-I-DEBUG (audit 2026-05-28) — case-insensitive flag check so
+// operator-typed 'True'/'TRUE' Just Work (Vercel UI doesn't lowercase).
+function _envFlagOn(name) {
+  return String(process.env[name] || '').trim().toLowerCase() === 'true';
+}
+const AI_ROUTER_ENABLED = _envFlagOn('AI_ROUTER_ENABLED'); // opt-in
+// FULL-P1-I-DEBUG — when on (and AI_ROUTER_ENABLED also on), every Sage
+// response includes a `_debug` field with the router's attempts trace,
+// provider chosen, and latency. Used to diagnose CASCADE_EXHAUSTED without
+// needing Vercel function logs. Off by default — turn on by setting
+// AI_ROUTER_DEBUG=true in Vercel env. No PII in the debug block; only
+// provider IDs, status codes, and reason classifiers (the same shape that
+// gets logged via [ai:router] console lines).
+const AI_ROUTER_DEBUG = _envFlagOn('AI_ROUTER_DEBUG');
 
 // SAGE-P0-BACK — cap request body so a hostile caller can't push MBs of
 // padding to chew quota or starve event-loop memory. 16KB > our worst-case
@@ -498,9 +512,17 @@ export default async function handler(req, res) {
       };
       const routerRes = await aiRouter.complete(canonical);
       if (!routerRes.ok) {
-        return res.status(502).json({ error: 'AI service temporarily unavailable.' });
+        // FULL-P1-I-DEBUG — include router internal state under _debug when
+        // AI_ROUTER_DEBUG flag is on. Off by default — no leak to ordinary
+        // users. The trace includes only provider IDs + status codes + reason
+        // classifiers; no user prompt, no PII.
+        const body = { error: 'AI service temporarily unavailable.' };
+        if (AI_ROUTER_DEBUG) body._debug = { reason: routerRes.reason, attempts: routerRes.attempts || [] };
+        return res.status(502).json(body);
       }
-      return res.status(200).json({ reply: routerRes.reply, provider_used: routerRes.provider });
+      const csvBody = { reply: routerRes.reply, provider_used: routerRes.provider };
+      if (AI_ROUTER_DEBUG) csvBody._debug = { provider: routerRes.provider, modelUsed: routerRes.modelUsed, latencyMs: routerRes.latencyMs };
+      return res.status(200).json(csvBody);
     }
     // FEATURE-FLAG-OFF FALLBACK: original direct-Gemini path preserved
     // for instant rollback if AI_ROUTER_ENABLED=false in env.
@@ -594,12 +616,17 @@ export default async function handler(req, res) {
       if (routerRes.retryAfterSec) {
         res.setHeader('Retry-After', String(routerRes.retryAfterSec));
       }
-      return res.status(routerRes.status || 502).json({
+      const failBody = {
         error: routerRes.reason === 'CASCADE_EXHAUSTED'
           ? 'Sage is busy right now — every AI provider is rate-limited. Please try again in a few minutes.'
           : 'AI service temporarily unavailable. Please try again.',
         retry_after_sec: routerRes.retryAfterSec || null,
-      });
+      };
+      // FULL-P1-I-DEBUG — attach attempts trace when flag is on, so the
+      // operator can see WHY each provider failed without needing Vercel
+      // function logs. attempts shape: [{provider, reason, status}, ...].
+      if (AI_ROUTER_DEBUG) failBody._debug = { reason: routerRes.reason, attempts: routerRes.attempts || [] };
+      return res.status(routerRes.status || 502).json(failBody);
     }
 
     // SAGE-P0-BACK preserved: await the quota counter with 2s timeout
@@ -619,7 +646,9 @@ export default async function handler(req, res) {
     // FULL-P1-I — surface provider_used so the dashboard can show a
     // "answered by Groq" indicator (transparency builds trust + helps
     // ops debug if a user complains about a specific reply's quality).
-    return res.status(200).json({ reply: routerRes.reply, provider_used: routerRes.provider });
+    const chatBody = { reply: routerRes.reply, provider_used: routerRes.provider };
+    if (AI_ROUTER_DEBUG) chatBody._debug = { provider: routerRes.provider, modelUsed: routerRes.modelUsed, latencyMs: routerRes.latencyMs };
+    return res.status(200).json(chatBody);
   }
 
   // FEATURE-FLAG-OFF FALLBACK: original direct-Gemini path preserved
