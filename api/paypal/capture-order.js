@@ -13,6 +13,11 @@
 //   SUPABASE_SERVICE_ROLE_KEY  ← service role, NOT anon. Server-only secret.
 
 import { createClient } from '@supabase/supabase-js';
+import { sendTransactionalEmail } from '../_lib/email/send.js';
+import {
+  renderFoundersReceipt,
+  renderSubscriptionReceipt,
+} from '../_lib/email/templates.js';
 
 const PAYPAL_BASE = (process.env.PAYPAL_ENV === 'sandbox')
   ? 'https://api-m.sandbox.paypal.com'
@@ -480,6 +485,42 @@ export default async function handler(req, res) {
       } else {
         foundersSeatNo = typeof seat === 'number' ? seat : (seat?.seat_no ?? null);
       }
+    }
+
+    // Send customer receipt. Fire-and-forget by try/catch: helper is
+    // already fail-open (returns {sent:false,reason} on Resend outage),
+    // and even a truly-unexpected throw here must NOT undo the captured
+    // payment + entitlement upgrade. The webhook PAYMENT.CAPTURE.COMPLETED
+    // handler intentionally skips email send to avoid duplicating this
+    // receipt for the same captureId — see webhook-paypal.js.
+    try {
+      const isFounders = sku === 'founders';
+      const tpl = isFounders
+        ? renderFoundersReceipt({
+            amount:   amountPaid,
+            currency: currencyPaid,
+            txnId:    capture?.id || orderID,
+            dateIso:  nowIso,
+          })
+        : renderSubscriptionReceipt({
+            amount:    amountPaid,
+            currency:  currencyPaid,
+            plan:      dbPlan,
+            periodEnd,
+            txnId:     capture?.id || orderID,
+            dateIso:   nowIso,
+            isRenewal: false,
+          });
+      await sendTransactionalEmail({
+        to:      user.email,
+        subject: tpl.subject,
+        text:    tpl.text,
+        tag:     isFounders ? 'receipt_founders' : 'receipt_subscription_first',
+      });
+    } catch (_emailErr) {
+      // Helper swallows network errors; this catch is the belt-and-braces
+      // for an unexpected template-render throw. Log nothing PII-revealing.
+      console.warn('[capture-order:email] receipt send threw unexpectedly');
     }
 
     return res.status(200).json({

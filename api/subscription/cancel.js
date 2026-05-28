@@ -15,6 +15,8 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { rateLimitOrReject } from '../_lib/rate-limit.js';
+import { sendTransactionalEmail } from '../_lib/email/send.js';
+import { renderCancellationConfirmation } from '../_lib/email/templates.js';
 
 const APP_ORIGIN = process.env.APP_ORIGIN || 'https://profinancecast.com';
 
@@ -349,6 +351,28 @@ export default async function handler(req, res) {
     // insert errors include the row values (user_id + plan + period).
     // Non-fatal log; code-only is enough.
     console.error('[cancel:audit] event log non-fatal code=' + (logErr?.code || 'UNKNOWN'));
+  }
+
+  // Customer cancellation-confirmation email. The "already cancelled"
+  // path returns early at line ~218, so this only fires on the active→
+  // scheduled-to-cancel transition. If the PayPal-side cancel failed
+  // (paypalCancelFailed=true) the email includes a warning paragraph
+  // pointing the user at their PayPal dashboard. Fail-open: a Resend
+  // outage must NOT undo the local cancel flag.
+  try {
+    const tpl = renderCancellationConfirmation({
+      plan:               updated.plan,
+      periodEnd:          updated.current_period_end,
+      paypalCancelFailed,
+    });
+    await sendTransactionalEmail({
+      to:      userData.user.email,
+      subject: tpl.subject,
+      text:    tpl.text,
+      tag:     'cancellation_confirmed',
+    });
+  } catch (_emailErr) {
+    console.warn('[cancel:email] confirmation send threw unexpectedly');
   }
 
   return res.status(200).json({

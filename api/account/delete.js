@@ -31,6 +31,9 @@
 // Optional: RESEND_API_KEY, ALERT_EMAIL, SLACK_WEBHOOK_URL (for ops alerts on cancel failures)
 
 import { createClient } from '@supabase/supabase-js';
+import { rateLimitOrReject } from '../_lib/rate-limit.js';
+import { sendTransactionalEmail } from '../_lib/email/send.js';
+import { renderAccountDeletionGoodbye } from '../_lib/email/templates.js';
 
 const APP_ORIGIN = process.env.APP_ORIGIN || 'https://profinancecast.com';
 
@@ -235,6 +238,14 @@ export default async function handler(req, res) {
   }
   const userId = userData.user.id;
 
+  // Security review patch B (2026-05-28): per-user rate limit. Without
+  // this, an attacker holding a valid short-lived token could loop the
+  // endpoint on 503 PayPal-cancel responses and trigger ops alert
+  // amplification (each 503 fires _alertOps). 5/min is generous enough
+  // for legitimate retry-on-503 but caps alert spam. Mirrors the
+  // cancel.js pattern at line 196.
+  if (await rateLimitOrReject(req, res, `account-delete:${userId}`)) return;
+
   // 2) FULL-P0-A1 — enumerate every PayPal Billing Plans subscription that
   //    is still active for this user. We must call PayPal /cancel on each
   //    one BEFORE deleting the auth row, otherwise PayPal keeps charging
@@ -330,6 +341,11 @@ export default async function handler(req, res) {
 
   // 5) Hard-delete the auth.users row via admin API. Cascading FKs handle
   //    profiles, subscriptions, etc.
+  //
+  // Email capture note: userData was resolved at step 1 (line ~232) and
+  // is a plain JS object held in this function's closure. Even after
+  // admin.deleteUser removes the auth.users row, userData.user.email
+  // is still in scope for the goodbye-email send below.
   const { error: delErr } = await supabase.auth.admin.deleteUser(userId);
   if (delErr) {
     console.error('[account/delete] admin.deleteUser failed code=' + (delErr.code || 'UNKNOWN'));
@@ -349,6 +365,22 @@ export default async function handler(req, res) {
       `Retry admin.deleteUser manually, or if it persists, escalate.`
     );
     return res.status(500).json({ error: 'Could not delete account — please contact support@profinancecast.com.' });
+  }
+
+  // 6) Customer goodbye email. Fail-open: a Resend outage MUST NOT undo
+  //    the successful account deletion. Helper itself silently no-ops
+  //    on a missing API key or non-2xx Resend response.
+  try {
+    const hadActiveSub = Array.isArray(activeSubs) && activeSubs.length > 0;
+    const tpl = renderAccountDeletionGoodbye({ hadActiveSub });
+    await sendTransactionalEmail({
+      to:      userData.user.email,
+      subject: tpl.subject,
+      text:    tpl.text,
+      tag:     'account_deleted',
+    });
+  } catch (_emailErr) {
+    console.warn('[account/delete:email] goodbye send threw unexpectedly');
   }
 
   return res.status(204).end();

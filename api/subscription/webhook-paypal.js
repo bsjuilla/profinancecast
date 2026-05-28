@@ -20,6 +20,35 @@
 //               PAYPAL_WEBHOOK_ID, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
 
 import { createClient } from '@supabase/supabase-js';
+import { sendTransactionalEmail } from '../_lib/email/send.js';
+import {
+  renderSubscriptionReceipt,
+  renderRefundConfirmation,
+} from '../_lib/email/templates.js';
+
+// Helper: resolve the customer email from a userId via the admin API.
+// Webhook handlers don't have user context — only the user_id derived
+// from custom_id / subscription matching. This wraps the admin lookup
+// with fail-open semantics so a Supabase outage degrades to "no email
+// sent" rather than blocking the webhook ack and triggering a retry.
+//
+// PII discipline: we DO emit a single PII-free warn on the catch
+// branch (security review patch C) so a sustained Supabase outage
+// surfaces a log-count signal in the aggregator. The userId is
+// intentionally NOT logged — the Supabase admin SDK constructs a
+// request URL containing the userId in the path, and network-level
+// error messages from the underlying fetch can echo the full URL.
+async function _getEmailForUserId(supabase, userId) {
+  if (!userId) return null;
+  try {
+    const { data, error } = await supabase.auth.admin.getUserById(userId);
+    if (error || !data?.user?.email) return null;
+    return data.user.email;
+  } catch (_e) {
+    console.warn('[webhook-paypal:email-lookup] admin getUserById failed — email suppressed');
+    return null;
+  }
+}
 
 // W25 P0 #10 — disable Vercel's body parser. PayPal's webhook signature
 // is computed over the exact raw bytes PayPal sent; the default parser
@@ -740,6 +769,33 @@ export default async function handler(req, res) {
             .eq('seat_no', seat.seat_no);
         }
 
+        // Customer refund-confirmation email. Capture-refund payload uses
+        // resource.amount.value / .currency_code (PayPal v2 Orders shape).
+        // We pull the plan from the previously-fetched currentSub row
+        // since the subscriptions row was just flipped to status='refunded'.
+        // Reversal events (PAYMENT.CAPTURE.REVERSED) use the same email —
+        // from the customer's perspective the money came back.
+        try {
+          const recipient = await _getEmailForUserId(supabase, userId);
+          if (recipient) {
+            const tpl = renderRefundConfirmation({
+              amount:        resource.amount?.value,
+              currency:      resource.amount?.currency_code || 'EUR',
+              plan:          currentSub?.plan,
+              originalTxnId: captureId,
+              dateIso:       refundIso,
+            });
+            await sendTransactionalEmail({
+              to:      recipient,
+              subject: tpl.subject,
+              text:    tpl.text,
+              tag:     'refund_capture',
+            });
+          }
+        } catch (_emailErr) {
+          console.warn('[webhook-paypal:refund] confirmation send threw unexpectedly');
+        }
+
         await _logEvent({
           user_id: userId,
           event_type: eventType === 'PAYMENT.CAPTURE.REFUNDED' ? 'refund' : 'reversal',
@@ -1095,6 +1151,60 @@ export default async function handler(req, res) {
           updated_at: nowIso,
         }).eq('user_id', sub.user_id);
 
+        // Customer receipt for this recurring charge. Distinguish first-
+        // charge (after a subscription activates) from subsequent renewals
+        // by counting subscription_periods rows for this billing
+        // agreement — if there's exactly 1 (the row we just inserted),
+        // it's the first charge; otherwise it's a renewal. The query is
+        // cheap (count-only, indexed on provider_subscription_id) and
+        // gives the customer a friendlier subject line on first charge
+        // ("Thank you for subscribing") vs subsequent renewals.
+        //
+        // Idempotency: the entire SALE.COMPLETED handler is gated by the
+        // webhook dedup table at the top of the switch, so duplicate
+        // PayPal deliveries (same paypal-transmission-id) never reach
+        // this point.
+        try {
+          const { count: periodCount, error: countErr } = await supabase
+            .from('subscription_periods')
+            .select('id', { count: 'exact', head: true })
+            .eq('user_id', sub.user_id)
+            .eq('provider_subscription_id', billingAgreementId);
+          // Code review patch: if Supabase returns an error or null
+          // count, skip the receipt rather than mis-label this as a
+          // first charge. A missed receipt is recoverable via support;
+          // a confusing-subject one is more harmful to trust.
+          //
+          // Note: we use a conditional (NOT `break`) so the downstream
+          // _logEvent audit call still fires for every SALE.COMPLETED
+          // even when the receipt is suppressed.
+          if (countErr || periodCount == null) {
+            console.warn('[webhook-paypal:sale] period count unavailable — receipt suppressed');
+          } else {
+            const isRenewal = periodCount > 1;
+            const recipient = await _getEmailForUserId(supabase, sub.user_id);
+            if (recipient) {
+              const tpl = renderSubscriptionReceipt({
+                amount,
+                currency,
+                plan:      sub.plan,
+                periodEnd,
+                txnId:     saleId,
+                dateIso:   nowIso,
+                isRenewal,
+              });
+              await sendTransactionalEmail({
+                to:      recipient,
+                subject: tpl.subject,
+                text:    tpl.text,
+                tag:     isRenewal ? 'receipt_subscription_renewal' : 'receipt_subscription_first',
+              });
+            }
+          }
+        } catch (_emailErr) {
+          console.warn('[webhook-paypal:sale] receipt send threw unexpectedly');
+        }
+
         await _logEvent({
           user_id: sub.user_id,
           event_type: 'webhook_capture_completed',  // same event_type as one-shot for unified history UI
@@ -1160,6 +1270,33 @@ export default async function handler(req, res) {
             updated_at: refundIso,
           }).eq('user_id', period.user_id);
           await supabase.from('profiles').update({ plan: 'free' }).eq('id', period.user_id);
+        }
+
+        // Customer refund-confirmation email. Sale-refund payload uses the
+        // v1 Payments shape: resource.amount.total / .currency. We send
+        // the email regardless of whether the refunded sale was the
+        // CURRENT period (currentSub.provider_capture_id === refundedSaleId)
+        // or a stale one — from the customer's perspective, money came
+        // back into their account either way and they want a receipt of it.
+        try {
+          const recipient = await _getEmailForUserId(supabase, period.user_id);
+          if (recipient) {
+            const tpl = renderRefundConfirmation({
+              amount:        resource.amount?.total,
+              currency:      resource.amount?.currency || 'EUR',
+              plan:          period.tier,
+              originalTxnId: refundedSaleId,
+              dateIso:       refundIso,
+            });
+            await sendTransactionalEmail({
+              to:      recipient,
+              subject: tpl.subject,
+              text:    tpl.text,
+              tag:     'refund_sale',
+            });
+          }
+        } catch (_emailErr) {
+          console.warn('[webhook-paypal:sale-refund] confirmation send threw unexpectedly');
         }
 
         await _logEvent({
