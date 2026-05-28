@@ -73,7 +73,31 @@ async function callAdapter(provider, canonical, budgetRemaining) {
   // Lazy-load the adapter module so cold-start cost is paid only for the
   // providers we actually invoke this request.
   const mod = await provider.adapter();
-  const adapter = mod.default;
+  // FULL-P1-I-FIX3 (audit 2026-05-28) — defensive CJS/ESM interop. Vercel's
+  // @vercel/node serverless build can wrap a dynamic-imported ESM file's
+  // `export default` differently depending on the project module type
+  // (package.json has no "type":"module" so CJS is the default). The
+  // resolved namespace can arrive as either:
+  //   { default: function }   ← standard ESM shape
+  //   function                ← if Vercel converted to module.exports = fn
+  //   { default: { default: fn } } ← double-wrapped (rare, but observed)
+  // Original code only handled the first shape → `adapter is not a function`
+  // TypeError thrown for both groq AND gemini on every Vercel cold start.
+  // Caught by DEBUG2-enhanced ADAPTER_THREW capture. Fix: try every shape.
+  let adapter = mod && mod.default;
+  if (typeof adapter !== 'function' && typeof mod === 'function') {
+    adapter = mod;
+  }
+  if (typeof adapter !== 'function' && adapter && typeof adapter.default === 'function') {
+    adapter = adapter.default;
+  }
+  if (typeof adapter !== 'function') {
+    // No callable function found — explicit throw with helpful diagnostic
+    // so the router's ADAPTER_THREW catch surfaces it in the _debug trace
+    // rather than the generic "adapter is not a function" we saw before.
+    throw new TypeError('callAdapter: no default export resolved for provider=' + provider.id +
+      ' (mod typeof=' + typeof mod + ', mod.default typeof=' + (mod && typeof mod.default) + ')');
+  }
   const cappedTimeout = Math.min(provider.timeoutMs, budgetRemaining);
   const apiKey = apiKeyFor(provider);
   // FULL-P1-I-FIX (audit 2026-05-28, triple-verification P0 bug #2):
