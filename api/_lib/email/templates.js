@@ -23,7 +23,13 @@ function _planLabel(plan) {
   if (plan === 'founders' || plan === 'founders_lifetime') return 'Founders Lifetime';
   if (plan === 'pro')     return 'Pro';
   if (plan === 'premium') return 'Premium';
-  return 'Plan';
+  // Defensive fallback (review finding #2): the previous default
+  // 'Plan' produced ungrammatical output like "Your Plan features
+  // have ended." On unknown plan, fall back to 'Pro' (the most
+  // common subscriber tier) so receipts stay grammatical, and log
+  // so the data anomaly is observable rather than silent.
+  console.warn('[email/templates] _planLabel: unknown plan=' + String(plan).slice(0, 50) + ' — using Pro fallback');
+  return 'Pro';
 }
 
 function _money(amount, currency) {
@@ -34,33 +40,45 @@ function _money(amount, currency) {
   // than the misleading "Amount: 0.00 EUR" (which Number(null)=0
   // would otherwise yield and which would tell a paying customer
   // they paid nothing).
-  const cur = currency || 'EUR';
   if (amount === null || amount === undefined || amount === '') {
-    return `— ${cur}`;
+    return `— ${currency || 'EUR'}`;
   }
+  // Review finding #9: previously the helper silently fell back to
+  // 'EUR' when currency was missing AND amount was present, which
+  // means a real charge in a non-EUR currency with a typo'd field
+  // would render as "9.00 EUR". Warn so the data anomaly is
+  // observable; keep the EUR default so the receipt still sends
+  // (single-currency product today; the helper is forward-looking).
+  if (!currency) {
+    console.warn('[email/templates] _money: currency missing for amount=' + String(amount).slice(0, 20) + ' — defaulting to EUR');
+  }
+  const cur = currency || 'EUR';
   const n = Number(amount);
   if (!Number.isFinite(n)) return `${amount} ${cur}`;
   return `${n.toFixed(2)} ${cur}`;
 }
 
 function _date(iso) {
-  // Render as YYYY-MM-DD — consumer-friendly, jurisdiction-neutral,
-  // and avoids the timezone confusion of localized formats. If no
-  // input is provided, use today's date in UTC.
-  //
-  // Defensive parse (code review patch): pass the input through
-  // `new Date(...).toISOString()` so a malformed input (e.g. a
-  // localized date string from a future caller, or a non-ISO timestamp)
-  // either renders correctly or falls back to today rather than
-  // silently truncating to a plausible-looking but wrong date.
-  if (!iso) return new Date().toISOString().slice(0, 10);
+  // Render as YYYY-MM-DD — consumer-friendly, jurisdiction-neutral.
+  // Returns null on missing or unparseable input so callers can
+  // distinguish a real date from "we don't know" (review finding #3).
+  // For transaction-date fields where 'today' is an acceptable
+  // default, use _dateOrToday() below.
+  if (!iso) return null;
   try {
     const d = new Date(iso);
-    if (Number.isNaN(d.getTime())) return new Date().toISOString().slice(0, 10);
+    if (Number.isNaN(d.getTime())) return null;
     return d.toISOString().slice(0, 10);
   } catch {
-    return new Date().toISOString().slice(0, 10);
+    return null;
   }
+}
+
+function _dateOrToday(iso) {
+  // Convenience wrapper for transaction-date fields (Founders receipt,
+  // subscription receipt 'Date:', refund receipt) where today's date
+  // is a sensible default if the caller forgot to pass dateIso.
+  return _date(iso) || new Date().toISOString().slice(0, 10);
 }
 
 // ---------------------------------------------------------------------------
@@ -68,7 +86,7 @@ function _date(iso) {
 // ---------------------------------------------------------------------------
 
 export function renderFoundersReceipt({ amount, currency, txnId, dateIso }) {
-  const dateStr   = _date(dateIso);
+  const dateStr   = _dateOrToday(dateIso);
   const amountStr = _money(amount, currency);
 
   const subject = 'Your ProFinanceCast Founders Lifetime — receipt';
@@ -108,10 +126,14 @@ export function renderFoundersReceipt({ amount, currency, txnId, dateIso }) {
 export function renderSubscriptionReceipt({
   amount, currency, plan, periodEnd, txnId, dateIso, isRenewal,
 }) {
-  const dateStr   = _date(dateIso);
+  const dateStr   = _dateOrToday(dateIso);
   const amountStr = _money(amount, currency);
   const planStr   = _planLabel(plan);
-  const nextStr   = _date(periodEnd);
+  // Review finding #3: if periodEnd is missing/unparseable, render
+  // "Next charge: not scheduled" instead of silently falling back to
+  // today's date (which would tell the customer their next charge is
+  // today — wrong + alarming).
+  const nextStr   = _date(periodEnd) || 'not scheduled';
   const isRen     = !!isRenewal;
 
   const subject = isRen
@@ -151,7 +173,7 @@ export function renderSubscriptionReceipt({
 export function renderRefundConfirmation({
   amount, currency, plan, originalTxnId, dateIso,
 }) {
-  const dateStr   = _date(dateIso);
+  const dateStr   = _dateOrToday(dateIso);
   const amountStr = _money(amount, currency);
   const planStr   = _planLabel(plan);
 
@@ -186,7 +208,7 @@ export function renderRefundConfirmation({
 // ---------------------------------------------------------------------------
 
 export function renderCancellationConfirmation({
-  plan, periodEnd, paypalCancelFailed,
+  plan, periodEnd, paypalCancelFailed, hoursUntilNextCharge,
 }) {
   const planStr = _planLabel(plan);
   const endStr  = _date(periodEnd);
@@ -196,21 +218,54 @@ export function renderCancellationConfirmation({
   const lines = [];
   lines.push(`You've cancelled your ProFinanceCast ${planStr} subscription.`);
   lines.push('');
-  lines.push(`Your ${planStr} features remain active until ${endStr}. After`);
-  lines.push('that date your account will move to the Free plan automatically —');
-  lines.push('no further action needed.');
+  // Review finding #3: if periodEnd missing/unparseable, use phrasing
+  // that doesn't depend on a specific date (rather than silently
+  // rendering today's date, which would tell the customer they lose
+  // access today).
+  if (endStr) {
+    lines.push(`Your ${planStr} features remain active until ${endStr}. After`);
+    lines.push('that date your account will move to the Free plan automatically —');
+    lines.push('no further action needed.');
+  } else {
+    lines.push(`Your ${planStr} features remain active until the end of your`);
+    lines.push('current billing period. After that, your account moves to the');
+    lines.push('Free plan automatically — no further action needed.');
+  }
   lines.push('');
   lines.push('Your forecasting tools stay available on the Free plan, including');
   lines.push('the ten-year net-worth projection and the debt-free month estimate.');
   lines.push('All of your data continues to live encrypted in your browser.');
   lines.push('');
   if (paypalCancelFailed) {
-    lines.push(`Note: we couldn't reach PayPal to confirm cancellation on their`);
-    lines.push('side. Your access here will end on schedule, but you may want to');
-    lines.push('verify the subscription is closed in your PayPal account too. If');
-    lines.push(`you see another charge after ${endStr}, reply to this email and`);
-    lines.push("we'll refund it.");
-    lines.push('');
+    // Review finding #14: time-aware warning. If the next renewal is
+    // <24h away we treat the failed-cancel as urgent (PayPal may
+    // charge before our retry catches up). If it's <72h, normal-
+    // urgency advisory. If >72h, soften the warning — our ops alert
+    // will resolve before the next billing cycle in nearly all cases.
+    const hrs = (typeof hoursUntilNextCharge === 'number' && Number.isFinite(hoursUntilNextCharge))
+      ? hoursUntilNextCharge : null;
+    if (hrs !== null && hrs < 24) {
+      lines.push(`Important: we couldn't confirm cancellation with PayPal and your`);
+      lines.push(`next billing cycle is within 24 hours. PayPal may attempt one more`);
+      lines.push(`charge before our retry catches up. If they do, reply to this`);
+      lines.push(`email immediately and we'll refund it. We're also working on this`);
+      lines.push(`from our side.`);
+      lines.push('');
+    } else if (hrs !== null && hrs < 72) {
+      lines.push(`Note: we couldn't reach PayPal to confirm cancellation on their`);
+      lines.push(`side. Your next renewal is in the next few days, so please verify`);
+      lines.push(`the subscription is closed in your PayPal account (Activity →`);
+      lines.push(`Recurring payments). If you see another charge, reply to this`);
+      lines.push(`email and we'll refund it.`);
+      lines.push('');
+    } else {
+      lines.push(`Note: PayPal didn't confirm cancellation on the first try. Your`);
+      lines.push(`access here will end on schedule and our system will keep`);
+      lines.push(`retrying on PayPal's side. You don't need to do anything — if`);
+      lines.push(`anything goes wrong, reply to this email and we'll refund any`);
+      lines.push(`charge that slips through.`);
+      lines.push('');
+    }
   }
   lines.push('Refunds are available within 14 days of your last charge — reply');
   lines.push(`to this email or write to ${SUPPORT_EMAIL}.`);

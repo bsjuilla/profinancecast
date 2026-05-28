@@ -308,6 +308,11 @@ async function _tryRenderSubscriptionButton() {
   // acceptance marks (not the licensed full logos) which is the
   // standard pattern for checkout pages everywhere.
   const cardStrip = document.createElement('div');
+  // Class added for review finding #15 — gives a future strict-CSP
+  // stylesheet a hook to restate the layout via `.pfc-card-strip { ... }`
+  // without depending on the inline style.cssText below (which may be
+  // stripped under `style-src` policies that omit 'unsafe-inline').
+  cardStrip.className = 'pfc-card-strip';
   cardStrip.style.cssText = 'display:flex;justify-content:center;align-items:center;gap:8px;margin-top:10px;';
   cardStrip.setAttribute('aria-label', 'Cards accepted: Visa, Mastercard, American Express');
   cardStrip.innerHTML =

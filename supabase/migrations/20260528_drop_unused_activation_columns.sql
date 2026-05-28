@@ -1,0 +1,47 @@
+-- 2026-05-28 — Drop the unused activation-event columns from public.profiles
+-- to close the migration time-bomb identified by the code review of the
+-- NEW-P0b RLS hardening work.
+--
+-- Background (review finding #11):
+--   The 20260510_owner_override_and_forecast_policy.sql migration adds
+--   two columns guarded by IF NOT EXISTS:
+--     - profiles.first_forecast_at TIMESTAMPTZ
+--     - profiles.forecast_count   INT NOT NULL DEFAULT 0
+--   The only consumer (api/forecast/save.js) was deleted in commit
+--   8099cd6 because no client code was ever wired to call it. The
+--   columns therefore have zero readers and zero writers in
+--   production today.
+--
+--   The 20260523_profiles_update_policy_tighten.sql migration was
+--   originally written (in commit d3766ad) to defense-in-depth
+--   protect these two columns at the trigger level. That was reverted
+--   in commit 05bc577 once we discovered the columns don't actually
+--   exist on production (the 20260510 ALTER TABLEs were applied
+--   selectively when the policy was applied — only the policy made it).
+--
+--   The time-bomb: if a new staging / dev environment ever replays
+--   the full migration history with `supabase db push`, the two
+--   columns get created (20260510 IF NOT EXISTS) but the 20260523
+--   trigger's denylist no longer covers them. A future migration
+--   that accidentally re-installs a permissive UPDATE policy on
+--   profiles would then leave both columns unguarded — the exact
+--   gap d3766ad tried to close.
+--
+--   Cleanest fix: drop the columns. They have no consumer; if
+--   someone later builds a real activation funnel, they can add the
+--   columns back with explicit migration and explicit trigger
+--   coverage in the same commit.
+--
+-- Net effect after this migration:
+--   - Production: nothing changes (the columns don't exist there).
+--   - Fresh env (db push of full history): 20260510 creates the
+--     columns; THIS migration drops them; final state matches
+--     production. No time-bomb.
+--   - Future-resurrection path: add a new migration that re-creates
+--     the columns AND extends profiles_block_quota_self_update's
+--     denylist in the same file.
+--
+-- Safe to re-run.
+
+ALTER TABLE public.profiles DROP COLUMN IF EXISTS first_forecast_at;
+ALTER TABLE public.profiles DROP COLUMN IF EXISTS forecast_count;

@@ -487,12 +487,20 @@ export default async function handler(req, res) {
       }
     }
 
-    // Send customer receipt. Fire-and-forget by try/catch: helper is
-    // already fail-open (returns {sent:false,reason} on Resend outage),
-    // and even a truly-unexpected throw here must NOT undo the captured
-    // payment + entitlement upgrade. The webhook PAYMENT.CAPTURE.COMPLETED
-    // handler intentionally skips email send to avoid duplicating this
-    // receipt for the same captureId — see webhook-paypal.js.
+    // Send customer receipt with Resend idempotency key.
+    //
+    // Review findings #5, #6: BOTH this handler AND the webhook
+    // PAYMENT.CAPTURE.COMPLETED handler now send a receipt for the
+    // same captureId. The Idempotency-Key header below
+    // (`receipt:<captureId>`) tells Resend to deduplicate server-side,
+    // so the customer receives exactly one delivered email no matter
+    // which path fires first (capture-order succeeded, capture-order
+    // failed-then-webhook-fallback, or a client double-click race).
+    //
+    // Fire-and-forget by try/catch: helper is already fail-open
+    // (returns {sent:false,reason} on Resend outage), and even a
+    // truly-unexpected throw here must NOT undo the captured payment
+    // + entitlement upgrade.
     try {
       const isFounders = sku === 'founders';
       const tpl = isFounders
@@ -511,11 +519,15 @@ export default async function handler(req, res) {
             dateIso:   nowIso,
             isRenewal: false,
           });
+      const idemKey = (capture?.id || orderID)
+        ? `receipt:${capture?.id || orderID}`
+        : undefined;
       await sendTransactionalEmail({
-        to:      user.email,
-        subject: tpl.subject,
-        text:    tpl.text,
-        tag:     isFounders ? 'receipt_founders' : 'receipt_subscription_first',
+        to:             user.email,
+        subject:        tpl.subject,
+        text:           tpl.text,
+        tag:            isFounders ? 'receipt_founders' : 'receipt_subscription_first',
+        idempotencyKey: idemKey,
       });
     } catch (_emailErr) {
       // Helper swallows network errors; this catch is the belt-and-braces

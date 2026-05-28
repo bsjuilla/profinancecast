@@ -24,6 +24,7 @@ import { sendTransactionalEmail } from '../_lib/email/send.js';
 import {
   renderSubscriptionReceipt,
   renderRefundConfirmation,
+  renderFoundersReceipt,
 } from '../_lib/email/templates.js';
 
 // Helper: resolve the customer email from a userId via the admin API.
@@ -32,20 +33,32 @@ import {
 // with fail-open semantics so a Supabase outage degrades to "no email
 // sent" rather than blocking the webhook ack and triggering a retry.
 //
-// PII discipline: we DO emit a single PII-free warn on the catch
-// branch (security review patch C) so a sustained Supabase outage
-// surfaces a log-count signal in the aggregator. The userId is
-// intentionally NOT logged — the Supabase admin SDK constructs a
-// request URL containing the userId in the path, and network-level
-// error messages from the underlying fetch can echo the full URL.
+// PII discipline: we emit PII-free warns on every failure branch so a
+// sustained outage OR a sustained "no email on file" pattern surfaces
+// a log-count signal in the aggregator. The userId is intentionally
+// NOT logged — the Supabase admin SDK constructs a request URL
+// containing the userId in the path, and network-level error messages
+// from the underlying fetch can echo the full URL.
 async function _getEmailForUserId(supabase, userId) {
   if (!userId) return null;
   try {
     const { data, error } = await supabase.auth.admin.getUserById(userId);
-    if (error || !data?.user?.email) return null;
+    if (error) {
+      console.warn('[webhook-paypal:email-lookup] admin getUserById returned error — email suppressed');
+      return null;
+    }
+    if (!data?.user?.email) {
+      // Review finding #10: previously this branch was silent. Now we
+      // emit a warn so a sustained pattern of "user has no email on
+      // file" (rare but real — e.g. account-deleted users with late-
+      // arriving refund webhooks, or admin-nullified emails for GDPR
+      // erasure requests) becomes visible to ops.
+      console.warn('[webhook-paypal:email-lookup] user has no email on file — email suppressed');
+      return null;
+    }
     return data.user.email;
   } catch (_e) {
-    console.warn('[webhook-paypal:email-lookup] admin getUserById failed — email suppressed');
+    console.warn('[webhook-paypal:email-lookup] admin getUserById threw — email suppressed');
     return null;
   }
 }
@@ -347,8 +360,22 @@ export default async function handler(req, res) {
       if (dedupErr.code === '23505') {
         return res.status(200).json({ received: true, deduplicated: true });
       }
-      // Any other DB error: log + fall through. We'd rather process the event
-      // twice than reject a real webhook and have PayPal retry forever.
+      // Any other DB error: log + fall through. We'd rather process the
+      // event twice than reject a real webhook and have PayPal retry
+      // forever.
+      //
+      // Review finding #7: the original concern was that the
+      // fail-through path could deliver a duplicate customer receipt.
+      // That is now mitigated by Resend Idempotency-Key headers on
+      // every customer email send (`receipt:<captureId>` and
+      // `refund:<refundId>` keys — see capture-order.js and the
+      // case handlers below). All DB operations in the case blocks
+      // are also idempotent at the schema level (subscriptions
+      // upsert by user_id; subscription_periods unique on
+      // provider_capture_id; founders_seats unique on capture_id).
+      // So fall-through processing is safe on every observable
+      // side-effect path.
+      //
       // FULL-P1-F (audit 2026-05-27) — redact. dedupErr.details on a
       // webhook_event_dedup INSERT failure includes the event payload
       // hash + provider_id we tried to insert.
@@ -636,6 +663,52 @@ export default async function handler(req, res) {
             console.error('[webhook-paypal:seat] finalize_founders_seat failed code=' + (finErr?.code || 'UNKNOWN'));
           }
         }
+
+        // Review finding #5: send the customer receipt from this
+        // fallback path too. Previously this handler intentionally
+        // skipped the email to avoid duplicating capture-order.js's
+        // send, BUT that meant if capture-order.js failed (5xx'd
+        // before reaching its own send) the customer never received
+        // a receipt despite being upgraded.
+        //
+        // We now send from BOTH paths. Resend's Idempotency-Key
+        // (`receipt:<captureId>`) deduplicates server-side, so the
+        // customer still receives exactly one delivered email.
+        // Skip the send only if the upsert above failed — no
+        // entitlement was granted, so no receipt is owed.
+        if (!upsertErr) {
+          try {
+            const recipient = await _getEmailForUserId(supabase, userId);
+            if (recipient) {
+              const isFounders = sku === 'founders';
+              const tpl = isFounders
+                ? renderFoundersReceipt({
+                    amount,
+                    currency,
+                    txnId:   captureId,
+                    dateIso: nowIso,
+                  })
+                : renderSubscriptionReceipt({
+                    amount,
+                    currency,
+                    plan,
+                    periodEnd,
+                    txnId:     captureId,
+                    dateIso:   nowIso,
+                    isRenewal: false,
+                  });
+              await sendTransactionalEmail({
+                to:             recipient,
+                subject:        tpl.subject,
+                text:           tpl.text,
+                tag:            isFounders ? 'receipt_founders' : 'receipt_subscription_first',
+                idempotencyKey: `receipt:${captureId}`,
+              });
+            }
+          } catch (_emailErr) {
+            console.warn('[webhook-paypal:capture] receipt send threw unexpectedly');
+          }
+        }
         break;
       }
 
@@ -786,10 +859,11 @@ export default async function handler(req, res) {
               dateIso:       refundIso,
             });
             await sendTransactionalEmail({
-              to:      recipient,
-              subject: tpl.subject,
-              text:    tpl.text,
-              tag:     'refund_capture',
+              to:             recipient,
+              subject:        tpl.subject,
+              text:           tpl.text,
+              tag:            'refund_capture',
+              idempotencyKey: `refund:${resource.id}`,
             });
           }
         } catch (_emailErr) {
@@ -1194,10 +1268,11 @@ export default async function handler(req, res) {
                 isRenewal,
               });
               await sendTransactionalEmail({
-                to:      recipient,
-                subject: tpl.subject,
-                text:    tpl.text,
-                tag:     isRenewal ? 'receipt_subscription_renewal' : 'receipt_subscription_first',
+                to:             recipient,
+                subject:        tpl.subject,
+                text:           tpl.text,
+                tag:            isRenewal ? 'receipt_subscription_renewal' : 'receipt_subscription_first',
+                idempotencyKey: `receipt:${saleId}`,
               });
             }
           }
@@ -1289,10 +1364,11 @@ export default async function handler(req, res) {
               dateIso:       refundIso,
             });
             await sendTransactionalEmail({
-              to:      recipient,
-              subject: tpl.subject,
-              text:    tpl.text,
-              tag:     'refund_sale',
+              to:             recipient,
+              subject:        tpl.subject,
+              text:           tpl.text,
+              tag:            'refund_sale',
+              idempotencyKey: `refund:${refundId}`,
             });
           }
         } catch (_emailErr) {

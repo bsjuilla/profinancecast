@@ -227,6 +227,44 @@ export default async function handler(req, res) {
     });
   }
 
+  // Review finding #1 — Founders Lifetime detection.
+  //
+  // Founders Lifetime is a one-time purchase (not a recurring
+  // subscription) and is intentionally non-cancellable / non-refundable
+  // after the 14-day cooling-off period that customers waive at
+  // checkout. The previous behaviour would silently flip
+  // cancel_at_period_end=true on a Founders row AND send a "your Pro
+  // features will end on 2126-05-28" email, which both technically
+  // misled the customer and stored a meaningless cancel flag in the
+  // database.
+  //
+  // Detection is structural (no schema change required): Founders rows
+  // are the ONLY rows whose current_period_end is more than 50 years in
+  // the future (capture-order.js:_periodEndForSku adds 100 years for
+  // the 'founders' SKU; the highest non-Founders period_end is +1 year
+  // for *_annual SKUs). Combined with provider_subscription_id IS NULL
+  // (Founders is a one-shot order, never a Billing Plans subscription)
+  // this is unambiguous.
+  const periodEndMs = existing.current_period_end
+    ? new Date(existing.current_period_end).getTime()
+    : NaN;
+  const fiftyYearsMs = 50 * 365.25 * 24 * 60 * 60 * 1000;
+  const isFoundersLifetime =
+    !existing.provider_subscription_id
+    && Number.isFinite(periodEndMs)
+    && (periodEndMs - Date.now()) > fiftyYearsMs;
+
+  if (isFoundersLifetime) {
+    // No DB write, no email — the row stays exactly as it is.
+    // Customer sees a friendly message in the UI explaining there's
+    // nothing to cancel.
+    return res.status(200).json({
+      ok: true,
+      founders_lifetime: true,
+      message: 'Founders Lifetime is a one-time purchase. There is nothing to cancel — your access does not expire and is not tied to any renewal.',
+    });
+  }
+
   const nowIso = new Date().toISOString();
 
   // W29-b #14 — For recurring Billing Plans subs, ALSO call PayPal's
@@ -359,11 +397,24 @@ export default async function handler(req, res) {
   // (paypalCancelFailed=true) the email includes a warning paragraph
   // pointing the user at their PayPal dashboard. Fail-open: a Resend
   // outage must NOT undo the local cancel flag.
+  //
+  // Review finding #14 — compute hours until next renewal so the
+  // PayPal-cancel-failed warning paragraph can be calibrated. <24h is
+  // urgent (PayPal may charge before our retry catches up); 24–72h is
+  // normal; >72h is softened (ops alerts will resolve before billing).
   try {
+    let hoursUntilNextCharge = null;
+    if (updated.current_period_end) {
+      const peMs = new Date(updated.current_period_end).getTime();
+      if (Number.isFinite(peMs)) {
+        hoursUntilNextCharge = (peMs - Date.now()) / (1000 * 60 * 60);
+      }
+    }
     const tpl = renderCancellationConfirmation({
       plan:               updated.plan,
       periodEnd:          updated.current_period_end,
       paypalCancelFailed,
+      hoursUntilNextCharge,
     });
     await sendTransactionalEmail({
       to:      userData.user.email,
