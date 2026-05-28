@@ -2127,12 +2127,25 @@ function renderNWTab() {
   // ── HISTORY CHART ──
   const noteEl = document.getElementById('nw-tab-chart-note');
   const canvas = document.getElementById('nw-tab-chart');
+  // FULL-J-1 (audit 2026-05-28) — toggle the inline backfill form visibility
+  // based on history length. Form lives in dashboard.html (#nw-backfill-form),
+  // shown ONLY when we lack the 2 entries Chart.js needs to draw a line. Once
+  // user backfills (or auto-logger accumulates entries over multiple days),
+  // the form disappears and the chart renders normally.
+  const bfFormEl = document.getElementById('nw-backfill-form');
   if (canvas) {
     if (history.length < 2) {
-      if (noteEl) noteEl.textContent = 'Come back tomorrow — your chart builds automatically each day you visit.';
+      // FULL-J-1 — empty chart note now reinforces the form below it. The
+      // form does the actual heavy lifting; the note just sets context.
+      if (noteEl) noteEl.textContent = (history.length === 0)
+        ? 'No entries yet — add some past entries below, or come back tomorrow.'
+        : 'Chart needs at least 2 entries — add one or more past entries below.';
       if (nwTabChart) { nwTabChart.destroy(); nwTabChart = null; }
+      if (bfFormEl) bfFormEl.style.display = 'block';
     } else {
       if (noteEl) noteEl.textContent = '';
+      // FULL-J-1 — hide the backfill form; chart renders below.
+      if (bfFormEl) bfFormEl.style.display = 'none';
       const labels = history.map(h => {
         const d = new Date(h.date);
         return d.toLocaleDateString('en-GB', { day:'numeric', month:'short' });
@@ -2291,3 +2304,142 @@ function renderNWTab() {
     PFCStorage.setJSON('nw_history', history);
   } catch(e) {}
 })();
+
+// FULL-J-1 (audit 2026-05-28) — inline backfill handler. Wired from
+// dashboard.html via `data-pfc-on-click="nwBackfillSubmit"` (pfc-inline-
+// bootstrap.js resolves the name to `window.nwBackfillSubmit` per its
+// canonical pattern at line 28: `var fn = window[name]`).
+//
+// Contract:
+//   - Reads 3 (date, amount) rows from the form
+//   - Empty rows are silently skipped (user fills 1-3 as needed)
+//   - Validates each non-empty row: ISO date format, date strictly < today,
+//     date >= 2000-01-01, amount finite + non-negative + under 1 trillion
+//   - On any row failing validation: error message, NO writes (atomic-or-nothing)
+//   - On success: merges into nw_history using the SAME canonical pattern as
+//     the logNWSnapshot IIFE above — manual entries replace existing same-date
+//     entries (manual wins over auto, matching net-worth-2.js saveManualEntry)
+//   - Sorts + caps at 3650 entries (10y), matching the auto-logger
+//   - Re-renders the dashboard via renderNWTab() so the chart appears immediately
+//
+// Security review (FULL-J-1):
+//   - User input never reaches innerHTML (all DOM writes use textContent or
+//     value, both safe from XSS)
+//   - Amount cap at 1e12 prevents number overflow / display breakage
+//   - Date regex prevents prototype-pollution-style keys
+//   - No network call — purely client-side localStorage write
+//   - No PII in any console output (we don't log)
+window.nwBackfillSubmit = function nwBackfillSubmit() {
+  var msgEl = document.getElementById('nw-backfill-msg');
+  function setMsg(text, isErr) {
+    if (!msgEl) return;
+    msgEl.textContent = text;
+    msgEl.style.color = isErr ? 'var(--red)' : 'var(--teal)';
+  }
+
+  // Gather non-empty rows. We accept partial fills (e.g. only row 1 + row 3).
+  var rows = [];
+  for (var i = 1; i <= 3; i++) {
+    var dateEl   = document.querySelector('[data-bf-date="' + i + '"]');
+    var amountEl = document.querySelector('[data-bf-amount="' + i + '"]');
+    if (!dateEl || !amountEl) continue;
+    var dateRaw   = String(dateEl.value || '').trim();
+    var amountRaw = String(amountEl.value || '').trim();
+    if (!dateRaw && !amountRaw) continue; // both blank — skip
+    rows.push({ index: i, dateRaw: dateRaw, amountRaw: amountRaw });
+  }
+  if (rows.length === 0) {
+    setMsg('Fill at least one row to backfill (need 2+ total entries for chart).', true);
+    return;
+  }
+
+  // Build today's local YYYY-MM-DD the same way the IIFE does (NW-P1-2 fix).
+  var _d = new Date();
+  var todayStr = _d.getFullYear() + '-' +
+    String(_d.getMonth() + 1).padStart(2, '0') + '-' +
+    String(_d.getDate()).padStart(2, '0');
+  var ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+  var MIN_DATE = '2000-01-01';
+  var MAX_AMOUNT = 1e12;
+
+  // Validate every non-empty row BEFORE any write (atomic).
+  var entries = [];
+  for (var k = 0; k < rows.length; k++) {
+    var row = rows[k];
+    if (!row.dateRaw || !ISO_DATE_RE.test(row.dateRaw)) {
+      setMsg('Row ' + row.index + ': pick a valid date.', true);
+      return;
+    }
+    if (row.dateRaw >= todayStr) {
+      setMsg('Row ' + row.index + ': date must be in the past (today is auto-logged).', true);
+      return;
+    }
+    if (row.dateRaw < MIN_DATE) {
+      setMsg('Row ' + row.index + ': date must be after ' + MIN_DATE + '.', true);
+      return;
+    }
+    if (!row.amountRaw) {
+      setMsg('Row ' + row.index + ': enter a net worth amount.', true);
+      return;
+    }
+    var amount = parseFloat(row.amountRaw);
+    if (!isFinite(amount) || amount < 0 || amount > MAX_AMOUNT) {
+      setMsg('Row ' + row.index + ': enter a positive number under 1 trillion.', true);
+      return;
+    }
+    // Round to 2 decimal places (avoid floating-point cruft in storage).
+    amount = Math.round(amount * 100) / 100;
+    entries.push({
+      date: row.dateRaw,
+      netWorth: amount,
+      assets: amount,
+      savings: amount,
+      investments: 0,
+      debt: 0,
+      source: 'manual',
+    });
+  }
+
+  // Merge into existing history (canonical pattern from logNWSnapshot IIFE
+  // above). Manual entries replace existing entries on the same date,
+  // matching net-worth-2.js saveManualEntry semantics.
+  var history = [];
+  try { history = JSON.parse(PFCStorage.get('nw_history') || '[]'); } catch (e) {}
+  for (var j = 0; j < entries.length; j++) {
+    var entry = entries[j];
+    var existing = -1;
+    for (var m = 0; m < history.length; m++) {
+      if (history[m].date === entry.date) { existing = m; break; }
+    }
+    if (existing >= 0) history[existing] = entry;
+    else history.push(entry);
+  }
+  history.sort(function (a, b) { return a.date.localeCompare(b.date); });
+  // Same 3650-day cap as the auto-logger (NW-P0-1).
+  if (history.length > 3650) history = history.slice(-3650);
+  try {
+    PFCStorage.setJSON('nw_history', history);
+  } catch (e) {
+    setMsg('Could not save entries (storage error). Try again.', true);
+    return;
+  }
+
+  setMsg('Added ' + entries.length + ' ' + (entries.length === 1 ? 'entry' : 'entries') + '. Chart updating...', false);
+
+  // Clear inputs so user knows it worked.
+  for (var n = 1; n <= 3; n++) {
+    var de = document.querySelector('[data-bf-date="' + n + '"]');
+    var ae = document.querySelector('[data-bf-amount="' + n + '"]');
+    if (de) de.value = '';
+    if (ae) ae.value = '';
+  }
+
+  // Trigger dashboard re-render so the chart appears immediately.
+  // setTimeout 50ms gives the success message a tick to render before
+  // renderNWTab() potentially hides this whole form (history >= 2 now).
+  setTimeout(function () {
+    try {
+      if (typeof renderNWTab === 'function') renderNWTab();
+    } catch (_) { /* swallow */ }
+  }, 50);
+};
