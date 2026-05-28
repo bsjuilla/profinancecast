@@ -127,13 +127,21 @@ async function runSingleAttempt(provider, canonical, startMs, budgetRemaining, o
   try {
     result = await callAdapter(provider, canonical, budgetRemaining);
   } catch (err) {
-    logRouter(label, 0, 'ADAPTER_THREW');
+    // FULL-P1-I-DEBUG2 — capture err.name + truncated err.message so we
+    // can see WHY the adapter threw at runtime. Without this, all crashes
+    // surface as bare 'ADAPTER_THREW' with no diagnostic. PII-safe: error
+    // messages from our own adapter code are safe to surface; if the
+    // upstream provider's library leaks user data into err.message we
+    // truncate to 120 chars to bound the blast radius.
+    const errName = err && err.name ? String(err.name) : 'Error';
+    const errMsg = err && err.message ? String(err.message).slice(0, 120) : '';
+    logRouter(label, 0, 'ADAPTER_THREW name=' + errName + ' msg=' + errMsg);
     return {
       ok: false,
       reason: 'CASCADE_EXHAUSTED',
       status: 500,
       retryAfterSec: null,
-      attempts: [{ provider: provider.id, reason: 'ADAPTER_THREW', status: 0 }],
+      attempts: [{ provider: provider.id, reason: 'ADAPTER_THREW', status: 0, errName, errMsg }],
     };
   }
 
@@ -267,9 +275,15 @@ export async function complete(canonical) {
     try {
       result = await callAdapter(p, canonical, budgetRemaining());
     } catch (err) {
-      attempts.push({ provider: p.id, reason: 'ADAPTER_THREW', status: 0 });
-      logRouter(label, 0, 'ADAPTER_THREW');
-      await safeAlert(() => alertProviderFailure(p.id, 'ADAPTER_THREW', 0, { label }));
+      // FULL-P1-I-DEBUG2 — capture err.name + truncated err.message for the
+      // MAIN CASCADE LOOP catch (the one normal /chat requests hit). Same
+      // rationale as the runSingleAttempt catch above: bare ADAPTER_THREW
+      // is undiagnosable without the actual error class + message.
+      const errName = err && err.name ? String(err.name) : 'Error';
+      const errMsg = err && err.message ? String(err.message).slice(0, 120) : '';
+      attempts.push({ provider: p.id, reason: 'ADAPTER_THREW', status: 0, errName, errMsg });
+      logRouter(label, 0, 'ADAPTER_THREW name=' + errName + ' msg=' + errMsg);
+      await safeAlert(() => alertProviderFailure(p.id, 'ADAPTER_THREW', 0, { label, errName, errMsg }));
       continue;
     }
 
