@@ -2265,6 +2265,78 @@
   </svg>
 </div>
 
+<!-- ─────────── QUARTERLY REPORT CARD (Pro feature showcase) ───────────
+     Static visual mockup of the Quarterly Report Card a Pro subscriber
+     receives every three months. Pure inline SVG — no external image
+     loads, CSP-safe, scales fluidly on mobile. Brand colours hard-coded
+     so the SVG renders identically in every browser/CSS-var resolution
+     state. Content shows realistic Q2-2026 numbers (net worth delta,
+     debt-free-month estimate, emergency-fund progress). Purely
+     illustrative — no real customer data, no API call. -->
+<section id="report-card" style="padding: 96px 24px 80px;">
+  <div class="section-head reveal">
+    <div class="section-index"><span class="roman">ii&frac12;.</span><span class="rule"></span>Pro feature</div>
+    <h2 class="section-title">Your quarter, <em>in one page.</em></h2>
+    <p class="pfc-lede" style="margin-top:14px;">Pro mails you a Quarterly Report Card every three months &mdash; what changed, what&rsquo;s on track, what to watch &mdash; built from your numbers and written in plain language. Here&rsquo;s what it looks like.</p>
+  </div>
+
+  <figure class="reveal" style="max-width: 720px; margin: 56px auto 0; padding: 0;">
+    <svg viewBox="0 0 600 440" width="100%" role="img" aria-labelledby="rc-title rc-desc" style="display:block;height:auto;border-radius:14px;box-shadow:0 24px 64px -28px rgba(0,0,0,0.55), 0 0 0 1px rgba(212,175,106,0.06);">
+      <title id="rc-title">Sample Quarterly Report Card for Q2 2026</title>
+      <desc id="rc-desc">An illustrative quarterly summary showing net worth up €12,400, debt-free month pulled forward by 4 months, and emergency-fund progress at 84%.</desc>
+
+      <!-- Card backplate -->
+      <rect x="1" y="1" width="598" height="438" rx="14" fill="#0B1410" stroke="rgba(212,175,106,0.28)" stroke-width="1.2"/>
+
+      <!-- Header -->
+      <text x="36" y="46" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-size="10.5" letter-spacing="2.5" fill="#D4AF6A" font-weight="600">QUARTERLY REPORT CARD</text>
+      <text x="564" y="46" text-anchor="end" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-size="11" letter-spacing="1.4" fill="rgba(232,228,219,0.65)">Q2 &middot; 2026</text>
+      <line x1="36" y1="64" x2="564" y2="64" stroke="rgba(212,175,106,0.20)" stroke-width="0.9"/>
+
+      <!-- Row 1: Net worth -->
+      <text x="36" y="100" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-size="10" letter-spacing="1.6" fill="rgba(232,228,219,0.55)">NET WORTH</text>
+      <text x="36" y="146" font-family="Fraunces,'Cormorant Garamond',Georgia,serif" font-size="42" font-weight="500" letter-spacing="-0.6" fill="#F4F2EC">&euro;86,400</text>
+      <text x="248" y="146" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-size="13" fill="#2BB67D" font-weight="600">+&euro;12,400 this quarter</text>
+      <!-- Sparkline trending up (stroke-width bumped 1.6 → 2 per design critique — reads thin at 1440 desktop) -->
+      <path d="M 400 132 L 432 126 L 462 120 L 494 108 L 524 96 L 552 84" stroke="#2BB67D" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="552" cy="84" r="3" fill="#D4AF6A"/>
+      <line x1="36" y1="178" x2="564" y2="178" stroke="rgba(212,175,106,0.12)" stroke-width="0.6"/>
+
+      <!-- Row 2: Debt-free month -->
+      <text x="36" y="210" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-size="10" letter-spacing="1.6" fill="rgba(232,228,219,0.55)">DEBT-FREE MONTH</text>
+      <text x="36" y="248" font-family="Fraunces,'Cormorant Garamond',Georgia,serif" font-size="32" font-weight="500" letter-spacing="-0.4" fill="#F4F2EC">April 2027</text>
+      <text x="248" y="248" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-size="13" fill="#2BB67D" font-weight="600">&uarr; 4 months earlier</text>
+      <line x1="36" y1="278" x2="564" y2="278" stroke="rgba(212,175,106,0.12)" stroke-width="0.6"/>
+
+      <!-- Row 3: Emergency fund -->
+      <text x="36" y="308" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-size="10" letter-spacing="1.6" fill="rgba(232,228,219,0.55)">EMERGENCY FUND</text>
+      <text x="36" y="346" font-family="Fraunces,'Cormorant Garamond',Georgia,serif" font-size="28" font-weight="500" letter-spacing="-0.3" fill="#F4F2EC">&euro;8,400 of &euro;10,000</text>
+      <text x="564" y="346" text-anchor="end" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-size="13" fill="#2BB67D" font-weight="600">84%</text>
+      <!-- Progress bar: track + fill (84% of 528px = 443.5) -->
+      <rect x="36" y="362" width="528" height="4" rx="2" fill="rgba(232,228,219,0.10)"/>
+      <rect x="36" y="362" width="443.5" height="4" rx="2" fill="#2BB67D"/>
+      <line x1="36" y1="395" x2="564" y2="395" stroke="rgba(212,175,106,0.20)" stroke-width="0.9"/>
+
+      <!-- Footer -->
+      <text x="36" y="420" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-size="10" fill="rgba(232,228,219,0.45)">Generated 2026-06-30 &middot; Next report Sep 30, 2026</text>
+      <text x="564" y="420" text-anchor="end" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-size="10" fill="rgba(212,175,106,0.55)" letter-spacing="1.2" font-weight="600">PFC</text>
+    </svg>
+    <figcaption style="max-width: 540px; margin: 32px auto 0; text-align: center; font-size: 14px; color: var(--ink-2); line-height: 1.65;">
+      A real Report Card uses your actual numbers, factors in your recurring expenses, and tells you what&rsquo;s worth your attention this quarter &mdash; all in under a minute of reading.
+      <br><br>
+      <a href="#pricing" style="color: var(--money); text-decoration: underline; text-underline-offset: 4px; font-weight: 500;">Get yours quarterly with Pro &rarr;</a>
+    </figcaption>
+  </figure>
+</section>
+
+<!-- Animated hairline divider between Report Card and Pricing -->
+<div class="section-divider" data-divider aria-hidden="true">
+  <svg viewBox="0 0 800 12" preserveAspectRatio="none">
+    <line class="divider-line" x1="0" y1="6" x2="800" y2="6" stroke-linecap="round"/>
+    <circle class="divider-mark" cx="400" cy="6" r="2.4"/>
+  </svg>
+</div>
+
 <!-- ─────────── PRICING ─────────── -->
 <section id="pricing">
   <div class="section-head reveal">
