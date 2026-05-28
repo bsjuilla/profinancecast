@@ -847,6 +847,44 @@
     .hero-cta .btn { justify-content: center; }
     .bento { grid-template-columns: 1fr; }
   }
+  /* MOBILE OVERFLOW FIX (2026-05-28)
+     Root cause: `.hero` is `display: grid` with implicit auto-track.
+     The auto-track sized to its child's *min-content*, which was dominated
+     by the eyebrow chip (`display: inline-flex`, single-line uppercase text).
+     This forced `.hero-inner` to ~402px in a 390px viewport.
+     Secondary causes: `.chart-grid` stayed 2-col and the eyebrow refused to
+     wrap. Fix forces the grid track to honor parent width and lets the
+     eyebrow + H1 break naturally. */
+  @media (max-width: 600px) {
+    .hero {
+      padding: 110px 20px 48px;
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .pfc-hero-grid { grid-template-columns: minmax(0, 1fr); }
+    .hero-inner { max-width: 100%; min-width: 0; }
+    .pfc-hero-copy, .pfc-hero-demo { max-width: 100%; min-width: 0; }
+    .eyebrow {
+      display: inline-block;
+      font-size: 10.5px;
+      padding: 6px 12px 6px 10px;
+      letter-spacing: 0.04em;
+      max-width: 100%;
+      line-height: 1.4;
+    }
+    .hero h1 { font-size: clamp(32px, 9vw, 50px); max-width: 100%; }
+    .hero-sub { font-size: 15px; }
+    .pfc-hero-grid .pfc-hero-demo .chart-grid,
+    .chart-grid { grid-template-columns: 1fr; gap: 20px; }
+    .chart-frame { padding: 22px; }
+    .trust-row { gap: 12px 16px; font-size: 12px; }
+    /* Nav crowding: shrink padding + button sizes + force single-line text
+       so logo + "Sign in" + "Start free" all fit one line at 390px wide. */
+    nav { padding: 8px 14px; }
+    nav .nav-cta { gap: 4px; }
+    nav .btn { white-space: nowrap; }
+    nav .btn.btn-ghost { padding: 6px 10px; font-size: 13px; }
+    nav .btn.btn-primary { padding: 8px 14px; font-size: 13px; }
+  }
   /* "From the journal" 3-card strip — content varies, frame is shared.
      Hand-edited cards keep their own data-slug + data-category so
      pfc-analytics.js fires blog_card_click correctly. */
@@ -1740,8 +1778,7 @@
         </a>
       </div>
       <div class="reveal" style="margin-top:12px;font-size:13px;color:var(--ink-3);font-family:var(--font-body);">
-        Pre-launch &middot;
-        <a href="waitlist.html" style="color:var(--gold);text-decoration:underline;text-underline-offset:3px;">join the 100-seat Founders Lifetime waitlist &rarr;</a>
+        <a href="waitlist.html" style="color:var(--gold);text-decoration:underline;text-underline-offset:3px;">Founders Lifetime &mdash; 100 founding-member seats open &rarr;</a>
         <span style="display:block;margin-top:4px;font-size:11px;color:var(--ink-3);">Founders Lifetime is a one-time purchase &mdash; at checkout you waive the 14-day right of withdrawal in exchange for immediate access.</span>
       </div>
       <div class="trust-row reveal" role="list" aria-label="What we do and don't do">
