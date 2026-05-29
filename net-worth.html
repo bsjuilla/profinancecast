@@ -274,7 +274,15 @@
      that repeated 3+ times. One-off styles are intentionally left alone to
      scope the change. */
   .nw-cell{padding:10px 20px;}                        /* data-table th/td repeats (8×) */
-  .nw-row-cell{padding:9px 20px;}                     /* data-table td body repeats */
+  .nw-row-cell{padding:11px 20px;}                    /* data-table td body repeats */
+  /* NW-LAYOUT (audit 2026-05-29) — the history table is full-width with few
+     rows, so left-aligned values floated marooned in wide cells and read as
+     unprofessional. Right-align the numeric/short columns (Net worth, Change,
+     Source) so they form a clean aligned edge; Date stays left. tabular-nums
+     keeps the amounts vertically aligned digit-for-digit. */
+  .data-table th.nw-cell:nth-child(n+2),
+  .data-table td.nw-row-cell:nth-child(n+2){text-align:right;}
+  .data-table td.nw-row-cell{font-variant-numeric:tabular-nums;}
   .nw-preview-tile{padding:14px 12px;background:var(--surface-2,rgba(244,239,229,0.03));border:1px solid var(--line-2,rgba(244,239,229,0.06));border-radius:var(--r-sm);}
   .nw-preview-eyebrow{font-family:var(--font-display);font-style:italic;font-size:15px;color:var(--ink,#F4EFE5);margin-bottom:6px;}
   .nw-preview-body{font-size:12px;line-height:1.55;color:var(--text3);}
