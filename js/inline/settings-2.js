@@ -52,16 +52,11 @@ function showTab(btn, tab) {
   document.getElementById('tab-' + tab).classList.add('active');
 }
 
-function toggleSwitch(btn) {
-  const isOn = btn.classList.contains('on');
-  btn.classList.toggle('on', !isOn);
-  btn.classList.toggle('off', isOn);
-}
-
-// W30 — Weekly Check-In opt-in. Unlike the other (presentational) toggles,
-// this one PERSISTS to the server (api/founders-claimed, which hosts the
-// weekly cron reads the stored preference. Optimistic UI: flip immediately,
-// POST, and revert on failure so the switch never lies about saved state.
+// W30 — Weekly Check-In opt-in. This toggle PERSISTS to the server
+// (api/founders-claimed, which also hosts the weekly cron). Optimistic UI:
+// flip immediately, POST, and revert on failure so the switch never lies
+// about saved state. (The old presentational-only toggles were removed —
+// they implied features that didn't exist.)
 async function toggleWeeklyCheckin(btn) {
   const wasOn = btn.classList.contains('on');
   const next  = !wasOn;
@@ -109,11 +104,6 @@ async function loadNotificationPrefs() {
     btn.classList.toggle('on', on);
     btn.classList.toggle('off', !on);
   } catch (_) { /* leave default (off) */ }
-}
-
-function setFreq(btn) {
-  document.querySelectorAll('.freq-opt').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
 }
 
 async function saveSettings() {
