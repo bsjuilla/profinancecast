@@ -2249,10 +2249,21 @@ function renderNWTab() {
 }
 
 (function logNWSnapshot() {
+  // NW-CRITICAL fix (2026-05-29) — defer until the encrypted cache is warm and
+  // the canonical user profile is loaded. Pre-fix this IIFE ran SYNCHRONOUSLY at
+  // page load, when getJSON('nw_history') returns null (a cold cache cannot
+  // decrypt the AES envelope) and PFCAuth.getUserId() may still be 'guest'. The
+  // merged single-entry write then clobbered the real history (via
+  // PFCStorage.set()'s synchronous plaintext mirror) or stranded it in
+  // pfc:guest:nw_history, so /net-worth showed "Days tracked: 1" forever.
+  // PFCUser.onReady fires only after BOTH auth resolves AND storage warms,
+  // guaranteeing the correct user namespace + a decryptable cache.
+  function run() {
   try {
-    const savings     = USER.savings || 0;
-    const investments = USER.investments || 0;
-    const debt        = USER.debt || 0;
+    const u           = (typeof loadUser === 'function') ? loadUser() : USER;
+    const savings     = u.savings || 0;
+    const investments = u.investments || 0;
+    const debt        = u.debt || 0;
     const assets      = savings + investments;
     const netWorth    = assets - debt;
     if (assets === 0 && debt === 0) return;
@@ -2303,6 +2314,21 @@ function renderNWTab() {
     if (history.length > 3650) history = history.slice(-3650);
     PFCStorage.setJSON('nw_history', history);
   } catch(e) {}
+  }
+  // Schedule run() once the user profile + encrypted storage are both ready.
+  // PFCUser.onReady fires after _onBothReady (auth + storage). The fallbacks
+  // keep the logger working on pages/builds where PFCUser is absent.
+  if (typeof PFCUser !== 'undefined' && typeof PFCUser.onReady === 'function') {
+    PFCUser.onReady(run);
+  } else if (typeof PFCStorage !== 'undefined' && typeof PFCStorage.onReady === 'function') {
+    PFCStorage.onReady(run);
+  } else if (typeof PFCStorage !== 'undefined' && typeof PFCStorage.isReady === 'function' && PFCStorage.isReady()) {
+    // Explicit (security-review finding #2): only run synchronously if storage
+    // is actually present AND warm. If PFCStorage is absent/cold here, skip
+    // logging entirely rather than risk an unguarded write — the next page load
+    // with a warm cache will capture today's snapshot.
+    run();
+  }
 })();
 
 // FULL-J-1 (audit 2026-05-28) — inline backfill handler. Wired from
@@ -2398,6 +2424,20 @@ window.nwBackfillSubmit = function nwBackfillSubmit() {
       debt: 0,
       source: 'manual',
     });
+  }
+
+  // NW-CRITICAL fix (2026-05-29) — same isReady gate as the auto-loggers
+  // (security-review finding #4). nwBackfillSubmit reads-merges-writes
+  // nw_history directly; if the encrypted cache were still cold (the AES
+  // envelope can't be decrypted → get() returns null), the merge would start
+  // from [] and the setJSON below would CLOBBER the real history. In practice
+  // this fires only from a user form submit (post-warm), but guarding here
+  // closes the TOCTOU window and gives the user a clear retry message instead
+  // of silent data loss.
+  if (typeof PFCStorage === 'undefined' ||
+      typeof PFCStorage.isReady !== 'function' || !PFCStorage.isReady()) {
+    setMsg('Still loading your secure data — please wait a moment and try again.', true);
+    return;
   }
 
   // Merge into existing history (canonical pattern from logNWSnapshot IIFE

@@ -145,7 +145,8 @@ function init() {
   // Sidebar user-pill hydrated by js/pfc-sidebar.js;
   // plan badge by PFCPlan.applyBadges().
 
-  // Auto-log today's snapshot from USER data (same as dashboard does)
+  // Auto-log today's snapshot from USER data (same as dashboard does).
+  // No-op until the encrypted cache is warm (see logTodaySnapshot guard).
   logTodaySnapshot();
 
   // NW-P2-5: catch up any milestone crossings that happened via the
@@ -159,7 +160,17 @@ function init() {
     }, 800);
   }
 
-  renderAll();
+  // NW-CRITICAL fix (2026-05-29) — defer the FIRST paint until the encrypted
+  // cache is warm, so a logged-in user with history doesn't flash the empty-
+  // state archive card before their real data decrypts. For guests / browsers
+  // without Web Crypto, isReady() is true synchronously so this paints
+  // immediately (no regression). The post-warm onReady handler below always
+  // re-renders with the canonical decrypted data.
+  if (typeof PFCStorage === 'undefined' ||
+      typeof PFCStorage.isReady !== 'function' ||
+      PFCStorage.isReady()) {
+    renderAll();
+  }
 }
 
 // NW-P2-5 fix (audit 2026-05-24) — milestone-crossed celebration. The
@@ -196,6 +207,33 @@ function _celebrateIfCrossed(_prevMaxIgnored, newMaxNW) {
 
 // ── LOG TODAY (called on page load — same function dashboard calls) ──
 function logTodaySnapshot() {
+  // NW-CRITICAL fix (2026-05-29) — never read-merge-write nw_history until the
+  // encrypted cache is warm. ROOT CAUSE of "Days tracked: 1 — first entry
+  // today" forever: init() (line ~941) calls this SYNCHRONOUSLY at script-load,
+  // BEFORE PFCStorage warms its cache AND before PFCAuth resolves the real uid.
+  // At that instant PFCStorage.getJSON('nw_history') returns null (a cold cache
+  // cannot decrypt the AES envelope) and PFCAuth.getUserId() still returns
+  // 'guest'. The old code therefore: (a) read HISTORY as [], then (b) wrote
+  // today's single entry into pfc:GUEST:nw_history (stranding it — guest→user
+  // adoption refuses to overwrite an existing user key), so the user's real
+  // namespace never accumulated. Confirmed in production via console diagnostic:
+  // pfc:{uid}:nw_history decrypts OK but holds only today; a stray
+  // pfc:guest:nw_history exists alongside it. Gating on isReady() guarantees we
+  // append to the REAL decrypted history under the correct user namespace. The
+  // post-warm onReady / onAuthChange / onChange handlers re-invoke this once the
+  // cache is warm, so deferring here loses nothing.
+  if (typeof PFCStorage === 'undefined' ||
+      typeof PFCStorage.isReady !== 'function' ||
+      !PFCStorage.isReady()) {
+    return;
+  }
+  // Re-read the canonical history from the now-warm cache so we always merge
+  // into the real persisted series rather than a stale cold-init snapshot.
+  try {
+    const canonical = PFCStorage.getJSON('nw_history');
+    if (Array.isArray(canonical)) HISTORY = canonical;
+  } catch (_) {}
+
   const savings     = USER.savings || 0;
   const investments = USER.investments || 0;
   const debt        = USER.debt || 0;
@@ -956,15 +994,17 @@ function _rehydrateFromStorage() {
   renderAll();
 }
 if (typeof PFCAuth !== 'undefined') {
-  PFCAuth.onReady(() => {
-    let freshUser = {}, freshHistory = [];
-    try { freshUser = (typeof PFCUser !== 'undefined') ? PFCUser.get() : (PFCStorage.getJSON('user') || {}); } catch(e) {}
-    try { freshHistory = PFCStorage.getJSON('nw_history') || []; } catch(e) {}
-    if (JSON.stringify(freshUser) !== JSON.stringify(USER) ||
-        JSON.stringify(freshHistory) !== JSON.stringify(HISTORY)) {
-      _rehydrateFromStorage();
-    }
-  });
+  // NW-CRITICAL fix (2026-05-29) — PFCStorage intercepts PFCAuth.onReady so this
+  // callback fires only AFTER the cache is warm AND auth has resolved the real
+  // uid. We now ALWAYS rehydrate here (was: only "if changed"). Reason: the
+  // synchronous init() above deliberately skips logging + first-paint while the
+  // cache is cold, so this post-warm pass is what actually logs today's entry
+  // into the real user namespace and paints the populated view. The previous
+  // "if changed" guard could skip this pass for a brand-new user whose cold-read
+  // HISTORY ([]) happened to equal their still-empty warm HISTORY, leaving today
+  // unlogged. Rehydrate is idempotent (logTodaySnapshot replaces today's row in
+  // place), so an unconditional call is safe.
+  PFCAuth.onReady(_rehydrateFromStorage);
   PFCAuth.onAuthChange(_rehydrateFromStorage);
 }
 // Pick up cross-page edits (settings change, cash-forecast typed values, etc.)
