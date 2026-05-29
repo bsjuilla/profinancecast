@@ -116,6 +116,60 @@ export function renderFoundersReceipt({ amount, currency, txnId, dateIso }) {
 }
 
 // ---------------------------------------------------------------------------
+// 1b. Founders Lifetime WELCOME — onboarding email with seat number
+// ---------------------------------------------------------------------------
+//
+// Distinct from the receipt above: the receipt is the legal transaction
+// record; this is the warm welcome that gives the founder their seat number
+// and shows them how to start. Sent best-effort + idempotency-keyed from
+// capture-order.js. seatNo may be null (finalize_founders_seat didn't return
+// one); we degrade to a generic "one of N founding members" line rather than
+// printing "Founder #null". Contains NO financial data.
+
+export function renderFoundersWelcome({ seatNo, cap = 100, firstName }) {
+  const seatN    = Number(seatNo);
+  const hasSeat  = Number.isFinite(seatN) && seatN > 0;
+  const capN     = Number.isFinite(Number(cap)) && Number(cap) > 0 ? Number(cap) : 100;
+  const namePart = (firstName && typeof firstName === 'string' && firstName.trim())
+    ? `, ${firstName.trim()}`
+    : '';
+
+  const seatLine = hasSeat
+    ? `You're Founder #${seatN} of ${capN}.`
+    : `You're one of just ${capN} founding members.`;
+  const subject = hasSeat
+    ? `Welcome, founder — you're #${seatN} of ${capN}`
+    : 'Welcome to ProFinanceCast — you’re a founding member';
+
+  const text = [
+    `Welcome${namePart} — and thank you.`,
+    '',
+    seatLine,
+    '',
+    'Your Founders Lifetime unlocks every Pro feature, forever — multi-',
+    'scenario planning, the full portfolio, Ask Sage, and your quarterly',
+    'Report Card. No renewals, no price changes, ever.',
+    '',
+    'Start here:',
+    '  1. Add your numbers (income, expenses, savings, debt) — about 2 min',
+    '  2. Watch your 10-year net-worth forecast update live',
+    '  3. Check your Report Card grade and build your first scenario',
+    '',
+    '  https://www.profinancecast.com/dashboard',
+    '',
+    'A note on privacy: your financial numbers are encrypted in your own',
+    'browser and never reach our servers. Even we cannot see them — that is',
+    'the whole point.',
+    '',
+    `Questions? Just reply to this email, or write to ${SUPPORT_EMAIL}.`,
+    '',
+    SIGNATURE,
+  ].join('\n');
+
+  return { subject, text };
+}
+
+// ---------------------------------------------------------------------------
 // 2. Subscription receipt — Pro or Premium, first charge OR recurring renewal
 // ---------------------------------------------------------------------------
 //
@@ -312,6 +366,48 @@ export function renderAccountDeletionGoodbye({ hadActiveSub }) {
   lines.push('Thanks for trying ProFinanceCast.');
   lines.push('');
   lines.push(SIGNATURE);
+
+  return { subject, text: lines.join('\n') };
+}
+
+// ---------------------------------------------------------------------------
+// 6. Weekly Check-In — privacy-preserving retention nudge
+// ---------------------------------------------------------------------------
+//
+// Sent by api/cron/weekly-checkin.js to OPTED-IN users only. CRITICAL: this
+// email carries NO financial data. The server is blind to the user's numbers
+// (encrypted client-side), so the email is a content-free invitation; the
+// grade / "thing that moved" / suggested action are all computed client-side
+// AFTER the user clicks through. The curiosity gap IS the mechanic. The
+// privacy line is a retention asset, not a disclaimer. Includes a one-click
+// opt-out instruction (anti-spam / GDPR).
+
+export function renderWeeklyCheckin({ firstName } = {}) {
+  const namePart = (firstName && typeof firstName === 'string' && firstName.trim())
+    ? ` ${firstName.trim()}`
+    : '';
+
+  const subject = 'Your weekly money check-in is ready';
+  const lines = [
+    `Hi${namePart},`,
+    '',
+    "It's time for your weekly money check-in.",
+    '',
+    'Open ProFinanceCast to see, in about 30 seconds:',
+    '  - This week’s financial-health grade',
+    '  - The one thing that moved the most',
+    '  - Your single suggested action for the week ahead',
+    '',
+    '  https://www.profinancecast.com/report-card',
+    '',
+    'Your numbers are computed privately in your own browser — we can’t see',
+    'them, and we never will. This email contains nothing about your finances.',
+    '',
+    'Prefer not to get these? Turn off the Weekly Check-In any time under',
+    'Settings → Notifications on profinancecast.com.',
+    '',
+    SIGNATURE,
+  ];
 
   return { subject, text: lines.join('\n') };
 }

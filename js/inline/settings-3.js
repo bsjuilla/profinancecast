@@ -51,5 +51,8 @@
         setVal('s-currency', currency);
         setText('profile-display-name',    fullName || email || '—');
         setText('profile-avatar-initials', initials);
+
+        // W30 — reflect the persisted Weekly Check-In opt-in in its toggle.
+        if (typeof loadNotificationPrefs === 'function') loadNotificationPrefs();
       });
     });

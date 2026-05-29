@@ -58,6 +58,59 @@ function toggleSwitch(btn) {
   btn.classList.toggle('off', isOn);
 }
 
+// W30 — Weekly Check-In opt-in. Unlike the other (presentational) toggles,
+// this one PERSISTS to the server (api/profile/notifications), because the
+// weekly cron reads the stored preference. Optimistic UI: flip immediately,
+// POST, and revert on failure so the switch never lies about saved state.
+async function toggleWeeklyCheckin(btn) {
+  const wasOn = btn.classList.contains('on');
+  const next  = !wasOn;
+  btn.classList.toggle('on', next);
+  btn.classList.toggle('off', !next);
+  btn.setAttribute('aria-busy', 'true');
+  try {
+    const session = (typeof PFCAuth !== 'undefined') ? PFCAuth.getSession() : null;
+    const token = session && session.access_token;
+    if (!token) throw new Error('no_session');
+    const res = await fetch('/api/profile/notifications', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ weeklyCheckinOptIn: next }),
+    });
+    if (!res.ok) throw new Error('http_' + res.status);
+  } catch (_e) {
+    // Revert the optimistic flip so the UI reflects the true (unsaved) state.
+    btn.classList.toggle('on', wasOn);
+    btn.classList.toggle('off', !wasOn);
+    if (typeof window.pfcToast === 'function') {
+      window.pfcToast('Could not save that preference — please try again.');
+    }
+  } finally {
+    btn.removeAttribute('aria-busy');
+  }
+}
+
+// Load the persisted Weekly Check-In state on page init and reflect it in the
+// toggle. On any failure we leave the default (off) — opt-in, so failing
+// closed never silently subscribes anyone.
+async function loadNotificationPrefs() {
+  const btn = document.getElementById('toggle-weekly-checkin');
+  if (!btn) return;
+  try {
+    const session = (typeof PFCAuth !== 'undefined') ? PFCAuth.getSession() : null;
+    const token = session && session.access_token;
+    if (!token) return;
+    const res = await fetch('/api/profile/notifications', {
+      headers: { 'Authorization': 'Bearer ' + token },
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    const on = !!(data && data.weeklyCheckinOptIn);
+    btn.classList.toggle('on', on);
+    btn.classList.toggle('off', !on);
+  } catch (_) { /* leave default (off) */ }
+}
+
 function setFreq(btn) {
   document.querySelectorAll('.freq-opt').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');

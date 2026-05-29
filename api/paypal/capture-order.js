@@ -16,6 +16,7 @@ import { createClient } from '@supabase/supabase-js';
 import { sendTransactionalEmail } from '../_lib/email/send.js';
 import {
   renderFoundersReceipt,
+  renderFoundersWelcome,
   renderSubscriptionReceipt,
 } from '../_lib/email/templates.js';
 
@@ -533,6 +534,32 @@ export default async function handler(req, res) {
       // Helper swallows network errors; this catch is the belt-and-braces
       // for an unexpected template-render throw. Log nothing PII-revealing.
       console.warn('[capture-order:email] receipt send threw unexpectedly');
+    }
+
+    // W30 — Founders WELCOME email (onboarding + seat number). Separate from
+    // the receipt above: the receipt is the legal transaction record; this is
+    // the warm welcome telling the founder their seat number and how to start.
+    // Best-effort + fail-open + idempotency-keyed (welcome_founders:<captureId>)
+    // so a double capture can't double-send. Founders SKU only. A welcome-email
+    // failure must NEVER unwind the captured payment + entitlement upgrade.
+    if (sku === 'founders') {
+      try {
+        const firstName = (function () {
+          const fn = user?.user_metadata?.full_name || user?.user_metadata?.name || '';
+          return fn ? String(fn).trim().split(/\s+/)[0] : undefined;
+        })();
+        const wtpl = renderFoundersWelcome({ seatNo: foundersSeatNo, cap: 100, firstName });
+        const wKey = (capture?.id || orderID) ? `welcome_founders:${capture?.id || orderID}` : undefined;
+        await sendTransactionalEmail({
+          to:             user.email,
+          subject:        wtpl.subject,
+          text:           wtpl.text,
+          tag:            'welcome_founders',
+          idempotencyKey: wKey,
+        });
+      } catch (_welcomeErr) {
+        console.warn('[capture-order:email] founders welcome send threw unexpectedly');
+      }
     }
 
     return res.status(200).json({

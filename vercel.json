@@ -54,5 +54,8 @@
     { "source": "/index", "destination": "/", "permanent": true },
     { "source": "/blog-debt-avalanche", "destination": "/blog-debt-avalanche-method", "permanent": true },
     { "source": "/blog-debt-avalanche.html", "destination": "/blog-debt-avalanche-method", "permanent": true }
+  ],
+  "crons": [
+    { "path": "/api/cron/weekly-checkin", "schedule": "0 17 * * 0" }
   ]
 }
