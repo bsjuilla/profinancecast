@@ -204,7 +204,14 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-
 //
 // NOTE: systemPrompt is deliberately NOT here. The system prompt is built
 // server-side from the authenticated profile only. See Workstream 0 Task 0.2.
-const ALLOWED_KEYS = new Set(['message', 'conversationId', 'csvMode', 'history', 'userContext', 'news_context']);
+const ALLOWED_KEYS = new Set(['message', 'conversationId', 'csvMode', 'history', 'userContext', 'news_context', 'intent']);
+
+// Recognised one-shot 'intent' values that need a larger message budget than a
+// normal chat turn (e.g. the salary-negotiation-script generator on
+// /salary-calculator builds a single rich, ~2.5-3k-char prompt). Chat stays
+// capped at 500; only these whitelisted intents get the bigger limit, and only
+// for authenticated Pro/Premium users (the quota gate below).
+const LONG_PROMPT_INTENTS = new Set(['salary_script']);
 
 // Strict whitelist for userContext fields. Numbers only, strict ranges.
 // Any key NOT in this map is rejected with reason 'userContext.<key>'.
@@ -413,7 +420,7 @@ export default async function handler(req, res) {
     if (!ALLOWED_KEYS.has(k)) return badRequest(res, k);
   }
 
-  const { message: rawMessage, conversationId, csvMode, history: rawHistory, userContext: rawUserContext, news_context: rawNewsContext } = body;
+  const { message: rawMessage, conversationId, csvMode, history: rawHistory, userContext: rawUserContext, news_context: rawNewsContext, intent: rawIntent } = body;
 
   if (typeof rawMessage !== 'string') return badRequest(res, 'message');
   const message = rawMessage.trim();
@@ -424,9 +431,16 @@ export default async function handler(req, res) {
       return badRequest(res, 'conversationId');
     }
   }
+  // intent is optional; if present it must be a recognised long-prompt intent.
+  if (rawIntent !== undefined && (typeof rawIntent !== 'string' || !LONG_PROMPT_INTENTS.has(rawIntent))) {
+    return badRequest(res, 'intent');
+  }
 
-  const isCsv = csvMode === true;
-  const limit = isCsv ? 8000 : 500;
+  const isCsv      = csvMode === true;
+  const isLongIntent = typeof rawIntent === 'string' && LONG_PROMPT_INTENTS.has(rawIntent);
+  // CSV batch parse: 8000. Whitelisted long one-shot intent (e.g. salary
+  // script, Pro-gated below): 4000. Ordinary chat turn: 500.
+  const limit = isCsv ? 8000 : (isLongIntent ? 4000 : 500);
   if (message.length > limit) return badRequest(res, 'message');
 
   // Validate optional history + userContext. CSV mode ignores both (it's a
@@ -458,6 +472,15 @@ export default async function handler(req, res) {
 
   if (!isCsv && !isOwner) {
     const plan = profile?.plan || 'free';
+    // Sage is a Pro feature (product decision 2026-05-29) — block free users
+    // entirely, server-side. Both UI entry points already gate free users
+    // (the Ask Sage page via requirePlan; the salary script via PFCPlan.get),
+    // so a free user normally never reaches here — this is the authoritative
+    // server enforcement. 403 + upgrade:true lets any caller render a clean
+    // "Unlock Sage with Pro" prompt instead of a raw error.
+    if (plan !== 'pro' && plan !== 'premium') {
+      return res.status(403).json({ error: 'Sage is a Pro feature. Upgrade to unlock.', upgrade: true });
+    }
     const cap  = profile?.ai_queries_limit || PLAN_LIMITS[plan] || PLAN_LIMITS.free;
     const used = profile?.ai_queries_used || 0;
     const resetAt = profile?.ai_queries_reset_at ? new Date(profile.ai_queries_reset_at).getTime() : 0;

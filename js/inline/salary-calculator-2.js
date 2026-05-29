@@ -1210,7 +1210,7 @@ Write the script now. Just the script — no preamble, no afterword.`;
     const res = await fetch('/api/sage', {
       method: 'POST',
       headers,
-      body: JSON.stringify({ message: prompt, csvMode: false }),
+      body: JSON.stringify({ message: prompt, csvMode: false, intent: 'salary_script' }),
     });
     const data = await res.json();
     const textRaw = data.reply || data.error || 'Could not generate script. Try again.';
