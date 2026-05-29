@@ -16,11 +16,11 @@
       document.querySelectorAll('a').forEach(function (a) {
         if (a.classList.contains('footer-col') || a.closest('footer')) return;
         var raw = (a.textContent || '').trim();
-        // Match "Blog", "â† Blog", "â†’ Blog", " Blog", or any single-arrow + Blog combination
-        if (/^[â†â†’\s]*Blog[\s]*$/.test(raw) && /\/?blog\.html?$/.test(a.getAttribute('href') || '')) {
+        // Match "Blog", "← Blog", "→ Blog", " Blog", or any single-arrow + Blog combination
+        if (/^[←→\s]*Blog[\s]*$/.test(raw) && /\/?blog\.html?$/.test(a.getAttribute('href') || '')) {
           a.setAttribute('href', 'journal.html');
           // Preserve any leading arrow when rewriting the visible text
-          var arrowMatch = raw.match(/^([â†â†’])\s*Blog/);
+          var arrowMatch = raw.match(/^([←→])\s*Blog/);
           a.textContent = arrowMatch ? arrowMatch[1] + ' Journal' : 'Journal';
         }
       });

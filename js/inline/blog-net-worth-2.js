@@ -7,7 +7,7 @@
         var link = document.getElementById('blog-back-link');
         if (link) {
           link.href = 'journal.html';
-          link.textContent = 'â† Back to Journal';
+          link.textContent = '← Back to Journal';
         }
       }
     } catch (e) {}

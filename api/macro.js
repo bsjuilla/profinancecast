@@ -78,7 +78,16 @@ export default async function handler(req) {
 
   let cpiYoY = null;
   try {
-    const res = await fetch(infUrl, { headers: { 'Accept': 'application/json' } });
+    // Forward a same-origin Referer so /api/inflation's anti-hotlink guard
+    // (FULL-P1-D3) accepts this INTERNAL proxy call. A bare server-side fetch
+    // sends no Origin/Referer, so the guard 403s us and cpiYoY comes back null
+    // → "Macro context temporarily unavailable" on the dashboard. We forward
+    // the browser's own (already same-origin) Referer when present, else our
+    // own origin; the guard normalises away the www. prefix so both match.
+    const _ref = req.headers.get('referer') || `${origin}/api/macro`;
+    const res = await fetch(infUrl, {
+      headers: { 'Accept': 'application/json', 'Referer': _ref, 'Origin': origin },
+    });
     if (res.ok) {
       const data = await res.json();
       if (data && typeof data.rate === 'number' && isFinite(data.rate)) {
