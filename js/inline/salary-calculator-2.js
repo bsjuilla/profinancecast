@@ -1169,35 +1169,63 @@ async function generateScript() {
     ? `Their CURRENT salary sits at approximately the ${currentPct}${ordinalSuffix(currentPct)} percentile of the band.`
     : '';
 
-  const prompt = `You are writing a salary negotiation script that the user will read aloud almost verbatim in a real conversation. Write it for THIS specific person:
+  // SAGE-SCRIPT-QUALITY (2026-05-29) — Is the target above the public band?
+  // Public salary datasets lag real comp (esp. senior/specialised roles), so
+  // when the ask exceeds the band, citing the median UNDERCUTS the user and
+  // forcing a percentile claim produced the self-contradiction we shipped
+  // ("$573k is within a $68k-$99k band"). Branch the market framing so the
+  // script never argues against itself.
+  const aboveBand    = Number.isFinite(range.high) && targetNum > range.high;
+  const farAboveBand = Number.isFinite(range.high) && targetNum > range.high * 1.3;
+  const sourceName   = sourceLine.split(' — ')[0];
+
+  let marketGuidance;
+  if (farAboveBand) {
+    marketGuidance =
+      `MARKET POSITION: The target (${sym}${targetNum.toLocaleString()}) is WELL ABOVE the public median for this title `
+      + `(${sourceName}: ${sym}${range.median.toLocaleString()}; band ${sym}${range.low.toLocaleString()}-${sym}${range.high.toLocaleString()}). `
+      + `That is normal for senior/specialised pay, where public datasets lag real compensation.\n`
+      + `- DO NOT claim the target is "within the market range" and DO NOT assign it a percentile - it is above the public band; saying otherwise is FALSE and destroys credibility.\n`
+      + `- Do NOT use the public median as the anchor; it undercuts this ask.\n`
+      + `- Anchor the case on VALUE, SCOPE and REPLACEMENT COST. You may note in ONE line that public figures (${sourceName}) understate pay at this level and the user can cross-check Levels.fyi / Glassdoor / internal bands.`;
+  } else if (aboveBand) {
+    marketGuidance =
+      `MARKET POSITION: The target sits at the TOP of (or just above) the public band `
+      + `(${sourceName}: median ${sym}${range.median.toLocaleString()}, band ${sym}${range.low.toLocaleString()}-${sym}${range.high.toLocaleString()}). `
+      + `Frame it as "top of band, earned by performance" - cite ${sourceName} once as a reference, do NOT overclaim a precise percentile above the band, and carry the case on value delivered.`;
+  } else {
+    marketGuidance =
+      `MARKET POSITION: Cite ${sourceName} by name once as evidence (the user can verify it). `
+      + (targetPctPhrase ? `State the target sits at roughly the ${targetPct}${ordinalSuffix(targetPct)} percentile of ${country} pay for this role. ` : '')
+      + `Reference the median ${sym}${range.median.toLocaleString()} as support. Treat public data as a solid reference, but note in passing it can lag real pay.`;
+  }
+
+  const prompt = `You are writing a salary negotiation script the user will read aloud, almost verbatim, to their manager. Write it for THIS specific person.
 
 ROLE: ${role}
 INDUSTRY: ${industry}
 COUNTRY: ${country}
 YEARS OF EXPERIENCE: ${exp}
 CURRENT SALARY: ${sym}${salary.toLocaleString()}
-TARGET SALARY: ${sym}${targetNum.toLocaleString()} (a ${askPct}% raise, ${sym}${askAmount.toLocaleString()} more per year)
-MARKET MEDIAN for this role/country/experience: ${sym}${range.median.toLocaleString()}
-MARKET BAND (25th–75th percentile): ${sym}${range.low.toLocaleString()} – ${sym}${range.high.toLocaleString()}
-DATA SOURCE: ${sourceLine}
-${currentPctPhrase}
-${targetPctPhrase}
+TARGET SALARY: ${sym}${targetNum.toLocaleString()} (a ${askPct}% raise - ${sym}${askAmount.toLocaleString()} more per year)
+
+${marketGuidance}
 
 WRITE A COMPLETE SPOKEN SCRIPT, NOT A TEMPLATE.
 
-Hard rules (failing any of these means the script is unusable):
-1. DO NOT start with meta phrases like "Here is a script" or "Below you'll find". Start directly with the user's first line, as if they're speaking.
-2. DO NOT use markdown headers (###, ##) or bullet lists. Use plain spoken language. If you need section breaks, use a bracketed cue on its own line: [OPENING], [THE ASK], [JUSTIFICATION], [HANDLING PUSHBACK], [CLOSING].
-3. DO NOT use placeholders like [your achievement] or [insert specific example]. Invent plausible specifics that fit a ${exp}-year ${role} in ${industry}.
-4. Cite the SPECIFIC data source by name at least once in [JUSTIFICATION] — say "${sourceLine.split(' — ')[0]}" verbatim, not "market data" or "industry benchmarks". The credibility of the script depends on naming the source the user can verify.
-5. Cite the SPECIFIC PERCENTILE at least once: ${targetPctPhrase ? `state that their target sits at the ${targetPct}${ordinalSuffix(targetPct)} percentile of ${country} pay for this role` : 'reference the percentile if computable'}. Numbers are persuasive; vague claims are not.
-6. Use the actual currency-formatted numbers from the inputs above — the target ${sym}${targetNum.toLocaleString()} must appear at least once, the market median ${sym}${range.median.toLocaleString()} must be referenced as evidence.
-7. Tone: confident but understated. No hyperbole. No "I'm thrilled" or "I'm so passionate". Calm and factual. The user is presenting a case, not begging.
-8. Total length: 300–380 words. Don't pad. The source citation + percentile mention will add some length over a generic script — that's by design.
-9. The [HANDLING PUSHBACK] section must address ONE specific objection: "we don't have budget right now" — and the response should pivot to non-cash levers (signing bonus, equity refresh, accelerated review, remote/flex days, professional-development budget) rather than capitulating.
-10. End with one line the user can use if the answer is "no": polite, professional, leaves the door open.
+Hard rules (breaking any makes it unusable):
+1. Start directly with the user's first spoken line - no "Here is a script".
+2. No markdown headers or bullets. Plain spoken language. For section breaks use a bracketed cue on its own line: [OPENING], [THE ASK], [JUSTIFICATION], [HANDLING PUSHBACK], [CLOSING].
+3. ACHIEVEMENTS (CRITICAL): the user must be able to say every line TRUTHFULLY, so DO NOT invent specific accomplishments as fact. Insert 2-3 clearly-marked placeholders for their REAL results, each with a concrete example of what to drop in, e.g. [your biggest measurable win this year - e.g. "closed $1.2M in new business" or "cut onboarding time 30%"]. Write the surrounding sentence so it reads naturally once their number is filled in. Never more than 3 placeholders.
+4. LEAD WITH VALUE: [OPENING] frames the user's contribution/impact (with a placeholder for the specific) BEFORE [THE ASK]. Earn the ask, then make it.
+5. Follow the MARKET POSITION guidance above exactly, including whether/how to cite market data. Never state a number that contradicts another number in the script.
+6. The target ${sym}${targetNum.toLocaleString()} must appear at least once, stated plainly as the ask.
+7. Tone: confident but understated. No hyperbole, no "I'm thrilled", no "passionate". Calm, factual - presenting a case, not asking permission.
+8. Length 300-380 words. No padding.
+9. [HANDLING PUSHBACK] addresses one objection - "we don't have budget right now" - and pivots to non-cash levers (signing bonus, equity refresh, accelerated review, remote/flex days, professional-development budget), not capitulation.
+10. End with one graceful line to use if the answer is "no" - professional, door left open.
 
-Write the script now. Just the script — no preamble, no afterword.`;
+Write the script now. Just the script - no preamble, no afterword.`;
 
   try {
     const session = (typeof PFCAuth !== 'undefined') ? PFCAuth.getSession() : null;
