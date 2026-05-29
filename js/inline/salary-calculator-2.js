@@ -240,7 +240,7 @@ function getMarketRange(salary) {
 // etc. Falls back to MU only if neither the country nor language part of the
 // locale matches any supported region — which is also fine because the user
 // can change it.
-const SUPPORTED_COUNTRIES = ['MU','US','GB','FR','DE','ZA','IN','AU','CA','SG','AE','NG','KE','GH','BR','PH'];
+const SUPPORTED_COUNTRIES = ['MU','US','GB','IE','FR','DE','ZA','IN','AU','CA','SG','AE','NG','KE','GH','BR','PH'];
 const LANG_TO_COUNTRY = {
   'en': 'US', 'fr': 'FR', 'de': 'DE', 'pt': 'BR', 'tl': 'PH', 'fil': 'PH',
   'sw': 'KE', 'af': 'ZA', 'zu': 'ZA', 'ar': 'AE', 'hi': 'IN', 'ta': 'IN',

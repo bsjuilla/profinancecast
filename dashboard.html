@@ -764,13 +764,13 @@
           style="background:var(--bg3);border:2px dashed var(--border2);border-radius:var(--r);padding:36px;text-align:center;margin-bottom:16px;cursor:pointer;transition:all .2s;">
           <svg width="36" height="36" viewBox="0 0 36 36" fill="none" style="margin:0 auto 12px;display:block;"><path d="M18 4v20M8 14l10-10 10 10" stroke="#2BB67D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 28h28" stroke="#4A5A6E" stroke-width="2" stroke-linecap="round"/></svg>
           <div style="font-size:14px;font-weight:600;margin-bottom:5px;">Drop your CSV here or click to browse</div>
-          <div style="font-size:12px;color:var(--text3);">Works with MCB, Barclays, HSBC, SBM, standard exports · Max 10MB</div>
+          <div style="font-size:12px;color:var(--text3);">Works with HSBC, Barclays, ING, Revolut, Wise &amp; standard CSV exports · Max 10MB</div>
           <input type="file" id="csv-file" accept=".csv,.txt" style="display:none"  data-pfc-on-change="handleCSVFile" data-pfc-arg-this>
         </div>
         <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px 14px;margin-bottom:12px;">
           <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:7px;">How to export from your bank:</div>
           <div style="font-size:12px;color:var(--text3);line-height:1.7;">
-            <b style="color:var(--text2);">MCB / SBM / AfrAsia (Mauritius):</b> Log in → Transactions → Export → CSV<br>
+            <b style="color:var(--text2);">HSBC / Barclays / Revolut / Wise:</b> Log in → Transactions → Export → CSV<br>
             <b style="color:var(--text2);">Most international banks:</b> Account history → Download → CSV<br>
             <b style="color:var(--text2);">PayPal:</b> Activity → Statements → CSV
           </div>
@@ -1334,17 +1334,17 @@
           </div>
           <select id="infl-country-select" style="width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:13.5px;color:var(--text);font-family:var(--font-body);outline:none;cursor:pointer;margin-bottom:10px;">
             <option value="">— Choose a country —</option>
-            <option value="MU">🇲🇺 Mauritius</option>
-            <option value="US">🇺🇸 United States</option>
             <option value="GB">🇬🇧 United Kingdom</option>
             <option value="FR">🇫🇷 France</option>
             <option value="DE">🇩🇪 Germany</option>
-            <option value="ZA">🇿🇦 South Africa</option>
-            <option value="IN">🇮🇳 India</option>
-            <option value="AU">🇦🇺 Australia</option>
+            <option value="US">🇺🇸 United States</option>
             <option value="CA">🇨🇦 Canada</option>
+            <option value="AU">🇦🇺 Australia</option>
             <option value="SG">🇸🇬 Singapore</option>
             <option value="AE">🇦🇪 UAE</option>
+            <option value="ZA">🇿🇦 South Africa</option>
+            <option value="IN">🇮🇳 India</option>
+            <option value="MU">🇲🇺 Mauritius</option>
             <option value="NG">🇳🇬 Nigeria</option>
             <option value="KE">🇰🇪 Kenya</option>
             <option value="GH">🇬🇭 Ghana</option>

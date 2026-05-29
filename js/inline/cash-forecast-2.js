@@ -7,7 +7,7 @@ const DEFAULT_USER = {
   housing: 0, food: 0, transport: 0, otherExp: 0,
   savings: 0, investments: 0,
   debt: 0, debtPay: 0,
-  currency: '$', name: '',
+  currency: '€', name: '',
   // Custom user-defined rows. Each: { id, label, amount, color }
   customIn: [], customOut: []
 };

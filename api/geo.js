@@ -11,7 +11,7 @@
 //   { countryCode, countryName, region, city, currencyCode, currencySymbol, source }
 //
 // Edge runtime advantages here:
-//   - Runs at the closest POP — sub-50ms even from Mauritius.
+//   - Runs at the closest POP — sub-50ms even from Frankfurt.
 //   - Does not count toward the 12 Serverless Function cap on Hobby (the
 //     reason we converted from the Node runtime).
 //   - Native access to `req.geo` and `req.headers.get(...)` for the

@@ -50,7 +50,7 @@
   // so consumers don't NaN on missing fields.
   const DEFAULTS = Object.freeze({
     name: '', firstName: '', lastName: '', email: '', age: '',
-    currency: '$', currencyCode: 'USD', country: '',
+    currency: '€', currencyCode: 'EUR', country: '',
     income: 0, otherIncome: 0,
     housing: 0, food: 0, transport: 0, otherExp: 0,
     savings: 0, investments: 0,

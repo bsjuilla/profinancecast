@@ -391,7 +391,7 @@ function initChart() {
           backgroundColor: '#16271F',
           borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1,
           titleColor: '#B8C2BC', bodyColor: '#F0EDE2',
-          callbacks: { label: ctx => ' $' + ctx.raw.toLocaleString() }
+          callbacks: { label: ctx => ' ' + (USER.currency || '€') + ctx.raw.toLocaleString() }
         }
       },
       scales: {
@@ -403,7 +403,7 @@ function initChart() {
           grid: { color: 'rgba(255,255,255,0.04)' },
           ticks: {
             color: '#4A5A6E', font: { size: 11, family: "'Inter', system-ui, sans-serif" },
-            callback: v => '$' + Math.round(v / 1000) + 'k'
+            callback: v => (USER.currency || '€') + Math.round(v / 1000) + 'k'
           }
         }
       }
@@ -1070,13 +1070,13 @@ const KEYWORD_RULES = [
   // Food & groceries
   { cat: 'food', keys: ['shoprite','jumbo','super u','hyper u','winner','auchan','carrefour','happy world','casino','spar','simply','food court','kfc','mcdonalds','mc donald','pizza','burger','resto','restaurant','bistro','cafe','coffee','boulangerie','patisserie','bakery','subway','domino','hungry','wolt','bolt food','glovo','uber eat','deliveroo','takeway','takeaway','grocery','alimentation','provost','prix rite','monoprix'] },
   // Transport
-  { cat: 'transport', keys: ['shell','total ','engen','caltex','petrol','diesel','fuel','esso','bp ','sinopec','parking','autopay','toll','bus ','autobus','taxi','bolt ','uber ','pick me','yango','hertz','avis','budget car','auto repair','garage','mécanique','mechanics','pneu','tyre','tire','motor vehicle','license ','registration fee','rta ','nta ','airport','sita ','air mauritius','air france','british airways','easyjet','ryanair','emirates','qatar air'] },
+  { cat: 'transport', keys: ['shell','total ','engen','caltex','petrol','diesel','fuel','esso','bp ','sinopec','parking','autopay','toll','bus ','autobus','taxi','bolt ','uber ','pick me','yango','hertz','avis','budget car','auto repair','garage','mécanique','mechanics','pneu','tyre','tire','motor vehicle','license ','registration fee','rta ','nta ','airport','sita ','air france','british airways','easyjet','ryanair','emirates','qatar air'] },
   // Subscriptions
   { cat: 'subscriptions', keys: ['netflix','spotify','apple ','amazon prime','deezer','canal+','canal plus','showmax','bein','sky ','microsoft 365','office 365','adobe','dropbox','google one','icloud','linkedin','canva','zoom ','slack ','notion','github','digitalocean','aws ','cloudflare','openai','anthropic','midjourney','chatgpt'] },
   // Entertainment
   { cat: 'entertainment', keys: ['cinema','cinema','cinerama','star ','bagatelle mall','phoenix mall','trianon','so ','caudan','port louis waterfront','bar ','nightclub','club ','concert','event ','billeterie','ticketing','sport ','gym ','fitness','yoga','swimming','golf','tennis','steam ','playstation','nintendo','xbox','game '] },
   // Health
-  { cat: 'health', keys: ['pharmacy','pharmacie','apollo','dr ','doctor','clinic','hospital','nhosco','hcil','dentist','optician','opticien','laboratory','labo ','scan ','xray','x-ray','physiotherapy','medecin','medical','health ins','assurance sante','blue cross','axa health','swan life','sirdar','mauritius union','bmo','sham '] },
+  { cat: 'health', keys: ['pharmacy','pharmacie','apollo','dr ','doctor','clinic','hospital','nhosco','hcil','dentist','optician','opticien','laboratory','labo ','scan ','xray','x-ray','physiotherapy','medecin','medical','health ins','assurance sante','blue cross','axa health','swan life','sirdar','bmo','sham '] },
 ];
 
 // ── Column header synonyms for auto-detection ──
