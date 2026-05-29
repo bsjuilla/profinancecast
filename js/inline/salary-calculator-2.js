@@ -1213,7 +1213,18 @@ Write the script now. Just the script — no preamble, no afterword.`;
       body: JSON.stringify({ message: prompt, csvMode: false, intent: 'salary_script' }),
     });
     const data = await res.json();
-    const textRaw = data.reply || data.error || 'Could not generate script. Try again.';
+    // Surface the real failure instead of a bare "BAD_REQUEST": include the
+    // server's `reason` for 400s, and render the Pro 403 as a friendly upsell.
+    let textRaw;
+    if (data.reply) {
+      textRaw = data.reply;
+    } else if (res.status === 403 && data.upgrade) {
+      textRaw = 'The AI negotiation script is a Pro feature — upgrade to unlock it.';
+    } else if (data.error) {
+      textRaw = data.error + (data.reason ? ' (' + data.reason + ')' : '');
+    } else {
+      textRaw = 'Could not generate script. Try again.';
+    }
 
     // SC-SEC-1 fix (audit 2026-05-25) — CRITICAL XSS hardening. Pre-fix the
     // LLM reply went straight into innerHTML through 5 markdown regexes —
