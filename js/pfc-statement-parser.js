@@ -257,16 +257,42 @@
     return txns;
   }
 
+  // ── Lazy pdf.js loader (self-hosted, CSP-safe, load-on-first-use) ────────
+  // The ~320KB pdf.js UMD build is injected only when a PDF is actually
+  // parsed — never on CSV-only or non-importing page views. It's served from
+  // the same origin (/js/vendor/), so it satisfies CSP script-src 'self'; its
+  // worker is likewise same-origin (worker-src falls back to default-src
+  // 'self'). No CSP change, no CDN dependency, no SRI to maintain.
+  function _ensurePdfJs() {
+    return new Promise((resolve, reject) => {
+      if (typeof window === 'undefined' || typeof document === 'undefined') {
+        return reject(new Error('PDF parsing requires a browser environment'));
+      }
+      const have = window.pdfjsLib || window['pdfjs-dist/build/pdf'];
+      if (have && typeof have.getDocument === 'function') return resolve(have);
+      const s = document.createElement('script');
+      s.src = '/js/vendor/pdf.min.js';
+      s.async = true;
+      s.onload = () => {
+        const lib = window.pdfjsLib || window['pdfjs-dist/build/pdf'];
+        if (lib && typeof lib.getDocument === 'function') resolve(lib);
+        else reject(new Error('pdf.js loaded but pdfjsLib is unavailable'));
+      };
+      s.onerror = () => reject(new Error('Could not load the PDF reader'));
+      document.head.appendChild(s);
+    });
+  }
+
   // ── PDF → transactions (client-side via pdf.js) ──────────────────────────
-  // Requires window.pdfjsLib (loaded + workerSrc configured by the host page).
-  // We only use TEXT extraction — no image decoding — so no 'unsafe-eval' is
-  // needed in the CSP. Items are grouped into visual lines by their Y position.
+  // TEXT extraction only — no image decoding — so no WASM and no 'unsafe-eval'
+  // are required. Items are grouped into visual lines by their Y position.
   async function parsePDF(arrayBuffer) {
-    const pdfjs = (typeof window !== 'undefined') &&
-      (window.pdfjsLib || (window['pdfjs-dist/build/pdf']));
-    if (!pdfjs || typeof pdfjs.getDocument !== 'function') {
-      throw new Error('PDF support unavailable (pdf.js not loaded)');
-    }
+    const pdfjs = await _ensurePdfJs();
+    // Worker is self-hosted same-origin. isEvalSupported=false mitigates
+    // CVE-2024-4367 (the eval-based font path); the CSP already blocks eval,
+    // so this is belt-and-braces. Set before any getDocument() call.
+    try { pdfjs.GlobalWorkerOptions.workerSrc = '/js/vendor/pdf.worker.min.js'; } catch (_) {}
+    try { pdfjs.isEvalSupported = false; } catch (_) {}
     const doc = await pdfjs.getDocument({ data: arrayBuffer }).promise;
     const allLines = [];
     for (let p = 1; p <= doc.numPages; p++) {
@@ -311,7 +337,7 @@
   // MIN_VALID transactions whose date normalised to a real ISO date AND whose
   // amount is finite & positive. Anything less is almost certainly not a
   // statement (random CSV, a single-row export, a non-financial PDF).
-  const MIN_VALID = 3;
+  const MIN_VALID = 2;
   function validateStatement(txns) {
     const list = Array.isArray(txns) ? txns : [];
     const valid = list.filter(t =>

@@ -1061,32 +1061,6 @@ const CAT_META = {
   other:         { label: 'Other',         color: '#B8C2BC', bg: 'rgba(184,194,188,0.12)' },
 };
 
-// ── Keyword rules ──
-const KEYWORD_RULES = [
-  // Income signals
-  { cat: 'income', keys: ['salary','salaire','payroll','wages','pay credit','direct dep','direct credit','bank transfer in','virement recu','transfer received','freelance payment','dividend','interest earned','refund credit','cashback','commission credit'] },
-  // Housing
-  { cat: 'housing', keys: ['rent','loyer','mortgage','hypotheque','lease','electricite','electricity','water authority','cwma','cem ','internet','fiber','ftth','airtel','emtel','my.t','myt ','orange ','landlord','syndic','condominium','facility mgmt','facilities'] },
-  // Food & groceries
-  { cat: 'food', keys: ['shoprite','jumbo','super u','hyper u','winner','auchan','carrefour','happy world','casino','spar','simply','food court','kfc','mcdonalds','mc donald','pizza','burger','resto','restaurant','bistro','cafe','coffee','boulangerie','patisserie','bakery','subway','domino','hungry','wolt','bolt food','glovo','uber eat','deliveroo','takeway','takeaway','grocery','alimentation','provost','prix rite','monoprix'] },
-  // Transport
-  { cat: 'transport', keys: ['shell','total ','engen','caltex','petrol','diesel','fuel','esso','bp ','sinopec','parking','autopay','toll','bus ','autobus','taxi','bolt ','uber ','pick me','yango','hertz','avis','budget car','auto repair','garage','mécanique','mechanics','pneu','tyre','tire','motor vehicle','license ','registration fee','rta ','nta ','airport','sita ','air france','british airways','easyjet','ryanair','emirates','qatar air'] },
-  // Subscriptions
-  { cat: 'subscriptions', keys: ['netflix','spotify','apple ','amazon prime','deezer','canal+','canal plus','showmax','bein','sky ','microsoft 365','office 365','adobe','dropbox','google one','icloud','linkedin','canva','zoom ','slack ','notion','github','digitalocean','aws ','cloudflare','openai','anthropic','midjourney','chatgpt'] },
-  // Entertainment
-  { cat: 'entertainment', keys: ['cinema','cinema','cinerama','star ','bagatelle mall','phoenix mall','trianon','so ','caudan','port louis waterfront','bar ','nightclub','club ','concert','event ','billeterie','ticketing','sport ','gym ','fitness','yoga','swimming','golf','tennis','steam ','playstation','nintendo','xbox','game '] },
-  // Health
-  { cat: 'health', keys: ['pharmacy','pharmacie','apollo','dr ','doctor','clinic','hospital','nhosco','hcil','dentist','optician','opticien','laboratory','labo ','scan ','xray','x-ray','physiotherapy','medecin','medical','health ins','assurance sante','blue cross','axa health','swan life','sirdar','bmo','sham '] },
-];
-
-// ── Column header synonyms for auto-detection ──
-const COL_SYNONYMS = {
-  date:   ['date','transaction date','trans date','value date','posted date','posting date','txn date'],
-  desc:   ['description','details','narrative','merchant','payee','reference','particulars','transaction description','libelle','trans description','memo'],
-  debit:  ['debit','amount debit','withdrawal','debit amount','paid out','dr','charges'],
-  credit: ['credit','amount credit','deposit','credit amount','paid in','cr','amount received'],
-  amount: ['amount','net amount','transaction amount','value','montant'],
-};
 
 // DASH-P2-D DWORTH-3 fix — CSV data was evaporating on modal close.
 // User imported → applied → closed → next visit lost the transaction
@@ -1157,38 +1131,64 @@ function handleCSVFile(input) {
   if (input.files[0]) startCSVProcess(input.files[0]);
 }
 
-// ── MAIN ENTRY: read file → parse → categorise → Gemini → render ──
+// ── MAIN ENTRY: read file → parse (CSV or PDF) → validate → categorise → render ──
+// Stream B: parsing is now delegated to the shared PFCStatementParser module
+// (js/pfc-statement-parser.js) — the single source of truth used by both this
+// dashboard import and the recurring page. Handles CSV (US/EU formats) AND
+// client-side PDF text extraction (pdf.js, self-hosted worker, no upload).
 async function startCSVProcess(file) {
   if (file.size > 10 * 1024 * 1024) { alert('File too large. Max 10MB.'); return; }
+  if (typeof PFCStatementParser === 'undefined') {
+    alert('Statement parser is still loading — please try again in a moment.');
+    csvStage('upload'); return;
+  }
   csvStage('processing');
-  setProc('Reading file…', 'Detecting bank format', 5);
-
-  const text = await file.text();
-  document.getElementById('rpt-filename').textContent = file.name + ' · ' + (text.split('\n').length - 1) + ' rows detected';
+  setProc('Reading file…', 'Detecting format', 5);
+  await sleep(120);
 
   setProc('Parsing transactions…', 'Extracting dates, descriptions and amounts', 25);
-  await sleep(200);
+  // parseFile dispatches CSV vs PDF, parses, and validates — all client-side.
+  const res = await PFCStatementParser.parseFile(file);
 
-  let txns;
-  try { txns = parseCSV(text); }
-  catch(e) { alert('Could not parse this CSV. Try exporting again from your bank.'); csvStage('upload'); return; }
+  // Hard parse failure (unreadable / no date+desc columns / pdf.js missing).
+  if (res.error && (!res.transactions || !res.transactions.length)) {
+    alert(res.error || 'Could not read this file. Try your bank’s CSV export.');
+    csvStage('upload'); return;
+  }
+  // Statement validation — reject files that aren't bank statements.
+  if (!res.validation || !res.validation.valid) {
+    alert((res.validation && res.validation.reason) ||
+      'This doesn’t look like a bank statement. Try your bank’s CSV export.');
+    csvStage('upload'); return;
+  }
 
-  if (!txns.length) { alert('No transactions found. Check that your file has a date, description and amount column.'); csvStage('upload'); return; }
+  const txns = res.transactions;
+  document.getElementById('rpt-filename').textContent =
+    file.name + ' · ' + txns.length + ' transactions · ' + String(res.format || 'csv').toUpperCase();
 
   setProc('Categorising…', `Running keyword engine on ${txns.length} transactions`, 55);
   await sleep(150);
 
-  // Keyword pass
-  txns.forEach(t => { t.cat = keywordCategorise(t.desc); t.aiAssisted = false; });
+  // Keyword pass (local, no network).
+  txns.forEach(t => { t.cat = PFCStatementParser.keywordCategorise(t.desc); t.aiAssisted = false; });
   const unknown = txns.filter(t => !t.cat);
 
-  setProc('AI enrichment…', `Sending ${unknown.length} unrecognised transactions to Sage`, 72);
-  await sleep(100);
+  // Privacy: the AI pass sends transaction DESCRIPTIONS (text only — no
+  // amounts/dates) to our categoriser. It is ON by default but the user can
+  // tick "Keep 100% local" in the upload modal to skip it entirely, in which
+  // case nothing leaves the browser. Honest replacement for the old (false)
+  // "nothing uploaded to any server" blanket claim.
+  const localOnlyEl = document.getElementById('csv-local-only');
+  const aiEnabled = !(localOnlyEl && localOnlyEl.checked);
 
-  // Gemini pass for unknowns
-  if (unknown.length > 0) {
+  if (aiEnabled && unknown.length > 0) {
+    setProc('AI enrichment…', `Sending ${unknown.length} descriptions (text only) to categorise`, 72);
+    await sleep(100);
     try { await geminiCategorise(unknown, txns); }
     catch(e) { /* fallback: mark as other */ unknown.forEach(t => { t.cat = t.cat || 'other'; }); }
+  } else if (!aiEnabled) {
+    setProc('Local-only mode…', 'Skipping AI categorisation — nothing leaves your browser', 72);
+    await sleep(100);
   }
   txns.forEach(t => { if (!t.cat) t.cat = 'other'; });
 
@@ -1202,124 +1202,6 @@ async function startCSVProcess(file) {
   csvStage('report');
 }
 
-// ── CSV PARSER ──
-function parseCSV(text) {
-  // Normalize line endings
-  const lines = text.replace(/\r\n/g,'\n').replace(/\r/g,'\n').trim().split('\n');
-  if (lines.length < 2) return [];
-
-  // Find header row (first row with recognisable column)
-  let headerIdx = 0;
-  for (let i = 0; i < Math.min(5, lines.length); i++) {
-    const row = lines[i].toLowerCase();
-    if (COL_SYNONYMS.date.some(s => row.includes(s)) || COL_SYNONYMS.desc.some(s => row.includes(s))) {
-      headerIdx = i; break;
-    }
-  }
-
-  const headers = parseCSVRow(lines[headerIdx]).map(h => h.toLowerCase().trim().replace(/['"]/g,''));
-  const colIdx = findColumns(headers);
-
-  if (colIdx.date === -1 || colIdx.desc === -1) throw new Error('No date/desc columns');
-
-  const txns = [];
-  for (let i = headerIdx + 1; i < lines.length; i++) {
-    const row = parseCSVRow(lines[i]);
-    if (!row.length || row.every(c => !c.trim())) continue;
-
-    const rawDate = (row[colIdx.date] || '').trim().replace(/['"]/g,'');
-    const rawDesc = (row[colIdx.desc] || '').trim().replace(/['"]/g,'');
-    if (!rawDate && !rawDesc) continue;
-
-    let amount = 0;
-    let isDebit = false;
-
-    if (colIdx.amount !== -1) {
-      // Single amount column — negative = debit, positive = credit
-      const raw = (row[colIdx.amount] || '').replace(/['",$€£Rs\s]/g,'').replace(/,(?=\d{3})/g,'');
-      amount = parseFloat(raw) || 0;
-      isDebit = amount < 0;
-      amount = Math.abs(amount);
-    } else {
-      // Separate debit/credit columns
-      const dRaw = colIdx.debit !== -1 ? (row[colIdx.debit]||'').replace(/['",$€£Rs\s]/g,'') : '';
-      const cRaw = colIdx.credit !== -1 ? (row[colIdx.credit]||'').replace(/['",$€£Rs\s]/g,'') : '';
-      const d = parseFloat(dRaw) || 0;
-      const c = parseFloat(cRaw) || 0;
-      if (d > 0) { amount = d; isDebit = true; }
-      else if (c > 0) { amount = c; isDebit = false; }
-      else continue;
-    }
-
-    if (!amount) continue;
-
-    txns.push({
-      date: formatDate(rawDate),
-      rawDate,
-      desc: cleanDesc(rawDesc),
-      amount,
-      isDebit,
-      cat: null,
-      aiAssisted: false,
-    });
-  }
-  return txns;
-}
-
-function parseCSVRow(line) {
-  const result = []; let cell = ''; let inQuote = false;
-  for (let i = 0; i < line.length; i++) {
-    const c = line[i];
-    if (c === '"') { inQuote = !inQuote; }
-    else if ((c === ',' || c === ';' || c === '\t') && !inQuote) { result.push(cell); cell = ''; }
-    else { cell += c; }
-  }
-  result.push(cell);
-  return result;
-}
-
-function findColumns(headers) {
-  const find = (synonyms) => headers.findIndex(h => synonyms.some(s => h.includes(s)));
-  const colIdx = {
-    date:   find(COL_SYNONYMS.date),
-    desc:   find(COL_SYNONYMS.desc),
-    debit:  find(COL_SYNONYMS.debit),
-    credit: find(COL_SYNONYMS.credit),
-    amount: find(COL_SYNONYMS.amount),
-  };
-  // If we have separate debit+credit prefer those; if only amount column use that
-  if (colIdx.debit !== -1 || colIdx.credit !== -1) colIdx.amount = -1;
-  return colIdx;
-}
-
-function formatDate(raw) {
-  // Try to parse various date formats
-  const s = raw.replace(/['"]/g,'').trim();
-  // ISO: 2024-01-15
-  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0,10);
-  // DD/MM/YYYY or DD-MM-YYYY
-  const m1 = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
-  if (m1) return `${m1[3]}-${m1[2].padStart(2,'0')}-${m1[1].padStart(2,'0')}`;
-  // MM/DD/YYYY
-  const m2 = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
-  if (m2) { const yr = m2[3].length===2 ? '20'+m2[3] : m2[3]; return `${yr}-${m2[1].padStart(2,'0')}-${m2[2].padStart(2,'0')}`; }
-  return s;
-}
-
-function cleanDesc(d) {
-  return d.replace(/\s+/g,' ').replace(/[*#]/g,'').trim().slice(0, 80);
-}
-
-// ── KEYWORD CATEGORISER ──
-function keywordCategorise(desc) {
-  const lower = desc.toLowerCase();
-  for (const rule of KEYWORD_RULES) {
-    for (const kw of rule.keys) {
-      if (lower.includes(kw)) return rule.cat;
-    }
-  }
-  return null;
-}
 
 // ── GEMINI BATCH CATEGORISER ──
 async function geminiCategorise(unknownTxns, allTxns) {
@@ -1432,7 +1314,7 @@ function renderReport(txns) {
   const mEl = document.getElementById('rpt-merchants');
   mEl.innerHTML = topM.map(([name,amt]) =>
     `<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text2);">
-      <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:140px;">${name}</span>
+      <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:140px;">${_escHtml(name)}</span>
       <span style="color:var(--text);font-weight:500;">${sym}${Math.round(amt).toLocaleString()}</span>
     </div>`
   ).join('');
@@ -1471,8 +1353,8 @@ function renderTxnTable(txns) {
     const globalIdx = CSV_TRANSACTIONS.indexOf(t);
     return `<tr style="border-bottom:1px solid var(--border);transition:background .1s;" onmouseover="this.style.background='rgba(255,255,255,0.02)'" onmouseout="this.style.background=''">
       <td style="padding:9px 14px;font-size:12px;color:var(--text3);white-space:nowrap;">${t.date}</td>
-      <td style="padding:9px 14px;font-size:12.5px;color:var(--text);max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${t.desc}">
-        ${t.desc}
+      <td style="padding:9px 14px;font-size:12.5px;color:var(--text);max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${_escHtml(t.desc)}">
+        ${_escHtml(t.desc)}
         ${t.aiAssisted ? '<span style="font-size:10px;color:var(--teal);margin-left:4px;">AI</span>' : ''}
       </td>
       <td style="padding:9px 14px;font-size:13px;font-weight:600;text-align:right;white-space:nowrap;color:${t.isDebit?'var(--red)':'var(--teal)'};">
