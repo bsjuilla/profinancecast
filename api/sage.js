@@ -470,17 +470,27 @@ export default async function handler(req, res) {
     .eq('id', userId)
     .maybeSingle();
 
-  if (!isCsv && !isOwner) {
+  // Sage is a Pro feature (product decision 2026-05-29) — block free users
+  // server-side for EVERY mode, INCLUDING csvMode. The dashboard AI
+  // categoriser and the recurring-page "ask Sage" subscription advice both
+  // sent csvMode:true, which used to skip this gate — the free-AI bypass
+  // flagged by the ruflo audit (2026-05-29). Moving the check outside the
+  // !isCsv guard closes it. Owner always passes. 403 + upgrade:true lets any
+  // caller render a clean "Unlock with Pro" prompt instead of a raw error.
+  // NOTE: core CSV/PDF statement PARSING is client-side (PFCStatementParser)
+  // and stays FREE — only the AI enhancements (categorisation, subscription
+  // advice, chat) are Pro.
+  if (!isOwner) {
     const plan = profile?.plan || 'free';
-    // Sage is a Pro feature (product decision 2026-05-29) — block free users
-    // entirely, server-side. Both UI entry points already gate free users
-    // (the Ask Sage page via requirePlan; the salary script via PFCPlan.get),
-    // so a free user normally never reaches here — this is the authoritative
-    // server enforcement. 403 + upgrade:true lets any caller render a clean
-    // "Unlock Sage with Pro" prompt instead of a raw error.
     if (plan !== 'pro' && plan !== 'premium') {
       return res.status(403).json({ error: 'Sage is a Pro feature. Upgrade to unlock.', upgrade: true });
     }
+  }
+
+  // Per-message quota applies to interactive CHAT only — csvMode batch work
+  // (now Pro-gated above) was never metered per the original design. Owner exempt.
+  if (!isCsv && !isOwner) {
+    const plan = profile?.plan || 'free';
     const cap  = profile?.ai_queries_limit || PLAN_LIMITS[plan] || PLAN_LIMITS.free;
     const used = profile?.ai_queries_used || 0;
     const resetAt = profile?.ai_queries_reset_at ? new Date(profile.ai_queries_reset_at).getTime() : 0;

@@ -1206,6 +1206,16 @@ async function startCSVProcess(file) {
 // ── GEMINI BATCH CATEGORISER ──
 async function geminiCategorise(unknownTxns, allTxns) {
   const bar = document.getElementById('rpt-ai-bar');
+  // Sage AI categorisation is Pro-only (2026-05-29). Free users keep the full
+  // import + keyword categories (already applied before this runs); we skip the
+  // AI pass and show an upgrade hint rather than calling Sage (which 403s).
+  const _aiPlan = (typeof PFCPlan !== 'undefined' && PFCPlan.get) ? PFCPlan.get() : 'free';
+  if (_aiPlan !== 'pro' && _aiPlan !== 'premium') {
+    if (bar) bar.style.display = 'flex';
+    const _m = document.getElementById('rpt-ai-msg');
+    if (_m) _m.innerHTML = 'AI categorisation is a <a href="/billing.html?upgrade=ai-categorise" style="color:var(--teal);font-weight:700;text-decoration:none;">Pro feature →</a>';
+    return;
+  }
   bar.style.display = 'flex';
 
   // Build a compact list for the prompt
