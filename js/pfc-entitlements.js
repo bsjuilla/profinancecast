@@ -133,11 +133,19 @@ const PFCPlan = (() => {
 
   function applyBadges(root) {
     const scope = root || document;
-    const isPaid = (_plan === 'pro' || _plan === 'premium');
+    // Use the EFFECTIVE plan via get(): it honours audit mode (returns the
+    // audit plan) and equals the module _plan for real users. Reading the raw
+    // _plan here made the upgrade banner + Pro sidebar locks render as FREE in
+    // audit walkthroughs (where _plan never leaves 'free' because the audit
+    // session has no real token) and briefly for real Pro users before
+    // /api/subscription/status resolved. get() already knew the true plan while
+    // _plan lagged. (audit 2026-05-29)
+    const effPlan = get();
+    const isPaid = (effPlan === 'pro' || effPlan === 'premium');
 
     scope.querySelectorAll('[data-plan-badge]').forEach(el => {
-      el.textContent = `${_label(_plan)} plan`;
-      el.dataset.plan = _plan;
+      el.textContent = `${_label(effPlan)} plan`;
+      el.dataset.plan = effPlan;
     });
     scope.querySelectorAll('[data-pro-only]').forEach(a => {
       a.classList.toggle('is-locked', !isPaid);

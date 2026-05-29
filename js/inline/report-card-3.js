@@ -48,9 +48,9 @@
 // never touched onboarding — same dishonesty class as DASH-P0-5. Now we
 // detect when the user is on defaults-only and render an empty state
 // inviting them to onboarding instead of fake grades.
-const DEF={income:3000,otherIncome:0,housing:1200,food:540,transport:310,otherExp:380,savings:11580,investments:0,debt:8000,debtPay:550,currency:'$',name:'User'};
+const DEF={income:3000,otherIncome:0,housing:1200,food:540,transport:310,otherExp:380,savings:11580,investments:0,debt:8000,debtPay:550,currency:'€',name:'User'};
 function loadUser(){const u=(typeof PFCUser!=='undefined')?PFCUser.get():PFCStorage.getJSON('user');return u?{...DEF,...u}:{...DEF}}
-let U=loadUser();let C=U.currency||'$';
+let U=loadUser();let C=U.currency||'€';
 // RC-P0-EMPTYSTATE — true when the user has saved NOTHING (every meaningful
 // numeric field is at its DEF seed value AND name is the literal "User").
 // If even one number diverges from DEF, the user has touched onboarding
@@ -58,6 +58,16 @@ let U=loadUser();let C=U.currency||'$';
 // (name OR any number changed) so partial onboarders still see their data.
 function _isDefaultOnly(u) {
   if (!u) return true;
+  // RC-P0-EMPTYSTATE-2 (audit 2026-05-29) — a brand-new / pre-onboarding user
+  // usually has an all-ZEROS profile (income:0, …) rather than the DEF seed
+  // values. Zeros diverge from DEF, so the equals-DEF check below used to
+  // MISFIRE and render a "F / Critical" grade for someone who entered nothing
+  // — demoralising and dishonest (same class as the original RC-P0-EMPTYSTATE
+  // bug; confirmed live 2026-05-29 via audit-mode walkthrough). Every grade
+  // sub-score (savings rate, debt load, emergency-fund, spending) is derived
+  // from income, so with no income there is nothing honest to grade. A real
+  // user always has income > 0; treat "no income" as no-data → empty state.
+  if (!(Number(u.income) > 0 || Number(u.otherIncome) > 0)) return true;
   if (u.name && u.name !== DEF.name) return false;
   const fields = ['income','otherIncome','housing','food','transport','otherExp','savings','investments','debt','debtPay'];
   for (const k of fields) {
@@ -589,7 +599,7 @@ if (document.readyState === 'loading') {
 // may reflect pfc:guest:* (often DEFAULT zeros). Once auth resolves and
 // pfc-storage.js finishes adoptGuestData, re-read and re-render.
 function _rehydrateFromStorage(){
-  U=loadUser();C=U.currency||'$';
+  U=loadUser();C=U.currency||'€';
   if(U.name){
     const sn=document.getElementById('sidebar-name');
     const sa=document.getElementById('sidebar-avatar');
