@@ -175,22 +175,6 @@ function _safeParseJson(str) {
   } catch (_) { return null; }
 }
 
-// R-BUG-14 — sniff MDY vs DMY from a sample of date strings. Default DMY
-// (matches every non-US bank CSV format we've seen + the prior parseDate
-// behaviour). Switch to MDY only with positive evidence — at least one
-// date whose SECOND slot is > 12 (so the first slot must be the month).
-// This guarantees zero regression for existing DMY-only CSVs.
-function _detectDateFormat(sampleDates) {
-  let mdyEvidence = 0, dmyEvidence = 0;
-  for (const s of sampleDates.slice(0, 50)) {
-    const m = String(s).match(/^(\d{1,2})[\/\-](\d{1,2})/);
-    if (!m) continue;
-    const a = +m[1], b = +m[2];
-    if (a > 12 && b <= 12) dmyEvidence++;  // a must be day → DMY
-    if (b > 12 && a <= 12) mdyEvidence++;  // b must be day → MDY (first slot = month)
-  }
-  return mdyEvidence > dmyEvidence ? 'MDY' : 'DMY';
-}
 
 // ── STATE ──
 let USER = {};
@@ -415,7 +399,17 @@ async function startProcess(file) {
   setProc('Detecting recurring patterns…', 'Grouping transactions by merchant', 40);
   await sleep(300);
 
-  const txns = parseCSV(text);
+  // Stream B 3/3 — unified shared parser (same model as the dashboard import,
+  // js/pfc-statement-parser.js). .filter(isDebit) preserves the prior
+  // expenses-only behaviour (recurring detection only cares about outgoing
+  // charges). The shared parser also brings US/DMY date auto-detection and
+  // correct European decimal handling that the old local parser lacked.
+  if (typeof PFCStatementParser === 'undefined' || typeof PFCStatementParser.parseCSV !== 'function') {
+    setState('upload'); await _pfcAlert('Statement parser is still loading — please try again in a moment.'); return;
+  }
+  let txns;
+  try { txns = PFCStatementParser.parseCSV(text).filter(t => t.isDebit); }
+  catch (e) { setState('upload'); await _pfcAlert('Could not parse this CSV. Try exporting again from your bank.'); return; }
   if (!txns.length) { setState('upload'); await _pfcAlert('No transactions found. Check your CSV format.'); return; }
 
   setProc('Analysing frequency…', 'Identifying subscriptions and bills', 65);
@@ -460,110 +454,6 @@ async function startProcess(file) {
   showResults();
 }
 
-// ── CSV PARSER (same logic as dashboard, self-contained) ──
-const COL_SYN = {
-  date:   ['date','transaction date','trans date','value date','posting date','txn date'],
-  desc:   ['description','details','narrative','merchant','payee','reference','particulars','memo','libelle'],
-  debit:  ['debit','withdrawal','debit amount','paid out','dr','charges','amount debit'],
-  credit: ['credit','deposit','credit amount','paid in','cr','amount received'],
-  amount: ['amount','net amount','transaction amount','value','montant'],
-};
-// R-BUG-12 fix — handle RFC 4180 escaped quotes: `"a""b"` → `a"b`.
-// Pre-fix the inner `""` toggled the quote state twice and silently merged
-// the two fields. Now we peek-ahead: if a `"` is followed by another `"`
-// while inside a quoted field, treat it as a literal quote.
-function parseCSVRow(line) {
-  const r=[]; let c=''; let q=false;
-  for (let i=0;i<line.length;i++) {
-    const ch=line[i];
-    if (ch === '"') {
-      if (q && line[i+1] === '"') { c += '"'; i++; }
-      else q = !q;
-    }
-    else if((ch===','||ch===';'||ch==='\t')&&!q){r.push(c);c='';}
-    else{c+=ch;}
-  }
-  r.push(c); return r;
-}
-
-// R-BUG-13 fix — surgical currency strip. Pre-fix `[R$€£s]` blanket regex
-// stripped letters R and s from non-amount strings (so "USD 1,200.00" →
-// "UD 1,200.00" → parseFloat NaN). New helper: strip the known "Rs" prefix
-// (Mauritian Rupee) as a token, then only currency symbols + thousand-sep.
-function _parseAmount(str) {
-  return parseFloat(
-    String(str || '')
-      .replace(/Rs\.?/gi, '')
-      .replace(/[$€£,'"\s]/g, '')
-  ) || 0;
-}
-function parseCSV(text) {
-  const lines = text.replace(/\r\n/g,'\n').replace(/\r/g,'\n').trim().split('\n');
-  if (lines.length < 2) return [];
-  let hIdx = 0;
-  for (let i=0;i<Math.min(5,lines.length);i++) {
-    const r=lines[i].toLowerCase();
-    if (COL_SYN.date.some(s=>r.includes(s))||COL_SYN.desc.some(s=>r.includes(s))){ hIdx=i; break; }
-  }
-  const headers = parseCSVRow(lines[hIdx]).map(h=>h.toLowerCase().trim().replace(/['"]/g,''));
-  const find = (syns) => headers.findIndex(h=>syns.some(s=>h.includes(s)));
-  const ci = { date:find(COL_SYN.date), desc:find(COL_SYN.desc), debit:find(COL_SYN.debit), credit:find(COL_SYN.credit), amount:find(COL_SYN.amount) };
-  if (ci.debit!==-1||ci.credit!==-1) ci.amount=-1;
-  if (ci.date===-1||ci.desc===-1) return [];
-
-  // R-BUG-14 fix — pre-scan all date strings to detect MDY (US) vs DMY
-  // before parsing. Default DMY (matches every prior CSV); only flip to
-  // MDY when at least one date has its second slot > 12 (unambiguous).
-  const sampleDates = [];
-  for (let i=hIdx+1;i<lines.length;i++) {
-    const row=parseCSVRow(lines[i]);
-    if (row[ci.date]) sampleDates.push((row[ci.date]||'').trim().replace(/['"]/g,''));
-  }
-  const dateFmt = _detectDateFormat(sampleDates);
-
-  const txns=[];
-  for (let i=hIdx+1;i<lines.length;i++) {
-    const row=parseCSVRow(lines[i]);
-    if(!row.length||row.every(c=>!c.trim())) continue;
-    const rawDate=(row[ci.date]||'').trim().replace(/['"]/g,'');
-    const rawDesc=(row[ci.desc]||'').trim().replace(/['"]/g,'');
-    if(!rawDate&&!rawDesc) continue;
-    let amount=0,isDebit=false;
-    if(ci.amount!==-1){
-      // R-BUG-13 fix — _parseAmount uses surgical Rs-then-symbol stripping
-      // instead of the over-broad `[R$€£s]` regex which corrupted non-Rs
-      // amount strings (e.g. "USD 1,200.00" became "UD 1,200.00" → NaN).
-      const v=_parseAmount(row[ci.amount]);
-      amount=Math.abs(v); isDebit=v<0;
-    } else {
-      const d=_parseAmount(row[ci.debit]);
-      const c2=_parseAmount(row[ci.credit]);
-      if(d>0){amount=d;isDebit=true;} else if(c2>0){amount=c2;isDebit=false;} else continue;
-    }
-    if(!amount||!isDebit) continue; // only expenses
-    txns.push({ date:parseDate(rawDate, dateFmt), desc:rawDesc.replace(/\s+/g,' ').trim().slice(0,80), amount });
-  }
-  return txns;
-}
-// R-BUG-14 fix — accepts an optional `fmt` hint ('MDY' | 'DMY', default DMY)
-// determined by the pre-scan in parseCSV. Pre-fix this always parsed slash-
-// dates as DD/MM/YYYY, silently producing invalid dates for US CSVs.
-function parseDate(s, fmt) {
-  s=s.replace(/['"]/g,'').trim();
-  // ISO 8601 YYYY-MM-DD — unambiguous, pass through directly.
-  if(/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0,10);
-  const m=s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
-  if(m){
-    const y=m[3].length===2?'20'+m[3]:m[3];
-    if (fmt === 'MDY') {
-      // m[1]=MM, m[2]=DD
-      return `${y}-${m[1].padStart(2,'0')}-${m[2].padStart(2,'0')}`;
-    }
-    // Default DMY — m[1]=DD, m[2]=MM (most non-US bank CSVs).
-    return `${y}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;
-  }
-  return s;
-}
 
 // ── CORE: DETECT RECURRINGS ──
 function detectRecurrings(txns) {

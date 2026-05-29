@@ -78,12 +78,18 @@
   }
 
   // ── CSV row splitter (quote-aware; single detected delimiter) ────────────
+  // RFC 4180: a doubled quote inside a quoted field ("a""b") is a literal "
+  // (ported from recurring-2.js R-BUG-12). Pre-fix, the inner "" toggled the
+  // quote state twice and silently merged the two surrounding fields.
   function parseCSVRow(line, delim) {
     if (delim === undefined) delim = detectDelimiter(line);
     const result = []; let cell = ''; let inQuote = false;
     for (let i = 0; i < line.length; i++) {
       const c = line[i];
-      if (c === '"') { inQuote = !inQuote; }
+      if (c === '"') {
+        if (inQuote && line[i + 1] === '"') { cell += '"'; i++; }
+        else inQuote = !inQuote;
+      }
       else if (c === delim && !inQuote) { result.push(cell); cell = ''; }
       else { cell += c; }
     }
@@ -112,17 +118,46 @@
     return colIdx;
   }
 
+  // ── MDY-vs-DMY sniffer (ported from recurring-2.js R-BUG-14) ─────────────
+  // Slash/dash dates like 03/04/2024 are ambiguous. Default DMY (every
+  // non-US bank CSV we've seen + prior behaviour). Flip to MDY ONLY on
+  // positive evidence: a date whose SECOND slot is > 12 (so the first slot
+  // must be the month). Guarantees zero regression for DMY-only CSVs.
+  function _detectDateFormat(sampleDates) {
+    let mdy = 0, dmy = 0;
+    const list = Array.isArray(sampleDates) ? sampleDates.slice(0, 50) : [];
+    for (const s of list) {
+      const m = String(s).match(/^(\d{1,2})[\/\-.](\d{1,2})/);
+      if (!m) continue;
+      const a = +m[1], b = +m[2];
+      if (a > 12 && b <= 12) dmy++;  // 1st slot must be the day → DMY
+      if (b > 12 && a <= 12) mdy++;  // 2nd slot must be the day → MDY
+    }
+    return mdy > dmy ? 'MDY' : 'DMY';
+  }
+
   // ── Date normaliser → 'YYYY-MM-DD' (best-effort; returns raw on no match) ─
-  function formatDate(raw) {
+  // fmt: 'MDY' | 'DMY' (default DMY) — disambiguates slash/dash dates. Pass the
+  // result of _detectDateFormat() over the file's date column.
+  function formatDate(raw, fmt) {
     const s = String(raw == null ? '' : raw).replace(/['"]/g, '').trim();
-    // ISO 2024-01-15
+    // ISO 2024-01-15 — unambiguous, pass through.
     if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
-    // DD/MM/YYYY or DD-MM-YYYY (European default — primary for EU audience)
+    const mdy = fmt === 'MDY';
+    // DD/MM/YYYY (or MM/DD/YYYY when fmt='MDY'); separators / - .
     const m1 = s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})/);
-    if (m1) return `${m1[3]}-${m1[2].padStart(2, '0')}-${m1[1].padStart(2, '0')}`;
+    if (m1) {
+      const day = mdy ? m1[2] : m1[1];
+      const mon = mdy ? m1[1] : m1[2];
+      return `${m1[3]}-${mon.padStart(2, '0')}-${day.padStart(2, '0')}`;
+    }
     // DD/MM/YY (2-digit year)
     const m1b = s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2})$/);
-    if (m1b) return `20${m1b[3]}-${m1b[2].padStart(2, '0')}-${m1b[1].padStart(2, '0')}`;
+    if (m1b) {
+      const day = mdy ? m1b[2] : m1b[1];
+      const mon = mdy ? m1b[1] : m1b[2];
+      return `20${m1b[3]}-${mon.padStart(2, '0')}-${day.padStart(2, '0')}`;
+    }
     // DD MMM YYYY  e.g. "15 Jan 2024"
     const MONTHS = { jan:'01',feb:'02',mar:'03',apr:'04',may:'05',jun:'06',jul:'07',aug:'08',sep:'09',oct:'10',nov:'11',dec:'12' };
     const m3 = s.match(/^(\d{1,2})\s+([a-z]{3})[a-z]*\.?\s+(\d{4})/i);
@@ -181,13 +216,28 @@
       }
     }
 
-    const headers = parseCSVRow(lines[headerIdx]).map(h => h.toLowerCase().trim().replace(/['"]/g, ''));
+    // Detect the delimiter ONCE from the header so every row splits the same
+    // way (prevents per-row drift; the standalone parseCSVRow auto-detects
+    // only when no delim is passed).
+    const delim = detectDelimiter(lines[headerIdx]);
+    const headers = parseCSVRow(lines[headerIdx], delim).map(h => h.toLowerCase().trim().replace(/['"]/g, ''));
     const colIdx = findColumns(headers);
     if (colIdx.date === -1 || colIdx.desc === -1) throw new Error('No date/description columns found');
 
+    // Pre-scan the date column to disambiguate US (MDY) vs DMY before parsing,
+    // then parse every row with that one format hint. Default DMY; flips to
+    // MDY only on unambiguous evidence. (Ported from recurring-2.js R-BUG-14.)
+    const sampleDates = [];
+    for (let i = headerIdx + 1; i < lines.length; i++) {
+      const r = parseCSVRow(lines[i], delim);
+      const d = (r[colIdx.date] || '').trim().replace(/['"]/g, '');
+      if (d) sampleDates.push(d);
+    }
+    const dateFmt = _detectDateFormat(sampleDates);
+
     const txns = [];
     for (let i = headerIdx + 1; i < lines.length; i++) {
-      const row = parseCSVRow(lines[i]);
+      const row = parseCSVRow(lines[i], delim);
       if (!row.length || row.every(c => !c.trim())) continue;
 
       const rawDate = (row[colIdx.date] || '').trim().replace(/['"]/g, '');
@@ -208,7 +258,7 @@
       if (!amount) continue;
 
       txns.push({
-        date: formatDate(rawDate), rawDate,
+        date: formatDate(rawDate, dateFmt), rawDate,
         desc: cleanDesc(rawDesc), amount, isDebit,
         cat: null, aiAssisted: false,
       });
