@@ -122,7 +122,12 @@ const PFCPlan = (() => {
   function get() {
     // Audit-mode bypass: js/pfc-audit-mode.js sets the flag synchronously
     // before this module loads when the pfc_audit_session cookie is present.
-    if (typeof window !== 'undefined' && window.__PFC_AUDIT_MODE === true) return 'pro';
+    if (typeof window !== 'undefined' && window.__PFC_AUDIT_MODE === true) {
+      // Honour the test-harness plan override (pfc-audit-mode.js reads the
+      // pfc_audit_plan cookie). Defaults to 'pro' so existing audit use is
+      // unchanged. Lets a free-vs-pro UI walkthrough exercise both gates.
+      return (typeof window.__PFC_AUDIT_PLAN === 'string' ? window.__PFC_AUDIT_PLAN : 'pro');
+    }
     return _plan;
   }
 
@@ -178,9 +183,20 @@ const PFCPlan = (() => {
    * Free users never see the page contents (no flicker).
    */
   function requirePlan(allowed) {
-    // Audit-mode bypass — page renders as Pro, no redirects.
+    // Audit-mode bypass — render as the audit plan (default 'pro'). When a
+    // test harness sets ?plan=free|premium (carried in __PFC_AUDIT_PLAN), we
+    // honour it so the free-user redirect on Pro-gated pages is ACTUALLY
+    // exercised — otherwise a free walkthrough silently renders Pro and the
+    // gate is never tested (scripts/e2e-full-walk.py). Still no network /
+    // no real auth: this only governs the seeded, sample-data audit view.
     if (typeof window !== 'undefined' && window.__PFC_AUDIT_MODE === true) {
-      _plan = 'pro';
+      _plan = (typeof window.__PFC_AUDIT_PLAN === 'string' ? window.__PFC_AUDIT_PLAN : 'pro');
+      const allowSetAudit = new Set(Array.isArray(allowed) ? allowed : [allowed]);
+      if (!allowSetAudit.has(_plan)) {
+        const here = encodeURIComponent(window.location.pathname);
+        window.location.replace(`billing.html?upgrade=${here}`);
+        return;
+      }
       applyBadges();
       return;
     }

@@ -40,6 +40,7 @@ export const config = { runtime: 'edge' };
 
 const COOKIE_NAME_NONCE  = 'pfc_audit_session';     // HttpOnly, server-only
 const COOKIE_NAME_ACTIVE = 'pfc_audit_mode_active'; // JS-readable flag, no secret
+const COOKIE_NAME_PLAN   = 'pfc_audit_plan';        // JS-readable, no secret — test-harness free/pro toggle
 const COOKIE_MAX_AGE_SEC = 24 * 60 * 60; // 24h
 
 // Upstash Redis client — only initialized if Vercel injected the env vars
@@ -193,8 +194,9 @@ export default async function handler(req) {
     if (nonceMatch) await _revokeNonce(nonceMatch[1]);
     const clearNonce  = `${COOKIE_NAME_NONCE}=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax`;
     const clearActive = `${COOKIE_NAME_ACTIVE}=; Path=/; Max-Age=0; Secure; SameSite=Lax`;
+    const clearPlan   = `${COOKIE_NAME_PLAN}=; Path=/; Max-Age=0; Secure; SameSite=Lax`;
     console.log('[audit-login] logout');
-    return _redirect('/', [clearNonce, clearActive]);
+    return _redirect('/', [clearNonce, clearActive, clearPlan]);
   }
 
   // Step 2 of the two-step redirect: clean URL has no token, so the
@@ -236,10 +238,21 @@ export default async function handler(req) {
   await _registerNonce(nonce);
   const cookieNonce  = `${COOKIE_NAME_NONCE}=${nonce}; Path=/; Max-Age=${COOKIE_MAX_AGE_SEC}; HttpOnly; Secure; SameSite=Lax`;
   const cookieActive = `${COOKIE_NAME_ACTIVE}=1; Path=/; Max-Age=${COOKIE_MAX_AGE_SEC}; Secure; SameSite=Lax`;
-  console.log('[audit-login] success — nonce=' + nonce.slice(0, 8) + '...');
+
+  // Optional plan override for test harnesses: ?plan=free|pro|premium
+  // (default 'pro', preserving prior behaviour). This carries NO secret — the
+  // audit TOKEN above still gates ALL access. The cookie only changes which
+  // entitlement the audit user's SEEDED, client-only view renders, so a
+  // free-vs-pro UI walkthrough is possible (scripts/e2e-full-walk.py). It can
+  // never grant a real user anything: real plan resolution still goes through
+  // /api/subscription/status with a Supabase token, which audit mode lacks.
+  const planParam = (url.searchParams.get('plan') || 'pro').toLowerCase();
+  const auditPlan = (planParam === 'free' || planParam === 'premium') ? planParam : 'pro';
+  const cookiePlan = `${COOKIE_NAME_PLAN}=${auditPlan}; Path=/; Max-Age=${COOKIE_MAX_AGE_SEC}; Secure; SameSite=Lax`;
+  console.log('[audit-login] success — nonce=' + nonce.slice(0, 8) + '... plan=' + auditPlan);
 
   // Step 1 of the two-step redirect: hop to /api/audit-login?_ok=1
   // (clean URL, no token) so the URL bar / history / Referer header
   // never carry the secret.
-  return _redirect('/api/audit-login?_ok=1', [cookieNonce, cookieActive]);
+  return _redirect('/api/audit-login?_ok=1', [cookieNonce, cookieActive, cookiePlan]);
 }

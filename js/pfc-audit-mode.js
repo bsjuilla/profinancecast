@@ -44,6 +44,17 @@
   // can see it when they boot a few milliseconds later.
   window.__PFC_AUDIT_MODE = true;
 
+  // Optional plan override carried in the JS-readable pfc_audit_plan cookie
+  // (set by /api/audit-login?plan=free|pro|premium). Lets a test harness walk
+  // the app as a FREE user as well as Pro. Defaults to 'pro' (back-compat).
+  // Carries no secret — the audit nonce cookie is the actual gate.
+  var _auditPlan = 'pro';
+  try {
+    var _pm = document.cookie.match(/(?:^|;\s*)pfc_audit_plan=(free|pro|premium)(?:;|$)/);
+    if (_pm) _auditPlan = _pm[1];
+  } catch (_) {}
+  window.__PFC_AUDIT_PLAN = _auditPlan;
+
   // Sample profile shown in audit mode. Numbers designed to exercise every
   // dashboard widget meaningfully — not so big they break formatting, not
   // so small they look like zero-state.
@@ -61,7 +72,7 @@
     savings: 12500, investments: 8800,
     debt: 5400, debtPay: 320,
     customIn: [], customOut: [],
-    plan: 'pro',
+    plan: _auditPlan,
   };
 
   // Seed PFCStorage with sample data so every consumer page renders
