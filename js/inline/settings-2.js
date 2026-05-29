@@ -59,7 +59,7 @@ function toggleSwitch(btn) {
 }
 
 // W30 — Weekly Check-In opt-in. Unlike the other (presentational) toggles,
-// this one PERSISTS to the server (api/profile/notifications), because the
+// this one PERSISTS to the server (api/founders-claimed, which hosts the
 // weekly cron reads the stored preference. Optimistic UI: flip immediately,
 // POST, and revert on failure so the switch never lies about saved state.
 async function toggleWeeklyCheckin(btn) {
@@ -72,7 +72,7 @@ async function toggleWeeklyCheckin(btn) {
     const session = (typeof PFCAuth !== 'undefined') ? PFCAuth.getSession() : null;
     const token = session && session.access_token;
     if (!token) throw new Error('no_session');
-    const res = await fetch('/api/profile/notifications', {
+    const res = await fetch('/api/founders-claimed', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
       body: JSON.stringify({ weeklyCheckinOptIn: next }),
@@ -100,7 +100,7 @@ async function loadNotificationPrefs() {
     const session = (typeof PFCAuth !== 'undefined') ? PFCAuth.getSession() : null;
     const token = session && session.access_token;
     if (!token) return;
-    const res = await fetch('/api/profile/notifications', {
+    const res = await fetch('/api/founders-claimed', {
       headers: { 'Authorization': 'Bearer ' + token },
     });
     if (!res.ok) return;

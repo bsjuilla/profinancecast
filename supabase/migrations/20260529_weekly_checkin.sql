@@ -1,7 +1,8 @@
 -- 20260529_weekly_checkin.sql — Weekly Check-In retention email preference.
 --
 -- The Weekly Check-In is a privacy-preserving Sunday nudge ("your weekly
--- check-in is ready") sent by api/cron/weekly-checkin.js to users who have
+-- check-in is ready") sent by the Weekly Check-In cron (hosted on
+-- api/founders-claimed.js; logic in api/_lib/weekly-checkin-core.js) to users who have
 -- OPTED IN. The email contains NO financial data — the report-card grade it
 -- invites the user to view is computed client-side after they click. Design
 -- per the 2026-05-29 retention research (CCO advisor + research agent), which

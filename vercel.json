@@ -56,6 +56,6 @@
     { "source": "/blog-debt-avalanche.html", "destination": "/blog-debt-avalanche-method", "permanent": true }
   ],
   "crons": [
-    { "path": "/api/cron/weekly-checkin", "schedule": "0 17 * * 0" }
+    { "path": "/api/founders-claimed", "schedule": "0 17 * * 0" }
   ]
 }

@@ -374,7 +374,8 @@ export function renderAccountDeletionGoodbye({ hadActiveSub }) {
 // 6. Weekly Check-In — privacy-preserving retention nudge
 // ---------------------------------------------------------------------------
 //
-// Sent by api/cron/weekly-checkin.js to OPTED-IN users only. CRITICAL: this
+// Sent by the Weekly Check-In cron (hosted on api/founders-claimed.js, logic
+// in api/_lib/weekly-checkin-core.js) to OPTED-IN users only. CRITICAL: this
 // email carries NO financial data. The server is blind to the user's numbers
 // (encrypted client-side), so the email is a content-free invitation; the
 // grade / "thing that moved" / suggested action are all computed client-side
