@@ -1,5 +1,5 @@
 # robots.txt for ProFinanceCast
-# https://profinancecast.com
+# https://www.profinancecast.com
 
 User-agent: *
 Allow: /
@@ -40,4 +40,4 @@ Allow: /
 User-agent: Google-Extended
 Allow: /
 
-Sitemap: https://profinancecast.com/sitemap.xml
+Sitemap: https://www.profinancecast.com/sitemap.xml
