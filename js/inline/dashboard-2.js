@@ -220,7 +220,7 @@ function buildData() {
   // Headline "monthly surplus" card — net-worth-relevant surplus is debt-neutral
   // (debtPay just shifts where the money goes), so it excludes debtPay.
   const monthly = income - expenses + extra;
-  return { base, opt, cons, monthly, remD: Math.max(0, debt0 - debtPay * 12) };
+  return { base, opt, cons, monthly };
 }
 
 function recalcForecast() {
