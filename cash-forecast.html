@@ -5,25 +5,25 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <meta name="theme-color" content="#2BB67D">
-<title>Monthly cash flow forecast — see your ending cash | ProFinanceCast</title>
-  <meta name="description" content="Monthly cash-flow forecast — income, expenses by category, and your ending cash. Free, no card required.">
+<title>Monthly cash flow forecast — see what you keep each month | ProFinanceCast</title>
+  <meta name="description" content="Monthly cash-flow forecast — income, expenses by category, and your monthly net. Free, no card required.">
   <link rel="canonical" href="https://profinancecast.com/cash-forecast">
   <link rel="alternate" hreflang="en" href="https://profinancecast.com/cash-forecast">
   <link rel="alternate" hreflang="x-default" href="https://profinancecast.com/cash-forecast">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://profinancecast.com/cash-forecast">
-  <meta property="og:title" content="Monthly cash flow forecast — see your ending cash | ProFinanceCast">
+  <meta property="og:title" content="Monthly cash flow forecast — see what you keep each month | ProFinanceCast">
   <meta property="og:description" content="See your real cash flow month by month. Privacy-first forecasting — runs in your browser, no bank login.">
-  <meta property="og:image" content="https://profinancecast.com/api/og?title=Monthly+cash+flow+forecast&subtitle=See+your+ending+cash+%E2%80%94+privacy-first">
+  <meta property="og:image" content="https://profinancecast.com/api/og?title=Monthly+cash+flow+forecast&subtitle=See+what+you+keep+%E2%80%94+privacy-first">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="og:locale" content="en">
   <meta property="og:site_name" content="ProFinanceCast">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:site" content="@profinancecast">
-  <meta name="twitter:title" content="Monthly cash flow forecast — see your ending cash">
+  <meta name="twitter:title" content="Monthly cash flow forecast — see what you keep each month">
   <meta name="twitter:description" content="See your real cash flow month by month. Privacy-first forecasting — runs in your browser, no bank login.">
-  <meta name="twitter:image" content="https://profinancecast.com/api/og?title=Monthly+cash+flow+forecast&subtitle=See+your+ending+cash+%E2%80%94+privacy-first">
+  <meta name="twitter:image" content="https://profinancecast.com/api/og?title=Monthly+cash+flow+forecast&subtitle=See+what+you+keep+%E2%80%94+privacy-first">
 <!-- Chart.js must execute BEFORE boot() reaches new Chart() — `defer`
      here would race against the PFCAuth.onReady → drawCharts callback chain
      and throw "Chart is not defined" on cold loads. Same fix that landed
@@ -174,14 +174,14 @@
     "applicationSubCategory": "CashFlowForecast",
     "operatingSystem": "Web",
     "url": "https://profinancecast.com/cash-forecast",
-    "description": "See your monthly cash flow forecast — income, expenses by category, and your ending cash position. Privacy-first: runs entirely in your browser, no bank login required.",
+    "description": "See your monthly cash flow forecast — income, expenses by category, and your monthly net cash flow. Privacy-first: runs entirely in your browser, no bank login required.",
     "browserRequirements": "Requires JavaScript. No bank login.",
     "isAccessibleForFree": true,
     "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
     "featureList": [
       "Monthly income and expense forecasting",
       "Category-level expense breakdown",
-      "Ending cash position by month",
+      "Monthly net cash flow by category",
       "No signup, no tracking, no bank connection"
     ],
     "publisher": { "@type": "Organization", "@id": "https://profinancecast.com/#org" }
@@ -341,7 +341,7 @@
         <div class="kpi-sub" id="kpi-out-sub">Expenses + debt service</div>
       </div>
       <div class="kpi-card" data-tone="net" id="kpi-net-card">
-        <div class="kpi-label">Ending cash</div>
+        <div class="kpi-label">Net cash flow</div>
         <div class="kpi-value" id="kpi-net">$0</div>
         <div class="kpi-sub" id="kpi-net-sub">What you keep this month</div>
         <figure class="pfc-photo-figure">
@@ -381,7 +381,7 @@
         <div class="chart-head">
           <div>
             <div class="chart-title">Cash flow</div>
-            <div class="chart-sub">In · Out · Ending</div>
+            <div class="chart-sub">In · Out · Net</div>
           </div>
         </div>
         <div class="chart-canvas-wrap"><canvas id="chart-bar"></canvas></div>

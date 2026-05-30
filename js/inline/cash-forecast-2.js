@@ -365,13 +365,15 @@ function drawCharts(t) {
     options: donutOpts
   });
 
-  // Bar chart — Inflow / Outflow / Ending cash
+  // Bar chart — Inflow / Outflow / Net (monthly net = inflow − outflow; this is
+  // a per-month snapshot, not a rolled-forward ending balance, so it is labelled
+  // "Net" not "Ending". The month selector drives the business-day/holiday chip.)
   if (barChart) barChart.destroy();
   const netColor = t.net >= 0 ? '#D4AF6A' : '#E05252';
   barChart = new Chart(document.getElementById('chart-bar'), {
     type:'bar',
     data:{
-      labels:['Inflow','Outflow','Ending'],
+      labels:['Inflow','Outflow','Net'],
       datasets:[{
         data:[t.inflow, t.outflow, t.net],
         backgroundColor:['#2BB67D','#F5A623',netColor],
