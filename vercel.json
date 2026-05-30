@@ -47,8 +47,8 @@
   "redirects": [
     {
       "source": "/(.*)",
-      "has": [{ "type": "host", "value": "profinancecast.com" }],
-      "destination": "https://www.profinancecast.com/$1",
+      "has": [{ "type": "host", "value": "www.profinancecast.com" }],
+      "destination": "https://profinancecast.com/$1",
       "permanent": true
     },
     { "source": "/index", "destination": "/", "permanent": true },
