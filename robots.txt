@@ -18,6 +18,8 @@ Disallow: /net-worth.html
 Disallow: /recurring.html
 Disallow: /debt-optimizer.html
 Disallow: /api/
+Disallow: /docs/
+Disallow: /graphify-out/
 
 # Welcome AI crawlers explicitly (citation strategy)
 User-agent: GPTBot

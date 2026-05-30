@@ -102,6 +102,12 @@
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
+  <url>
+    <loc>https://profinancecast.com/accessibility.html</loc>
+    <lastmod>2026-05-30</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
   <!-- Phase 2 SEO funnel tools — 5 tools × 9 country variants = 45 URLs.
        Global pages at 0.8; country variants at 0.7. Added 2026-05-19. -->
   <url>
