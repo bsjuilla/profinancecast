@@ -333,8 +333,17 @@ function buildComplete() {
   const totalExpenses = housing + food + transport + otherExp;
   // Surplus after debt payments — this is what's actually available to save
   const surplus = Math.max(0, totalIncome - totalExpenses - debtPay);
-  const nw12    = (savings + investments - debt) + (surplus * 12 * 0.9);
-  const score   = calcScore(surplus, totalIncome, debt, savings);
+  // Net-worth-relevant surplus is debt-neutral (income − expenses) — paying debt
+  // down converts cash into net worth, so it nets out. No arbitrary 0.9 haircut.
+  // This keeps the preview consistent with the dashboard's forecast base[12].
+  const nwSurplus = totalIncome - totalExpenses;
+  const nw12    = (savings + investments - debt) + (nwSurplus * 12);
+  // Canonical scorer (same as dashboard/report-card/scenarios) so the score
+  // shown here matches the dashboard the user immediately lands on. Falls back
+  // to the local heuristic only if pfc-health-score.js failed to load.
+  const score   = (typeof PFCHealthScore !== 'undefined')
+    ? PFCHealthScore.compute({ income: totalIncome, expenses: totalExpenses, debtPay: debtPay, savings: savings }).total
+    : calcScore(surplus, totalIncome, debt, savings);
 
   const name = document.getElementById('f-fullname').value.trim() || 'User';
 

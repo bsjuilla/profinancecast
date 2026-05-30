@@ -7,9 +7,8 @@ let selectedColor = 'var(--money)';
 
 // G-P2-2 fix (audit 2026-05-24) — centralized color palette. Pre-fix the
 // 8 hex literals were duplicated across GOAL_COLORS + PALETTE; tweaks
-// required hunting two arrays. Now: GOAL_PALETTE is the single source,
-// GOAL_COLORS/PALETTE are aliases (kept for backwards-compat with any
-// external reader). Each entry carries a comment naming the brand role.
+// required hunting two arrays. Now: GOAL_PALETTE is the single source and
+// PALETTE is its alias. Each entry carries a comment naming the brand role.
 const GOAL_PALETTE = [
   'var(--money)', // brand teal — default
   '#3B82F6',      // brand blue   — home / aspiration
@@ -20,7 +19,6 @@ const GOAL_PALETTE = [
   '#F97316',      // brand orange — wedding / milestone
   '#EC4899',      // brand pink   — education / custom
 ];
-const GOAL_COLORS = GOAL_PALETTE.slice(0, 6);
 const PALETTE = GOAL_PALETTE;
 
 // G-P1-D fix (audit 2026-05-24) — custom confirm modal helper. Pre-fix

@@ -423,7 +423,7 @@ async function _handleSubscriptionReturn() {
       const paymentForm   = document.getElementById('payment-form');
       const successMsg    = document.getElementById('success-msg');
       const overlay       = document.getElementById('overlay');
-      if (overlay)        overlay.classList.add('active');
+      if (overlay)        overlay.classList.add('open');   // CSS rule is .overlay.open (not .active); every other open path uses 'open'
       if (paymentForm)    paymentForm.style.display = 'none';
       if (successScreen)  successScreen.classList.add('show');
       if (successMsg) {

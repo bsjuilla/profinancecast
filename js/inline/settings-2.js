@@ -208,7 +208,7 @@ async function changePassword() {
   if (nw.length < 8){ showToast('Password must be at least 8 characters'); return; }
 
   // Button loading state
-  const btn = document.querySelector('button[onclick="changePassword()"]');
+  const btn = document.querySelector('[data-pfc-on-click="changePassword"]');  // CSP-safe attr (no inline onclick exists)
   const originalText = btn ? btn.textContent : '';
   if (btn) { btn.disabled = true; btn.textContent = 'Updating…'; }
 

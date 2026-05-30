@@ -173,22 +173,6 @@ function calcNetWorth(sc) {
   return (sc.savings || 0) + (sc.investments || 0) - (sc.debt || 0);
 }
 
-function calcNetWorthAt(sc, months) {
-  const surplus = calcSurplus(sc);
-  const nw0 = calcNetWorth(sc);
-  // Simple compound: savings grow, debt reduces by debtPay
-  let nw = nw0;
-  let debt = sc.debt || 0;
-  let savings = (sc.savings || 0) + (sc.investments || 0);
-  for (let m = 0; m < months; m++) {
-    const debtPay = Math.min(sc.debtPay || 0, debt);
-    debt = Math.max(0, debt - debtPay);
-    savings += surplus - (surplus < 0 ? 0 : 0); // surplus already excludes debtPay
-    nw = savings - debt;
-  }
-  return nw;
-}
-
 function buildForecastData(sc, months) {
   const pts = [];
   let savings = (sc.savings || 0) + (sc.investments || 0);
@@ -830,10 +814,6 @@ function showToast(msg) {
   document.body.appendChild(t);
   setTimeout(() => t.style.opacity = '0', 3000);
   setTimeout(() => t.remove(), 3300);
-}
-
-function showNavToastExt(msg) {
-  showToast('★ Pro — ' + msg);
 }
 
 // ── INIT ──

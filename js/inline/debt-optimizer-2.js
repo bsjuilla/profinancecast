@@ -73,7 +73,6 @@ let DEBTS = [];
 let STRATEGY = 'avalanche';
 let EXTRA = 0;
 let editingId = '';      // D-P0-1: stable id (was: editIdx array index)
-let editIdx = -1;        // legacy fallback for any external caller
 let payoffChart = null;
 let USER = {};
 let SCHEDULE_DATA = [];
@@ -1991,7 +1990,6 @@ function exportScheduleCSV() {
 // ── MODAL ──
 function openAddDebt() {
   editingId = '';
-  editIdx = -1;
   document.getElementById('modal-title').textContent = 'Add new debt';
   document.getElementById('m-name').value = '';
   document.getElementById('m-balance').value = '';
@@ -2012,7 +2010,6 @@ function editDebtById(id) {
   const d = DEBTS.find(x => x.id === id);
   if (!d) return;
   editingId = id;
-  editIdx = DEBTS.indexOf(d); // legacy fallback for any external code path
   document.getElementById('modal-title').textContent = 'Edit debt';
   document.getElementById('m-name').value = d.name;
   document.getElementById('m-balance').value = d.balance;
@@ -2038,17 +2035,6 @@ async function deleteDebtById(id) {
   renderAll();
   _celebrateClearedDebt(name, freedMonthly);
 }
-// Legacy index-keyed aliases — kept so any external caller (none known)
-// doesn't break. New code uses ById.
-function editDebt(arg) {
-  if (typeof arg === 'string') return editDebtById(arg);
-  if (typeof arg === 'number' && DEBTS[arg]) return editDebtById(DEBTS[arg].id);
-}
-function deleteDebt(arg) {
-  if (typeof arg === 'string') return deleteDebtById(arg);
-  if (typeof arg === 'number' && DEBTS[arg]) return deleteDebtById(DEBTS[arg].id);
-}
-
 function closeModal() {
   document.getElementById('debt-modal').classList.remove('open');
 }

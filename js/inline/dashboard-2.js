@@ -1815,7 +1815,10 @@ function refreshInflBoxes() {
 try { initChart(); }
 catch (e) {
   console.warn('[dashboard] initChart failed (Chart.js unavailable?):', e?.message || e);
-  const c = document.getElementById('chart');
+  // Fix (page audit 2026-05-30): the forecast canvas id is 'forecastChart'
+  // (dashboard.html), not 'chart' — the old id matched no element, so the
+  // CDN-failure placeholder never rendered.
+  const c = document.getElementById('forecastChart');
   if (c && c.parentElement) {
     const placeholder = document.createElement('div');
     placeholder.style.cssText =
