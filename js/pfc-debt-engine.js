@@ -366,6 +366,19 @@
       var dateStr = date.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' });
 
       var monthlyExtra = extra;
+      // D-P0-3b (audit 2026-05-30): roll forward the minimum payments freed by
+      // debts cleared in PRIOR months. The cascade harvest below only credits a
+      // debt's minPay the single month it clears (clearedMonth === null); in
+      // every later month that freed minimum was silently dropping out of the
+      // budget, so the snowball/avalanche "roll-forward" never fully landed and
+      // months-to-debt-free + total interest were overstated (the gap grew with
+      // debt count). Re-adding prior-cleared minimums each month keeps the total
+      // deployable budget constant = extra + Σ(all minimums).
+      for (var _ci = 0; _ci < pool.length; _ci++) {
+        if (pool[_ci].remaining <= 0 && pool[_ci].clearedMonth !== null && pool[_ci].clearedMonth < month) {
+          monthlyExtra += pool[_ci].minPay;
+        }
+      }
       var totalPayment = 0;
       var event = '';
 

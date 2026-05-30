@@ -271,7 +271,7 @@
       // DEF-3 — update the "Per hour" label to reflect the actual hours used.
       var hourlyLabel = document.querySelector('[data-thp-hourly-label]');
       if (hourlyLabel) hourlyLabel.textContent = 'Per hour (' + hoursPerYear.toLocaleString() + ' h/yr)';
-      els.gaugeLabel.textContent = 'You keep ' + pct(keptRatio) + ' of every ' + (country.currency || 'unit') + ' earned.';
+      els.gaugeLabel.textContent = 'You keep ' + pct(keptRatio) + ' of every ' + (sym || 'unit') + ' earned.';
       els.pull.textContent = 'After tax, you keep ' + fmt(sym, r.takeHome) + ' for every ' + fmt(sym, salary) + ' earned.';
 
       // THP-P0-DES — surface the tax-data source attribution (trust signal).
