@@ -276,7 +276,7 @@
 
       // THP-P0-DES — surface the tax-data source attribution (trust signal).
       // r.engineSource is set by pfc-tax-library.calculate() to one of:
-      //   'PFCTaxEngine.calculateUS (IRS Rev. Proc. 2024-40 + FICA 2026)'
+      //   'PFCTaxEngine.calculateUS (IRS Rev. Proc. 2025-32 + FICA 2026)'
       //   'PFCTaxEngine.calculateUK (HMRC 2026/27)'
       //   'PFCTaxLibrary.calculate (<country.source or kind>)'
       var srcEl = document.querySelector('[data-thp-engine-source]');

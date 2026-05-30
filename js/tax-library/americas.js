@@ -19,17 +19,21 @@
       hasRegions: true,
       kind: 'progressive',
       brackets: [
-        /* 2026 federal single-filer (projected, inflation-adjusted from IRS 2025) */
-        { upTo: 11925,  rate: 0.10 },
-        { upTo: 48475,  rate: 0.12 },
-        { upTo: 103350, rate: 0.22 },
-        { upTo: 197300, rate: 0.24 },
-        { upTo: 250525, rate: 0.32 },
-        { upTo: 626350, rate: 0.35 },
+        /* 2026 federal single-filer — IRS Rev. Proc. 2025-32. NOTE: this is a
+           DEFENSIVE FALLBACK only; the live US path is fully handled by
+           js/pfc-tax-engine.js (which also applies the $16,100 std deduction
+           this flat table cannot). Kept in sync so a fallback render is at
+           least on the correct 2026 bracket basis. */
+        { upTo: 12400,  rate: 0.10 },
+        { upTo: 50400,  rate: 0.12 },
+        { upTo: 105700, rate: 0.22 },
+        { upTo: 201775, rate: 0.24 },
+        { upTo: 256225, rate: 0.32 },
+        { upTo: 640600, rate: 0.35 },
         { upTo: null,   rate: 0.37 }
       ],
       socialRate: 0.0765,        // FICA: SS 6.2% + Medicare 1.45%
-      socialCap: 176100,         // SS wage base 2026
+      socialCap: 184500,         // SS wage base 2026 (SSA)
       regions: {
         /* State rates mirror js/pfc-tax-engine.js#US_STATES — must stay in sync. */
         AL: { name: 'Alabama',         rate: 0.045,  note: 'approx middle bracket' },

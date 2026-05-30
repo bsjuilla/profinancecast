@@ -73,7 +73,7 @@
       // The version suffix comes from ROOT.dataVersion if set (HTML bumps
       // both manifest + lib + dataVersion together), else falls back to
       // a tagged 'lazy' suffix so the cache stays consistent.
-      const ver = ROOT.dataVersion || '20260525-lazy';
+      const ver = ROOT.dataVersion || '20260530a-tax';
       s.src = '/js/tax-library/' + region + '.js?v=' + ver;
       s.async = false; // preserve order if multiple regions load concurrently
       s.onload = function () {
@@ -181,10 +181,10 @@
    * THP-P0-MATH (audit 2026-05-25) — US + UK now DELEGATE to the
    * separately-maintained PFCTaxEngine (pfc-tax-engine.js) which already had
    * the correct math:
-   *   - US federal applies the $15,750 single / $31,500 MFJ standard deduction
+   *   - US federal applies the $16,100 single / $32,200 MFJ standard deduction
    *     BEFORE the progressive brackets. The library's own US table omitted it,
    *     overstating US tax by $3,465 at $85k.
-   *   - US FICA correctly caps SS at the $176,100 wage base while applying
+   *   - US FICA correctly caps SS at the $184,500 wage base while applying
    *     uncapped 1.45% Medicare AND the 0.9% additional Medicare above $200k.
    *     The library's flat 7.65% × min(salary, socialCap) under-charged
    *     Medicare on high earners by ~$1,521 at $250k and missed the Addl-
@@ -273,7 +273,7 @@
         currency: country.currency,
         symbol: country.symbol,
         breakdown,
-        engineSource: 'PFCTaxEngine.calculateUS (IRS Rev. Proc. 2024-40 + FICA 2026)'
+        engineSource: 'PFCTaxEngine.calculateUS (IRS Rev. Proc. 2025-32 + FICA 2026)'
       };
     }
     if (countryCode === 'GB' && typeof window.PFCTaxEngine !== 'undefined' &&
@@ -321,17 +321,27 @@
     // UK NI is on gross even though income tax is on post-pension).
     let incomeTax = 0;
     let marginalRate = 0; // DEF-2 — populated below for the teaching line
+    // THP-TAX-FR (2026) — income-tax base abatement. Generic optional field:
+    // a country may define `incomeTaxAbatement` (a fraction in [0,1)) that
+    // reduces ONLY the income-tax base, not the social base. Used where income
+    // tax is levied on income net of deductible social/professional allowances
+    // rather than on gross — France (frais-professionnels + deductible social)
+    // and Germany (Vorsorgepauschale). Countries without the field are
+    // unaffected.
+    const itBase = (typeof country.incomeTaxAbatement === 'number')
+      ? taxableSalary * (1 - country.incomeTaxAbatement)
+      : taxableSalary;
     if (country.kind === 'progressive' && Array.isArray(country.brackets)) {
-      const d = applyBracketsDetailed(taxableSalary, country.brackets);
+      const d = applyBracketsDetailed(itBase, country.brackets);
       incomeTax = d.tax;
       marginalRate = d.marginalRate;
     } else if (country.kind === 'flat' || country.kind === 'flat-approx') {
       const r = _resolveFlatRate(country);
       if (r != null) {
-        incomeTax = taxableSalary * r;
+        incomeTax = itBase * r;
         marginalRate = r;
       } else if (Array.isArray(country.brackets)) {
-        const d = applyBracketsDetailed(taxableSalary, country.brackets);
+        const d = applyBracketsDetailed(itBase, country.brackets);
         incomeTax = d.tax;
         marginalRate = d.marginalRate;
       }
@@ -341,6 +351,14 @@
       const credit = effContrib * (pensionRule.creditRate || 0);
       incomeTax = Math.max(0, incomeTax - credit);
     }
+    // THP-TAX-IE (2026) — non-refundable income tax credits. Generic optional
+    // field: a country may define `taxCredits` (a fixed annual amount) that is
+    // subtracted from gross income tax and floored at 0 (you can't get money
+    // back beyond your liability). Used by Ireland (personal €2,000 + PAYE
+    // €2,000 = €4,000). Other countries without `taxCredits` are unaffected.
+    if (typeof country.taxCredits === 'number' && country.taxCredits > 0) {
+      incomeTax = Math.max(0, incomeTax - country.taxCredits);
+    }
 
     let social = 0;
     if (country.socialRate) {
@@ -348,6 +366,14 @@
       // pension contributions reduce income tax but not employee NI/social.
       const base = country.socialCap ? Math.min(salary, country.socialCap) : salary;
       social = base * country.socialRate;
+    }
+    // THP-TAX-IE (2026) — progressive social bands ON TOP of any flat
+    // socialRate. Generic optional field: a country may define
+    // `socialBrackets` ([{upTo, rate}, ...]) applied progressively to GROSS
+    // salary. Used by Ireland for the USC progressive scale (PRSI stays in the
+    // flat socialRate). Countries without `socialBrackets` are unaffected.
+    if (Array.isArray(country.socialBrackets) && country.socialBrackets.length) {
+      social += applyBrackets(salary, country.socialBrackets);
     }
 
     let regionTax = 0;

@@ -43,8 +43,8 @@
           // SY26/27 legislated bands (HMRC). Mirrors pfc-tax-engine.js.
           brackets: [
             { upTo: 12570,  rate: 0    },     // personal allowance
-            { upTo: 15397,  rate: 0.19 },     // starter
-            { upTo: 27491,  rate: 0.20 },     // basic
+            { upTo: 16537,  rate: 0.19 },     // starter
+            { upTo: 29526,  rate: 0.20 },     // basic
             { upTo: 43662,  rate: 0.21 },     // intermediate
             { upTo: 75000,  rate: 0.42 },     // higher
             { upTo: 125140, rate: 0.45 },     // advanced
@@ -62,16 +62,28 @@
       symbol: '€',
       hasRegions: false,
       kind: 'progressive',
+      // Einkommensteuer 2026. Germany uses a continuous progression FORMULA;
+      // these bands are a LINEAR APPROXIMATION of it (14% rising to 42% then
+      // 45%). Grundfreibetrag is the official 2026 €12,348; the 42% band
+      // starts at the official €69,878.
       brackets: [
-        { upTo: 12096,  rate: 0    },   // Grundfreibetrag 2026 (approx)
-        { upTo: 17443,  rate: 0.14 },   // band 1 simplified
-        { upTo: 68480,  rate: 0.30 },   // band 2 simplified
-        { upTo: 277826, rate: 0.42 },   // upper band
+        { upTo: 12348,  rate: 0    },   // Grundfreibetrag 2026 (BMF)
+        { upTo: 17443,  rate: 0.14 },   // band 1 (linear approx)
+        { upTo: 69878,  rate: 0.30 },   // band 2 (linear approx; 42% starts here)
+        { upTo: 277825, rate: 0.42 },   // upper band
         { upTo: null,   rate: 0.45 }    // Reichensteuer
       ],
+      // German income tax is computed on income AFTER deductible social
+      // contributions (Vorsorgepauschale), not on gross. Modeled as an ~18%
+      // reduction of the income-tax base only (social still applies to gross).
+      // Calibrated so €60k gross → ~€37,460 net, matching authoritative German
+      // net calculators (€37,561). Without it the gross-based linear bands
+      // overtaxed by ~€3.3k.
+      incomeTaxAbatement: 0.18,
       socialRate: 0.205,   // pension 9.3 + health ~8.2 + unemp 1.3 + care ~1.7 (employee share)
-      socialCap: 96600,    // 2026 west pension contribution ceiling, approx
-      notes: 'Solidaritätszuschlag (only top earners) and church tax not modeled. Income tax uses formula in reality; bands here are linear approximation.'
+      socialCap: 101400,   // 2026 pension/unemployment contribution ceiling (€8,450/mo)
+      source: 'BMF / DRV 2026',
+      notes: 'Solidaritätszuschlag (only top earners) and church tax not modeled. Real Einkommensteuer uses a continuous formula; bands here are a linear approximation and income tax is computed on income net of an ~18% Vorsorgepauschale (deductible social) proxy. Health/care contributions have a separate, lower ceiling not modeled — social is approximated against the pension ceiling.'
     },
 
     /* -------- France -------- */
@@ -81,15 +93,25 @@
       symbol: '€',
       hasRegions: false,
       kind: 'progressive',
+      // Barème 2026 (revenus 2025), loi de finances 2026, +0,9% indexation.
       brackets: [
-        { upTo: 11497,  rate: 0    },   // 2026 indexation
-        { upTo: 29315,  rate: 0.11 },
-        { upTo: 83823,  rate: 0.30 },
-        { upTo: 180294, rate: 0.41 },
+        { upTo: 11600,  rate: 0    },
+        { upTo: 29579,  rate: 0.11 },
+        { upTo: 84577,  rate: 0.30 },
+        { upTo: 181917, rate: 0.41 },
         { upTo: null,   rate: 0.45 }
       ],
+      // French income tax applies to the NET IMPOSABLE, NOT to gross. The base
+      // is gross less deductible social contributions (CSG-déductible etc.)
+      // AND the 10% frais-professionnels abatement. Modeled as a single ~26%
+      // combined reduction of the income-tax base only (social still applies to
+      // gross). Calibrated so €60k gross → ~€40,200 net (~33% effective),
+      // matching authoritative French net calculators (€40.5k–€42.5k). Without
+      // it, taxing gross overtaxed and gave only ~€35.6k.
+      incomeTaxAbatement: 0.26,
       socialRate: 0.22,   // CSG/CRDS + cotisations salariales typical employee blended
-      notes: 'Quotient familial, PAS withholding, exceptional contribution on high income (CEHR) not modeled. Single-part filer.'
+      source: 'service-public.gouv.fr (barème LF 2026)',
+      notes: 'Income tax computed on net imposable (gross less deductible social and 10% frais-professionnels abatement, modeled as a combined ~26% base reduction). Quotient familial, PAS withholding, and exceptional high-income contribution (CEHR) not modeled. Single-part filer.'
     },
 
     /* -------- Spain (with autonomous communities) -------- */
@@ -301,11 +323,23 @@
       hasRegions: false,
       kind: 'progressive',
       brackets: [
-        { upTo: 44000, rate: 0.20 },   // single, 2026 (indicative)
+        { upTo: 44000, rate: 0.20 },   // single standard-rate band, 2026
         { upTo: null,  rate: 0.40 }
       ],
-      socialRate: 0.0815,   // PRSI 4.1% + USC ~4% blended typical
-      notes: 'Tax credits (personal + PAYE) reduce liability — not modeled. USC has its own progressive scale folded into socialRate here.'
+      // Personal tax credit €2,000 + PAYE/employee credit €2,000 = €4,000,
+      // subtracted from gross income tax (Budget 2026, Revenue.ie).
+      taxCredits: 4000,
+      socialRate: 0.042,    // PRSI employee 4.2% (Budget 2026; 4.35% from Oct-2026)
+      // USC 2026 progressive bands (Budget 2026, Revenue.ie / KPMG): applied
+      // to gross on TOP of the flat PRSI socialRate above.
+      socialBrackets: [
+        { upTo: 12012,  rate: 0.005 },   // 0.5%
+        { upTo: 28700,  rate: 0.02  },   // 2%   (2% ceiling raised to €28,700)
+        { upTo: 70044,  rate: 0.03  },   // 3%
+        { upTo: null,   rate: 0.08  }    // 8%
+      ],
+      source: 'Revenue.ie / KPMG Budget 2026',
+      notes: 'Single PAYE filer. Income tax reduced by €4,000 personal+PAYE credits. Employee PRSI 4.2% (rises to 4.35% from 1-Oct-2026 — Jan rate used). USC progressive 0.5/2/3/8% bands. USC exemption below €13,000, medical-card 2% cap, and dependant/age credits not modeled.'
     },
 
     /* -------- Portugal -------- */

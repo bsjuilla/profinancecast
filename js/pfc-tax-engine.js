@@ -38,32 +38,32 @@
     return { tax: round2(taxOwed), marginalRate: marginal, brackets: detail };
   }
 
-  /* ---------- US federal — 2026 projected brackets ----------
-     Inflation-adjusted from the 2025 IRS schedule.
-     Standard deductions: Single $15,750; MFJ $31,500.        */
+  /* ---------- US federal — 2026 official brackets ----------
+     IRS Rev. Proc. 2025-32 (tax year 2026).
+     Standard deductions: Single $16,100.                     */
   var US_FED_2026 = {
     single: {
-      stdDeduction: 15750,
+      stdDeduction: 16100,
       brackets: [
-        { from: 0,       to: 11925,    rate: 0.10 },
-        { from: 11925,   to: 48475,    rate: 0.12 },
-        { from: 48475,   to: 103350,   rate: 0.22 },
-        { from: 103350,  to: 197300,   rate: 0.24 },
-        { from: 197300,  to: 250525,   rate: 0.32 },
-        { from: 250525,  to: 626350,   rate: 0.35 },
-        { from: 626350,  to: Infinity, rate: 0.37 }
+        { from: 0,       to: 12400,    rate: 0.10 },
+        { from: 12400,   to: 50400,    rate: 0.12 },
+        { from: 50400,   to: 105700,   rate: 0.22 },
+        { from: 105700,  to: 201775,   rate: 0.24 },
+        { from: 201775,  to: 256225,   rate: 0.32 },
+        { from: 256225,  to: 640600,   rate: 0.35 },
+        { from: 640600,  to: Infinity, rate: 0.37 }
       ]
     },
     mfj: {
-      stdDeduction: 31500,
+      stdDeduction: 32200,
       brackets: [
-        { from: 0,       to: 23850,    rate: 0.10 },
-        { from: 23850,   to: 96950,    rate: 0.12 },
-        { from: 96950,   to: 206700,   rate: 0.22 },
-        { from: 206700,  to: 394600,   rate: 0.24 },
-        { from: 394600,  to: 501050,   rate: 0.32 },
-        { from: 501050,  to: 751600,   rate: 0.35 },
-        { from: 751600,  to: Infinity, rate: 0.37 }
+        { from: 0,       to: 24800,    rate: 0.10 },
+        { from: 24800,   to: 100800,   rate: 0.12 },
+        { from: 100800,  to: 211400,   rate: 0.22 },
+        { from: 211400,  to: 403550,   rate: 0.24 },
+        { from: 403550,  to: 512450,   rate: 0.32 },
+        { from: 512450,  to: 768700,   rate: 0.35 },
+        { from: 768700,  to: Infinity, rate: 0.37 }
       ]
     }
   };
@@ -86,11 +86,11 @@
   }
 
   /* ---------- US FICA (employee share) ----------
-     Social Security: 6.2% up to wage base $176,100 (2026 est.)
+     Social Security: 6.2% up to wage base $184,500 (2026, SSA)
      Medicare: 1.45% on all wages
      Additional Medicare: 0.9% on wages over $200k.            */
   var SS_RATE = 0.062;
-  var SS_WAGE_BASE_2026 = 176100;
+  var SS_WAGE_BASE_2026 = 184500;
   var MEDICARE_RATE = 0.0145;
   var ADDL_MEDICARE_RATE = 0.009;
   var ADDL_MEDICARE_THRESHOLD = 200000;
@@ -199,9 +199,9 @@
   function scottishBrackets(pa) {
     return [
       { from: 0,        to: pa,      rate: 0     },     // personal allowance
-      { from: pa,       to: 15397,   rate: 0.19  },     // starter rate
-      { from: 15397,    to: 27491,   rate: 0.20  },     // basic rate
-      { from: 27491,    to: 43662,   rate: 0.21  },     // intermediate
+      { from: pa,       to: 16537,   rate: 0.19  },     // starter rate
+      { from: 16537,    to: 29526,   rate: 0.20  },     // basic rate
+      { from: 29526,    to: 43662,   rate: 0.21  },     // intermediate
       { from: 43662,    to: 75000,   rate: 0.42  },     // higher
       { from: 75000,    to: 125140,  rate: 0.45  },     // advanced
       { from: 125140,   to: Infinity, rate: 0.48 }      // top
