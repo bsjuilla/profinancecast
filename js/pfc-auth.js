@@ -128,14 +128,16 @@ const PFCAuth = (() => {
         }
         if (uid === 'guest') {
           const here = encodeURIComponent(window.location.pathname + window.location.search);
-          window.location.replace(`auth.html?next=${here}`);
+          // Absolute path — a relative `auth.html` resolves to /tools/auth (404)
+          // when requireAuth() runs on a page under /tools/. (audit 2026-05-30)
+          window.location.replace(`/auth.html?next=${here}`);
         }
       });
     },
     async signOut() {
       try { if (_client) await _client.auth.signOut(); } catch(_) {}
       // Defensive: storage clear runs in pfc-storage.js via auth-change hook
-      window.location.replace('auth.html');
+      window.location.replace('/auth.html'); // absolute — see requireAuth note
     },
     _init,
   };

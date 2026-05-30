@@ -153,7 +153,7 @@ const PFCPlan = (() => {
         a.dataset.proOnlyHandlerBound = '1';
         a.addEventListener('click', e => {
           e.preventDefault();
-          window.location.href = 'billing.html?upgrade=' + encodeURIComponent(a.getAttribute('href') || '');
+          window.location.href = '/billing.html?upgrade=' + encodeURIComponent(a.getAttribute('href') || '');
         });
       }
     });
@@ -202,7 +202,7 @@ const PFCPlan = (() => {
       const allowSetAudit = new Set(Array.isArray(allowed) ? allowed : [allowed]);
       if (!allowSetAudit.has(_plan)) {
         const here = encodeURIComponent(window.location.pathname);
-        window.location.replace(`billing.html?upgrade=${here}`);
+        window.location.replace(`/billing.html?upgrade=${here}`);
         return;
       }
       applyBadges();
@@ -214,7 +214,7 @@ const PFCPlan = (() => {
     const proceed = async () => {
       if (typeof PFCAuth === 'undefined' || !PFCAuth.isLoggedIn()) {
         const here = encodeURIComponent(window.location.pathname);
-        window.location.replace(`auth.html?next=${here}`);
+        window.location.replace(`/auth.html?next=${here}`);
         return;
       }
       // Try cache first for instant render, then verify in background
@@ -228,7 +228,7 @@ const PFCPlan = (() => {
       }
       if (!allowSet.has(_plan)) {
         const here = encodeURIComponent(window.location.pathname);
-        window.location.replace(`billing.html?upgrade=${here}`);
+        window.location.replace(`/billing.html?upgrade=${here}`);
         return;
       }
       document.documentElement.style.visibility = '';
