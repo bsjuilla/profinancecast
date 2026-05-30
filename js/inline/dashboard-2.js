@@ -168,35 +168,59 @@ const MONTHS = ['Now','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov
 let chart;
 
 function buildData() {
-  const incChg  = parseFloat(document.getElementById('sl-income').value)   / 100;
-  const extra   = parseFloat(document.getElementById('sl-extra').value);
-  const infl    = parseFloat(document.getElementById('sl-inflation').value) / 100;
-  const intRate = parseFloat(document.getElementById('sl-interest').value)  / 100 / 12;
+  // Single forecast engine for the whole dashboard (chart, Overview net-worth
+  // card and the Net Worth tab all read base[12] from here).
+  // Defensive slider reads: this is now called from updateAllCards()/
+  // renderNWTab() too, which can run before the forecast section is on screen,
+  // so a missing slider must fall back to its default rather than throw.
+  const readSl = (id, def) => {
+    const el = document.getElementById(id);
+    const v = el ? parseFloat(el.value) : NaN;
+    return isNaN(v) ? def : v;
+  };
+  const incChg  = readSl('sl-income', 0)    / 100;
+  const extra   = readSl('sl-extra', 0);
+  const infl    = readSl('sl-inflation', 3.5) / 100;
+  const mRet    = readSl('sl-interest', 5)  / 100 / 12;   // monthly investment return
 
-  const income   = ((USER.income||0) + (USER.otherIncome||0)) * (1 + incChg);
-  const expenses = (USER.housing||0) + (USER.food||0) + (USER.transport||0) + (USER.otherExp||0);
-  const savings  = (USER.savings||0) + (USER.investments||0);
-  const debt     = USER.debt||0;
-  const debtPay  = USER.debtPay||0;
+  const income    = ((USER.income||0) + (USER.otherIncome||0)) * (1 + incChg);
+  const expenses  = (USER.housing||0) + (USER.food||0) + (USER.transport||0) + (USER.otherExp||0);
+  const startAsst = (USER.savings||0) + (USER.investments||0);
+  const debt0     = USER.debt||0;
+  const debtPay   = USER.debtPay||0;
+  const inflDragM = infl * expenses / 12;
 
-  const monthly = income - expenses + extra;
-  let nw = savings - debt, nwO = nw, nwC = nw;
-  let remD = debt;
-  const base=[], opt=[], cons=[];
-
-  for (let i = 0; i <= 12; i++) {
-    const dp = Math.min(remD, debtPay);
-    remD = Math.max(0, remD - dp + remD * intRate);
-    if (i > 0) {
-      nw  += monthly   - (infl * expenses / 12);
-      nwO += monthly * 1.18 - (infl * expenses / 12 * 0.75);
-      nwC += monthly * 0.65 - (infl * expenses / 12 * 1.4);
+  // Project net worth 12 months out for one scenario. Assets and debt are
+  // tracked SEPARATELY so the return slider compounds only the asset base —
+  // the pre-fix loop applied the slider to the debt balance and never fed it
+  // back into net worth, so moving the "investment return" slider did nothing
+  // to the chart. Net worth = assets − debt. Paying debt down is net-neutral
+  // to net worth (cash moves from assets to debt reduction), which is why the
+  // contribution subtracts only the ACTUAL payment made; once a debt clears,
+  // that freed payment flows to assets automatically. cK scales the monthly
+  // contribution, iK scales the inflation drag (optimistic vs conservative).
+  function project(cK, iK) {
+    let a = startAsst, d = debt0;
+    const out = [];
+    for (let i = 0; i <= 12; i++) {
+      if (i > 0) {
+        const pay = Math.min(d, debtPay);            // actual debt payment this month
+        d -= pay;
+        const contrib = (income - expenses - pay + extra) * cK;
+        a += contrib + a * mRet - inflDragM * iK;
+      }
+      out.push(Math.round(a - d));
     }
-    base.push(Math.round(nw));
-    opt.push(Math.round(nwO));
-    cons.push(Math.round(nwC));
+    return out;
   }
-  return { base, opt, cons, monthly, remD };
+
+  const base = project(1.0,  1.0);
+  const opt  = project(1.18, 0.75);
+  const cons = project(0.65, 1.4);
+  // Headline "monthly surplus" card — net-worth-relevant surplus is debt-neutral
+  // (debtPay just shifts where the money goes), so it excludes debtPay.
+  const monthly = income - expenses + extra;
+  return { base, opt, cons, monthly, remD: Math.max(0, debt0 - debtPay * 12) };
 }
 
 function recalcForecast() {
@@ -654,8 +678,10 @@ function updateAllCards() {
   const expenses = (USER.housing||0) + (USER.food||0) + (USER.transport||0) + (USER.otherExp||0);
   const assets   = (USER.savings||0) + (USER.investments||0);
   const surplus  = income - expenses;
-  const nw       = assets - (USER.debt||0);
-  const nw12     = nw + surplus * 12 * 0.9;
+  // 12-mo net-worth projection — use the single forecast engine so this card
+  // matches the chart + Net Worth tab exactly. Pre-fix used an ad-hoc
+  // `nw + surplus*12*0.9` haircut that disagreed with both other surfaces.
+  const nw12     = buildData().base[12];
   const dMonths  = (USER.debtPay||0) > 0 && (USER.debt||0) > 0 ? Math.ceil((USER.debt||0) / (USER.debtPay||0)) : 0;
   const pct      = income > 0 ? Math.round((surplus/income)*100) : 0;
 
@@ -797,7 +823,10 @@ function saveGoals() {
 
 function renderGoals() {
   const list    = document.getElementById('goals-list');
-  const surplus = Math.max(0, ((USER.income||0) + (USER.otherIncome||0)) - ((USER.housing||0) + (USER.food||0) + (USER.transport||0) + (USER.otherExp||0)));
+  // Cash available to put toward goals = income − living costs − debt payments
+  // (you can't save money already committed to debt). Matches renderGoalsPanel;
+  // pre-fix this omitted debtPay and overstated how fast goals were reachable.
+  const surplus = Math.max(0, ((USER.income||0) + (USER.otherIncome||0)) - ((USER.housing||0) + (USER.food||0) + (USER.transport||0) + (USER.otherExp||0) + (USER.debtPay||0)));
   const sym     = USER.currency;
   if (!list) return;
 
@@ -977,7 +1006,9 @@ function goalCalcPreview() {
   if (target <= 0) { document.getElementById('goal-preview').style.display = 'none'; return; }
 
   const pct      = Math.min(100, Math.round(current / target * 100));
-  const surplus  = Math.max(0, ((USER.income||0) + (USER.otherIncome||0)) - ((USER.housing||0) + (USER.food||0) + (USER.transport||0) + (USER.otherExp||0)));
+  // Cash available for goals excludes debt payments (matches renderGoals /
+  // renderGoalsPanel) — pre-fix omitted debtPay and overstated goal speed.
+  const surplus  = Math.max(0, ((USER.income||0) + (USER.otherIncome||0)) - ((USER.housing||0) + (USER.food||0) + (USER.transport||0) + (USER.otherExp||0) + (USER.debtPay||0)));
   const remaining = Math.max(0, target - current);
   const months   = surplus > 0 ? Math.ceil(remaining / surplus) : null;
   const sym      = USER.currency;
@@ -1936,10 +1967,6 @@ function renderNWTab() {
   const debt        = USER.debt || 0;
   const assets      = savings + investments;
   const nw          = assets - debt;
-  const surplus     = Math.max(0,
-    ((USER.income||0)+(USER.otherIncome||0)) -
-    ((USER.housing||0)+(USER.food||0)+(USER.transport||0)+(USER.otherExp||0)+(USER.debtPay||0))
-  );
 
   // Load history
   let history = [];
@@ -1967,8 +1994,12 @@ function renderNWTab() {
   const debtEl = document.getElementById('nw-tab-debt');
   if (debtEl) debtEl.textContent = sym + debt.toLocaleString();
 
-  // 12-mo projection
-  const proj12 = nw + (surplus * 12);
+  // 12-mo projection — unified with the dashboard forecast engine (same number
+  // the Overview net-worth card + forecast chart show). Pre-fix this used a
+  // flat nw + (income−expenses−debtPay)*12, which understated growth (paying
+  // debt down also raises net worth) and disagreed with the Overview card.
+  const proj12 = buildData().base[12];
+  const monthlyChange = Math.round((proj12 - nw) / 12);  // avg monthly NW change
   const projEl = document.getElementById('nw-tab-proj');
   if (projEl) {
     // DASH-P2-A DBUG-8 fix — was Math.max(0, proj12) which clamped
@@ -1987,8 +2018,8 @@ function renderNWTab() {
   // Monthly change
   const moEl = document.getElementById('nw-tab-monthly');
   if (moEl) {
-    moEl.textContent = (surplus >= 0 ? '+' : '') + sym + Math.round(surplus).toLocaleString() + '/mo';
-    moEl.style.color = surplus >= 0 ? 'var(--teal)' : 'var(--red)';
+    moEl.textContent = (monthlyChange >= 0 ? '+' : '−') + sym + Math.abs(monthlyChange).toLocaleString() + '/mo';
+    moEl.style.color = monthlyChange >= 0 ? 'var(--teal)' : 'var(--red)';
   }
 
   // ── BREAKDOWN BARS ──
