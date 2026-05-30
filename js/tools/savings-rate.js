@@ -14,19 +14,23 @@
   var runSelfTests     = T.runSelfTests;
 
   // Static benchmark table: savings rate → approximate years to FI.
-  // Source: "shockingly simple math" concept — assumes 0% starting NW, 7% return, 4% SWR.
+  // Computed with this tool's own yearsToFI() engine at 0% starting NW, 7%
+  // nominal return, 4% SWR — so the table agrees with the live "years to FI"
+  // output (e.g. 50% → 14.5 yrs, matching the headline). The previous values
+  // were the 5%-REAL-return figures (50% → 17 yrs) but captioned "7% return",
+  // which disagreed with the calculator's own result by ~2.5 years.
   var BENCHMARKS = [
-    { rate: 5,  years: 66   },
-    { rate: 10, years: 51   },
-    { rate: 15, years: 43   },
-    { rate: 20, years: 37   },
-    { rate: 25, years: 32   },
-    { rate: 30, years: 28   },
-    { rate: 40, years: 22   },
-    { rate: 50, years: 17   },
-    { rate: 60, years: 12.5 },
-    { rate: 70, years: 8.5  },
-    { rate: 80, years: 5.5  },
+    { rate: 5,  years: 51   },
+    { rate: 10, years: 40   },
+    { rate: 15, years: 34   },
+    { rate: 20, years: 30   },
+    { rate: 25, years: 26   },
+    { rate: 30, years: 23   },
+    { rate: 40, years: 18.5 },
+    { rate: 50, years: 14.5 },
+    { rate: 60, years: 11   },
+    { rate: 70, years: 8    },
+    { rate: 80, years: 5.2  },
   ];
 
   function getInputs() {

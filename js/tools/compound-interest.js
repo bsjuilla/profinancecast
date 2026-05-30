@@ -89,7 +89,7 @@
       t.assert(Math.abs(fv1 - 1200) < 0.01, 'Zero-rate annuity equals plain sum');
 
       var fv2 = futureValue({ principal: 10000, monthlyContribution: 500, annualRate: 7, years: 30 });
-      t.assert(fv2 > 600000 && fv2 < 700000, '$10k + $500/mo @7% × 30y ≈ $640k');
+      t.assert(fv2 > 600000 && fv2 < 700000, '$10k + $500/mo @7% × 30y ≈ $691k');
     });
   }
 
