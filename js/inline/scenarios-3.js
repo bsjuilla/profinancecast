@@ -212,17 +212,13 @@ function buildForecastData(sc, months) {
 function calcHealthScore(sc) {
   const income = (sc.income || 0) + (sc.otherIncome || 0);
   const expenses = (sc.housing || 0) + (sc.food || 0) + (sc.transport || 0) + (sc.otherExp || 0);
-  const surplus = income - expenses - (sc.debtPay || 0);
-  const savingsRate = income > 0 ? surplus / income : 0;
-  const debtRatio = income > 0 ? (sc.debtPay || 0) / income : 0;
-  const emergency = (sc.savings || 0) / Math.max(expenses, 1);
-
-  let score = 50;
-  score += Math.min(25, savingsRate * 100);
-  score -= Math.min(20, debtRatio * 60);
-  score += Math.min(20, emergency * 5);
-  if (surplus > 0) score += 5;
-  return Math.max(0, Math.min(100, Math.round(score)));
+  // Canonical shared scorer (js/pfc-health-score.js) so a scenario's health
+  // score is computed the SAME way as the dashboard + Report Card. (Was a
+  // separate start-at-50 formula → a different number for the same inputs.)
+  if (typeof PFCHealthScore !== 'undefined') {
+    return PFCHealthScore.compute({ income, expenses, debtPay: (sc.debtPay || 0), savings: (sc.savings || 0) }).total;
+  }
+  return 50; // neutral fallback if the module didn't load
 }
 
 // ── CHART ──

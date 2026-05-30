@@ -137,18 +137,14 @@ function calc(){
   const income=(U.income||0)+(U.otherIncome||0);
   const expenses=(U.housing||0)+(U.food||0)+(U.transport||0)+(U.otherExp||0);
   const debtPay=U.debtPay||0;
-  const surplus=income-expenses-debtPay;
-  const savRate=income>0?Math.max(0,surplus)/income:0;
-  const debtRatio=income>0?debtPay/income:0;
   const nw=(U.savings||0)+(U.investments||0)-(U.debt||0);
-  const emergency=expenses>0?(U.savings||0)/expenses:0;
-  const spendPct=income>0?expenses/income:1;
-  const savScore=Math.min(100,savRate*400);
-  const debtScore=Math.max(0,100-debtRatio*280);
-  const emgScore=Math.min(100,(emergency/6)*100);
-  const spendScore=Math.max(0,Math.min(100,(1-spendPct/0.85)*100));
-  const total=Math.round(savScore*.25+debtScore*.25+emgScore*.25+spendScore*.25);
-  return{income,expenses,debtPay,surplus,savRate,debtRatio,nw,emergency,spendPct,savScore,debtScore,emgScore,spendScore,total};
+  // Canonical shared scorer (js/pfc-health-score.js) — single source of truth
+  // so the Report Card, dashboard and Scenarios always show the SAME score.
+  // Output is identical to the previous inline formula (verified 6/6 cases).
+  const h=(typeof PFCHealthScore!=='undefined')
+    ? PFCHealthScore.compute({income,expenses,debtPay,savings:U.savings||0})
+    : {total:0,savScore:0,debtScore:0,emgScore:0,spendScore:0,savRate:0,debtRatio:0,emergency:0,spendPct:(income>0?expenses/income:1),surplus:(income-expenses-debtPay)};
+  return{income,expenses,debtPay,surplus:h.surplus,savRate:h.savRate,debtRatio:h.debtRatio,nw,emergency:h.emergency,spendPct:h.spendPct,savScore:h.savScore,debtScore:h.debtScore,emgScore:h.emgScore,spendScore:h.spendScore,total:h.total};
 }
 
 function grade(s){

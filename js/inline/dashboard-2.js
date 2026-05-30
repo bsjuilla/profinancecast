@@ -245,17 +245,13 @@ function recalcForecast() {
 
   // ── HEALTH SCORE recalc ──
   const savePct = income > 0 ? surplus / income : 0;
-  let score = 0;
-  if (savePct >= 0.2) score += 30; else if (savePct >= 0.1) score += 20; else if (savePct > 0) score += 10;
-  if (surplus > 0) score += 20;
-  if (USER.debt === 0) score += 25; else if (USER.debt < assets) score += 12;
-  // DASH-P2-A DBUG-10 fix — was `assets >= surplus * 3`. With surplus<=0
-  // (expenses > income) the threshold collapses to <=0 → any positive
-  // assets awarded the bonus. Emergency-fund benchmark is monthly EXPENSES
-  // not monthly surplus. Three months of expenses is the canonical floor.
-  if (assets >= expenses * 3) score += 15; else if (assets > 0) score += 8;
-  if (d.base[12] > d.base[0]) score += 10;
-  score = Math.min(99, Math.max(5, score));
+  // Canonical shared scorer (js/pfc-health-score.js) so the dashboard health
+  // score matches the Report Card + Scenarios exactly. (Was a separate additive
+  // formula → a different number for the same data.) savePct above is kept for
+  // the savings-rate insight copy below.
+  const score = (typeof PFCHealthScore !== 'undefined')
+    ? PFCHealthScore.compute({ income, expenses, debtPay: (USER.debtPay || 0), savings: (USER.savings || 0) }).total
+    : 0;
 
   const scEl = document.getElementById('m-score');
   if (scEl) { scEl.textContent = score; scEl.style.color = score >= 70 ? 'var(--teal)' : score >= 40 ? 'var(--amber)' : 'var(--red)'; }
@@ -531,13 +527,13 @@ function efCalc() {
   const nwEl2    = document.getElementById('ef-nw');
   nwEl2.textContent = (nw >= 0 ? sym : '-' + sym) + Math.abs(Math.round(nw)).toLocaleString();
   nwEl2.style.color = nw >= 0 ? 'var(--teal)' : 'var(--red)';
-  const savePct  = income > 0 ? surplus / income : 0;
-  let score = 0;
-  if (savePct >= 0.2) score += 30; else if (savePct >= 0.1) score += 20; else if (savePct > 0) score += 10;
-  if (surplus > 0) score += 20;
-  if (debt === 0) score += 25; else if (debt < savings) score += 12;
-  if (savings >= surplus * 3) score += 15; else if (savings > 0) score += 8;
-  score = Math.min(99, Math.max(5, score));
+  // Canonical shared scorer (js/pfc-health-score.js) — same formula as the
+  // dashboard/report-card/scenarios (also fixes the old surplus*3 emergency-fund
+  // bug this preview still carried). The edit panel has no debt-payment field,
+  // so use the saved value; savings is the liquid pool only.
+  const score = (typeof PFCHealthScore !== 'undefined')
+    ? PFCHealthScore.compute({ income, expenses, debtPay: (USER.debtPay || 0), savings: efGet('ef-savings') }).total
+    : 0;
   const scEl2 = document.getElementById('ef-score');
   scEl2.textContent = score + ' / 100';
   scEl2.style.color = score >= 70 ? 'var(--teal)' : score >= 40 ? 'var(--amber)' : 'var(--red)';
@@ -667,17 +663,11 @@ function updateAllCards() {
   try { renderDebtBreakdown(); } catch (_) {}
 
   // Health score
-  const savePct = income > 0 ? surplus / income : 0;
-  let score = 0;
-  if (savePct >= 0.2) score += 30; else if (savePct >= 0.1) score += 20; else if (savePct > 0) score += 10;
-  if (surplus > 0) score += 20;
-  if (USER.debt === 0) score += 25; else if (USER.debt < assets) score += 12;
-  // DASH-P2-A DBUG-10 fix — was `assets >= surplus * 3`. With surplus<=0
-  // (expenses > income) the threshold collapses to <=0 → any positive
-  // assets awarded the bonus. Emergency-fund benchmark is monthly EXPENSES
-  // not monthly surplus. Three months of expenses is the canonical floor.
-  if (assets >= expenses * 3) score += 15; else if (assets > 0) score += 8;
-  score = Math.min(99, Math.max(5, score));
+  // Canonical shared scorer (js/pfc-health-score.js) — same formula as the
+  // dashboard/report-card/scenarios.
+  const score = (typeof PFCHealthScore !== 'undefined')
+    ? PFCHealthScore.compute({ income, expenses, debtPay: (USER.debtPay || 0), savings: (USER.savings || 0) }).total
+    : 0;
 
   // Update metric cards
   const nwEl = document.getElementById('m-networth');
