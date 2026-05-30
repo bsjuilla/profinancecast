@@ -3,6 +3,13 @@
 **/graphify-out/cache/
 **/graphify-out/.needs_update
 
+# graphify scratch files at repo ROOT (regenerated locally; transient)
+/.graphify_*
+
+# Python bytecode cache
+__pycache__/
+*.pyc
+
 # Graphify output at REPO ROOT only (regenerated locally; transient)
 # — but graphify-out/ committed under docs/handoff/ is intentional
 # (the persistent handoff graph). Use leading slash for root-only match.
