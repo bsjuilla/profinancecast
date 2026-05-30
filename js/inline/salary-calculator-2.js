@@ -74,7 +74,11 @@ function calcDebounced() {
 // Use this helper everywhere instead of inlining the PFCSym/USER.currency
 // branch — single source of truth + auto-currency aware for €/£/etc.
 function _sym() {
-  return window.PFCSym ? PFCSym(USER.currency) : (USER.currency || '$');
+  // EU-focused default: fall back to € (not $) when no currency is set yet
+  // (anonymous / pre-onboarding). Real users with a saved currency are
+  // unaffected — PFCSym threads their €/£/$ through as before.
+  const cur = (typeof USER !== 'undefined' && USER && USER.currency) ? USER.currency : '€';
+  return window.PFCSym ? PFCSym(cur) : cur;
 }
 
 // ── MARKET RATE DATABASE ──
@@ -332,7 +336,7 @@ function buildRaiseGrid(salary, sym) {
     const amt = salary ? Math.round(salary * p / 100) : null;
     return `<div class="raise-btn ${p === activeRaisePct ? 'active' : ''}" role="button" tabindex="0" data-pfc-on-click="selectRaise" data-pfc-arg="${p}" id="rbtn-${p}" aria-pressed="${p === activeRaisePct ? 'true' : 'false'}">
       <div class="pct">+${p}%</div>
-      <div class="amt">${amt ? (sym || '$') + Math.round(amt).toLocaleString() : '—'}</div>
+      <div class="amt">${amt ? (sym || '€') + Math.round(amt).toLocaleString() : '—'}</div>
     </div>`;
   }).join('');
 }
