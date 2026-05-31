@@ -117,9 +117,34 @@ const PFCAuth = (() => {
      * (audit L3)
      */
     requireAuth() {
-      // Audit-mode bypass — see js/pfc-audit-mode.js. The audit module
-      // sets window.__PFC_AUDIT_MODE synchronously BEFORE this module
-      // loads, so checking the flag here is reliable.
+      // SECURITY (2026-05-31 paywall-bypass fix)
+      // If an audit cookie is present, js/pfc-audit-mode.js set
+      // __PFC_AUDIT_PENDING=true and kicked off a SERVER validation
+      // (__PFC_AUDIT_READY → /api/audit-verify). Wait for it before deciding,
+      // so a forged JS flag cookie can't satisfy the audit bypass before the
+      // server rejects it. __PFC_AUDIT_MODE is only true AFTER that validation.
+      //
+      // A NORMAL user has NO audit cookie → __PFC_AUDIT_PENDING is undefined →
+      // we run the original SYNCHRONOUS path below with ZERO awaits/fetches,
+      // exactly as before. Existing callers invoke requireAuth() and ignore the
+      // return value, so making the audit-only branch async is transparent.
+      if (typeof window !== 'undefined' && window.__PFC_AUDIT_PENDING && window.__PFC_AUDIT_READY) {
+        const self = this;
+        (async () => {
+          try { await window.__PFC_AUDIT_READY; } catch (_) {}
+          self._requireAuthGate();
+        })();
+        return;
+      }
+      this._requireAuthGate();
+    },
+    // The actual auth gate. Synchronous entry (the audit-aware await, if any,
+    // already resolved in requireAuth before this runs), so a no-audit-cookie
+    // user reaches here with no added latency.
+    _requireAuthGate() {
+      // Audit-mode bypass — see js/pfc-audit-mode.js. __PFC_AUDIT_MODE is now
+      // only true AFTER server validation, so a forged flag cookie no longer
+      // satisfies this check.
       if (typeof window !== 'undefined' && window.__PFC_AUDIT_MODE === true) return;
       this.onReady(uid => {
         if (_failed) {

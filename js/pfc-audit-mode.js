@@ -40,20 +40,41 @@
 
   if (!_hasAuditCookie()) return;
 
-  // Set the global flag IMMEDIATELY (synchronous) so PFCAuth + PFCPlan
-  // can see it when they boot a few milliseconds later.
-  window.__PFC_AUDIT_MODE = true;
+  // SECURITY (2026-05-31 paywall-bypass fix)
+  // We do NOT set window.__PFC_AUDIT_MODE synchronously from the JS-readable
+  // flag cookie anymore: that flag carries no secret, so anyone could paste
+  //   document.cookie='pfc_audit_mode_active=1'
+  // and self-grant Pro tools. Instead we ask the SERVER to validate the
+  // HttpOnly pfc_audit_session nonce (which an attacker cannot forge — only
+  // the token-gated /api/audit-login sets it). __PFC_AUDIT_MODE is set ONLY
+  // after the server confirms a real audit session.
+  //
+  // __PFC_AUDIT_PENDING tells the auth + entitlements gates "an audit cookie
+  // is present — await __PFC_AUDIT_READY before deciding". A user with NO
+  // audit cookie never reaches this code (we returned above), so those gates
+  // see __PFC_AUDIT_PENDING === undefined and behave EXACTLY as before
+  // (no await, no fetch).
+  window.__PFC_AUDIT_PENDING = true;
+  window.__PFC_AUDIT_READY = fetch('/api/audit-verify', { credentials: 'same-origin' })
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (d) {
+      if (d && d.valid) {
+        window.__PFC_AUDIT_MODE = true;
+        window.__PFC_AUDIT_PLAN = (typeof d.plan === 'string' ? d.plan : 'pro');
+      }
+    })
+    .catch(function () {});
 
   // Optional plan override carried in the JS-readable pfc_audit_plan cookie
-  // (set by /api/audit-login?plan=free|pro|premium). Lets a test harness walk
-  // the app as a FREE user as well as Pro. Defaults to 'pro' (back-compat).
-  // Carries no secret — the audit nonce cookie is the actual gate.
+  // (set by /api/audit-login?plan=free|pro|premium). Used ONLY to render the
+  // seeded SAMPLE view below (cosmetic) — the SERVER (audit-verify) is the
+  // authority for the gate-relevant __PFC_AUDIT_PLAN above. Carries no secret;
+  // the HttpOnly audit nonce is the actual gate.
   var _auditPlan = 'pro';
   try {
     var _pm = document.cookie.match(/(?:^|;\s*)pfc_audit_plan=(free|pro|premium)(?:;|$)/);
     if (_pm) _auditPlan = _pm[1];
   } catch (_) {}
-  window.__PFC_AUDIT_PLAN = _auditPlan;
 
   // Sample profile shown in audit mode. Numbers designed to exercise every
   // dashboard widget meaningfully — not so big they break formatting, not

@@ -167,12 +167,33 @@ export default async function handler(req, res) {
   else if (sub.status === 'past_due') reason = 'past_due_in_grace';
   else reason = 'sub_status_' + (sub.status || 'unknown');
 
-  // Optional: include AI query usage
+  // Optional: include AI query usage (+ plan for the lazy reconcile below)
   const { data: profile } = await supabase
     .from('profiles')
-    .select('ai_queries_used, ai_queries_limit, ai_queries_reset_at')
+    .select('plan, ai_queries_used, ai_queries_limit, ai_queries_reset_at')
     .eq('id', userId)
     .maybeSingle();
+
+  // B-P0-CANCEL-GRACE (swarm audit) — lazy reconcile of profiles.plan, which
+  // api/sage.js reads as its server-side Pro gate. When a scheduled-cancel or
+  // already-terminal subscription's paid period has lapsed, self-heal so the
+  // server stops granting Pro features after period end. Scoped to
+  // definitively-ended subs (cancel_at_period_end / cancelled / expired) so an
+  // active sub mid-renewal is never touched. Best-effort and only on the rare
+  // terminal-expired path: it awaits ≤2 cheap indexed writes (so the reconcile
+  // actually flushes before the serverless fn freezes) and only writes when
+  // profiles.plan is actually still paid, so it self-limits to one round.
+  if (sub && expired && profile && profile.plan && profile.plan !== 'free'
+      && (sub.cancel_at_period_end === true || sub.status === 'cancelled' || sub.status === 'expired')) {
+    try {
+      await supabase.from('profiles').update({ plan: 'free' }).eq('id', userId);
+      if (sub.status !== 'cancelled' && sub.status !== 'expired') {
+        await supabase.from('subscriptions').update({
+          status: 'expired', subscription_state: 'EXPIRED', updated_at: new Date().toISOString(),
+        }).eq('user_id', userId);
+      }
+    } catch (_) { /* non-fatal reconcile */ }
+  }
 
   return res.status(200).json(_withDebug({
     plan,

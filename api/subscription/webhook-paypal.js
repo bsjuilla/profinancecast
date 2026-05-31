@@ -1031,22 +1031,49 @@ export default async function handler(req, res) {
         }
 
         const terminalState = (eventType === 'BILLING.SUBSCRIPTION.CANCELLED') ? 'CANCELLED' : 'EXPIRED';
-        const dbStatus      = (eventType === 'BILLING.SUBSCRIPTION.CANCELLED') ? 'cancelled' : 'expired';
         const nowIso = new Date().toISOString();
 
-        await supabase.from('subscriptions').update({
-          status: dbStatus,
-          subscription_state: terminalState,
-          cancelled_at: nowIso,
-          updated_at: nowIso,
-        }).eq('user_id', userId);
-        await supabase.from('profiles').update({ plan: 'free' }).eq('id', userId);
+        // B-P0-CANCEL-GRACE (swarm audit) — PayPal fires CANCELLED IMMEDIATELY
+        // when a user schedules a cancel, but the user paid through
+        // current_period_end and cancel.js promised "Pro until the end of your
+        // current period". Pre-fix this handler unconditionally set
+        // status='cancelled' + profiles.plan='free', so a user who cancelled on
+        // day 5 of 30 lost access within seconds. Now: only downgrade if the
+        // paid period has actually ended (or this is a true EXPIRED event).
+        const { data: subRow } = await supabase
+          .from('subscriptions').select('current_period_end').eq('user_id', userId).maybeSingle();
+        const periodEndMs = subRow?.current_period_end ? new Date(subRow.current_period_end).getTime() : 0;
+        const periodActive = periodEndMs && periodEndMs > Date.now();
 
-        await _logEvent({
-          user_id: userId,
-          event_type: eventType === 'BILLING.SUBSCRIPTION.CANCELLED' ? 'subscription_cancelled' : 'subscription_expired',
-          provider_id: subscriptionId,
-        });
+        if (eventType === 'BILLING.SUBSCRIPTION.CANCELLED' && periodActive) {
+          // Scheduled cancel, paid time remaining: keep status='active' so
+          // /api/subscription/status keeps serving the plan until period_end,
+          // where its expiry check downgrades + lazily reconciles profiles.plan.
+          // Do NOT touch profiles.plan now — the user is still entitled.
+          await supabase.from('subscriptions').update({
+            subscription_state: 'CANCELLED',
+            cancel_at_period_end: true,
+            cancelled_at: nowIso,
+            updated_at: nowIso,
+          }).eq('user_id', userId);
+          await _logEvent({ user_id: userId, event_type: 'subscription_cancel_scheduled', provider_id: subscriptionId });
+        } else {
+          // True end-of-life: EXPIRED, or a CANCELLED whose paid period already
+          // ended → downgrade entitlement now.
+          const dbStatus = (eventType === 'BILLING.SUBSCRIPTION.CANCELLED') ? 'cancelled' : 'expired';
+          await supabase.from('subscriptions').update({
+            status: dbStatus,
+            subscription_state: terminalState,
+            cancelled_at: nowIso,
+            updated_at: nowIso,
+          }).eq('user_id', userId);
+          await supabase.from('profiles').update({ plan: 'free' }).eq('id', userId);
+          await _logEvent({
+            user_id: userId,
+            event_type: eventType === 'BILLING.SUBSCRIPTION.CANCELLED' ? 'subscription_cancelled' : 'subscription_expired',
+            provider_id: subscriptionId,
+          });
+        }
         break;
       }
 

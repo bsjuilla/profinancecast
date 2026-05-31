@@ -191,12 +191,39 @@ const PFCPlan = (() => {
    * Free users never see the page contents (no flicker).
    */
   function requirePlan(allowed) {
+    // SECURITY (2026-05-31 paywall-bypass fix)
+    // If an audit cookie is present, js/pfc-audit-mode.js set
+    // __PFC_AUDIT_PENDING=true and kicked off a SERVER validation
+    // (__PFC_AUDIT_READY → /api/audit-verify). The gate must WAIT for that
+    // validation before deciding, otherwise a forged JS flag cookie could be
+    // honoured before the server says no. __PFC_AUDIT_MODE is set ONLY after
+    // the server confirms a real (HttpOnly-nonce-bearing) audit session.
+    //
+    // A NORMAL user has NO audit cookie → __PFC_AUDIT_PENDING is undefined →
+    // we take the synchronous `_gate(...)` path below with ZERO awaits and ZERO
+    // fetches, byte-for-byte the original behaviour.
+    if (typeof window !== 'undefined' && window.__PFC_AUDIT_PENDING && window.__PFC_AUDIT_READY) {
+      (async () => {
+        try { await window.__PFC_AUDIT_READY; } catch (_) {}
+        _gate(allowed);
+      })();
+      return;
+    }
+    _gate(allowed);
+  }
+
+  // The actual gate flow. Synchronous entry (the audit-aware await, if any,
+  // already happened in requirePlan before this runs), so a no-audit-cookie
+  // user reaches here with no added latency.
+  function _gate(allowed) {
     // Audit-mode bypass — render as the audit plan (default 'pro'). When a
     // test harness sets ?plan=free|premium (carried in __PFC_AUDIT_PLAN), we
     // honour it so the free-user redirect on Pro-gated pages is ACTUALLY
     // exercised — otherwise a free walkthrough silently renders Pro and the
     // gate is never tested (scripts/e2e-full-walk.py). Still no network /
     // no real auth: this only governs the seeded, sample-data audit view.
+    // NOTE: __PFC_AUDIT_MODE is now only true AFTER server validation
+    // (see requirePlan above), so a forged flag cookie no longer reaches here.
     if (typeof window !== 'undefined' && window.__PFC_AUDIT_MODE === true) {
       _plan = (typeof window.__PFC_AUDIT_PLAN === 'string' ? window.__PFC_AUDIT_PLAN : 'pro');
       const allowSetAudit = new Set(Array.isArray(allowed) ? allowed : [allowed]);
