@@ -61,6 +61,9 @@
       if (d && d.valid) {
         window.__PFC_AUDIT_MODE = true;
         window.__PFC_AUDIT_PLAN = (typeof d.plan === 'string' ? d.plan : 'pro');
+        // Cosmetic audit UI (banner/log) is gated behind THIS server-validated
+        // branch, so a forged flag cookie produces zero observable effect.
+        _activateAuditUI();
       }
     })
     .catch(function () {});
@@ -151,21 +154,31 @@
       document.addEventListener('DOMContentLoaded', _renderBanner, { once: true });
     }
   }
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', _renderBanner, { once: true });
-  } else {
+  // Cosmetic audit-mode UI — banner + devtools helper + console marker.
+  // SECURITY (2026-05-31 fast-follow): invoked ONLY from the server-validated
+  // .then branch above (d.valid === true), so a forged `pfc_audit_mode_active=1`
+  // cookie with no HttpOnly nonce produces ZERO observable effect — audit-verify
+  // returns valid:false, this never runs, and the auth/plan gates redirect.
+  //
+  // The SAMPLE_USER seeding above stays SYNCHRONOUS on purpose: it is invisible
+  // to a forged cookie (the gates redirect such a session before any seeded data
+  // is rendered, and the MED-4 guard never overwrites a real user's mirror);
+  // __PFC_AUDIT_SAMPLE_USER must exist synchronously for PFCAuth.getSession();
+  // and the CI screenshot harness needs the sample data in storage BEFORE page
+  // render code reads it (moving it behind the fetch would risk empty captures).
+  // _activateAuditUI / _renderBanner are function declarations (hoisted), so the
+  // async .then can call them even though they're defined here.
+  function _activateAuditUI() {
     _renderBanner();
+    // Expose a tiny helper for debugging in DevTools.
+    window.PFCAuditMode = {
+      active: true,
+      sampleUser: SAMPLE_USER,
+      logout: function () { window.location.href = '/api/audit-login?logout=1'; },
+    };
+    // One log line in console so it's obvious what's going on if anyone
+    // peeks at the network panel and wonders why /api/subscription/status
+    // doesn't fire.
+    try { console.info('%c[PFC] AUDIT MODE ACTIVE — sample data', 'background:#F5A623;color:#1a1408;padding:2px 6px;border-radius:3px;font-weight:600'); } catch (_) {}
   }
-
-  // Expose a tiny helper for debugging in DevTools.
-  window.PFCAuditMode = {
-    active: true,
-    sampleUser: SAMPLE_USER,
-    logout: function () { window.location.href = '/api/audit-login?logout=1'; },
-  };
-
-  // One log line in console so it's obvious what's going on if anyone
-  // peeks at the network panel and wonders why /api/subscription/status
-  // doesn't fire.
-  try { console.info('%c[PFC] AUDIT MODE ACTIVE — sample data', 'background:#F5A623;color:#1a1408;padding:2px 6px;border-radius:3px;font-weight:600'); } catch (_) {}
 })();
