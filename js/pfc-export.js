@@ -71,17 +71,20 @@ const PFCExport = (() => {
    */
   function fullBackup() {
     if (typeof PFCStorage === 'undefined') return null;
+    // Don't export from a cold cache — it would emit nulls/ciphertext.
+    if (typeof PFCStorage.isReady === 'function' && !PFCStorage.isReady()) {
+      return { exportedAt: new Date().toISOString(), notReady: true, data: {} };
+    }
     const uid = (typeof PFCAuth !== 'undefined') ? PFCAuth.getUserId() : 'guest';
     const prefix = `pfc:${uid}:`;
+    const SKIP = new Set([`pfc:${uid}:_k`, 'pfc:guest:_k']);
     const out = { exportedAt: new Date().toISOString(), userId: uid, data: {} };
     for (let i = 0; i < localStorage.length; i++) {
       const k = localStorage.key(i);
-      if (k && k.startsWith(prefix)) {
-        const short = k.substring(prefix.length);
-        const raw = localStorage.getItem(k);
-        try { out.data[short] = JSON.parse(raw); }
-        catch { out.data[short] = raw; }
-      }
+      if (!k || !k.startsWith(prefix) || SKIP.has(k)) continue;
+      const short = k.substring(prefix.length);
+      const parsed = PFCStorage.getJSON(short);      // decrypts via warm cache
+      out.data[short] = (parsed !== null) ? parsed : PFCStorage.get(short);
     }
     return out;
   }

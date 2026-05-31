@@ -180,13 +180,19 @@ function buildForecastData(sc, months) {
   const income = (sc.income || 0) + (sc.otherIncome || 0);
   const expenses = (sc.housing || 0) + (sc.food || 0) + (sc.transport || 0) + (sc.otherExp || 0);
   const debtPay = sc.debtPay || 0;
-
+  // Match the dashboard forecast engine (js/inline/dashboard-2.js buildData):
+  // compound the asset base at the same default investment return and apply the
+  // same inflation drag, so the 'Current' scenario equals the dashboard's
+  // 'Projected net worth · 12 months'. Scenarios has no return/inflation sliders,
+  // so use the dashboard slider defaults (5% return, 3.5% inflation).
+  const mRet = 0.05 / 12;                 // 5%/yr default investment return, monthly
+  const inflDragM = (0.035 * expenses) / 12;  // 3.5% inflation drag on monthly expenses
   for (let m = 0; m <= months; m++) {
     pts.push(Math.round(savings - debt));
     if (m < months) {
       const actualDebtPay = Math.min(debtPay, debt);
-      const surplus = income - (expenses + actualDebtPay);
-      savings += surplus;
+      const contrib = income - (expenses + actualDebtPay);
+      savings += contrib + savings * mRet - inflDragM;
       debt = Math.max(0, debt - actualDebtPay);
     }
   }

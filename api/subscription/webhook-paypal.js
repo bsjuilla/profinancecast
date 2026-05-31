@@ -1221,6 +1221,7 @@ export default async function handler(req, res) {
           status: 'active',
           subscription_state: 'ACTIVE',
           current_period_end: periodEnd,
+          provider_capture_id: saleId,   // FIX: keep current-cycle capture id so SALE.REFUNDED downgrade gate (line 1340) matches
           failed_payment_count: 0,
           updated_at: nowIso,
         }).eq('user_id', sub.user_id);

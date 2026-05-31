@@ -972,6 +972,13 @@ window.addEventListener('DOMContentLoaded', () => {
     // visibility (not display) preserves the layout slot — no reflow.
     const root = document.getElementById('current-plan-banner');
     if (root) root.style.visibility = 'visible';
+    // B-P0-CANCEL fix — reveal the Cancel button on paid tiers for
+    // returning users. Previously only upgradePlan() (post-purchase,
+    // same-session) revealed it, so a returning Pro/Premium subscriber
+    // saw 'Cancel anytime' copy with a permanently-hidden button and had
+    // no in-app way to stop auto-renewal.
+    const cb = document.getElementById('cancel-btn');
+    if (cb) cb.style.display = (safePlan === 'pro' || safePlan === 'premium') ? 'inline-block' : 'none';
   }
 
   if (typeof PFCPlan !== 'undefined') {
