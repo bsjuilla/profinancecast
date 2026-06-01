@@ -836,6 +836,13 @@
     .chart-frame { transform: none; padding: 24px; }
     .step { grid-template-columns: 1fr; gap: 24px; }
     .step:nth-child(even) .step-visual { order: 0; }
+    /* The step reveal animates children from x:±40 → 0 (js/inline/index-5.js).
+       Odd steps START at x:+40, so before they scroll into view they sit 40px
+       past the right edge (opacity:0 but still occupying the shifted box) —
+       expanding the layout viewport to 410 on a 390 phone and rendering the
+       homepage ~5% zoomed-out. Clip the transient horizontal slide; the final
+       x:0 state is fully within bounds, so no content is ever cut off. */
+    .steps { overflow-x: clip; }
     .bento { grid-template-columns: 1fr 1fr; grid-auto-rows: auto; }
     .b-tall, .b-wide, .b-3, .b-4 { grid-column: span 1; grid-row: auto; }
     .pricing { grid-template-columns: 1fr; }
