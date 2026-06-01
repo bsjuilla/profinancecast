@@ -114,6 +114,19 @@
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
+  <!-- Competitor / alternative landing pages — added 2026-06-01 -->
+  <url>
+    <loc>https://www.profinancecast.com/mint-alternative</loc>
+    <lastmod>2026-06-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.profinancecast.com/budgeting-apps-without-bank-login</loc>
+    <lastmod>2026-06-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
   <!-- Phase 2 SEO funnel tools — 5 tools × 9 country variants = 45 URLs.
        Global pages at 0.8; country variants at 0.7. Added 2026-05-19. -->
   <url>

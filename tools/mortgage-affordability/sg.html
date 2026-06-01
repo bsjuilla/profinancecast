@@ -6,7 +6,7 @@
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5652501264934418" crossorigin="anonymous"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Mortgage Affordability Calculator Singapore &mdash; how much can you borrow? | ProFinanceCast</title>
-<meta name="description" content="Free Singapore mortgage affordability calculator. ABSD rates, LTV limits, TDSR 55% cap, HDB vs private property context. SGD defaults. No signup.">
+<meta name="description" content="Free Singapore mortgage & HDB affordability calculator. HDB loan eligibility, condo/private, MSR 30%, TDSR 55% cap, LTV 75%, ABSD. SGD. No signup.">
 <link rel="canonical" href="https://www.profinancecast.com/tools/mortgage-affordability/sg">
 <meta name="robots" content="index,follow">
 <link rel="alternate" hreflang="en"      href="https://www.profinancecast.com/tools/mortgage-affordability">
@@ -73,9 +73,13 @@
         { "@type": "Question", "name": "What is Additional Buyer's Stamp Duty (ABSD) in Singapore?",
           "acceptedAnswer": { "@type": "Answer", "text": "ABSD is a stamp duty surcharge on property purchases above the standard BSD. For Singapore citizens: 0% on first residential property, 20% on second, 30% on third and beyond. For Singapore PRs: 5% on first, 30% on second and beyond. For foreigners: 60% on any residential property. ABSD rates as of April 2023 — always verify with IRAS." } },
         { "@type": "Question", "name": "What LTV limits apply to private property loans in Singapore?",
-          "acceptedAnswer": { "@type": "Answer", "text": "For a first private property loan, the LTV limit is 75% (25% minimum down payment, of which at least 5% must be in cash; the rest can be CPF OA savings). For a second outstanding loan, LTV is capped at 45%; for a third, 35%. HDB concessionary loans allow up to 80% LTV for eligible flat buyers." } },
+          "acceptedAnswer": { "@type": "Answer", "text": "For a first private property loan, the LTV limit is 75% (25% minimum down payment, of which at least 5% must be in cash; the rest can be CPF OA savings). For a second outstanding loan, LTV is capped at 45%; for a third, 35%. HDB concessionary loans allow up to 75% LTV (lowered from 80% in August 2024)." } },
         { "@type": "Question", "name": "Can I use CPF savings for my property down payment?",
-          "acceptedAnswer": { "@type": "Answer", "text": "Yes. CPF Ordinary Account (OA) savings can be used to fund up to 20% of the purchase price of an HDB flat or private property (subject to the LTV limits). A minimum cash down payment of 5% is required for private bank loans. CPF usage is subject to a Valuation Limit and Withdrawal Limit — consult CPF Board for specifics." } }
+          "acceptedAnswer": { "@type": "Answer", "text": "Yes. CPF Ordinary Account (OA) savings can be used to fund up to 20% of the purchase price of an HDB flat or private property (subject to the LTV limits). A minimum cash down payment of 5% is required for private bank loans. CPF usage is subject to a Valuation Limit and Withdrawal Limit — consult CPF Board for specifics." } },
+        { "@type": "Question", "name": "Am I eligible for an HDB loan?",
+          "acceptedAnswer": { "@type": "Answer", "text": "An HDB concessionary loan (currently 2.6% p.a.) is for HDB flats only and has an income ceiling — around S$14,000/month for families and S$7,000 for singles as of 2026 (confirm the current figure with HDB). Repayment must fit within the Mortgage Servicing Ratio (MSR, 30% of gross income) and the Total Debt Servicing Ratio (TDSR, 55%), and the loan covers up to 75% of the flat's value. Private condos and Executive Condominiums use bank loans, not the HDB loan." } },
+        { "@type": "Question", "name": "HDB flat vs a private condo — what changes for affordability?",
+          "acceptedAnswer": { "@type": "Answer", "text": "For an HDB flat or Executive Condominium you must pass both the MSR (30% of gross income) and the TDSR (55%). For a private condo there is no MSR and no income ceiling — affordability is gated by the TDSR (55%) alone, via a bank loan at up to 75% LTV. Lenders stress-test repayment at a 4% medium-term interest-rate floor." } }
       ]
     }
   ]
@@ -191,7 +195,7 @@
   <div class="formula">maxPayment = min(income &times; 0.28, income &times; 0.36 &minus; monthlyDebts)<br>
 maxLoan = maxPayment &times; (1 &minus; (1 + r)<sup>&minus;n</sup>) / r<br>
 maxPrice = maxLoan + downPayment</div>
-  <p><strong>Singapore specifics:</strong> For a first private property with a bank loan, the LTV is capped at 75% (25% minimum down payment, of which at least 5% must be cash; the rest can come from CPF OA). ABSD of 20% applies to Singapore citizens buying a second residential property and 60% applies to foreign purchasers &mdash; budget for this on top of the purchase price. HDB flats are subject to separate MSR (30% of gross income) and eligibility rules.</p>
+  <p><strong>Singapore specifics:</strong> For a first private property with a bank loan, the LTV is capped at 75% (25% minimum down payment, of which at least 5% must be cash; the rest can come from CPF OA). ABSD of 20% applies to Singapore citizens buying a second residential property and 60% applies to foreign purchasers &mdash; budget for this on top of the purchase price. HDB flats and Executive Condominiums are subject to an additional Mortgage Servicing Ratio (MSR) cap of 30% of gross income; private condos are gated by the TDSR (55%) only. Lenders stress-test affordability at a 4% medium-term rate floor, so your real limit is usually lower than today&rsquo;s market rate implies. An HDB concessionary loan (2.6% p.a.) is for HDB flats only, with an income ceiling (around S$14,000/month for families as of 2026 &mdash; confirm with HDB).</p>
 </section>
 
 <section class="pfc-faq">
@@ -201,7 +205,11 @@ maxPrice = maxLoan + downPayment</div>
   <details><summary>What is Additional Buyer&rsquo;s Stamp Duty (ABSD)?</summary>
     <p>ABSD is a stamp duty surcharge: Singapore citizens pay 0% on first property, 20% on second, 30% on third+. PRs pay 5% on first, 30% on second+. Foreigners pay 60% on any property. Rates as of April 2023 &mdash; verify with IRAS before transacting.</p></details>
   <details><summary>What LTV limits apply to private property?</summary>
-    <p>First private property loan: 75% LTV (25% down payment, minimum 5% cash; rest from CPF OA). Second outstanding loan: 45% LTV. Third+: 35% LTV. HDB concessionary loans allow 80% LTV for eligible flat buyers with stricter income ceilings.</p></details>
+    <p>First private property loan: 75% LTV (25% down payment, minimum 5% cash; rest from CPF OA). Second outstanding loan: 45% LTV. Third+: 35% LTV. HDB concessionary loans allow up to 75% LTV (lowered from 80% in August 2024).</p></details>
+  <details><summary>Am I eligible for an HDB loan?</summary>
+    <p>An HDB concessionary loan (currently 2.6% p.a.) is for HDB flats only and has an income ceiling &mdash; around S$14,000/month for families and S$7,000 for singles as of 2026 (confirm the current figure with HDB). Your repayment must also fit within the Mortgage Servicing Ratio (MSR, 30% of gross income) and the Total Debt Servicing Ratio (TDSR, 55%), and the loan covers up to 75% of the flat&rsquo;s value. Private condos and Executive Condominiums use bank loans instead.</p></details>
+  <details><summary>HDB flat vs a private condo &mdash; what changes for affordability?</summary>
+    <p>For an HDB flat or Executive Condominium you must pass <strong>both</strong> the MSR (30% of gross income) and the TDSR (55%). For a private condo there is <strong>no MSR and no income ceiling</strong> &mdash; affordability is gated by the TDSR (55%) alone, via a bank loan at up to 75% LTV. Either way, lenders stress-test the repayment at a 4% interest-rate floor.</p></details>
   <details><summary>Can I use CPF for the down payment?</summary>
     <p>Yes. CPF OA can cover up to 20% of the purchase price (subject to Valuation Limit and Withdrawal Limit). At least 5% of the purchase price must be paid in cash for private bank loans. Consult the CPF Board for your specific limits.</p></details>
   <details><summary>What is the 28/36 rule?</summary>
