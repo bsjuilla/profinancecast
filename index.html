@@ -2348,6 +2348,167 @@
   </svg>
 </div>
 
+<!-- ═══════════ MARKETING: COMPARISON + TRUST BAND ═══════════
+     Additive-only. Self-contained styles below use the unique class
+     prefixes .pfc-vs- and .pfc-trust- so nothing collides with existing
+     rules. Both grids collapse to a single column at ≤640px. Colours are
+     existing design tokens only (no hard-coded hex outside SVGs). -->
+<style>
+  /* ── Shared marketing scaffolding ──────────────────────────────────
+     A small mono kicker shared by both new sections, matching the
+     editorial mono-eyebrow register used elsewhere on the page. */
+  .pfc-vs-kicker,
+  .pfc-trust-key {
+    font-family: var(--font-mono);
+    font-size: var(--t-11);
+    font-weight: 500;
+    line-height: 1.4;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--money);
+  }
+
+  /* ── SECTION 1 · COMPARISON (.pfc-vs) ─────────────────────────────── */
+  .pfc-vs-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-4, 18px);
+  }
+  .pfc-vs-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3, 12px);
+    padding: var(--space-5, 26px);
+    background: linear-gradient(180deg, var(--surface-2) 0%, var(--surface) 100%);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+  }
+  .pfc-vs-card .pfc-vs-kicker {
+    color: var(--ink-3);
+  }
+  .pfc-vs-lead {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-weight: 500;
+    font-size: clamp(20px, 2.2vw, 24px);
+    line-height: 1.12;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+  }
+  .pfc-vs-body {
+    font-size: var(--t-14);
+    line-height: 1.62;
+    font-weight: 300;
+    color: var(--ink-2);
+    margin: 0;
+  }
+
+  /* ── SECTION 2 · TRUST BAND (.pfc-trust) ──────────────────────────── */
+  .pfc-trust-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--space-4, 18px);
+  }
+  .pfc-trust-item {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2, 8px);
+    padding: var(--space-5, 26px);
+    background: var(--money-soft);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+  }
+  .pfc-trust-line {
+    font-size: var(--t-14);
+    line-height: 1.6;
+    font-weight: 300;
+    color: var(--ink-2);
+    margin: 0;
+  }
+  .pfc-trust-footnote {
+    margin: var(--space-6, 36px) 0 0;
+    text-align: center;
+    font-size: var(--t-14);
+    line-height: 1.7;
+    color: var(--ink-3);
+  }
+  .pfc-trust-footnote a {
+    color: var(--money);
+    text-decoration: underline;
+    text-underline-offset: 4px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  /* ── Responsive: collapse BOTH grids to a single column on mobile.
+     The 390px-overflow class of bug is avoided because below 640px each
+     grid is exactly one full-width track. ──────────────────────────── */
+  @media (max-width: 640px) {
+    .pfc-vs-grid,
+    .pfc-trust-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+  /* Tablet midpoint: trust band falls to a comfortable 2×2 before 1-up. */
+  @media (min-width: 641px) and (max-width: 900px) {
+    .pfc-trust-grid { grid-template-columns: repeat(2, 1fr); }
+    .pfc-vs-grid    { grid-template-columns: 1fr; }
+  }
+</style>
+
+<!-- ─────────── COMPARISON — why not a spreadsheet / bank app ─────────── -->
+<section class="pfc-vs" aria-label="Why ProFinanceCast">
+  <div class="section-head reveal">
+    <div class="section-eyebrow">Why ProFinanceCast</div>
+    <h2 class="section-title">Why not a spreadsheet — <em>or your bank&rsquo;s app?</em></h2>
+  </div>
+  <div class="pfc-vs-grid">
+    <article class="pfc-vs-card">
+      <div class="pfc-vs-kicker">Instead of a spreadsheet</div>
+      <p class="pfc-vs-lead">It maintains itself.</p>
+      <p class="pfc-vs-body">Spreadsheets don&rsquo;t pull live inflation or interest rates, they break the moment you change one cell, and you maintain them forever. ProFinanceCast fetches a published consumer-price index and real debt rates, runs avalanche and snowball automatically, and returns the same forecast every time &mdash; nothing to keep up.</p>
+    </article>
+    <article class="pfc-vs-card">
+      <div class="pfc-vs-kicker">Instead of your bank&rsquo;s app</div>
+      <p class="pfc-vs-lead">It looks forward, not back.</p>
+      <p class="pfc-vs-body">Your bank shows you what already happened and wants your attention for the next cross-sell. ProFinanceCast projects ten years ahead, asks for no bank login, and sells you nothing but the forecast itself.</p>
+    </article>
+    <article class="pfc-vs-card">
+      <div class="pfc-vs-kicker">Instead of account-linking apps</div>
+      <p class="pfc-vs-lead">There&rsquo;s no link to leak.</p>
+      <p class="pfc-vs-body">Apps that aggregate your accounts hand a third party live, read-only access to your bank. We made the opposite choice on purpose &mdash; you type your numbers, so there is no banking connection to compromise.</p>
+    </article>
+  </div>
+</section>
+
+<!-- ─────────── TRUST BAND — how we protect your data ─────────── -->
+<section class="pfc-trust" aria-label="How we protect your data">
+  <div class="section-head reveal">
+    <div class="section-eyebrow">Why you can trust us with this</div>
+    <h2 class="section-title">Built to be trusted <em>with your numbers.</em></h2>
+  </div>
+  <div class="pfc-trust-grid">
+    <div class="pfc-trust-item">
+      <div class="pfc-trust-key">No bank login</div>
+      <p class="pfc-trust-line">You type your numbers. There&rsquo;s no account link to compromise &mdash; ever.</p>
+    </div>
+    <div class="pfc-trust-item">
+      <div class="pfc-trust-key">Encrypted on your device</div>
+      <p class="pfc-trust-line">AES-256 before anything reaches our servers; TLS 1.3 in transit.</p>
+    </div>
+    <div class="pfc-trust-item">
+      <div class="pfc-trust-key">Never sold, never AI-trained</div>
+      <p class="pfc-trust-line">Your figures are never sold and never train AI. No ads inside the app.</p>
+    </div>
+    <div class="pfc-trust-item">
+      <div class="pfc-trust-key">Independent &amp; EU-built</div>
+      <p class="pfc-trust-line">Funded by subscribers, not investors. We answer only to the people who pay for the product.</p>
+    </div>
+  </div>
+  <!-- TESTIMONIALS SLOT: drop 2–3 real beta-user quotes here when available (name + 1 line). Do NOT fabricate. -->
+  <p class="pfc-trust-footnote">Founders Lifetime &mdash; 100 seats, &euro;149 once.&nbsp;&middot;&nbsp;<a href="security.html">Read our security commitments &rarr;</a></p>
+</section>
+
 <!-- ─────────── PRICING ─────────── -->
 <section id="pricing">
   <div class="section-head reveal">
