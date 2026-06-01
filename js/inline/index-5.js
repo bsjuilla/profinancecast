@@ -47,7 +47,22 @@
     });
 
     const nav = document.getElementById('nav');
-    ScrollTrigger.create({ start: 'top -10', end: 99999, onUpdate: (s) => nav.classList.toggle('scrolled', s.scroll() > 20) });
+    if (nav) {
+      if (window.ScrollTrigger) {
+        // ScrollTrigger present: drive the sticky-nav "scrolled" shadow via the plugin.
+        ScrollTrigger.create({ start: 'top -10', end: 99999, onUpdate: (s) => nav.classList.toggle('scrolled', s.scroll() > 20) });
+      } else {
+        // ScrollTrigger is a SEPARATE async <script> (see index-1.js) that downloads
+        // in parallel with gsap and can finish LATER — or fail entirely (CDN block /
+        // SRI mismatch / network / ad-blocker). initMotion only waits for window.gsap,
+        // so a bare ScrollTrigger.create here threw "ReferenceError: ScrollTrigger is
+        // not defined" (Sentry JAVASCRIPT-8). Fall back to a plain passive scroll
+        // listener so the nav shadow still works without the plugin.
+        var _onNavScroll = function () { nav.classList.toggle('scrolled', window.scrollY > 20); };
+        window.addEventListener('scroll', _onNavScroll, { passive: true });
+        _onNavScroll();
+      }
+    }
   }
 
   // ── 2. BENTO HOVER GLOW THAT FOLLOWS CURSOR ──
