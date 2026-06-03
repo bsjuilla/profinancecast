@@ -1,0 +1,47 @@
+ProFinanceCast — Proprietary Software License
+Copyright © 2026 ProFinanceCast. All rights reserved.
+
+This repository and all of its contents — including but not limited to source
+code, markup, stylesheets, scripts, configuration, database migrations,
+documentation, and assets (collectively, the "Software") — are the proprietary
+and confidential property of ProFinanceCast (the "Owner").
+
+ALL RIGHTS RESERVED. No license, right, or permission is granted to any person
+or entity to use, copy, reproduce, modify, adapt, translate, publish, distribute,
+sublicense, sell, rent, host, deploy, or create derivative works from the
+Software, in whole or in part, by any means or in any form, without the prior
+express written permission of the Owner.
+
+PUBLIC VISIBILITY IS NOT A LICENSE. The Software is published in a publicly
+viewable repository solely for transparency, review, and reference purposes.
+Public visibility does NOT place the Software in the public domain, does NOT
+constitute open-source licensing, and does NOT grant any license or waive any
+right. The ability to view or fork the source within the hosting platform does
+not confer any right to use, run, or redistribute it.
+
+PERMITTED without separate permission:
+  - Viewing the source code within the hosting platform (e.g., GitHub).
+  - Using the live, hosted ProFinanceCast service at its official domain in
+    accordance with its published Terms of Service and Privacy Policy.
+
+EXPRESSLY PROHIBITED without the Owner's prior written permission:
+  - Cloning, copying, or redistributing the Software or any substantial part.
+  - Deploying, hosting, or operating any copy of or derivative work from the
+    Software, whether modified or not.
+  - Using the Software, its design, structure, or content to build, train, or
+    operate a competing product or service.
+  - Removing, obscuring, or altering any copyright, trademark, or proprietary
+    notice contained in the Software.
+
+"ProFinanceCast" and its associated names, logos, and branding are trademarks of
+the Owner and are not licensed for any use.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE OWNER BE
+LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION OF
+CONTRACT, TORT, OR OTHERWISE, ARISING FROM, OUT OF, OR IN CONNECTION WITH THE
+SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+For licensing inquiries, contact the Owner through the official ProFinanceCast
+website.
