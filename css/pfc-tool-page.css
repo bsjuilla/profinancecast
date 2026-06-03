@@ -67,6 +67,11 @@ a { color: inherit; }
 @media (max-width: 640px) {
   .pfc-tool-nav .nav-links { gap: 16px; }
   .pfc-tool-nav .nav-links a:not(.active) { display: none; }
+  /* Drop the redundant secondary "Log in" ghost button on mobile so the header
+     fits long localized CTA text (fr/de "Démarrer/Kostenlos…"). The primary
+     "Start free" CTA stays; login remains reachable via that flow + the footer.
+     Prevents header horizontal overflow on narrow viewports. */
+  .pfc-tool-nav .nav-cta .btn-ghost { display: none; }
 }
 
 /* ── HERO ────────────────────────────────────────────────────────────── */
